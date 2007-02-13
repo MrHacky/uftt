@@ -1,2 +1,3 @@
-EXTRA_DIST = reconf
-SUBDIRS = m4 doc src
+ACLOCAL_AMFLAGS = -I m4
+SUBDIRS = src
+EXTRA_DIST = autogen.sh
