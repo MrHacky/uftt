@@ -15,28 +15,36 @@
 #include <iostream>
 #include <string>
 
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <windows.h>
-#include <Wsipx.h>
-
+//#include <winsock2.h>
+//#include <ws2tcpip.h>
+//#include <windows.h>
+//#include <Wsipx.h>
 
 //extern "C" {
-/*
+
 #		include <sys/socket.h>
 #		include <netinet/in.h>
 #		include <netinet/tcp.h>
 #		include <arpa/inet.h>
 #		include <net/if.h>
-#include <nspapi.h>
+#include <netipx/ipx.h>
+#include <net/ipx.h>
 #	include <unistd.h>
 #	include <sys/ioctl.h>
-*/
+
+//#	include <ipifcons.h>
+//#	include <ipxconst.h>
+//#	include <ipxrtdef.h>
+//#	include <ipxtfflt.h>
 //}
 
-//#	define SOCKET int
-//#	define INVALID_SOCKET -1
-//#		define WSAGetLastError() (errno)
+#include <errno.h>
+
+#define SOCKET int
+#define INVALID_SOCKET  (SOCKET)(~0)
+#define SOCKET_ERROR            (-1)
+#define WSAGetLastError() (errno)
+//#define AF_IPX AF_NS
 
 typedef struct addrinfo addrinfo;
 
@@ -47,7 +55,7 @@ SOCKET ipxsock;
 
 int InitIPX()
 {
-#if defined(WIN32)
+#ifdef WIN32
 	cout << "Initing winsock...";
 	WSAData wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
