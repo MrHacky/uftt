@@ -27,10 +27,12 @@
 #		include <netinet/tcp.h>
 #		include <arpa/inet.h>
 #		include <net/if.h>
-#include <netipx/ipx.h>
-#include <net/ipx.h>
 #	include <unistd.h>
 #	include <sys/ioctl.h>
+
+#include <netipx/ipx.h>
+#include <net/ipx.h>
+#include <linux/ipx.h>
 
 //#	include <ipifcons.h>
 //#	include <ipxconst.h>
