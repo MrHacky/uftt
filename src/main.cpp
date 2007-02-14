@@ -1,7 +1,125 @@
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------//
+#include <string>
+#include <stdio.h>
+#include <assert.h>
+#include <unistd.h>
+//#include <sys/select.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <stdlib.h>
+using namespace std;
+#define BUFLEN 512
+
+void show_menu(int port) {
+  fprintf(stdout,"\
+  .--------------------------------.\n\
+  | 1) Send message                |\n\
+  | 2) Receive message             |\n\
+  | 3) Set port #  (Current=%05i) |\n\
+  |                                |\n\
+  | 4) Exit                        |\n\
+  `--------------------------------'\n",port);
+}
+
+bool recv_msg(string &msg, int port) {
+    struct sockaddr_in sock_server;
+    struct sockaddr_in sock_client;
+    int sok;
+    socklen_t socklen = sizeof(struct sockaddr_in);
+    char buf[BUFLEN];
+
+    if ((sok = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+      fprintf(stdout,"Error: could not get socket!");
+      return false;
+    }
+    sock_server.sin_family = AF_INET;
+    sock_server.sin_port = htons(port);
+    sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(sok, (struct sockaddr *) &sock_server, socklen) == -1) {
+      fprintf(stdout, "Error bind()ing socket!\n");
+      close(sok);
+      return false;
+    }
+
+    if (recvfrom(sok, buf, BUFLEN, 0, (struct sockaddr *) &sock_client, &socklen) == -1) {
+      fprintf(stdout, "Error receiving msg!\n");
+      return false;
+    }
+
+    printf("Received packet from %s:%d\n", inet_ntoa(sock_client.sin_addr), ntohs(sock_client.sin_port));
+
+    msg = buf;
+    close(sok);
+    return true;
+}
+
+bool send_msg(const string &msg, int port) {
+    struct sockaddr_in sock_server;
+    int sok, i;
+    socklen_t socklen = sizeof(struct sockaddr_in);
+    char buf[BUFLEN];
+
+    if((sok = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1) {
+      fprintf(stdout, "Error: could not get socket!\n");
+      return false;
+    }
+
+    sock_server.sin_family = AF_INET;
+    sock_server.sin_port = htons(port);
+
+    if(inet_aton("127.0.0.1", &(sock_server.sin_addr)) == 0) {
+      fprintf(stderr, "inet_aton() failed\n");
+      close(sok);
+      return false;
+    }
+
+    fprintf(stdout, "Sending packet\n");
+    memset(buf, 0, BUFLEN);
+    memcpy(buf, msg.c_str(), msg.size());
+    if (sendto(sok, buf, BUFLEN, 0, (struct sockaddr *) &sock_server, socklen) == -1) {
+      fprintf(stdout,"Error sending packet\n");
+      close(sok);
+      return false;
+    }
+    close(sok);
+    return true;
+}
+
+int main(int argc, char* argv[]) {
+  bool done=false;
+  int port = 12345;
+  char *buf= new char[256];
+  string tmp;
+  while(!done) {
+    show_menu(port);
+    switch(fgetc(stdin)) {
+      case '1':
+        fgets(buf, 256, stdin);
+        send_msg((string)buf,port);
+        break;
+      case '2':
+        recv_msg(tmp, port);
+        fprintf(stdout,"Received msg: %s",tmp.c_str());
+        break;
+      case '3':
+        fgets(buf, 256, stdin);
+        port = atoi(buf);
+        break;
+      case '4':
+         done=true;
+        break;
+    }
+  }
+  return EXIT_SUCCESS;
+}
+
+
+/*/---------------------------------------------------------------------------
 
 #pragma hdrstop
-
 //#define WIN32
 
 //extern "C" {
@@ -182,6 +300,7 @@ int IPXRecv()
 }
 
 #pragma argsused
+
 int main(int argc, char* argv[])
 {
 	// main menu
@@ -216,6 +335,6 @@ int main(int argc, char* argv[])
 	return 0;
 }
 //---------------------------------------------------------------------------
-
+*/
 
 
