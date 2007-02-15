@@ -1,13 +1,17 @@
 //---------------------------------------------------------------------------//
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+
+#include "crossnet.h"
+
 #include <string>
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
 
 
-
-
-#include "crossnet.h"
 
 using namespace std;
 
@@ -29,11 +33,12 @@ void show_menu(int port) {
 
 SOCKET udp_sock;
 
+
 bool init_stuff(int port)
 {
 	struct sockaddr_in sock_server;
 
-#ifdef WIN32
+#ifdef HAVE_WINSOCK
 	cout << "Initing winsock...";
 	WSAData wsaData;
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
@@ -43,7 +48,8 @@ bool init_stuff(int port)
 	cout << "Success!" "\n";
 #endif
 
-	if ((udp_sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
+	//	SOCKET ipx_sock = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
+	if ((udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
 		fprintf(stdout,"Error: could not get socket!");
 		return false;
 	}
@@ -70,8 +76,8 @@ bool init_stuff(int port)
 }
 
 bool recv_msg(string &msg, int port) {
-    struct sockaddr_in sock_server;
-    struct sockaddr_in sock_client;
+		struct sockaddr_in sock_server;
+		struct sockaddr_in sock_client;
 
 		socklen_t socklen = sizeof(struct sockaddr_in);
 		char buf[BUFLEN];
@@ -81,14 +87,14 @@ bool recv_msg(string &msg, int port) {
 			return false;
 		}
 
-    printf("Received packet from %s:%d\n", inet_ntoa(sock_client.sin_addr), ntohs(sock_client.sin_port));
+		printf("Received packet from %s:%d\n", inet_ntoa(sock_client.sin_addr), ntohs(sock_client.sin_port));
 
-    msg = buf;
-    return true;
+		msg = buf;
+		return true;
 }
 
 bool send_msg(const string &msg, int port) {
-    struct sockaddr_in sock_server;
+		struct sockaddr_in sock_server;
 		socklen_t socklen = sizeof(struct sockaddr_in);
 		char buf[BUFLEN];
 
@@ -97,45 +103,45 @@ bool send_msg(const string &msg, int port) {
 	sock_server.sin_addr.s_addr = htonl(INADDR_BROADCAST);
 
 		fprintf(stdout, "Sending packet\n");
-    memset(buf, 0, BUFLEN);
-    memcpy(buf, msg.c_str(), msg.size());
-    if (sendto(udp_sock, buf, BUFLEN, 0, (struct sockaddr *) &sock_server, socklen) == SOCKET_ERROR) {
+		memset(buf, 0, BUFLEN);
+		memcpy(buf, msg.c_str(), msg.size());
+		if (sendto(udp_sock, buf, BUFLEN, 0, (struct sockaddr *) &sock_server, socklen) == SOCKET_ERROR) {
 			fprintf(stdout,"Error sending packet %i\n", NetGetLastError());
-      closesocket(udp_sock);
-      return false;
-    }
-    return true;
+			closesocket(udp_sock);
+			return false;
+		}
+		return true;
 }
 
 int main(int argc, char* argv[]) {
 	bool done=false;
-  int port = 12345;
-  char *buf= new char[256];
+	int port = 12345;
+	char *buf= new char[256];
 	string tmp;
 
 	init_stuff(port);
 
-  while(!done) {
-    show_menu(port);
-    switch(fgetc(stdin)) {
-      case '1':
-        fgets(buf, 256, stdin);
-        send_msg((string)buf,port);
-        break;
-      case '2':
-        recv_msg(tmp, port);
-        fprintf(stdout,"Received msg: %s",tmp.c_str());
+	while(!done) {
+		show_menu(port);
+		switch(fgetc(stdin)) {
+			case '1':
+				fgets(buf, 256, stdin);
+				send_msg((string)buf,port);
 				break;
-      case '3':
-        fgets(buf, 256, stdin);
-        port = atoi(buf);
-        break;
-      case '4':
-         done=true;
-        break;
-    }
-  }
-  return EXIT_SUCCESS;
+			case '2':
+				recv_msg(tmp, port);
+				fprintf(stdout,"Received msg: %s",tmp.c_str());
+				break;
+			case '3':
+				fgets(buf, 256, stdin);
+				port = atoi(buf);
+				break;
+			case '4':
+				 done=true;
+				break;
+		}
+	}
+	return EXIT_SUCCESS;
 }
 
 

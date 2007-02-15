@@ -1,26 +1,31 @@
 #ifndef CROSSNET_H
 #define CROSSNET_H
 
-#ifdef WIN32
-// win32 specific stuff
-#	include <winsock2.h>
-#	include <ws2tcpip.h>
-#	include <windows.h>
-#	include <Wsipx.h>
+#if defined(__WIN32__)
+// borland win32 specifics..
+#define HAVE_WINSOCK
+#endif
+
+#if defined(HAVE_WINSOCK)
+
+#include <winsock2.h>
+#include <Wsipx.h>
+#include <ws2tcpip.h>
 
 #define NetGetLastError() WSAGetLastError()
 
 #else
 // non-win32 (unix?) stuff
-#include <unistd.h>
-//#include <sys/select.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <stdlib.h>
 
-#include <errno.h> // for errno in NetGetLastError() macro
+#if HAVE_NETINET_IN_H
+# include <netinet/in.h>
+#endif
+#if HAVE_ARPA_INET_H
+# include <arpa/inet.h>
+#endif
+#if HAVE_ERRNO_H
+# include <errno.h> // for errno in NetGetLastError() macro
+#endif
 
 #define closesocket close
 #define NetGetLastError() errno
@@ -32,6 +37,7 @@ typedef int SOCKET;
 
 
 #endif
+
 
 
 #endif //CROSSNET_H
