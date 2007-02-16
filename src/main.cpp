@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
 				send_msg((string)buf,port);
 				break;
 			case '2':
+				fgets(buf, 256, stdin);
 				recv_msg(tmp, port);
 				fprintf(stdout,"Received msg: %s",tmp.c_str());
 				break;
