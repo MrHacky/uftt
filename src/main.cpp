@@ -26,7 +26,18 @@ void show_menu(int port) {
 	`--------------------------------'\n",port);
 }
 
-SOCKET udp_sock;
+SOCKET ipx_sock;
+
+char* hexbyte(unsigned char x)
+{
+	char* rbuf = (char*)malloc(5); // leaks badly :O
+
+	rbuf[1] = "0123456789ABCDEF"[(x >> 0) & 0x0F];
+	rbuf[0] = "0123456789ABCDEF"[(x >> 4) & 0x0F];
+
+	rbuf[2] = 0;
+	return rbuf;
+}
 
 
 bool init_stuff(int port)
@@ -44,11 +55,45 @@ bool init_stuff(int port)
 #endif
 
 	//	SOCKET ipx_sock = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
-	if ((udp_sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == INVALID_SOCKET) {
+	if ((ipx_sock = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX)) == INVALID_SOCKET) {
 		fprintf(stdout,"Error: could not get socket!");
 		return false;
 	}
 
+	sockaddr target_addr;
+	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
+
+	target->sa_family = AF_IPX;
+	for (int i=0; i<4; ++i)
+		target->sa_netnum[i] = 0;
+	for (int i=0; i<6; ++i)
+		target->sa_nodenum[i] = 0xff;
+
+	target->sa_socket = htons(port);
+
+	int retval;
+
+	if (target->sa_socket != 0) {
+		cout << "Binding IPX socket...";
+		retval = bind(ipx_sock, &target_addr, sizeof(target_addr));
+		if (retval == SOCKET_ERROR) {
+			cout << "Failed! :" << WSAGetLastError() << "\n";
+			return 1;
+		};
+		cout << "Success!" "\n";
+	}
+
+	cout << "Enabling broadcasting..." ;
+	unsigned long ul = 1;
+	retval = setsockopt(ipx_sock, SOL_SOCKET, SO_BROADCAST, (char*)&ul, sizeof(ul));
+	if (retval == SOCKET_ERROR) {
+		cout << "Failed! :" << WSAGetLastError() << "\n";
+		return 1;
+	};
+	cout << "Success!" "\n";
+
+	return 0;
+/*
 	sock_server.sin_family = AF_INET;
 	sock_server.sin_port = htons(port);
 	sock_server.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -67,45 +112,63 @@ bool init_stuff(int port)
 		return 1;
 	};
 	cout << "Success!" "\n";
-
+*/
 }
 
 bool recv_msg(string &msg, int port) {
-		struct sockaddr_in sock_server;
-		struct sockaddr_in sock_client;
+	char buf[BUFLEN];
+	sockaddr source_addr;
+	SOCKADDR_IPX* source = (SOCKADDR_IPX*)&source_addr;
 
-		socklen_t socklen = sizeof(struct sockaddr_in);
-		char buf[BUFLEN];
+	int len = sizeof(source_addr);
+	int retval;
+	retval = recvfrom(ipx_sock, buf, BUFLEN, 0, &source_addr, &len);
+	if (retval == SOCKET_ERROR) {
+		cout << "Failed! :" << NetGetLastError() << "\n";
+		return 1;
+	};
 
-		if (recvfrom(udp_sock, buf, BUFLEN, 0, (struct sockaddr *) &sock_client, &socklen) == SOCKET_ERROR) {
-			fprintf(stdout, "Error receiving msg!\n");
-			return false;
-		}
-
-		printf("Received packet from %s:%d\n", inet_ntoa(sock_client.sin_addr), ntohs(sock_client.sin_port));
+	cout << "From: " <<
+		hexbyte(source->sa_netnum[0])  << "-" <<
+		hexbyte(source->sa_netnum[1])  << "-" <<
+		hexbyte(source->sa_netnum[2])  << "-" <<
+		hexbyte(source->sa_netnum[3])  << ":" <<
+		hexbyte(source->sa_nodenum[0]) << "-" <<
+		hexbyte(source->sa_nodenum[1]) << "-" <<
+		hexbyte(source->sa_nodenum[2]) << "-" <<
+		hexbyte(source->sa_nodenum[3]) << "-" <<
+		hexbyte(source->sa_nodenum[4]) << "-" <<
+		hexbyte(source->sa_nodenum[5]) << ":" <<
+		source->sa_socket << endl;
 
 		msg = buf;
 		return true;
 }
 
 bool send_msg(const string &msg, int port) {
-		struct sockaddr_in sock_server;
-		socklen_t socklen = sizeof(struct sockaddr_in);
-		char buf[BUFLEN];
+	sockaddr target_addr;
+	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
 
-	sock_server.sin_family = AF_INET;
-	sock_server.sin_port = htons(port);
-	sock_server.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+	target->sa_family = AF_IPX;
+	for (int i=0; i<4; ++i)
+		target->sa_netnum[i] = 0;
+	for (int i=0; i<6; ++i)
+		target->sa_nodenum[i] = 0xff;
 
-		fprintf(stdout, "Sending packet\n");
-		memset(buf, 0, BUFLEN);
-		memcpy(buf, msg.c_str(), msg.size());
-		if (sendto(udp_sock, buf, BUFLEN, 0, (struct sockaddr *) &sock_server, socklen) == SOCKET_ERROR) {
-			fprintf(stdout,"Error sending packet %i\n", NetGetLastError());
-			closesocket(udp_sock);
-			return false;
-		}
-		return true;
+	target->sa_socket = htons(port);
+
+	char sbuf[]="123456789\0";
+
+	int retval;
+	cout << "Broadcasting test Packet...";
+	retval = sendto(ipx_sock, msg.c_str(), msg.size()+1, 0, &target_addr, sizeof(target_addr));
+
+	if (retval == SOCKET_ERROR) {
+		cout << "Failed! :" << WSAGetLastError() << "\n";
+		return 1;
+	};
+	cout << "Success! :" << retval << "\n";
+	return 0;
 }
 
 int main(int argc, char* argv[]) {
