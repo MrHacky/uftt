@@ -35,6 +35,15 @@
 # include <errno.h> // for errno in NetGetLastError() macro
 #endif
 
+#ifdef HAVE_NETIPX_IPX_H
+#include <netipx/ipx.h>
+#else
+# include <linux/ipx.h>
+# ifndef IPX_TYPE
+#  define IPX_TYPE 1
+# endif
+#endif
+
 #define closesocket close
 #define NetGetLastError() errno
 

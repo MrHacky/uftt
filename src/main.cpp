@@ -9,13 +9,85 @@
 #include <stdio.h>
 #include <assert.h>
 
-//#include <net/ipx.h>
-//#include <linux/ipx.h>
-#include <netipx/ipx.h>
-#include <netinet/in.h>
 using namespace std;
 
 #define BUFLEN 512
+
+char ipx_MyAddress[50];
+
+char* hexbyte(unsigned char x)
+{
+	char* rbuf = (char*)malloc(5); // leaks badly :O
+
+	rbuf[1] = "0123456789ABCDEF"[(x >> 0) & 0x0F];
+	rbuf[0] = "0123456789ABCDEF"[(x >> 4) & 0x0F];
+
+	rbuf[2] = 0;
+	return rbuf;
+}
+
+static int ipx_bsd_GetMyAddress( void )
+{
+  int sock;
+  struct sockaddr_ipx ipxs;
+  struct sockaddr_ipx ipxs2;
+	int len;
+	int i;
+
+	#ifdef HAVE_WINSOCK
+	cout << "Initing winsock...";
+	WSAData wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+			cout << "Failed!" "\n";
+			return 1;
+	}
+	cout << "Success!" "\n";
+#endif
+  
+  sock=socket(AF_IPX,SOCK_DGRAM,NSPROTO_IPX);
+  if(sock==-1)
+	{
+		printf("IPX: could not open socket in GetMyAddress\n");
+		return(-1);
+	}
+	printf("IPX: opened socket\n");
+
+  /* bind this socket to network 0 */  
+  ipxs.sa_family=AF_IPX;
+#ifdef IPX_MANUAL_ADDRESS
+	memcpy(&ipxs.sipx_network, ipx_MyAddress, 4);
+#else
+  *((int*)(&ipxs.sa_netnum))=0;
+#endif  
+  ipxs.sa_socket=0;
+  
+  if(bind(sock,(struct sockaddr *)&ipxs,sizeof(ipxs))==-1)
+  {
+		printf("IPX: could bind to network 0 in GetMyAddress\n");
+		closesocket( sock );
+		return(-1);
+	}
+	printf("IPX: bind success in GetMyAddress\n");
+
+  len = sizeof(ipxs2);
+  if (getsockname(sock,(struct sockaddr *)&ipxs2,(socklen_t*)&len) < 0) {
+		printf("IPX: could not get socket name in GetMyAddress\n");
+		closesocket( sock );
+		return(-1);
+	}
+	printf("IPX: got socket name\n");
+
+
+	memcpy(ipx_MyAddress, &ipxs2.sa_netnum, 4);
+	cout << ipxs2.sa_netnum;
+	for (i = 0; i < 6; i++) {
+		ipx_MyAddress[4+i] = ipxs2.sa_nodenum[i];
+		cout << ":" << hexbyte(ipxs2.sa_nodenum[i]);
+	}
+	cout << "\n";
+  closesocket( sock );
+  return(0);
+}
 
 void show_menu(int port) {
 	fprintf(stdout,"\
@@ -30,61 +102,53 @@ q	|                                |\n\
 
 SOCKET ipx_sock;
 
-char* hexbyte(unsigned char x)
-{
-	char* rbuf = (char*)malloc(5); // leaks badly :O
-
-	rbuf[1] = "0123456789ABCDEF"[(x >> 0) & 0x0F];
-	rbuf[0] = "0123456789ABCDEF"[(x >> 4) & 0x0F];
-
-	rbuf[2] = 0;
-	return rbuf;
-}
-
-
 bool init_stuff(int port)
 {
 	struct sockaddr_in sock_server;
 
-#ifdef HAVE_WINSOCK
-	cout << "Initing winsock...";
-	WSAData wsaData;
-	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
-			cout << "Failed!" "\n";
-			return 1;
-	}
-	cout << "Success!" "\n";
-#endif
+
 
 	//	SOCKET ipx_sock = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX);
 	if ((ipx_sock = socket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX)) == INVALID_SOCKET) {
-		fprintf(stdout,"Error: could not get socket!");
+		cout << "Error: could not get socket!\n";
 		return false;
 	}
+	cout << "Got Socket\n";
 
 	sockaddr target_addr;
-	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
+
+	sockaddr_ipx* target = (sockaddr_ipx*)&target_addr;
 
 	target->sa_family = AF_IPX;
+#ifdef HAVE_WINSOCK
 	for (int i=0; i<4; ++i)
-		((char*)target->sa_netnum)[i] = 0;
+		target->sa_netnum[i] = 0;
+#else
+	target->sipx_network = *((unsigned int *)&ipx_MyAddress[0]);
+#endif
 	for (int i=0; i<6; ++i)
-		target->sa_nodenum[i] = 0xff;
-
+		target->sa_nodenum[i] = 0xff;//ipx_MyAddress[4+i];
 	target->sa_socket = htons(port);
 
 	int retval;
 
-	if (target->sa_socket != 0) {
+/*
+	cout << "Enabling soemthing?..." ;
+	unsigned long ops = 1;
+	retval = setsockopt(ipx_sock, SOL_IPX, IPX_TYPE, (char*)&ops, sizeof(ops));
+	if (retval == SOCKET_ERROR) {
+		cout << "Failed! :" << NetGetLastError() << "\n";
+		return 1;
+	};
+	cout << "Success!" "\n";
+*/
 		cout << "Binding IPX socket...";
-		retval = bind(ipx_sock, &target_addr, sizeof(target_addr));
-		if (retval == SOCKET_ERROR) {
-			cout << "Failed! :" << NetGetLastError() << 
-"\n";
-			return 1;
-		};
-		cout << "Success!" "\n";
-	}
+	retval = bind(ipx_sock, (sockaddr*)&target_addr, sizeof(SOCKADDR_IPX));
+	if (retval == SOCKET_ERROR) {
+		cout << "Failed! :" << NetGetLastError() << "\n";
+		return 1;
+	};
+	cout << "Success!" "\n";
 
 	cout << "Enabling broadcasting..." ;
 	unsigned long ul = 1;
@@ -94,7 +158,6 @@ bool init_stuff(int port)
 		return 1;
 	};
 	cout << "Success!" "\n";
-
 	return 0;
 /*
 	sock_server.sin_family = AF_INET;
@@ -155,8 +218,12 @@ bool send_msg(const string &msg, int port) {
 	target->sa_family = AF_IPX;
 	for (int i=0; i<4; ++i)
 		((char*)target->sa_netnum)[i] = 0;
+
+	if (*(int*)(&(target->sa_netnum)) == 0)
+		*(int*)(&(target->sa_netnum)) = *((unsigned int *)&ipx_MyAddress[0]);
+
 	for (int i=0; i<6; ++i)
-		target->sa_nodenum[i] = 0xff;
+		target->sa_nodenum[i] = ipx_MyAddress[4+i];
 
 	target->sa_socket = htons(port);
 
@@ -179,6 +246,10 @@ int main(int argc, char* argv[]) {
 	int port = 12345;
 	char *buf= new char[256];
 	string tmp;
+
+	cout << "testing\n";
+	ipx_bsd_GetMyAddress();
+	cout << "test done\n";
 
 	init_stuff(port);
 
