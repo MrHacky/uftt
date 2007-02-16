@@ -1,10 +1,8 @@
 //---------------------------------------------------------------------------//
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include "stdhdr.h"
 
 
-#include "crossnet.h"
+
 
 #include <string>
 #include <iostream>
@@ -27,9 +25,6 @@ void show_menu(int port) {
 	| 4) Exit                        |\n\
 	`--------------------------------'\n",port);
 }
-
-//typedef SOCKET int;
-//const INVALID_SOCKET = -1;
 
 SOCKET udp_sock;
 

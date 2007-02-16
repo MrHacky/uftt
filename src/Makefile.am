@@ -1,2 +1,2 @@
 bin_PROGRAMS = uftt
-uftt_SOURCES = main.cpp
+uftt_SOURCES = main.cpp stdhdr.h

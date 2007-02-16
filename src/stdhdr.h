@@ -1,12 +1,16 @@
-#ifndef CROSSNET_H
-#define CROSSNET_H
+#ifndef STDHDR_H
+#define STDHDR_H
 
-#if defined(__WIN32__)
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#elif defined(__WIN32__)
 // borland win32 specifics..
 #define HAVE_WINSOCK
 #endif
 
 #if defined(HAVE_WINSOCK)
+
+#define WIN32_LEAN_AND_MEAN
 
 #include <winsock2.h>
 #include <Wsipx.h>
@@ -35,9 +39,8 @@ typedef int SOCKET;
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define SOCKET_ERROR            (-1)
 
-
 #endif
 
 
 
-#endif //CROSSNET_H
+#endif //STDHDR_H
