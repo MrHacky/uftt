@@ -42,7 +42,12 @@ typedef int SOCKET;
 
 #define INVALID_SOCKET  (SOCKET)(~0)
 #define SOCKET_ERROR            (-1)
-
+#define NSPROTO_IPX PF_IPX
+#define SOCKADDR_IPX sockaddr_ipx
+#define sa_nodenum sipx_node
+#define sa_socket sipx_port
+#define sa_netnum sipx_network
+#define sa_family sipx_family
 #endif
 
 

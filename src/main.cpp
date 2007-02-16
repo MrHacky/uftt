@@ -9,8 +9,10 @@
 #include <stdio.h>
 #include <assert.h>
 
-
-
+//#include <net/ipx.h>
+//#include <linux/ipx.h>
+#include <netipx/ipx.h>
+#include <netinet/in.h>
 using namespace std;
 
 #define BUFLEN 512
@@ -21,7 +23,7 @@ void show_menu(int port) {
 	| 1) Send message                |\n\
 	| 2) Receive message             |\n\
 	| 3) Set port #  (Current=%05i) |\n\
-	|                                |\n\
+q	|                                |\n\
 	| 4) Exit                        |\n\
 	`--------------------------------'\n",port);
 }
@@ -65,7 +67,7 @@ bool init_stuff(int port)
 
 	target->sa_family = AF_IPX;
 	for (int i=0; i<4; ++i)
-		target->sa_netnum[i] = 0;
+		((char*)target->sa_netnum)[i] = 0;
 	for (int i=0; i<6; ++i)
 		target->sa_nodenum[i] = 0xff;
 
@@ -77,7 +79,8 @@ bool init_stuff(int port)
 		cout << "Binding IPX socket...";
 		retval = bind(ipx_sock, &target_addr, sizeof(target_addr));
 		if (retval == SOCKET_ERROR) {
-			cout << "Failed! :" << WSAGetLastError() << "\n";
+			cout << "Failed! :" << NetGetLastError() << 
+"\n";
 			return 1;
 		};
 		cout << "Success!" "\n";
@@ -87,7 +90,7 @@ bool init_stuff(int port)
 	unsigned long ul = 1;
 	retval = setsockopt(ipx_sock, SOL_SOCKET, SO_BROADCAST, (char*)&ul, sizeof(ul));
 	if (retval == SOCKET_ERROR) {
-		cout << "Failed! :" << WSAGetLastError() << "\n";
+		cout << "Failed! :" << NetGetLastError() << "\n";
 		return 1;
 	};
 	cout << "Success!" "\n";
@@ -120,7 +123,7 @@ bool recv_msg(string &msg, int port) {
 	sockaddr source_addr;
 	SOCKADDR_IPX* source = (SOCKADDR_IPX*)&source_addr;
 
-	int len = sizeof(source_addr);
+	socklen_t len = sizeof(source_addr);
 	int retval;
 	retval = recvfrom(ipx_sock, buf, BUFLEN, 0, &source_addr, &len);
 	if (retval == SOCKET_ERROR) {
@@ -129,10 +132,10 @@ bool recv_msg(string &msg, int port) {
 	};
 
 	cout << "From: " <<
-		hexbyte(source->sa_netnum[0])  << "-" <<
-		hexbyte(source->sa_netnum[1])  << "-" <<
-		hexbyte(source->sa_netnum[2])  << "-" <<
-		hexbyte(source->sa_netnum[3])  << ":" <<
+		hexbyte(((char*)source->sa_netnum)[0])  << "-" <<
+		hexbyte(((char*)source->sa_netnum)[1])  << "-" <<
+		hexbyte(((char*)source->sa_netnum)[2])  << "-" <<
+		hexbyte(((char*)source->sa_netnum)[3])  << ":" <<
 		hexbyte(source->sa_nodenum[0]) << "-" <<
 		hexbyte(source->sa_nodenum[1]) << "-" <<
 		hexbyte(source->sa_nodenum[2]) << "-" <<
@@ -151,7 +154,7 @@ bool send_msg(const string &msg, int port) {
 
 	target->sa_family = AF_IPX;
 	for (int i=0; i<4; ++i)
-		target->sa_netnum[i] = 0;
+		((char*)target->sa_netnum)[i] = 0;
 	for (int i=0; i<6; ++i)
 		target->sa_nodenum[i] = 0xff;
 
@@ -164,7 +167,7 @@ bool send_msg(const string &msg, int port) {
 	retval = sendto(ipx_sock, msg.c_str(), msg.size()+1, 0, &target_addr, sizeof(target_addr));
 
 	if (retval == SOCKET_ERROR) {
-		cout << "Failed! :" << WSAGetLastError() << "\n";
+		cout << "Failed! :" << NetGetLastError() << "\n";
 		return 1;
 	};
 	cout << "Success! :" << retval << "\n";
