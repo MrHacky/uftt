@@ -8,6 +8,10 @@
 #define HAVE_WINSOCK
 #endif
 
+#if defined(HAVE_UNISTD_H)
+# include <unistd.h>
+#endif
+
 #if defined(HAVE_WINSOCK)
 
 #define WIN32_LEAN_AND_MEAN
