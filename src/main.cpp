@@ -195,10 +195,10 @@ bool recv_msg(string &msg, int port) {
 	};
 
 	cout << "From: " <<
-		hexbyte(((char*)source->sa_netnum)[0])  << "-" <<
-		hexbyte(((char*)source->sa_netnum)[1])  << "-" <<
-		hexbyte(((char*)source->sa_netnum)[2])  << "-" <<
-		hexbyte(((char*)source->sa_netnum)[3])  << ":" <<
+		hexbyte(((char*)(&source->sa_netnum))[0])  << "-" <<
+		hexbyte(((char*)(&source->sa_netnum))[1])  << "-" <<
+		hexbyte(((char*)(&source->sa_netnum))[2])  << "-" <<
+		hexbyte(((char*)(&source->sa_netnum))[3])  << ":" <<
 		hexbyte(source->sa_nodenum[0]) << "-" <<
 		hexbyte(source->sa_nodenum[1]) << "-" <<
 		hexbyte(source->sa_nodenum[2]) << "-" <<

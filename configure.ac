@@ -10,7 +10,7 @@ AC_PROG_INSTALL
 AC_CHECK_HEADERS([netinet/in.h])
 AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([errno.h])
-AC_CHECK_HEADERS([netipx/ipx.h>])
+AC_CHECK_HEADERS([netipx/ipx.h])
 
 dnl Check for ipx availibility in BDS sockets
 AC_CHECK_DECL(AF_IPX, [bsdsockipx=yes], [bsdsockipx=no], 
