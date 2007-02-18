@@ -116,7 +116,7 @@ SOCKET CreateUDPSocket(uint16 bindport, sockaddr_in* iface_addr = NULL)
 	}
 
 	addr.sin_family = AF_INET;
-//	addr.sin_addr.S_un.S_addr = INADDR_ANY; TODO FIX FOR LINUX
+	addr.sin_addr.s_addr = INADDR_ANY; //TODO FIX FOR LINUX
 	addr.sin_port = htons(bindport);
 
 	retval = bind(sock, (sockaddr*)&addr, sizeof(addr));
@@ -332,6 +332,8 @@ bool recv_msg(string &msg, int port) {
 	return true;
 }
 
+bool udp_hax = false;
+
 int send_msg(const string &msg, int port) {
 	sockaddr target_addr;
 	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
@@ -346,9 +348,11 @@ int send_msg(const string &msg, int port) {
 	target->sa_socket = htons(port);
 
 	// UDP:
-//	t2->sin_family = AF_INET;
-//	t2->sin_addr.S_un.S_addr = INADDR_BROADCAST;
-//	t2->sin_port = htons(port);
+	if (udp_hax) {
+		t2->sin_family = AF_INET;
+		t2->sin_addr.s_addr = INADDR_BROADCAST;
+		t2->sin_port = htons(port);
+	}
 
 //	cout << "Got Address: " << addr2str(&target_addr) << "\n";
 	char mbuf[1500];
@@ -409,13 +413,14 @@ int main(int argc, char* argv[]) {
 					count += send_msg((string)"",port);
 					if (count > 1024*1024) {
 						count -= 1024*1024;
-						cout << ".";
+						cout << "." << flush;
 					}
 				}
 			}; break;
 			case '6':
 				closesocket(ipx_sock);
 				ipx_sock = CreateUDPSocket(port);
+				udp_hax = true;
 				break;
 
 			case '7':
