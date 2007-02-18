@@ -161,17 +161,13 @@ bool send_msg(const string &msg, int port) {
 
 	target->sipx_family = AF_IPX;
 	for (int i=0; i<4; ++i)
-		((char*)target->sa_netnum)[i] = 0;
-
-	if (*(int*)(&(target->sa_netnum)) == 0)
-		*(int*)(&(target->sa_netnum)) = *((unsigned int *)&ipx_MyAddress[0]);
-
+		((char*)&target->sa_netnum)[i] = 0;
 	for (int i=0; i<6; ++i)
-		target->sa_nodenum[i] = 0xff;//ipx_MyAddress[4+i];
+		target->sa_nodenum[i] = 0xFF;
 
 	target->sa_socket = htons(port);
 
-	char sbuf[]="123456789\0";
+//	cout << "Got Address: " << addr2str(&target_addr) << "\n";
 
 	int retval;
 	cout << "Broadcasting test Packet...";

@@ -22,7 +22,7 @@
 
 #define NetGetLastError() WSAGetLastError()
 
-#define sipx_family sa_family	
+#define sipx_family sa_family
 
 #else
 // non-win32 (unix?) stuff
