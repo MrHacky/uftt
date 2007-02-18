@@ -154,6 +154,18 @@ string addr2str(sockaddr* addr)
 				ntohs(ipx_addr->sa_socket));
 			return string(buf);
 		}; break;
+		case AF_INET: {
+			sockaddr_in* ip_addr = (sockaddr_in*)addr;
+			snprintf(buf, 100, "%u.%u.%u.%u:%i",
+				((uint8*)(&ip_addr->sin_addr.s_addr))[0],
+				((uint8*)(&ip_addr->sin_addr.s_addr))[1],
+				((uint8*)(&ip_addr->sin_addr.s_addr))[2],
+				((uint8*)(&ip_addr->sin_addr.s_addr))[3],
+				ntohs(ip_addr->sin_port));
+			return string(buf);
+		}; break;
+		default:
+			return string("Unknown address family");
 	}
 }
 
@@ -294,8 +306,9 @@ void show_menu(int port) {
 	| 4) Set ipx interface           |\n\
 	| 5) send Broadcast loop         |\n\
 	| 6) switch to UDP               |\n\
+	| 7) receive loop                |\n\
 	|                                |\n\
-	| 7) Exit                        |\n\
+	| q) Exit                        |\n\
 	`--------------------------------'\n",port);
 }
 
@@ -313,7 +326,7 @@ bool init_stuff()
 
 }
 
-bool recv_msg(string &msg, int port) {
+int recv_msg(string &msg, int port, string* from = NULL) {
 	char buf[1500];
 	sockaddr source_addr;
 	SOCKADDR_IPX* source = (SOCKADDR_IPX*)&source_addr;
@@ -323,13 +336,13 @@ bool recv_msg(string &msg, int port) {
 	retval = recvfrom(ipx_sock, buf, 1400, 0, &source_addr, &len);
 	if (retval == SOCKET_ERROR) {
 		cout << "Failed! :" << NetGetLastError() << "\n";
-		return 1;
+		return 0;
 	};
 
-	cout << "From: " << addr2str(&source_addr) << "\n";
+	if (from != NULL) *from = addr2str(&source_addr);
 
 	msg = buf;
-	return true;
+	return retval;
 }
 
 bool udp_hax = false;
@@ -365,7 +378,7 @@ int send_msg(const string &msg, int port) {
 
 	if (retval == SOCKET_ERROR) {
 		cout << "Failed! :" << NetGetLastError() << "\n";
-		return -1;
+		return 0;
 	};
 //	cout << "Success! :" << retval << "\n";
 	return retval;
@@ -375,7 +388,7 @@ int main(int argc, char* argv[]) {
 	bool done=false;
 	int port = 54321; // increased cause ports <~15000 are reserved for root in linux
 	char *buf= new char[256];
-	string tmp;
+	string tmp,tfrom;
 
 	init_stuff();
 	ipx_sock = CreateIPXSocket(port);
@@ -392,8 +405,9 @@ int main(int argc, char* argv[]) {
 				break;
 			case '2':
 				fgets(buf, 256, stdin);
-				recv_msg(tmp, port);
+				recv_msg(tmp, port, &tfrom);
 				fprintf(stdout,"Received msg: %s",tmp.c_str());
+				cout << "From: " << tfrom << "\n";
 				break;
 			case '3':
 				fgets(buf, 256, stdin);
@@ -422,8 +436,19 @@ int main(int argc, char* argv[]) {
 				ipx_sock = CreateUDPSocket(port);
 				udp_hax = true;
 				break;
+			case '7': {
+				cout << "receiving stuff" << "\n";
+				int count = 0;
+				while(true) {
+					count += recv_msg(tmp, port);
+					if (count > 1024*1024) {
+						count -= 1024*1024;
+						cout << "." << flush;
+					}
+				}
+			}; break;
 
-			case '7':
+			case 'q':
 				 done=true;
 				break;
 		}
