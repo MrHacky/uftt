@@ -22,6 +22,8 @@
 
 #define NetGetLastError() WSAGetLastError()
 
+#define sipx_family sa_family	
+
 #else
 // non-win32 (unix?) stuff
 
@@ -35,8 +37,9 @@
 # include <errno.h> // for errno in NetGetLastError() macro
 #endif
 
+/* ripped from google code search somewhere */
 #ifdef HAVE_NETIPX_IPX_H
-#include <netipx/ipx.h>
+# include <netipx/ipx.h>
 #else
 # include <linux/ipx.h>
 # ifndef IPX_TYPE
@@ -56,7 +59,6 @@ typedef int SOCKET;
 #define sa_nodenum sipx_node
 #define sa_socket sipx_port
 #define sa_netnum sipx_network
-#define sa_family sipx_family
 #endif
 
 
