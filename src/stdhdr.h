@@ -19,6 +19,7 @@
 #include <winsock2.h>
 #include <Wsipx.h>
 #include <ws2tcpip.h>
+#include <wsnwlink.h>
 
 #define NetGetLastError() WSAGetLastError()
 

@@ -7,17 +7,21 @@
 #include <iostream>
 #include <stdio.h>
 #include <assert.h>
+#include <vector>
 
 using namespace std;
 
 #define BUFLEN 512
-char ipx_MyAddress[50];
+
+vector<sockaddr_ipx> IPXInterfaces;
+
+string addr2str(sockaddr* addr);
 
 /**
  * Creates an IPX socket and returns the handle
  * enables broadcasting, binds to bindport if != 0
  */
-SOCKET CreateIPXSocket(uint16 bindport)
+SOCKET CreateIPXSocket(uint16 bindport, sockaddr_ipx* iface_addr = NULL)
 {
 	sockaddr_ipx addr;
 	SOCKET sock;
@@ -42,6 +46,14 @@ SOCKET CreateIPXSocket(uint16 bindport)
 	// so we first bind to any port to find out the netnum
 	addr.sa_socket = 0;
 #endif
+
+	if ( iface_addr != NULL) {
+		addr.sipx_family = AF_IPX;
+		memcpy(&addr, iface_addr, sizeof(addr));
+		addr.sa_socket = htons(bindport);
+		cout << "Binding to:" << addr2str((sockaddr*)&addr) << "\n";
+		bindport = 0;
+	}
 
 	retval = bind(sock, (sockaddr*)&addr, sizeof(addr));
 	if (retval == SOCKET_ERROR) {
@@ -91,6 +103,40 @@ SOCKET CreateIPXSocket(uint16 bindport)
 	return sock;
 }
 
+SOCKET CreateUDPSocket(uint16 bindport, sockaddr_in* iface_addr = NULL)
+{
+	sockaddr_in addr;
+	SOCKET sock;
+	int retval;
+
+	sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (sock == INVALID_SOCKET) {
+		cout << "UDP: Failed to create socket: " << NetGetLastError() << "\n";
+		return INVALID_SOCKET;
+	}
+
+	addr.sin_family = AF_INET;
+//	addr.sin_addr.S_un.S_addr = INADDR_ANY; TODO FIX FOR LINUX
+	addr.sin_port = htons(bindport);
+
+	retval = bind(sock, (sockaddr*)&addr, sizeof(addr));
+	if (retval == SOCKET_ERROR) {
+		cout << "UDP: Bind to network failed:" << NetGetLastError() << "\n";
+		closesocket(sock);
+		return INVALID_SOCKET;
+	}
+
+	// now enable broadcasting
+	unsigned long bc = 1;
+	retval = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char*)&bc, sizeof(bc));
+	if (retval == SOCKET_ERROR) {
+		cout << "UDP: Unable to enable broadcasting:" << NetGetLastError() << "\n";
+		closesocket(sock);
+		return INVALID_SOCKET;
+	};
+	return sock;
+}
+
 string addr2str(sockaddr* addr)
 {
 	char buf[100];
@@ -111,14 +157,145 @@ string addr2str(sockaddr* addr)
 	}
 }
 
+void ListIPXInterfaces()
+{
+	IPXInterfaces.clear();
+#ifdef HAVE_WINSOCK
+// this method seems to be winsock-only
+	sockaddr_ipx ipx_sa;
+	IPX_ADDRESS_DATA ipx_data;
+	int retval, cb, nAdapters, i=0;
+	SOCKET tempsock = CreateIPXSocket(0);
+
+	cb = sizeof ( nAdapters );
+	retval = getsockopt ( tempsock,
+			 NSPROTO_IPX,
+			 IPX_MAX_ADAPTER_NUM,
+			 (CHAR *) &nAdapters,
+			 &cb
+			 );
+
+	if (retval == SOCKET_ERROR) {
+		cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
+		return;
+	}
+
+	fprintf ( stdout, "Total number of adapters -> %d\n", nAdapters );
+
+	while ( nAdapters > 0 )
+	{
+		memset ( &ipx_data, 0, sizeof ( ipx_data ) );
+		ipx_data.adapternum = (nAdapters -1);
+		cb = sizeof ( ipx_data );
+
+		retval = getsockopt ( tempsock,
+						 NSPROTO_IPX,
+						 IPX_ADDRESS,
+						 (CHAR *) &ipx_data,
+						 &cb
+						 );
+
+		if ( SOCKET_ERROR == retval )
+		{
+				cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
+		}
+
+	//
+	// Print each address
+	//
+		memcpy(&ipx_sa.sa_netnum, &ipx_data.netnum, 4);
+		memcpy(&ipx_sa.sa_nodenum, &ipx_data.nodenum, 6);
+		ipx_sa.sa_socket = 0;
+		ipx_sa.sa_family = AF_IPX;
+		cout << " : " << addr2str((sockaddr*)&ipx_sa) << " wan:" <<ipx_data.wan << " status:"<<ipx_data.status
+			<< " psize:"<<ipx_data.maxpkt<<" speed:"<<ipx_data.linkspeed<< "\n";
+		if (ipx_data.status) {
+			IPXInterfaces.push_back(ipx_sa);
+		}
+		nAdapters--;
+	}
+
+	return;
+#else
+// TODO: read /proc/net/ipx/interface and/or /proc/net/ipx_interface
+#endif
+}
+
+void ListUDPInterfaces()
+{
+	IPXInterfaces.clear();
+#ifdef HAVE_WINSOCK
+// this method seems to be winsock-only
+	sockaddr_ipx ipx_sa;
+	IPX_ADDRESS_DATA ipx_data;
+	int retval, cb, nAdapters, i=0;
+	SOCKET tempsock = CreateIPXSocket(0);
+
+	cb = sizeof ( nAdapters );
+	retval = getsockopt ( tempsock,
+			 NSPROTO_IPX,
+			 IPX_MAX_ADAPTER_NUM,
+			 (CHAR *) &nAdapters,
+			 &cb
+			 );
+
+	if (retval == SOCKET_ERROR) {
+		cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
+		return;
+	}
+
+	fprintf ( stdout, "Total number of adapters -> %d\n", nAdapters );
+
+	while ( nAdapters > 0 )
+	{
+		memset ( &ipx_data, 0, sizeof ( ipx_data ) );
+		ipx_data.adapternum = (nAdapters -1);
+		cb = sizeof ( ipx_data );
+
+		retval = getsockopt ( tempsock,
+						 NSPROTO_IPX,
+						 IPX_ADDRESS,
+						 (CHAR *) &ipx_data,
+						 &cb
+						 );
+
+		if ( SOCKET_ERROR == retval )
+		{
+				cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
+		}
+
+	//
+	// Print each address
+	//
+		memcpy(&ipx_sa.sa_netnum, &ipx_data.netnum, 4);
+		memcpy(&ipx_sa.sa_nodenum, &ipx_data.nodenum, 6);
+		ipx_sa.sa_socket = 0;
+		ipx_sa.sa_family = AF_IPX;
+		cout << " : " << addr2str((sockaddr*)&ipx_sa) << " wan:" <<ipx_data.wan << " status:"<<ipx_data.status
+			<< " psize:"<<ipx_data.maxpkt<<" speed:"<<ipx_data.linkspeed<< "\n";
+		if (ipx_data.status) {
+			IPXInterfaces.push_back(ipx_sa);
+		}
+		nAdapters--;
+	}
+
+	return;
+#else
+// TODO: read /proc/net/ipx/interface and/or /proc/net/ipx_interface
+#endif
+}
+
 void show_menu(int port) {
 	fprintf(stdout,"\
 	.--------------------------------.\n\
 	| 1) Send message                |\n\
 	| 2) Receive message             |\n\
 	| 3) Set port #  (Current=%05i) |\n\
+	| 4) Set ipx interface           |\n\
+	| 5) send Broadcast loop         |\n\
+	| 6) switch to UDP               |\n\
 	|                                |\n\
-	| 4) Exit                        |\n\
+	| 7) Exit                        |\n\
 	`--------------------------------'\n",port);
 }
 
@@ -137,13 +314,13 @@ bool init_stuff()
 }
 
 bool recv_msg(string &msg, int port) {
-	char buf[BUFLEN];
+	char buf[1500];
 	sockaddr source_addr;
 	SOCKADDR_IPX* source = (SOCKADDR_IPX*)&source_addr;
 
 	socklen_t len = sizeof(source_addr);
 	int retval;
-	retval = recvfrom(ipx_sock, buf, BUFLEN, 0, &source_addr, &len);
+	retval = recvfrom(ipx_sock, buf, 1400, 0, &source_addr, &len);
 	if (retval == SOCKET_ERROR) {
 		cout << "Failed! :" << NetGetLastError() << "\n";
 		return 1;
@@ -155,30 +332,39 @@ bool recv_msg(string &msg, int port) {
 	return true;
 }
 
-bool send_msg(const string &msg, int port) {
+int send_msg(const string &msg, int port) {
 	sockaddr target_addr;
 	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
+	sockaddr_in* t2 = (sockaddr_in*)&target_addr;
 
 	target->sipx_family = AF_IPX;
 	for (int i=0; i<4; ++i)
-		((char*)&target->sa_netnum)[i] = 0;
+		((uint8*)&target->sa_netnum)[i] = 0;
 	for (int i=0; i<6; ++i)
 		target->sa_nodenum[i] = 0xFF;
 
 	target->sa_socket = htons(port);
 
+	// UDP:
+//	t2->sin_family = AF_INET;
+//	t2->sin_addr.S_un.S_addr = INADDR_BROADCAST;
+//	t2->sin_port = htons(port);
+
 //	cout << "Got Address: " << addr2str(&target_addr) << "\n";
+	char mbuf[1500];
+
+	memcpy(mbuf, msg.c_str(), msg.size()+1);
 
 	int retval;
-	cout << "Broadcasting test Packet...";
-	retval = sendto(ipx_sock, msg.c_str(), msg.size()+1, 0, &target_addr, sizeof(target_addr));
+//	cout << "Broadcasting test Packet...";
+	retval = sendto(ipx_sock, mbuf, 1400, 0, &target_addr, sizeof(target_addr));
 
 	if (retval == SOCKET_ERROR) {
 		cout << "Failed! :" << NetGetLastError() << "\n";
-		return 1;
+		return -1;
 	};
-	cout << "Success! :" << retval << "\n";
-	return 0;
+//	cout << "Success! :" << retval << "\n";
+	return retval;
 }
 
 int main(int argc, char* argv[]) {
@@ -190,11 +376,14 @@ int main(int argc, char* argv[]) {
 	init_stuff();
 	ipx_sock = CreateIPXSocket(port);
 
+	ListIPXInterfaces();
+
 	while(!done) {
 		show_menu(port);
 		switch(fgetc(stdin)) {
 			case '1':
 				fgets(buf, 256, stdin);
+				cout << "sending broadcast" << "\n";
 				send_msg((string)buf,port);
 				break;
 			case '2':
@@ -209,6 +398,27 @@ int main(int argc, char* argv[]) {
 				ipx_sock = CreateIPXSocket(port);
 				break;
 			case '4':
+				fgets(buf, 256, stdin);
+				closesocket(ipx_sock);
+				ipx_sock = CreateIPXSocket(port, &IPXInterfaces[atoi(buf)]);
+				break;
+			case '5': {
+				cout << "sending broadcasts" << "\n";
+				int count = 0;
+				while(true) {
+					count += send_msg((string)"",port);
+					if (count > 1024*1024) {
+						count -= 1024*1024;
+						cout << ".";
+					}
+				}
+			}; break;
+			case '6':
+				closesocket(ipx_sock);
+				ipx_sock = CreateUDPSocket(port);
+				break;
+
+			case '7':
 				 done=true;
 				break;
 		}
