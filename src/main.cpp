@@ -183,7 +183,7 @@ bool send_msg(const string &msg, int port) {
 
 int main(int argc, char* argv[]) {
 	bool done=false;
-	int port = 12345;
+	int port = 54321; // increased cause ports <~15000 are reserved for root in linux
 	char *buf= new char[256];
 	string tmp;
 
