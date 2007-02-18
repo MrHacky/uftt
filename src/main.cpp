@@ -98,13 +98,13 @@ string addr2str(sockaddr* addr)
 		case AF_IPX: {
 			sockaddr_ipx* ipx_addr = (sockaddr_ipx*)addr;
 			snprintf(buf, 100, "%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i",
-				((unsigned char*)(&ipx_addr->sa_netnum))[0],
-				((unsigned char*)(&ipx_addr->sa_netnum))[1],
-				((unsigned char*)(&ipx_addr->sa_netnum))[2],
-				((unsigned char*)(&ipx_addr->sa_netnum))[3],
-				ipx_addr->sa_nodenum[0], ipx_addr->sa_nodenum[1],
-				ipx_addr->sa_nodenum[2], ipx_addr->sa_nodenum[3],
-				ipx_addr->sa_nodenum[4], ipx_addr->sa_nodenum[5],
+				((uint8*)(&ipx_addr->sa_netnum))[0],
+				((uint8*)(&ipx_addr->sa_netnum))[1],
+				((uint8*)(&ipx_addr->sa_netnum))[2],
+				((uint8*)(&ipx_addr->sa_netnum))[3],
+				(uint8)ipx_addr->sa_nodenum[0], (uint8)ipx_addr->sa_nodenum[1],
+				(uint8)ipx_addr->sa_nodenum[2], (uint8)ipx_addr->sa_nodenum[3],
+				(uint8)ipx_addr->sa_nodenum[4], (uint8)ipx_addr->sa_nodenum[5],
 				ntohs(ipx_addr->sa_socket));
 			return string(buf);
 		}; break;
