@@ -172,7 +172,7 @@ string addr2str(sockaddr* addr)
 void ListIPXInterfaces()
 {
 	IPXInterfaces.clear();
-#ifdef HAVE_WINSOCK
+#if defined(HAVE_WINSOCK) && defined(HAVE_WSNWLINK_H)
 // this method seems to be winsock-only
 	sockaddr_ipx ipx_sa;
 	IPX_ADDRESS_DATA ipx_data;
@@ -235,66 +235,7 @@ void ListIPXInterfaces()
 
 void ListUDPInterfaces()
 {
-	IPXInterfaces.clear();
-#ifdef HAVE_WINSOCK
-// this method seems to be winsock-only
-	sockaddr_ipx ipx_sa;
-	IPX_ADDRESS_DATA ipx_data;
-	int retval, cb, nAdapters, i=0;
-	SOCKET tempsock = CreateIPXSocket(0);
 
-	cb = sizeof ( nAdapters );
-	retval = getsockopt ( tempsock,
-			 NSPROTO_IPX,
-			 IPX_MAX_ADAPTER_NUM,
-			 (CHAR *) &nAdapters,
-			 &cb
-			 );
-
-	if (retval == SOCKET_ERROR) {
-		cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
-		return;
-	}
-
-	fprintf ( stdout, "Total number of adapters -> %d\n", nAdapters );
-
-	while ( nAdapters > 0 )
-	{
-		memset ( &ipx_data, 0, sizeof ( ipx_data ) );
-		ipx_data.adapternum = (nAdapters -1);
-		cb = sizeof ( ipx_data );
-
-		retval = getsockopt ( tempsock,
-						 NSPROTO_IPX,
-						 IPX_ADDRESS,
-						 (CHAR *) &ipx_data,
-						 &cb
-						 );
-
-		if ( SOCKET_ERROR == retval )
-		{
-				cout << "EnumerateAdapters " << "getsockopt " << NetGetLastError ( ) << "\n";
-		}
-
-	//
-	// Print each address
-	//
-		memcpy(&ipx_sa.sa_netnum, &ipx_data.netnum, 4);
-		memcpy(&ipx_sa.sa_nodenum, &ipx_data.nodenum, 6);
-		ipx_sa.sa_socket = 0;
-		ipx_sa.sa_family = AF_IPX;
-		cout << " : " << addr2str((sockaddr*)&ipx_sa) << " wan:" <<ipx_data.wan << " status:"<<ipx_data.status
-			<< " psize:"<<ipx_data.maxpkt<<" speed:"<<ipx_data.linkspeed<< "\n";
-		if (ipx_data.status) {
-			IPXInterfaces.push_back(ipx_sa);
-		}
-		nAdapters--;
-	}
-
-	return;
-#else
-// TODO: read /proc/net/ipx/interface and/or /proc/net/ipx_interface
-#endif
 }
 
 void show_menu(int port) {

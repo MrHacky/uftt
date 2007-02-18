@@ -6,6 +6,7 @@
 #elif defined(__WIN32__)
 // borland win32 specifics..
 #define HAVE_WINSOCK
+#define HAVE_WSNWLINK_H
 #endif
 
 #if defined(HAVE_UNISTD_H)
@@ -19,7 +20,10 @@
 #include <winsock2.h>
 #include <Wsipx.h>
 #include <ws2tcpip.h>
-#include <wsnwlink.h>
+
+#ifdef HAVE_WSNWLINK_H
+# include <wsnwlink.h>
+#endif
 
 #define NetGetLastError() WSAGetLastError()
 
