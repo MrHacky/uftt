@@ -6,6 +6,11 @@ AM_INIT_AUTOMAKE
 
 AC_PROG_CXX
 AC_PROG_INSTALL
+AC_STDC_HEADERS
+
+PKG_CHECK_MODULES(DEPS, gtk+-2.0 >= 2.2 glib-2.0 >= 2.2 libglade-2.0 >= 2.6)
+AC_SUBST(DEPS_CFLAGS)
+AC_SUBST(DEPS_LIBS)
 
 AC_CHECK_HEADERS([netinet/in.h])
 AC_CHECK_HEADERS([arpa/inet.h])
@@ -13,8 +18,9 @@ AC_CHECK_HEADERS([errno.h])
 AC_CHECK_HEADERS([netipx/ipx.h])
 AC_CHECK_HEADERS([wsnlink.h])
 
+
 dnl Check for ipx availibility in BDS sockets
-AC_CHECK_DECL(AF_IPX, [bsdsockipx=yes], [bsdsockipx=no], 
+AC_CHECK_DECL(AF_IPX, [bsdsockipx=yes], [bsdsockipx=no],
 [#if HAVE_NETINET_IN_H
 # include <netinet/in.h>
 # endif
@@ -36,4 +42,3 @@ fi
 
 
 AC_OUTPUT(Makefile src/Makefile)
-

@@ -1,7 +1,7 @@
 //---------------------------------------------------------------------------//
 #include "stdhdr.h"
-
 #include "types.h"
+#include "gooey.h"
 
 #include <string>
 #include <iostream>
@@ -326,6 +326,8 @@ int send_msg(const string &msg, int port) {
 }
 
 int main(int argc, char* argv[]) {
+  gtk_init (&argc, &argv);
+  return show_gooey();
 	bool done=false;
 	int port = 54321; // increased cause ports <~15000 are reserved for root in linux
 	char *buf= new char[256];
