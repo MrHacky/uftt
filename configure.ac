@@ -8,7 +8,7 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_STDC_HEADERS
 
-PKG_CHECK_MODULES(DEPS, gtk+-2.0 >= 2.2 glib-2.0 >= 2.2 libglade-2.0 >= 2.6)
+PKG_CHECK_MODULES(DEPS, gtk+-2.0 >= 2.2 glib-2.0 >= 2.2 libglade-2.0 >= 2.5)
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
 
