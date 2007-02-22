@@ -38,16 +38,18 @@ void btnSetInterface_clicked(GtkWidget *widget, gpointer user_data) {
   }
 
 void radioProtocol_clicked(GtkWidget *widget, gpointer user_data) {
-  //WARNING: THIS TOGGLES EVEN WHEN CLICKING THE SAME CONTROL TWICE!
-  UseUDP(!udp_hax);
-  fprintf(stderr, "SWITCH: udp_hax=%s\n",udp_hax?"true":"false");
+  //NOTE: 3vil hax and only verks with 2 toggles :)
+  if(!gtk_toggle_button_get_active ((GtkToggleButton*)widget)) {
+    UseUDP(!udp_hax);
+    fprintf(stderr, "SWITCH: udp_hax=%s\n",udp_hax?"true":"false");
+    }
   }
 
 uint32 show_gooey() {
   GtkWidget *widget;
 
   //FIXME: Find a better way to store the .glade file
-  main_window = glade_xml_new ("src/uftt.glade", NULL, NULL); /* load the interface * /
+  main_window = glade_xml_new ("src/uftt.glade", NULL, NULL); /* load the interface */
 
   /* connect the signals in the interface */
   /* Have the ok button call the ok_button_clicked callback */
@@ -66,9 +68,8 @@ uint32 show_gooey() {
   widget = glade_xml_get_widget (main_window, "radioProtocolIPX");
   g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
 
-// Radio buttons are linked???
-//  widget = glade_xml_get_widget (main_window, "radioProtocolUDP");
-//  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
+  widget = glade_xml_get_widget (main_window, "radioProtocolUDP");
+  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
 
   /* Have the delete event (window close) end the program */
   widget = glade_xml_get_widget (main_window, "frmMain");
