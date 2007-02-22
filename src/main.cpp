@@ -325,16 +325,21 @@ int send_msg(const string &msg, int port) {
 	return retval;
 }
 
+int port = 54321; // increased cause ports <~15000 are reserved for root in linux
 int main(int argc, char* argv[]) {
-  gtk_init (&argc, &argv);
-  return show_gooey();
+  init_stuff();
+  ipx_sock = CreateIPXSocket(port);
+
+  if( true /*USE_GUI*/) {
+    gtk_init (&argc, &argv);
+    return show_gooey();
+    }
+
+
+  /**OLD STUFF**/
 	bool done=false;
-	int port = 54321; // increased cause ports <~15000 are reserved for root in linux
 	char *buf= new char[256];
 	string tmp,tfrom;
-
-	init_stuff();
-	ipx_sock = CreateIPXSocket(port);
 
 	ListIPXInterfaces();
 
