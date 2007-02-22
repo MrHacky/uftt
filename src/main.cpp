@@ -326,6 +326,27 @@ int send_msg(const string &msg, int port) {
 }
 
 int port = 54321; // increased cause ports <~15000 are reserved for root in linux
+int UsePort(int p) {
+  closesocket(ipx_sock);
+  ipx_sock = CreateIPXSocket(p);
+  port = p;
+  return ipx_sock;
+  }
+
+int UseInterface(int i) {
+  closesocket(ipx_sock);
+  ipx_sock = CreateIPXSocket(port, &IPXInterfaces[i]);
+  return ipx_sock;
+  }
+
+int UseUDP(bool b) {
+  closesocket(ipx_sock);
+  if(b) ipx_sock = CreateUDPSocket(port);
+  else  ipx_sock = CreateIPXSocket(port);
+  udp_hax = b;
+  return ipx_sock;
+  }
+
 int main(int argc, char* argv[]) {
   init_stuff();
   ipx_sock = CreateIPXSocket(port);
@@ -359,14 +380,11 @@ int main(int argc, char* argv[]) {
 				break;
 			case '3':
 				fgets(buf, 256, stdin);
-				port = atoi(buf);
-				closesocket(ipx_sock);
-				ipx_sock = CreateIPXSocket(port);
+				UsePort(atoi(buf));
 				break;
 			case '4':
 				fgets(buf, 256, stdin);
-				closesocket(ipx_sock);
-				ipx_sock = CreateIPXSocket(port, &IPXInterfaces[atoi(buf)]);
+        UseInterface(atoi(buf));
 				break;
 			case '5': {
 				cout << "sending broadcasts" << "\n";
@@ -380,9 +398,7 @@ int main(int argc, char* argv[]) {
 				}
 			}; break;
 			case '6':
-				closesocket(ipx_sock);
-				ipx_sock = CreateUDPSocket(port);
-				udp_hax = true;
+        UseUDP(!udp_hax);
 				break;
 			case '7': {
 				cout << "receiving stuff" << "\n";

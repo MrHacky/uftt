@@ -8,4 +8,7 @@
 
   int send_msg(const string& msg, int port);
   int recv_msg(string &msg, int port, string* from);
+  int UsePort(int p);
+  int UseInterface(int i);
+  int UseUDP(bool b);
 #endif
