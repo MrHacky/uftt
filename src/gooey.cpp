@@ -14,10 +14,20 @@ using namespace std;
 
 GladeXML  *main_window;
 extern int port;
-extern bool udp_hax;
+extern int udp_hax;
 
-void btnSendMessage_clicked(GtkWidget *widget, gpointer user_data)
-{
+void tvMySharestarget_drag_data_received(GtkWidget          *widget,
+                                        GdkDragContext     *context,
+                                        gint                x,
+                                        gint                y,
+                                        GtkSelectionData   *data,
+                                        guint               info,
+                                        guint               time){
+  fprintf(stdout,"tvMySharestarget_drag_data_received:\nDATA=%s\n",data->data);
+  g_signal_stop_emission_by_name(widget,"drag_data_received");
+  }
+
+void btnSendMessage_clicked(GtkWidget *widget, gpointer user_data) {
   string s=gtk_entry_get_text((GtkEntry*) glade_xml_get_widget (main_window, "txtSendMessage"));
   send_msg( s, port );
 }
@@ -63,24 +73,74 @@ uint32 show_gooey()
   main_window = glade_xml_new_from_buffer(gladebuf, gladebufsize, NULL, NULL);
 
   /* connect the signals in the interface */
-  /* Have the ok button call the ok_button_clicked callback */
   widget = glade_xml_get_widget (main_window, "btnSendMessage");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSendMessage_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `btnSendMessage'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSendMessage_clicked), NULL);
+    }
 
   widget = glade_xml_get_widget (main_window, "btnReceive");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnReceive_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `btnReceive'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnReceive_clicked), NULL);
+    }
 
   widget = glade_xml_get_widget (main_window, "btnSetPort");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSetPort_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `btnSetPort'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSetPort_clicked), NULL);
+    }
 
   widget = glade_xml_get_widget (main_window, "btnSetInterface");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSetInterface_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `btnSetInterface'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSetInterface_clicked), NULL);
+    }
 
   widget = glade_xml_get_widget (main_window, "radioProtocolIPX");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `radioProtocolIPX'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
+    }
 
   widget = glade_xml_get_widget (main_window, "radioProtocolUDP");
-  g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `radioProtocolUDP'!\n");
+    return -1;
+    }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
+    }
+  //Set DnD targets
+  widget = glade_xml_get_widget (main_window, "tvMyShares");
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget `tvMyShares'!\n");
+    return -1;
+    }
+  else {
+    static GtkTargetEntry target_table[] = {{ }};
+    gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL,
+                      target_table, 0, GDK_ACTION_COPY);
+    gtk_drag_dest_add_uri_targets(widget);
+    gtk_signal_connect (GTK_OBJECT (widget), "drag_data_received",
+                        GTK_SIGNAL_FUNC (tvMySharestarget_drag_data_received),
+                        NULL);
+    }
 
   /* Have the delete event (window close) end the program */
   widget = glade_xml_get_widget (main_window, "frmMain");
@@ -88,5 +148,5 @@ uint32 show_gooey()
 
   /* start the event loop */
   gtk_main ();
-  return 0;
+  return true;
 }
