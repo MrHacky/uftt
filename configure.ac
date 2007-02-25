@@ -8,6 +8,8 @@ AC_PROG_CXX
 AC_PROG_INSTALL
 AC_STDC_HEADERS
 
+
+
 PKG_CHECK_MODULES(DEPS, gtk+-2.0 >= 2.2 glib-2.0 >= 2.2 libglade-2.0 >= 2.5)
 AC_SUBST(DEPS_CFLAGS)
 AC_SUBST(DEPS_LIBS)
@@ -16,7 +18,7 @@ AC_CHECK_HEADERS([netinet/in.h])
 AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([errno.h])
 AC_CHECK_HEADERS([netipx/ipx.h])
-AC_CHECK_HEADERS([wsnlink.h])
+AC_CHECK_HEADERS([wsnwlink.h])
 
 
 dnl Check for ipx availibility in BDS sockets

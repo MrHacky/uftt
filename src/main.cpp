@@ -1,13 +1,8 @@
 //---------------------------------------------------------------------------//
-#include "stdhdr.h"
-#include "types.h"
-#include "gooey.h"
+#include "stdafx.h"
 
-#include <string>
-#include <iostream>
-#include <stdio.h>
-#include <assert.h>
-#include <vector>
+#include "main.h"
+#include "gooey.h"
 
 using namespace std;
 
@@ -152,7 +147,6 @@ string addr2str(sockaddr* addr)
 				(uint8)ipx_addr->sa_nodenum[2], (uint8)ipx_addr->sa_nodenum[3],
 				(uint8)ipx_addr->sa_nodenum[4], (uint8)ipx_addr->sa_nodenum[5],
 				ntohs(ipx_addr->sa_socket));
-			return string(buf);
 		}; break;
 		case AF_INET: {
 			sockaddr_in* ip_addr = (sockaddr_in*)addr;
@@ -162,11 +156,11 @@ string addr2str(sockaddr* addr)
 				((uint8*)(&ip_addr->sin_addr.s_addr))[2],
 				((uint8*)(&ip_addr->sin_addr.s_addr))[3],
 				ntohs(ip_addr->sin_port));
-			return string(buf);
 		}; break;
 		default:
 			return string("Unknown address family");
 	}
+  return string(buf);
 }
 
 void ListIPXInterfaces()
@@ -238,7 +232,8 @@ void ListUDPInterfaces()
 
 }
 
-void show_menu(int port) {
+void show_menu(int port)
+{
 	fprintf(stdout,"\
 	.--------------------------------.\n\
 	| 1) Send message                |\n\
@@ -264,10 +259,11 @@ bool init_stuff()
 			return 1;
 	}
 #endif
-
+  return 0;
 }
 
-int recv_msg(string &msg, int port, string* from = NULL) {
+int recv_msg(string &msg, int port, string* from = NULL)
+{
 	char buf[1500];
 	sockaddr source_addr;
 	SOCKADDR_IPX* source = (SOCKADDR_IPX*)&source_addr;
@@ -288,7 +284,8 @@ int recv_msg(string &msg, int port, string* from = NULL) {
 
 bool udp_hax = false;
 
-int send_msg(const string &msg, int port) {
+int send_msg(const string &msg, int port)
+{
 	sockaddr target_addr;
 	SOCKADDR_IPX* target = (SOCKADDR_IPX*)&target_addr;
 	sockaddr_in* t2 = (sockaddr_in*)&target_addr;
@@ -326,36 +323,39 @@ int send_msg(const string &msg, int port) {
 }
 
 int port = 54321; // increased cause ports <~15000 are reserved for root in linux
-int UsePort(int p) {
+SOCKET UsePort(int p)
+{
   closesocket(ipx_sock);
   ipx_sock = CreateIPXSocket(p);
   port = p;
   return ipx_sock;
-  }
+}
 
-int UseInterface(int i) {
+SOCKET UseInterface(int i)
+{
   closesocket(ipx_sock);
   ipx_sock = CreateIPXSocket(port, &IPXInterfaces[i]);
   return ipx_sock;
-  }
+}
 
-int UseUDP(bool b) {
+SOCKET UseUDP(bool b)
+{
   closesocket(ipx_sock);
   if(b) ipx_sock = CreateUDPSocket(port);
   else  ipx_sock = CreateIPXSocket(port);
   udp_hax = b;
   return ipx_sock;
-  }
+}
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
   init_stuff();
   ipx_sock = CreateIPXSocket(port);
 
   if( true /*USE_GUI*/) {
     gtk_init (&argc, &argv);
     return show_gooey();
-    }
-
+  }
 
   /**OLD STUFF**/
 	bool done=false;
@@ -413,11 +413,17 @@ int main(int argc, char* argv[]) {
 			}; break;
 
 			case 'q':
-				 done=true;
+				done=true;
 				break;
 		}
 	}
 	return EXIT_SUCCESS;
 }
 
+#ifdef WIN32
+int __stdcall  WinMain(HINSTANCE hinstance, HINSTANCE previnstanc, LPSTR showcommand, int nshow)
+{
+	main(0, NULL);
+}
+#endif
 

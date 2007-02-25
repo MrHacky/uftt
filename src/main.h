@@ -1,14 +1,11 @@
 #ifndef MAIN_H
   #define MAIN_H
 
-  #include "stdhdr.h"
-  #include "types.h"
-  #include <string>
-  using namespace std;
+  #include "stdafx.h"
 
-  int send_msg(const string& msg, int port);
-  int recv_msg(string &msg, int port, string* from);
-  int UsePort(int p);
-  int UseInterface(int i);
-  int UseUDP(bool b);
+  int send_msg(const std::string& msg, int port);
+  int recv_msg(std::string &msg, int port, std::string* from);
+  SOCKET UsePort(int p);
+  SOCKET UseInterface(int i);
+  SOCKET UseUDP(bool b);
 #endif

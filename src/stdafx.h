@@ -1,10 +1,12 @@
-#ifndef STDHDR_H
-  #define STDHDR_H
+#pragma once
+
+#ifndef STDAFX_H
+  #define STDAFX_H
 
   #ifdef HAVE_CONFIG_H
     #include <config.h>
-  #elif defined(__WIN32__)
-    // borland win32 specifics..
+  #elif defined(__WIN32__) || defined(WIN32)
+    // borland/msvs win32 specifics..
     #define HAVE_WINSOCK
     #define HAVE_WSNWLINK_H
   #endif
@@ -15,7 +17,7 @@
 
   #if defined(HAVE_WINSOCK)
     #define WIN32_LEAN_AND_MEAN
-    #include <winsock2.h>
+    #include <Winsock2.h>
     #include <Wsipx.h>
     #include <ws2tcpip.h>
 
@@ -65,4 +67,18 @@
   /** Gooey crap **/
   #include <gtk/gtk.h>
   #include <glade/glade.h>
-#endif //STDHDR_H
+
+  /* general headers */
+  #include "types.h"
+  #include <string>
+  #include <iostream>
+  #include <stdio.h>
+  #include <assert.h>
+  #include <vector>
+
+  /* fix for MSVS (C++ 2005 express edition) */
+  #if defined(_MSC_VER)
+    #define snprintf _snprintf
+  #endif
+
+#endif //STDAFX_H
