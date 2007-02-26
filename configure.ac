@@ -19,7 +19,7 @@ AC_CHECK_HEADERS([arpa/inet.h])
 AC_CHECK_HEADERS([errno.h])
 AC_CHECK_HEADERS([netipx/ipx.h])
 AC_CHECK_HEADERS([wsnwlink.h])
-
+AC_CHECK_HEADERS([pthread.h])
 
 dnl Check for ipx availibility in BDS sockets
 AC_CHECK_DECL(AF_IPX, [bsdsockipx=yes], [bsdsockipx=no],

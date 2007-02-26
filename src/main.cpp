@@ -347,10 +347,60 @@ SOCKET UseUDP(bool b)
   return ipx_sock;
 }
 
+bool SpamMoreSpam=false;
+void SpamSpam(SpamSpamArgs *Args) {
+  if(!SpamMoreSpam) {
+    SpamMoreSpam=true;
+    uint32 c1=0, c2 = 0;
+    while(SpamMoreSpam) {
+      c1 += send_msg(Args->s,port);
+      if (c1 > 1024*1024) {
+        c2 += c1;
+        c1 -= 1024*1024;
+        (Args->p)(c2);
+      }
+    }
+    delete Args;
+  }
+  else {
+  cout << "\nWarning: already spamming Spam!\n";
+  }
+  pthread_exit(NULL); //does not return
+}
+
+bool ReceiveMoreSpam=false;
+void ReceiveSpam(SpamSpamArgs *Args) {
+  if(!ReceiveMoreSpam) {
+    ReceiveMoreSpam=true;
+    uint32 c1=0, c2 = 0;
+    string tmp="";
+    while(ReceiveMoreSpam) {
+      c1 += recv_msg(tmp, port);
+      if (c1 > 1024*1024) {
+        c2 += c1;
+        c1 -= 1024*1024;
+        (Args->p)(c2);
+      }
+    }
+    delete Args;
+    }
+  else {
+    cout << "\nWarning: already receiving Spam!\n";
+  }
+  pthread_exit(NULL); //does not return
+}
+
 int main(int argc, char* argv[])
 {
   init_stuff();
-  ipx_sock = CreateIPXSocket(port);
+  if((ipx_sock = CreateIPXSocket(port))==INVALID_SOCKET) {
+    fprintf(stderr,"\
+Make sure that you have an IPX interface set up.\n\
+To set up IPX try running something like:\n\
+ipx_interface add -p eth0 802.2 && ipx_configure --auto_primary=on --auto_interface=on\n\
+");
+  return EXIT_FAILURE;
+  }
 
   if( true /*USE_GUI*/) {
     gtk_init (&argc, &argv);

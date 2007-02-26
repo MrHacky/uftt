@@ -64,7 +64,7 @@
     #define sa_netnum sipx_network
   #endif
 
-  /** Gooey crap **/
+  /* Gooey crap */
   #include <gtk/gtk.h>
   #include <glade/glade.h>
 
@@ -81,4 +81,12 @@
     #define snprintf _snprintf
   #endif
 
+  /* Crossplatform Thread handling */
+  #if defined(__WIN32__) || defined(WIN32)
+    #error FIXME: Win32 Thread handling
+  #else
+    #include <pthread.h>
+    #define THREAD pthread_t
+    #define THREAD_CREATE_OK 0
+  #endif
 #endif //STDAFX_H

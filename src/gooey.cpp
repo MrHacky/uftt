@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "gooey.h"
+#include "yarn.h"
 #include "main.h"
 #include "gladebuf.h"
 
@@ -16,14 +17,14 @@ GladeXML  *main_window;
 extern int port;
 extern int udp_hax;
 
-void tvMySharestarget_drag_data_received(GtkWidget          *widget,
+void tvMyShares_target_drag_data_received(GtkWidget          *widget,
                                         GdkDragContext     *context,
                                         gint                x,
                                         gint                y,
                                         GtkSelectionData   *data,
                                         guint               info,
                                         guint               time){
-  fprintf(stdout,"tvMySharestarget_drag_data_received:\nDATA=%s\n",data->data);
+  fprintf(stdout,"tvMyShares_target_drag_data_received:\nDATA=%s\n",data->data);
   /* TODO: 'Add URI to sharelist TreeView' (prob. requires making a ModelView for the TreeView)*/
   g_signal_stop_emission_by_name(widget,"drag_data_received"); // Don't know if this is correct, but it makes GTK STFU
 }
@@ -59,6 +60,66 @@ void radioProtocol_clicked(GtkWidget *widget, gpointer user_data) {
   if(!gtk_toggle_button_get_active ((GtkToggleButton*)widget)) {
     UseUDP(!udp_hax);
     fprintf(stderr, "SWITCH: udp_hax=%s\n",udp_hax?"true":"false");
+  }
+}
+
+void SpamSpamCallback(uint32 count) {
+  static GtkWidget *widget = NULL;
+  if(widget==NULL) {
+    widget = glade_xml_get_widget (main_window, "txtSpamSpammed");
+  }
+  if(widget!=NULL) {
+    char str[128];
+    snprintf(str, 127, "%lu",count);
+    gtk_entry_set_text((GtkEntry*)widget, str);
+    gtk_widget_queue_draw(widget);  // force a redraw of the widget
+  }
+}
+
+THREAD SpamSpamThread;
+void btnSpamSpam_clicked(GtkWidget *widget, gpointer user_data) {
+  extern bool SpamMoreSpam;
+  if(!SpamMoreSpam) {
+    SpamSpamArgs *Args = new SpamSpamArgs;
+    Args->s = "SpamSpam";
+    Args->p = SpamSpamCallback;
+    SpamSpamThread = spawnThread((void* (*)(void*))SpamSpam, Args);
+    gtk_button_set_label((GtkButton*)widget, "Stop Spammming!");
+  }
+  else {
+    //Stop Spamming
+    SpamMoreSpam=false;
+    gtk_button_set_label((GtkButton*)widget, "Spam Spam!");
+  }
+}
+
+void ReceiveSpamCallback(uint32 count) {
+  static GtkWidget *widget = NULL;
+  if(widget==NULL) {
+    widget = glade_xml_get_widget (main_window, "txtSpamReceived");
+  }
+  if(widget!=NULL) {
+    char str[128];
+    snprintf(str, 127, "%lu",count);
+    gtk_entry_set_text((GtkEntry*)widget, str);
+    gtk_widget_queue_draw(widget);  // force a redraw of the widget
+  }
+}
+
+THREAD ReceiveSpamThread;
+void btnReceiveSpam_clicked(GtkWidget *widget, gpointer user_data) {
+  extern bool ReceiveMoreSpam;
+  if(!ReceiveMoreSpam) {
+    SpamSpamArgs *Args = new SpamSpamArgs;
+    Args->s = ""; //not used
+    Args->p = ReceiveSpamCallback;
+    ReceiveSpamThread = spawnThread((void* (*)(void*))ReceiveSpam, Args);
+    gtk_button_set_label((GtkButton*)widget, "Stop Receiving!");
+  }
+  else {
+    //Stop Spamming
+    ReceiveMoreSpam=false;
+    gtk_button_set_label((GtkButton*)widget, "Receive Spam!");
   }
 }
 
@@ -123,6 +184,25 @@ uint32 show_gooey() {
     g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (radioProtocol_clicked), NULL);
   }
 
+  widget = glade_xml_get_widget (main_window, "btnSpamSpam");
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget btnSpamSpam'!\n");
+    return -1;
+  }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSpamSpam_clicked), NULL);
+  }
+  widget = glade_xml_get_widget (main_window, "btnSpamSpam");
+
+  widget = glade_xml_get_widget (main_window, "btnReceiveSpam");
+  if(widget==NULL) {
+    fprintf(stderr,"Error: can not find widget btnSpamSpam'!\n");
+    return -1;
+  }
+  else {
+    g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnReceiveSpam_clicked), NULL);
+  }
+
   //Set DnD targets
   widget = glade_xml_get_widget (main_window, "tvMyShares");
   if(widget==NULL) {
@@ -135,7 +215,7 @@ uint32 show_gooey() {
                       target_table, 0, GDK_ACTION_COPY);
     gtk_drag_dest_add_uri_targets(widget);        //luckily GTK provides this handy function :)
     gtk_signal_connect (GTK_OBJECT (widget), "drag_data_received",
-                        GTK_SIGNAL_FUNC (tvMySharestarget_drag_data_received),
+                        GTK_SIGNAL_FUNC (tvMyShares_target_drag_data_received),
                         NULL);
   }
 

@@ -8,4 +8,10 @@
   SOCKET UsePort(int p);
   SOCKET UseInterface(int i);
   SOCKET UseUDP(bool b);
+  struct SpamSpamArgs {
+    std::string s;
+    void (*p)(uint32);
+  };
+  void SpamSpam(SpamSpamArgs *Args);
+  void ReceiveSpam(SpamSpamArgs *Args);
 #endif
