@@ -12,7 +12,8 @@ THREAD tSpamSpam;
 THREAD tReceiveSpam;
 
 //Using void* is ok, since the actual call to pthread_create uses it
-THREAD spawnThread(void *(WINAPI *start_routine)(void*), void *args) {
+template < class T >
+THREAD spawnThread(int *(WINAPI *start_routine)(T*), T *args) {
 //THREAD spawnThread(unsigned long*  ( WINAPI *start_routine)(void* ), void *args) {
 #ifdef HAVE_PTHREAD_H
   static pthread_attr_t attr; // Shared attributes for all threads (may be modified on a per-thread basis)
