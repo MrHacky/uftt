@@ -27,18 +27,15 @@ THREAD spawnThread(void *(WINAPI *start_routine)(void*), void *args) {
   }
   return t;
 #else
-  THREAD t;
-  LPDWORD tmp;
-  t = CreateThread(
-    0,
-    0,
-	(LPTHREAD_START_ROUTINE)
-    start_routine,
-    args,
-    0,
-    tmp
-  );
-  return t;
+  THREAD thread_id;
+  HANDLE thread_handle;
+  thread_handle = CreateThread (NULL,
+								0,
+								(LPTHREAD_START_ROUTINE) start_routine,
+								args,
+								0,
+								&thread_id
+								);
+  return thread_id;
 #endif
-
 }

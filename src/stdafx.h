@@ -87,10 +87,12 @@
     #define THREAD pthread_t
     #define THREAD_CREATE_OK 0
 	#define ThreadExit pthread_exit
+
+	//FIXME: Is there a better way to do this? 'it verks for me :)'
 	#define WINAPI
   #else
 	#include <windows.h>
-	#define THREAD HANDLE
+	#define THREAD DWORD
 	#define ThreadExit ExitThread
   #endif
 #endif //STDAFX_H
