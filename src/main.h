@@ -12,6 +12,6 @@
     std::string s;
     void (*p)(uint32);
   };
-  void SpamSpam(SpamSpamArgs *Args);
-  void ReceiveSpam(SpamSpamArgs *Args);
+  void WINAPI SpamSpam(SpamSpamArgs *Args);
+  void WINAPI ReceiveSpam(SpamSpamArgs *Args);
 #endif

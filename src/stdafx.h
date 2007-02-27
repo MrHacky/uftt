@@ -82,11 +82,15 @@
   #endif
 
   /* Crossplatform Thread handling */
-  #if defined(__WIN32__) || defined(WIN32)
-    #error FIXME: Win32 Thread handling
-  #else
+  #ifdef HAVE_PTHREAD_H
     #include <pthread.h>
     #define THREAD pthread_t
     #define THREAD_CREATE_OK 0
+	#define ThreadExit pthread_exit
+	#define WINAPI
+  #else
+	#include <windows.h>
+	#define THREAD HANDLE
+	#define ThreadExit ExitThread
   #endif
 #endif //STDAFX_H

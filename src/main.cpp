@@ -348,7 +348,7 @@ SOCKET UseUDP(bool b)
 }
 
 bool SpamMoreSpam=false;
-void SpamSpam(SpamSpamArgs *Args) {
+void WINAPI SpamSpam(SpamSpamArgs *Args) {
   if(!SpamMoreSpam) {
     SpamMoreSpam=true;
     uint32 c1=0, c2 = 0;
@@ -365,11 +365,11 @@ void SpamSpam(SpamSpamArgs *Args) {
   else {
   cout << "\nWarning: already spamming Spam!\n";
   }
-  pthread_exit(NULL); //does not return
+  ThreadExit(NULL); //does not return
 }
 
 bool ReceiveMoreSpam=false;
-void ReceiveSpam(SpamSpamArgs *Args) {
+void WINAPI ReceiveSpam(SpamSpamArgs *Args) {
   if(!ReceiveMoreSpam) {
     ReceiveMoreSpam=true;
     uint32 c1=0, c2 = 0;
@@ -387,7 +387,7 @@ void ReceiveSpam(SpamSpamArgs *Args) {
   else {
     cout << "\nWarning: already receiving Spam!\n";
   }
-  pthread_exit(NULL); //does not return
+  ThreadExit(NULL); //does not return
 }
 
 int main(int argc, char* argv[])

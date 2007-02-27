@@ -15,7 +15,7 @@ using namespace std;
 
 GladeXML  *main_window;
 extern int port;
-extern int udp_hax;
+extern bool udp_hax;
 
 void tvMyShares_target_drag_data_received(GtkWidget          *widget,
                                         GdkDragContext     *context,
@@ -83,7 +83,7 @@ void btnSpamSpam_clicked(GtkWidget *widget, gpointer user_data) {
     SpamSpamArgs *Args = new SpamSpamArgs;
     Args->s = "SpamSpam";
     Args->p = SpamSpamCallback;
-    SpamSpamThread = spawnThread((void* (*)(void*))SpamSpam, Args);
+    SpamSpamThread = spawnThread((void* (WINAPI*)(void*))SpamSpam, Args);
     gtk_button_set_label((GtkButton*)widget, "Stop Spammming!");
   }
   else {
@@ -113,7 +113,7 @@ void btnReceiveSpam_clicked(GtkWidget *widget, gpointer user_data) {
     SpamSpamArgs *Args = new SpamSpamArgs;
     Args->s = ""; //not used
     Args->p = ReceiveSpamCallback;
-    ReceiveSpamThread = spawnThread((void* (*)(void*))ReceiveSpam, Args);
+    ReceiveSpamThread = spawnThread((void* (WINAPI*)(void*))ReceiveSpam, Args);
     gtk_button_set_label((GtkButton*)widget, "Stop Receiving!");
   }
   else {
