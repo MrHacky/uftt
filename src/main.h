@@ -14,4 +14,5 @@
   };
   int WINAPI SpamSpam(SpamSpamArgs *Args);
   int WINAPI ReceiveSpam(SpamSpamArgs *Args);
+  void bla();
 #endif

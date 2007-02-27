@@ -106,8 +106,6 @@ void ReceiveSpamCallback(uint32 count) {
   }
 }
 
-class x;
-
 THREAD ReceiveSpamThread;
 void btnReceiveSpam_clicked(GtkWidget *widget, gpointer user_data) {
   extern bool ReceiveMoreSpam;
@@ -115,7 +113,7 @@ void btnReceiveSpam_clicked(GtkWidget *widget, gpointer user_data) {
     SpamSpamArgs *Args = new SpamSpamArgs;
     Args->s = ""; //not used
     Args->p = ReceiveSpamCallback;
-    ReceiveSpamThread = spawnThread((int* (WINAPI*)(x*))ReceiveSpam, (x*)Args);
+    //ReceiveSpamThread = spawnThread((int* (WINAPI*)(x*))ReceiveSpam, (x*)Args);
     gtk_button_set_label((GtkButton*)widget, "Stop Receiving!");
   }
   else {

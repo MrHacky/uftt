@@ -2,6 +2,11 @@
 
 #ifndef STDAFX_H
   #define STDAFX_H
+  /* fix for MSVS (C++ 2005 express edition) */
+  #if defined(_MSC_VER)
+    #define _CRT_SECURE_NO_DEPRECATE
+    #define snprintf _snprintf
+  #endif
 
   #ifdef HAVE_CONFIG_H
     #include <config.h>
@@ -76,11 +81,6 @@
   #include <assert.h>
   #include <vector>
 
-  /* fix for MSVS (C++ 2005 express edition) */
-  #if defined(_MSC_VER)
-    #define snprintf _snprintf
-  #endif
-
   /* Crossplatform Thread handling */
   #ifdef HAVE_PTHREAD_H
     #include <pthread.h>
@@ -89,6 +89,7 @@
 	#define ThreadExit pthread_exit
 
 	//FIXME: Is there a better way to do this? 'it verks for me :)'
+	#undef WINAPI
 	#define WINAPI
   #else
 	#include <windows.h>
