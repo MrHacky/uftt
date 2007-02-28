@@ -82,18 +82,19 @@
   #include <vector>
 
   /* Crossplatform Thread handling */
-  #ifdef HAVE_PTHREAD_H
+	#ifdef HAVE_PTHREAD_H
     #include <pthread.h>
     #define THREAD pthread_t
     #define THREAD_CREATE_OK 0
-	#define ThreadExit pthread_exit
+		//pthread_exit() takes a void* argument
+		#define ThreadExit(x) pthread_exit((void*)(x))
 
-	//FIXME: Is there a better way to do this? 'it verks for me :)'
-	#undef WINAPI
-	#define WINAPI
-  #else
-	#include <windows.h>
-	#define THREAD DWORD
-	#define ThreadExit ExitThread
-  #endif
+		//FIXME: Is there a better way to do this? 'it verks for me :)'
+		#undef WINAPI
+		#define WINAPI
+	#else
+		#include <windows.h>
+		#define THREAD DWORD
+		#define ThreadExit ExitThread
+	#endif
 #endif //STDAFX_H

@@ -14,5 +14,5 @@
   };
   int WINAPI SpamSpam(SpamSpamArgs *Args);
   int WINAPI ReceiveSpam(SpamSpamArgs *Args);
-  void bla();
+  int WINAPI ServerThread(bool * Restart);
 #endif

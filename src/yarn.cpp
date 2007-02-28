@@ -6,8 +6,6 @@
 	#include "stdafx.h"
 	#include "yarn.h"
 
-	//template < typename T >
-	//THREAD spawnThread(int (WINAPI *start_routine)(T*), T *args) {
 	template < typename T >
 	THREAD spawnThread(int (WINAPI *start_routine)(T*), T *args) {
 

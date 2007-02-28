@@ -10,6 +10,7 @@
 #include "yarn.h"
 #include "main.h"
 #include "gladebuf.h"
+#include "sharelister.h"
 
 using namespace std;
 
@@ -24,7 +25,7 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
                                         GtkSelectionData   *data,
                                         guint               info,
                                         guint               time){
-  fprintf(stdout,"tvMyShares_target_drag_data_received:\nDATA=%s\n",data->data);
+  fprintf(stdout,"tvMyShares_target_drag_data_received:\nDATA=%i:%s\n",info,data->data);
   /* TODO: 'Add URI to sharelist TreeView' (prob. requires making a ModelView for the TreeView)*/
   g_signal_stop_emission_by_name(widget,"drag_data_received"); // Don't know if this is correct, but it makes GTK STFU
 }
@@ -105,6 +106,28 @@ void ReceiveSpamCallback(uint32 count) {
     gtk_widget_queue_draw(widget);  // force a redraw of the widget
   }
 }
+/* Designate dropped data types that we know and care about */
+enum {
+    BMP_DROP_QUERY,
+    BMP_DROP_PLAINTEXT,
+    BMP_DROP_URLENCODED,
+    BMP_DROP_STRING,
+};
+
+/* Drag data format listing for gtk_drag_dest_set() */
+static const GtkTargetEntry cl_drop_types[] = {
+    {"application/x-bmpx-db-query", 0, BMP_DROP_QUERY},
+    {"text/plain",		    0, BMP_DROP_PLAINTEXT},
+    {"text/uri-list",		    0, BMP_DROP_URLENCODED},
+    {"STRING",			    0, BMP_DROP_STRING},
+};
+
+#define cl_drag_dest_set(widget) \
+    gtk_drag_dest_set(widget, \
+		      (GtkDestDefaults) (GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_DROP), \
+		      cl_drop_types, 3, \
+                      (GdkDragAction)(GDK_ACTION_COPY | GDK_ACTION_MOVE))
+
 
 THREAD ReceiveSpamThread;
 void btnReceiveSpam_clicked(GtkWidget *widget, gpointer user_data) {
@@ -156,6 +179,9 @@ uint32 show_gooey() {
   else {
     g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSetPort_clicked), NULL);
   }
+
+  GtkTargetList* thelist=gtk_drag_dest_get_target_list (widget);
+  fprintf(stdout, "%i\n", thelist);
 
   widget = glade_xml_get_widget (main_window, "btnSetInterface");
   if(widget==NULL) {
@@ -211,12 +237,15 @@ uint32 show_gooey() {
   }
   else {
     static GtkTargetEntry target_table[] = {{ }}; //I don't know any mime-types :(
-    gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL,
-                      target_table, 0, GDK_ACTION_COPY);
+    //gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL,
+                      //target_table, 0, GDK_ACTION_COPY);
+		cl_drag_dest_set(widget);
     gtk_drag_dest_add_uri_targets(widget);        //luckily GTK provides this handy function :)
+    gtk_drag_dest_add_text_targets(widget);
     gtk_signal_connect (GTK_OBJECT (widget), "drag_data_received",
                         GTK_SIGNAL_FUNC (tvMyShares_target_drag_data_received),
                         NULL);
+		create_view_and_model((GtkTreeView*)widget);
   }
 
   /* Have the delete event (window close) end the program */
