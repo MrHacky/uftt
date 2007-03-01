@@ -4,12 +4,25 @@
 using namespace std;
 
 vector<ServerInfo> servers;
-vector<ShareInfo> myshares;
+ServerInfo *myServer;  //ptr into server list (our own server also resides in the share list :)
 
-ShareInfo* create_share_from_uri(guchar * uri) {
-  ShareInfo *share = new ShareInfo;
-  //TODO: Do some parsing
-  return share;
+void init_server_list(){
+	 ServerInfo *server = new ServerInfo;
+	myServer = server;
+	myServer->name = string("localhost");
+	myServer->address = NULL;
+}
+
+ShareInfo::ShareInfo(std::string uri) {
+	root = new FileInfo(uri);
+	uri.erase(0,7);
+  fprintf(stderr,"Parsing %s\n",uri.c_str());
+}
+
+void ServerInfo::add_share(ShareInfo* share)
+{
+  //TODO: void add_share_to_server(uint64 UID, const struct ShareInfo &share);
+  fprintf(stderr,"TODO: Adding share to server\n");
 }
 
 GtkTreeModel * WINAPI

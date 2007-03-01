@@ -17,6 +17,7 @@ using namespace std;
 GladeXML  *main_window;
 extern int port;
 extern bool udp_hax;
+extern ServerInfo * myServer;
 
 void tvMyShares_target_drag_data_received(GtkWidget          *widget,
                                         GdkDragContext     *context,
@@ -27,11 +28,16 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
                                         guint               time){
   fprintf(stdout,"tvMyShares_target_drag_data_received:\nDATA=%i:%s\n",info,data->data);
   /* TODO: 'Add URI to sharelist TreeView' (prob. requires making a ModelView for the TreeView)*/
-  guchar *i = data->data;
+  char *i = (char*)data->data;
 	while(*i!=0) {
-		guchar *j=i;
-		while(*j!=0 && *j!='\n') ++j;
-		ShareInfo* s=create_share_from_uri(i);
+		char *j = i;
+		string str;
+		while (/*(*i != 0) && */(*i != '\n')) ++i;
+		*i = 0;
+		ShareInfo* share= new ShareInfo(string(j));
+		*i = '\n';
+		myServer->add_share(share);
+		++i;
   }
   //
 

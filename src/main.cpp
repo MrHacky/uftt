@@ -4,6 +4,7 @@
 #include "main.h"
 #include "yarn.h"
 #include "gooey.h"
+#include "sharelister.h"
 
 using namespace std;
 
@@ -379,13 +380,21 @@ int WINAPI ReceiveSpam( SpamSpamArgs *Args ) {
 int main( int argc, char* argv[] ) {
 	init_stuff();
 	if (( ipx_sock = CreateIPXSocket( port ) )==INVALID_SOCKET ) {
-		fprintf( stderr,"\
-						 Make sure that you have an IPX interface set up.\n\
-						 To set up IPX try running something like:\n\
-						 ipx_interface add -p eth0 802.2 && ipx_configure --auto_primary=on --auto_interface=on\n\
-						 ");
-		//return EXIT_FAILURE;
+		if(( ipx_sock = CreateUDPSocket( port ))==INVALID_SOCKET ) {
+			fprintf( stderr,"\
+							Make sure that you have an IPX or UDP interface set up.\n\
+							For example to set up IPX try running something like:\n\
+							ipx_interface add -p eth0 802.2 && ipx_configure --auto_primary=on --auto_interface=on\n\
+							");
+			return EXIT_FAILURE;
+			}
+		else {
+		  udp_hax = true;
+		  //FIXME: GUI BUG IPX/UDP Radiobutton
+		  fprintf(stderr,"FIXME: GUI BUG IPX/UDP Radiobutton is now b0rken\n");
+		}
 	}
+	init_server_list(  );
 	bool ServerRestart = false;
 	spawnThread(ServerThread, &ServerRestart);
 
