@@ -384,7 +384,7 @@ int main( int argc, char* argv[] ) {
 						 To set up IPX try running something like:\n\
 						 ipx_interface add -p eth0 802.2 && ipx_configure --auto_primary=on --auto_interface=on\n\
 						 ");
-		return EXIT_FAILURE;
+		//return EXIT_FAILURE;
 	}
 	bool ServerRestart = false;
 	spawnThread(ServerThread, &ServerRestart);
