@@ -1,6 +1,17 @@
 #include "stdafx.h"
 #include "sharelister.h"
 
+using namespace std;
+
+vector<ServerInfo> servers;
+vector<ShareInfo> myshares;
+
+ShareInfo* create_share_from_uri(guchar * uri) {
+  ShareInfo *share = new ShareInfo;
+  //TODO: Do some parsing
+  return share;
+}
+
 GtkTreeModel * WINAPI
 create_and_fill_model (void)
 {

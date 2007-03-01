@@ -2,7 +2,6 @@
 #define SHARELISTER_H
 
 #include "stdafx.h"
-
 enum {
 	COL_NAME = 0,
 	COL_AGE,
@@ -28,6 +27,8 @@ struct ServerInfo {
 	std::vector<ShareInfo*> share;
 	uint64 UID;
 };
+
+ShareInfo* create_share_from_uri(guchar * uri);
 
 GtkTreeModel * WINAPI
 create_and_fill_model( void );

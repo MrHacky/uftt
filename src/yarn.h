@@ -2,7 +2,7 @@
 	#define YARN_H
 	#include "stdafx.h"
 
-	
+
 	template < typename T >
 	THREAD spawnThread(int (WINAPI *start_routine)(T*), T *args);
 
