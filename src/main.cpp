@@ -275,22 +275,23 @@ int recv_msg( string &msg, int port, string* from = NULL ) {
 bool udp_hax = false;
 
 int send_msg( const string &msg, int port ) {
-	sockaddr_ipx target_addr;
-	sockaddr_in* t2 = ( sockaddr_in* )&target_addr;
+	sockaddr target_addr;
+	sockaddr_ipx* ipx_addr =( sockaddr_ipx* )&target_addr;
+	sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
 
-	target_addr.sipx_family = AF_IPX;
+	ipx_addr->sipx_family = AF_IPX;
 	for ( int i=0; i<4; ++i )
-		(( uint8* )&target_addr.sa_netnum )[i] = 0;
+		(( uint8* )&ipx_addr->sa_netnum )[i] = 0;
 	for ( int i=0; i<6; ++i )
-		target_addr.sa_nodenum[i] = 0xFF;
+		ipx_addr->sa_nodenum[i] = 0xFF;
 
-	target_addr.sa_socket = htons( port );
+	ipx_addr->sa_socket = htons( port );
 
 	// UDP:
 	if ( udp_hax ) {
-		t2->sin_family = AF_INET;
-		t2->sin_addr.s_addr = INADDR_BROADCAST;
-		t2->sin_port = htons( port );
+		udp_addr->sin_family = AF_INET;
+		udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+		udp_addr->sin_port = htons( port );
 	}
 
 // cout << "Got Address: " << addr2str(&target_addr) << "\n";
