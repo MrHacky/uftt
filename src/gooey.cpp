@@ -212,17 +212,16 @@ uint32 show_gooey() {
 
   widget = glade_xml_get_widget (main_window, "btnSpamSpam");
   if(widget==NULL) {
-    fprintf(stderr,"Error: can not find widget btnSpamSpam'!\n");
+    fprintf(stderr,"Error: can not find widget `btnSpamSpam'!\n");
     return -1;
   }
   else {
     g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnSpamSpam_clicked), NULL);
   }
-  widget = glade_xml_get_widget (main_window, "btnSpamSpam");
 
   widget = glade_xml_get_widget (main_window, "btnReceiveSpam");
   if(widget==NULL) {
-    fprintf(stderr,"Error: can not find widget btnSpamSpam'!\n");
+    fprintf(stderr,"Error: can not find widget `btnReceiveSpam'!\n");
     return -1;
   }
   else {
@@ -236,16 +235,20 @@ uint32 show_gooey() {
     return -1;
   }
   else {
-    static GtkTargetEntry target_table[] = {{ }}; //I don't know any mime-types :(
-    //gtk_drag_dest_set(widget, GTK_DEST_DEFAULT_ALL,
-                      //target_table, 0, GDK_ACTION_COPY);
-		cl_drag_dest_set(widget);
-    gtk_drag_dest_add_uri_targets(widget);        //luckily GTK provides this handy function :)
-    gtk_drag_dest_add_text_targets(widget);
-    gtk_signal_connect (GTK_OBJECT (widget), "drag_data_received",
+    static const GtkTargetEntry target_table[] = { {} };
+    gtk_drag_dest_set(	widget, \
+		                GTK_DEST_DEFAULT_ALL,\
+						target_table, \
+						0, \
+//							(GdkDragAction)(GDK_ACTION_COPY | GDK_ACTION_MOVE)
+						GDK_ACTION_MOVE //FIXME: possibly (KDE vs Gnome): (GdkDragAction)(GDK_ACTION_COPY | GDK_ACTION_MOVE)
+                     );
+    gtk_drag_dest_add_uri_targets(widget);
+    gtk_signal_connect (GTK_OBJECT (widget), 
+	                    "drag_data_received",
                         GTK_SIGNAL_FUNC (tvMyShares_target_drag_data_received),
                         NULL);
-		create_view_and_model((GtkTreeView*)widget);
+	create_view_and_model((GtkTreeView*)widget);
   }
 
   /* Have the delete event (window close) end the program */
@@ -253,6 +256,7 @@ uint32 show_gooey() {
   g_signal_connect (G_OBJECT (widget), "delete_event", G_CALLBACK (gtk_main_quit), NULL);
 
   /* start the event loop. TODO: Do this in the background? */
+  //spawnThread(gtk_main(), NULL); ?
   gtk_main ();
   return true;
 }

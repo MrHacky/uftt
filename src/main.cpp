@@ -257,7 +257,6 @@ bool init_stuff() {
 int recv_msg( string &msg, int port, string* from = NULL ) {
 	char buf[1500];
 	sockaddr source_addr;
-	SOCKADDR_IPX* source = ( SOCKADDR_IPX* )&source_addr;
 
 	socklen_t len = sizeof( source_addr );
 	int retval;
@@ -276,17 +275,16 @@ int recv_msg( string &msg, int port, string* from = NULL ) {
 bool udp_hax = false;
 
 int send_msg( const string &msg, int port ) {
-	sockaddr target_addr;
-	SOCKADDR_IPX* target = ( SOCKADDR_IPX* )&target_addr;
+	sockaddr_ipx target_addr;
 	sockaddr_in* t2 = ( sockaddr_in* )&target_addr;
 
-	target->sipx_family = AF_IPX;
+	target_addr.sipx_family = AF_IPX;
 	for ( int i=0; i<4; ++i )
-		(( uint8* )&target->sa_netnum )[i] = 0;
+		(( uint8* )&target_addr.sa_netnum )[i] = 0;
 	for ( int i=0; i<6; ++i )
-		target->sa_nodenum[i] = 0xFF;
+		target_addr.sa_nodenum[i] = 0xFF;
 
-	target->sa_socket = htons( port );
+	target_addr.sa_socket = htons( port );
 
 	// UDP:
 	if ( udp_hax ) {
@@ -302,7 +300,7 @@ int send_msg( const string &msg, int port ) {
 
 	int retval;
 // cout << "Broadcasting test Packet...";
-	retval = sendto( ipx_sock, mbuf, 1400, 0, &target_addr, sizeof( target_addr ) );
+	retval = sendto( ipx_sock, mbuf, 1400, 0, (const sockaddr*)&target_addr, sizeof( target_addr ) );
 
 	if ( retval == SOCKET_ERROR ) {
 		cout << "Failed! :" << NetGetLastError() << "\n";
@@ -385,7 +383,7 @@ int main( int argc, char* argv[] ) {
 						 To set up IPX try running something like:\n\
 						 ipx_interface add -p eth0 802.2 && ipx_configure --auto_primary=on --auto_interface=on\n\
 						 ");
-//		return EXIT_FAILURE;
+		return EXIT_FAILURE;
 	}
 	bool ServerRestart = false;
 	spawnThread(ServerThread, &ServerRestart);
