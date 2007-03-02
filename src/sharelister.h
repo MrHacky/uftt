@@ -2,6 +2,7 @@
 #define SHARELISTER_H
 
 #include "stdafx.h"
+#include <dirent.h>
 
 enum {
 	COL_NAME = 0,
@@ -13,6 +14,7 @@ struct FileInfo {
 	std::string name;
 	uint32 attrs;
 	std::vector<FileInfo*> file;
+	FileInfo(std::string path);
 	uint64 UID;
 };
 
@@ -20,7 +22,7 @@ struct ShareInfo {
 	std::string name;
 	FileInfo* root;
 	uint64 UID;
-	ShareInfo(std::string uri);
+	ShareInfo(std::string path);
 };
 
 struct ServerInfo {

@@ -32,15 +32,15 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 	while(*i!=0) {
 		char *j = i;
 		string str;
-		while (/*(*i != 0) && */(*i != '\n')) ++i;
+		while (/*(*i != 0) && */(*i != '\r')) ++i; /* FIXME: \r? \n? cross-platform? */
 		if (strncmp(j, "file://", 7) == 0) {
 			*i = 0;
 			/* TODO: normalize url spaces and stuff (%20 -> ' ') */
 			ShareInfo* share= new ShareInfo(string(j+7));
-			*i = '\n';
+			*i = '\r';
 			myServer->add_share(share);
 		}
-		++i;
+		i+=2;
   }
   //
 

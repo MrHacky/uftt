@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "sharelister.h"
+#include <dirent.h>
 
 using namespace std;
 
@@ -13,8 +14,25 @@ void init_server_list(){
 	myServer->address = NULL;
 }
 
-ShareInfo::ShareInfo(std::string uri) {
-  fprintf(stderr,"Parsing %s\n",uri.c_str());
+FileInfo::FileInfo(std::string path) {
+  fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
+	DIR *dir = opendir(path.c_str());
+	if(dir!=NULL){ // is dir
+		dirent *fent; // file entry
+		while((fent=readdir (dir))!=NULL) {
+		  if(string(fent->d_name) != "." && string(fent->d_name) != "..") {
+				file.push_back(new FileInfo(path+"/"+fent->d_name));
+			}
+		}
+	}
+	else { // is file
+		fprintf(stderr,"FileInfo: File: %s\n (errval=%i)",path.c_str(), errno);
+	}
+}
+
+ShareInfo::ShareInfo(std::string path) {
+	fprintf(stderr,"Parsing %s\n",path.c_str());
+  root = new FileInfo(path.c_str());
 }
 
 void ServerInfo::add_share(ShareInfo* share)
