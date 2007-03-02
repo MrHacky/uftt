@@ -7,15 +7,13 @@ vector<ServerInfo> servers;
 ServerInfo *myServer;  //ptr into server list (our own server also resides in the share list :)
 
 void init_server_list(){
-	 ServerInfo *server = new ServerInfo;
+	ServerInfo *server = new ServerInfo;
 	myServer = server;
 	myServer->name = string("localhost");
 	myServer->address = NULL;
 }
 
 ShareInfo::ShareInfo(std::string uri) {
-	root = new FileInfo(uri);
-	uri.erase(0,7);
   fprintf(stderr,"Parsing %s\n",uri.c_str());
 }
 

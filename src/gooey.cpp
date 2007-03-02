@@ -33,10 +33,13 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 		char *j = i;
 		string str;
 		while (/*(*i != 0) && */(*i != '\n')) ++i;
-		*i = 0;
-		ShareInfo* share= new ShareInfo(string(j));
-		*i = '\n';
-		myServer->add_share(share);
+		if (strncmp(j, "file://", 7) == 0) {
+			*i = 0;
+			/* TODO: normalize url spaces and stuff (%20 -> ' ') */
+			ShareInfo* share= new ShareInfo(string(j+7));
+			*i = '\n';
+			myServer->add_share(share);
+		}
 		++i;
   }
   //
