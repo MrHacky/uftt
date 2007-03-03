@@ -9,8 +9,9 @@ struct FileInfo {
 	uint32 attrs;
 	uint64 size;
 	std::vector<FileInfo*> file;
-	FileInfo(std::string path);
 	uint64 UID;
+	FileInfo(std::string path);
+	// TODO: ~FileInfo
 };
 
 struct ShareInfo {
@@ -18,6 +19,7 @@ struct ShareInfo {
 	FileInfo* root;
 	uint64 UID;
 	ShareInfo(std::string path);
+	// TODO: ~ShareInfo
 };
 
 struct ServerInfo {

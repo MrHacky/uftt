@@ -8,6 +8,21 @@ class FileEntry {
 	FileInfo*   file;
 };
 
+string strsize(const int64 size)
+{
+	const char* size_suffix[] = {"", "K","M","G","T","P","?"};
+	double fsize = size;
+	int pfix = 0;
+	for (;fsize > 999; ++pfix) fsize /= 1024;
+	if (pfix > 6) pfix = 6;
+	int decs = 0;
+	if (pfix > 0 && fsize < 100) ++decs;
+	if (pfix > 0 && fsize < 10 ) ++decs;
+	char buf[127];
+	snprintf(buf, 127, "%.*lf%sB", decs, fsize, size_suffix[pfix]);
+	return buf;
+} 
+
 GtkTreeModel * WINAPI
 add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 {
@@ -23,7 +38,7 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 	gtk_tree_store_append (store, &iter, NULL);
 	gtk_tree_store_set (store, &iter,
 											COL_NAME, share->name.c_str(),
-											COL_SIZE, (int32)share->root->size,
+											COL_SIZE, strsize(share->root->size).c_str(),
 											-1);
 
 	fentry.iter = iter;
@@ -38,7 +53,7 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 		gtk_tree_store_append (store, &iter, &fentry.iter);
 		gtk_tree_store_set (store, &iter,
 												COL_NAME, fentry.file->name.c_str(),
-												COL_SIZE, (int32)fentry.file->size,
+												COL_SIZE, strsize(fentry.file->size).c_str(),
 												-1);
 
 		for (int i = 0; i < fentry.file->file.size(); ++i) {
@@ -104,7 +119,7 @@ init_tree_view (GtkTreeView* aview)
 																							 "text", COL_SIZE,
 																							 NULL);
 
-	model = GTK_TREE_MODEL (gtk_tree_store_new (NUM_COLS, G_TYPE_STRING, G_TYPE_UINT));
+	model = GTK_TREE_MODEL (gtk_tree_store_new (NUM_COLS, G_TYPE_STRING, G_TYPE_STRING));
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW (view), model);
 

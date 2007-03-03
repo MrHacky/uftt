@@ -2,7 +2,21 @@
 #include "sharelister.h"
 #include <dirent.h>
 
+#include <fstream>
+
 using namespace std;
+
+// TODO: move this somewhere else?
+int FileSize(const char* sFileName)
+{
+	std::ifstream f;
+	f.open(sFileName, std::ios_base::binary | std::ios_base::in);
+	if (!f.good() || f.eof() || !f.is_open()) { return 0; }
+	f.seekg(0, std::ios_base::beg);
+	std::ifstream::pos_type begin_pos = f.tellg();
+	f.seekg(0, std::ios_base::end);
+	return static_cast<int>(f.tellg() - begin_pos);
+}
 
 vector<ServerInfo> servers;
 ServerInfo *myServer;  //ptr into server list (our own server also resides in the share list :)
@@ -17,21 +31,24 @@ void init_server_list(){
 FileInfo::FileInfo(std::string path) {
 	fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
 	DIR *dir = opendir(path.c_str());
+
+	int i = 0;
+	for (i = path.size(); i > 0 && path[--i] != '/'; ); // FIXME: '\\' instead of '/' on windows?
+	name = string(&(path.c_str())[++i]); // FIXME: evul hack;
+	
 	if(dir!=NULL){ // is dir
 		size = 0;
 		dirent *fent; // file entry
 		while((fent=readdir (dir))!=NULL) {
 			if(string(fent->d_name) != "." && string(fent->d_name) != "..") {
 				FileInfo* newfile =new FileInfo(path+"/"+fent->d_name);
-				newfile->name = string(fent->d_name); // not really the right place for this...
 				file.push_back(newfile);
 				size += newfile->size;
 			}
 		}
 	}
 	else { // is file
-		size = 10; /* TODO: get file size */
-		name = 
+		size = FileSize(path.c_str());
 		fprintf(stderr,"FileInfo: File: %s\n (errval=%i)",path.c_str(), errno);
 	}
 }
@@ -39,10 +56,6 @@ FileInfo::FileInfo(std::string path) {
 ShareInfo::ShareInfo(std::string path) {
 	fprintf(stderr,"Parsing %s\n",path.c_str());
 	root = new FileInfo(path.c_str());
-	int i = 0;
-	for (int j = 0; j < path.size(); ++j)
-		if (path[j]=='/') i = j + 1;
-	root->name = string(&(path.c_str())[i]); // FIXME: evul hack;
 	name = path;
 }
 
