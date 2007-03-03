@@ -56,41 +56,18 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 												COL_SIZE, strsize(fentry.file->size).c_str(),
 												-1);
 
-		for (int i = 0; i < fentry.file->file.size(); ++i) {
+		/* our list is used as a stack, so add stuff in reverse to preserver ordering */
+		for ( vector<FileInfo*>::reverse_iterator rfiter = fentry.file->file.rbegin();
+						rfiter != fentry.file->file.rend();
+						++rfiter)
+		{
 			FileEntry newentry;
-			newentry.file = fentry.file->file[i];
+			newentry.file = *rfiter;
 			newentry.iter = iter;
 			flist.push_back(newentry);
 		}
 	}
 
-/*
-	gtk_tree_store_append (store, &iter, NULL);
-	gtk_tree_store_set (store, &iter,
-											COL_NAME, "Heinz El-Mann",
-											COL_SIZE, 51,
-											-1);
-
-	gtk_tree_store_append (store, &iter, NULL);
-	gtk_tree_store_set (store, &iter,
-											COL_NAME, "Heinz El-Mann",
-											COL_AGE, 51,
-											-1);
-
-	iter2 = iter;
-	gtk_tree_store_append (store, &iter, &iter2);
-	gtk_tree_store_set (store, &iter,
-											COL_NAME, "Jane Doe",
-											COL_AGE, 23,
-											-1);
-
-	iter2 = iter;
-	gtk_tree_store_append (store, &iter, &iter2);
-	gtk_tree_store_set (store, &iter,
-											COL_NAME, "Joe Bungop",
-											COL_AGE, 91,
-											-1);
-*/
 	return GTK_TREE_MODEL (store);
 }
 

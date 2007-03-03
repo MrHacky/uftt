@@ -4,6 +4,10 @@
 #include "stdafx.h"
 #include <dirent.h>
 
+enum FileAttrs {
+	FATTR_DIR = 1 << 0,
+};
+
 struct FileInfo {
 	std::string name;
 	uint32 attrs;

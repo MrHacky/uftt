@@ -81,6 +81,7 @@
   #include <assert.h>
   #include <vector>
 	#include <queue>
+	#include <algorithm>
 
   /* Crossplatform Thread handling */
 	#ifdef HAVE_PTHREAD_H
