@@ -4,15 +4,10 @@
 #include "stdafx.h"
 #include <dirent.h>
 
-enum {
-	COL_NAME = 0,
-	COL_AGE,
-	NUM_COLS
-} ;
-
 struct FileInfo {
 	std::string name;
 	uint32 attrs;
+	uint64 size;
 	std::vector<FileInfo*> file;
 	FileInfo(std::string path);
 	uint64 UID;
@@ -32,14 +27,6 @@ struct ServerInfo {
 
 	void add_share(ShareInfo* share);
 };
-
-ShareInfo* create_share_from_uri(guchar * uri);
-
-GtkTreeModel * WINAPI
-create_and_fill_model( void );
-
-GtkWidget * WINAPI
-create_view_and_model( GtkTreeView* aview );
 
 void init_server_list();
 

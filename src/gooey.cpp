@@ -11,6 +11,7 @@
 #include "main.h"
 #include "gladebuf.h"
 #include "sharelister.h"
+#include "sharelister_gui.h"
 
 using namespace std;
 
@@ -18,6 +19,7 @@ GladeXML  *main_window;
 extern int port;
 extern bool udp_hax;
 extern ServerInfo * myServer;
+GtkTreeView* sharetreeview;
 
 void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 																				GdkDragContext     *context,
@@ -39,6 +41,7 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 			ShareInfo* share= new ShareInfo(string(j+7));
 			*i = '\r';
 			myServer->add_share(share);
+			add_tree_data(sharetreeview, share);
 		}
 		i+=2;
 	}
@@ -239,7 +242,8 @@ uint32 show_gooey() {
 												"drag_data_received",
 												GTK_SIGNAL_FUNC (tvMyShares_target_drag_data_received),
 												NULL);
-		create_view_and_model((GtkTreeView*)widget);
+		init_tree_view( (GtkTreeView*)widget);
+		sharetreeview = (GtkTreeView*)widget;
 	}
 
 	/* Have the delete event (window close) end the program */

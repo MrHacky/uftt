@@ -80,6 +80,7 @@
   #include <stdio.h>
   #include <assert.h>
   #include <vector>
+	#include <queue>
 
   /* Crossplatform Thread handling */
 	#ifdef HAVE_PTHREAD_H
