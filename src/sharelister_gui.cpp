@@ -19,7 +19,7 @@ string strsize(const int64 size)
 	if (pfix > 0 && fsize < 100) ++decs;
 	if (pfix > 0 && fsize < 10 ) ++decs;
 	char buf[127];
-	snprintf(buf, 127, "%.*lf%sB", decs, fsize, size_suffix[pfix]);
+	snprintf(buf, 127, "%.*lf %sB", decs, fsize, size_suffix[pfix]);
 	return buf;
 } 
 
@@ -28,7 +28,6 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 {
 	GtkTreeStore  *store;
 	GtkTreeIter    iter;
-	GtkTreeIter    iter2;
 
 	vector<FileEntry> flist;
 	FileEntry fentry;
@@ -66,6 +65,14 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 			newentry.iter = iter;
 			flist.push_back(newentry);
 		}
+		/*if (fentry.file->attrs & FATTR_DIR){
+			GtkTreeIter    newiter;
+			gtk_tree_store_append (store, &newiter, &iter);
+			gtk_tree_store_set (store, &newiter,
+													COL_NAME, "",
+													COL_SIZE, "",
+													-1);
+		}*/
 	}
 
 	return GTK_TREE_MODEL (store);
@@ -78,6 +85,29 @@ init_tree_view (GtkTreeView* aview)
 	GtkTreeModel        *model;
 	GtkWidget           *view = (GtkWidget*)aview;
 
+	renderer = gtk_cell_renderer_pixbuf_new ();
+
+	GdkPixbuf* p;
+	GError *err = 0;
+	p = gdk_pixbuf_new_from_file("../../src/folder_open.gif", &err);
+	g_object_set(renderer,"pixbuf-expander-open",p,NULL);
+	p = gdk_pixbuf_new_from_file("../../src/folder_closed.gif", &err);
+	g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
+			//p = gdk_pixbuf_new_from_file("../../src/folder_closed.gif", &err);
+			//g_object_set(renderer,"pixbuf",p,NULL);
+
+	GtkTreeViewColumn*  collumn = gtk_tree_view_column_new_with_attributes(
+			"Image",
+			renderer,
+			NULL);
+
+//	g_object_set_property (G_OBJECT (aview), "expander-column", (GValue*)collumn);
+
+	//gtk_tree_view_insert_column(GTK_TREE_VIEW (view), collumn, -1);
+
+	//g_object_set (G_OBJECT (aview),"expander-column", (GValue*)collumn, "headers-visible", TRUE, NULL);
+
+		
 	/* --- Column #1 --- */
 	renderer = gtk_cell_renderer_text_new ();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
@@ -96,9 +126,27 @@ init_tree_view (GtkTreeView* aview)
 																							 "text", COL_SIZE,
 																							 NULL);
 
-	model = GTK_TREE_MODEL (gtk_tree_store_new (NUM_COLS, G_TYPE_STRING, G_TYPE_STRING));
+	model = GTK_TREE_MODEL (gtk_tree_store_new (NUM_COLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING));
 
 	gtk_tree_view_set_model (GTK_TREE_VIEW (view), model);
+
+	GValue *gval = g_new0 (GValue, 1);
+	g_value_init (gval, G_TYPE_BOOLEAN);
+	g_value_set_boolean (gval, true);
+	g_object_set_property (G_OBJECT (aview), "enable-tree-lines", gval);
+	g_free (gval);
+
+	gval = g_new0 (GValue, 1);
+	g_value_init (gval, G_TYPE_BOOLEAN);
+	g_value_set_boolean (gval, false);
+	//g_object_set_property (G_OBJECT (aview), "show-expanders", gval);
+	g_free (gval);
+
+	gval = g_new0 (GValue, 1);
+	g_value_init (gval, G_TYPE_INT);
+	g_value_set_int (gval, 10);
+	//g_object_set_property (G_OBJECT (aview), "level-indentation", gval);
+	g_free (gval);
 
 	/* The tree view has acquired its own reference to the
 	*  model, so we can drop ours. That way the model will
