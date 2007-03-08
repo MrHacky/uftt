@@ -87,7 +87,7 @@ init_tree_view (GtkTreeView* aview)
 
 	renderer = gtk_cell_renderer_pixbuf_new ();
 
-	GdkPixbuf* p;
+/*	GdkPixbuf* p;
 	GError *err = 0;
 	p = gdk_pixbuf_new_from_file("../../src/folder_open.gif", &err);
 	g_object_set(renderer,"pixbuf-expander-open",p,NULL);
@@ -95,7 +95,7 @@ init_tree_view (GtkTreeView* aview)
 	g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
 			//p = gdk_pixbuf_new_from_file("../../src/folder_closed.gif", &err);
 			//g_object_set(renderer,"pixbuf",p,NULL);
-
+*/
 	GtkTreeViewColumn*  collumn = gtk_tree_view_column_new_with_attributes(
 			"Image",
 			renderer,

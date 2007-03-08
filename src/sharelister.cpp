@@ -1,27 +1,56 @@
 #include "stdafx.h"
 #include "sharelister.h"
-#include <dirent.h>
 
+//TODO: Put into stdafx.h
 #include <fstream>
+#include <stdio.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+
 
 using namespace std;
 
-// TODO: move this somewhere else?
-int FileSize(const char* sFileName)
+/* 
+WIN32_FIND_DATA f;
+HANDLE h = FindFirstFile("./*", &f);
+if(h != INVALID_HANDLE_VALUE)
 {
+do
+{
+puts(f.cFileName);
+} while(FindNextFile(h, &f));
+*/
+
+// TODO: move this somewhere else?
+uint64 FileSize(const char* sFileName) {
+#ifndef G_OS_WIN32
 	std::ifstream f;
 	f.open(sFileName, std::ios_base::binary | std::ios_base::in);
 	if (!f.good() || f.eof() || !f.is_open()) { return 0; }
 	f.seekg(0, std::ios_base::beg);
 	std::ifstream::pos_type begin_pos = f.tellg();
 	f.seekg(0, std::ios_base::end);
-	return static_cast<int>(f.tellg() - begin_pos);
+	uint64 ftg=0, bp=0;
+	ftg=f.tellg();
+	bp=begin_pos;
+	return static_cast<uint64>(ftg-bp);
+#else //def G_OS_WIN32
+	int f;
+	if((_sopen_s( &f, sFileName, _O_RDWR, _SH_DENYNO, _S_IREAD ))==0) {
+		uint64 s= _filelengthi64( f );
+		_close(f);
+		return s;
+	}
+	else {
+		return 0;
+	}
+#endif
 }
 
 vector<ServerInfo> servers;
 ServerInfo *myServer;  //ptr into server list (our own server also resides in the share list :)
 
-void init_server_list(){
+void init_server_list() {
 	ServerInfo *server = new ServerInfo;
 	myServer = server;
 	myServer->name = string("localhost");
@@ -37,7 +66,7 @@ struct filecomp : public binary_function<FileInfo*, FileInfo*, bool> {
 };
 
 FileInfo::FileInfo(std::string path) {
-	//fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
+	fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
 	DIR *dir = opendir(path.c_str());
 
 	attrs = 0;
@@ -71,8 +100,7 @@ ShareInfo::ShareInfo(std::string path) {
 	name = path;
 }
 
-void ServerInfo::add_share(ShareInfo* share)
-{
+void ServerInfo::add_share(ShareInfo* share) {
 	//TODO: void add_share_to_server(uint64 UID, const struct ShareInfo &share);
 	fprintf(stderr,"TODO: Adding share to server\n");
 }

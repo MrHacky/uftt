@@ -2,7 +2,6 @@
 #define SHARELISTER_H
 
 #include "stdafx.h"
-#include <dirent.h>
 
 enum FileAttrs {
 	FATTR_DIR = 1 << 0,

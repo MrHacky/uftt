@@ -38,7 +38,7 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 		if (strncmp(j, "file://", 7) == 0) {
 			*i = 0;
 			/* TODO: normalize url spaces and stuff (%20 -> ' ') */
-			ShareInfo* share= new ShareInfo(string(j+7));
+			ShareInfo* share= new ShareInfo(string(j+8));
 			*i = '\r';
 			myServer->add_share(share);
 			add_tree_data(sharetreeview, share);

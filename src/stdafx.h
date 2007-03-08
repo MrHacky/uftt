@@ -69,21 +69,21 @@
     #define sa_netnum sipx_network
   #endif
 
-  /* Gooey crap */
-  #include <gtk/gtk.h>
-  #include <glade/glade.h>
+	/* Gooey crap */
+	#include <gtk/gtk.h>
+	#include <glade/glade.h>
 
-  /* general headers */
-  #include "types.h"
-  #include <string>
-  #include <iostream>
-  #include <stdio.h>
-  #include <assert.h>
-  #include <vector>
+	/* general headers */
+	#include "types.h"
+	#include <string>
+	#include <iostream>
+	#include <stdio.h>
+	#include <assert.h>
+	#include <vector>
 	#include <queue>
 	#include <algorithm>
 
-  /* Crossplatform Thread handling */
+	/* Crossplatform Thread handling */
 	#ifdef HAVE_PTHREAD_H
     #include <pthread.h>
     #define THREAD pthread_t
@@ -91,7 +91,6 @@
 		//pthread_exit() takes a void* argument
 		#define ThreadExit(x) pthread_exit((void*)(x))
 
-		//FIXME: Is there a better way to do this? 'it verks for me :)'
 		#undef WINAPI
 		#define WINAPI
 	#else
@@ -99,4 +98,6 @@
 		#define THREAD DWORD
 		#define ThreadExit ExitThread
 	#endif
+	/* Listing and manipulating filesystem objects (files && directories) */
+	#include <dirent.h>
 #endif //STDAFX_H
