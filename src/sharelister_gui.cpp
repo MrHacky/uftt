@@ -87,7 +87,8 @@ init_tree_view (GtkTreeView* aview)
 
 	renderer = gtk_cell_renderer_pixbuf_new ();
 
-/*	GdkPixbuf* p;
+/*	FIXME: Does not verk in Windows
+	GdkPixbuf* p;
 	GError *err = 0;
 	p = gdk_pixbuf_new_from_file("../../src/folder_open.gif", &err);
 	g_object_set(renderer,"pixbuf-expander-open",p,NULL);
