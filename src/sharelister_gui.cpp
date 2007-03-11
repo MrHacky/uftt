@@ -55,7 +55,7 @@ add_tree_data(  GtkTreeView* aview, ShareInfo* share)
 												COL_SIZE, strsize(fentry.file->size).c_str(),
 												-1);
 
-		/* our list is used as a stack, so add stuff in reverse to preserver ordering */
+		/* our list is used as a stack, so add stuff in reverse to preserve ordering */
 		for ( vector<FileInfo*>::reverse_iterator rfiter = fentry.file->file.rbegin();
 						rfiter != fentry.file->file.rend();
 						++rfiter)

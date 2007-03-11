@@ -13,7 +13,7 @@ struct FileInfo {
 	uint64 size;
 	std::vector<FileInfo*> file;
 	uint64 UID;
-	FileInfo(std::string path);
+	FileInfo(const std::string& path);
 	// TODO: ~FileInfo
 };
 
@@ -21,7 +21,7 @@ struct ShareInfo {
 	std::string name;
 	FileInfo* root;
 	uint64 UID;
-	ShareInfo(std::string path);
+	ShareInfo(const std::string& path);
 	// TODO: ~ShareInfo
 };
 
@@ -30,7 +30,7 @@ struct ServerInfo {
 	sockaddr* address;
 	std::vector<ShareInfo*> share;
 
-	void add_share(ShareInfo* share);
+	void add_share(ShareInfo* ashare);
 };
 
 void init_server_list();

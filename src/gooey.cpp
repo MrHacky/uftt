@@ -27,6 +27,17 @@ GtkTreeView* sharetreeview;
 	#define URI_EXTRA_MUNCH 0
 #endif
 
+// TODO: move this elsewhere?
+template<typename T>
+void findandreplace( T* source, const T& find, const T& replace )
+{
+	size_t j = 0;
+	for (;(j = source->find( find, j)) != T::npos;)
+	{
+		source->replace( j, find.length(), replace );
+	}
+}
+
 void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 																				GdkDragContext     *context,
 																				gint                x,
@@ -35,23 +46,20 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 																				guint               info,
 																				guint               time){
 	fprintf(stdout,"tvMyShares_target_drag_data_received:\nDATA=%i:%s\n",info,data->data);
-	/* TODO: 'Add URI to sharelist TreeView' (prob. requires making a ModelView for the TreeView)*/
 	char *i = (char*)data->data;
 	while(*i!=0) {
 		char *j = i;
-		string str;
-		while (/*(*i != 0) && */(*i != '\r')) ++i; /* FIXME: \r? \n? cross-platform? */
-		if (strncmp(j, "file://", 7) == 0) {
-			*i = 0;
-			/* TODO: normalize url spaces and stuff (%20 -> ' ') */
-			ShareInfo* share= new ShareInfo(string(j+7+URI_EXTRA_MUNCH));
-			*i = '\r';
+		while ((*i != 0) && (*i != '\r') && (*i != '\n')) ++i;
+		if (strncmp(j, "file:///", 8) == 0) {
+			string path(j+7+URI_EXTRA_MUNCH, i);
+			findandreplace(&path, string("%20"), string(" "));
+			/* TODO: other replaces besides (%20 -> ' ') ? */
+			ShareInfo* share= new ShareInfo(path);
 			myServer->add_share(share);
 			add_tree_data(sharetreeview, share);
 		}
-		i+=2;
+		while ((*i == '\r') || (*i == '\n')) ++i;
 	}
-	//
 
 	g_signal_stop_emission_by_name(widget,"drag_data_received"); // Don't know if this is correct, but it makes GTK STFU
 }

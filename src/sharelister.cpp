@@ -3,23 +3,8 @@
 
 //TODO: Put into stdafx.h
 #include <fstream>
-#include <stdio.h>
-#include <fcntl.h>
-#include <sys/stat.h>
-
 
 using namespace std;
-
-/* 
-WIN32_FIND_DATA f;
-HANDLE h = FindFirstFile("./*", &f);
-if(h != INVALID_HANDLE_VALUE)
-{
-do
-{
-puts(f.cFileName);
-} while(FindNextFile(h, &f));
-*/
 
 // TODO: move this somewhere else?
 uint64 FileSize(const char* sFileName) {
@@ -33,6 +18,7 @@ uint64 FileSize(const char* sFileName) {
 	uint64 ftg=0, bp=0;
 	ftg=f.tellg();
 	bp=begin_pos;
+	f.close();
 	return static_cast<uint64>(ftg-bp);
 #else //def G_OS_WIN32
 	int f;
@@ -65,16 +51,17 @@ struct filecomp : public binary_function<FileInfo*, FileInfo*, bool> {
 	}
 };
 
-FileInfo::FileInfo(std::string path) {
-	fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
+FileInfo::FileInfo(const std::string& path) {
+	//fprintf(stderr,"FileInfo: Traversing %s\n", path.c_str());
 	DIR *dir = opendir(path.c_str());
 
 	attrs = 0;
 	
-	int i = 0;
-	for (i = path.size(); i > 0 && path[--i] != '/'; ); // FIXME: '\\' instead of '/' on windows?
-	name = string(&(path.c_str())[++i]); // FIXME: evul hack;
-	
+	string::const_iterator iter;
+	for (iter = path.end(); iter != path.begin() && *(--iter) != '/'; ); // FIXME: '\\' instead of '/' on windows?
+	if (iter != path.end()) ++iter;
+	name = string(iter, path.end());
+
 	if(dir!=NULL){ // is dir
 		attrs |= FATTR_DIR;
 		size = 0;
@@ -86,22 +73,24 @@ FileInfo::FileInfo(std::string path) {
 				size += newfile->size;
 			}
 		}
+		closedir(dir);
 		sort(file.begin(), file.end(), filecomp());
 	}
 	else { // is file
+		if (errno != 20) // FIXME: Use named constant
+			fprintf(stderr,"Error: %s\n Error=%i:%s\n",path.c_str(), errno , strerror(errno));
 		size = FileSize(path.c_str());
-		//fprintf(stderr,"FileInfo: File: %s\n (errval=%i)",path.c_str(), errno);
 	}
 }
 
-ShareInfo::ShareInfo(std::string path) {
+ShareInfo::ShareInfo(const std::string& path) {
 	fprintf(stderr,"Parsing %s\n",path.c_str());
-	root = new FileInfo(path.c_str());
+	root = new FileInfo(path);
 	name = path;
 }
 
-void ServerInfo::add_share(ShareInfo* share) {
-	//TODO: void add_share_to_server(uint64 UID, const struct ShareInfo &share);
+void ServerInfo::add_share(ShareInfo* ashare) {
+	share.push_back(ashare); // TODO: more?
 	fprintf(stderr,"TODO: Adding share to server\n");
 }
 
