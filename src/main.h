@@ -15,4 +15,9 @@
   int WINAPI SpamSpam(SpamSpamArgs *Args);
   int WINAPI ReceiveSpam(SpamSpamArgs *Args);
   int WINAPI ServerThread(bool * Restart);
+  std::string addr2str( sockaddr* addr );
+  SOCKET CreateIPXSocket( uint16 bindport, sockaddr_ipx* iface_addr = NULL );
+  SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr = NULL ) ;
+
+
 #endif

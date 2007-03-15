@@ -1,8 +1,8 @@
-bin_PROGRAMS = uftt
-uftt_SOURCES = gladebuf.h gooey.cpp gooey.h main.cpp main.h 	sharelister.cpp \
-	stdafx.h yarn.cpp sharelister_gui.cpp
-noinst_HEADERS = gladebuf.h gooey.h main.h sharelister.h stdafx.h yarn.h \
-	sharelister_gui.h
+bin_PROGRAMS = uftt uftt.old
+uftt_SOURCES = gladebuf.h gooey.cpp gooey.h main.cpp main.h servert.cpp \
+	sharelister.cpp sharelister_gui.cpp stdafx.h yarn.cpp
+noinst_HEADERS = gladebuf.h gooey.h main.h servert.h sharelister.h \
+	sharelister_gui.h stdafx.h yarn.h
 
 nodist_uftt_SOURCES = gladebuf.cpp
 CLEANFILES = gladebuf.cpp
@@ -12,3 +12,6 @@ AM_CPPFLAGS = $(DEPS_CFLAGS)
 
 gladebuf.cpp: gladebuf.h stdafx.h uftt.glade gladegen.sh
 	sh $(srcdir)/gladegen.sh "$(srcdir)/uftt.glade" >$@
+
+uftt.old: uftt
+	cp uftt uftt.old

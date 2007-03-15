@@ -1,5 +1,7 @@
 #include "sharelister_gui.h"
 
+#include "folder_open.xpm"
+#include "folder_closed.xpm"
 using namespace std;
 
 class FileEntry {
@@ -21,11 +23,10 @@ string strsize(const int64 size)
 	char buf[127];
 	snprintf(buf, 127, "%.*lf %sB", decs, fsize, size_suffix[pfix]);
 	return buf;
-} 
+}
 
 GtkTreeModel * WINAPI
-add_tree_data(  GtkTreeView* aview, ShareInfo* share)
-{
+add_tree_data(  GtkTreeView* aview, ShareInfo* share) {
 	GtkTreeStore  *store;
 	GtkTreeIter    iter;
 
@@ -87,7 +88,7 @@ init_tree_view (GtkTreeView* aview)
 
 	renderer = gtk_cell_renderer_pixbuf_new ();
 
-/*	FIXME: Does not verk in Windows
+/*	FIXME: Does not verk in Windows * /
 	GdkPixbuf* p;
 	GError *err = 0;
 	p = gdk_pixbuf_new_from_file("../../src/folder_open.gif", &err);
@@ -96,7 +97,23 @@ init_tree_view (GtkTreeView* aview)
 	g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
 			//p = gdk_pixbuf_new_from_file("../../src/folder_closed.gif", &err);
 			//g_object_set(renderer,"pixbuf",p,NULL);
-*/
+/*/
+	GdkPixbuf* p;
+	GError *err = 0;
+	p = gdk_pixbuf_new_from_xpm_data((const char**)folder_open_xpm);
+	fprintf(stderr, "ERROR = %i / \n",err);
+	g_object_set(renderer,"pixbuf-expander-open",p,NULL);
+	p = gdk_pixbuf_new_from_xpm_data((const char**)folder_closed_xpm); //FIXME: Closed.xpm
+	fprintf(stderr, "ERROR = %i / \n",err);
+	g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
+
+/*	GdkPixmap*  gdk_pixmap_create_from_xpm      (GdkWindow *window,
+                                             GdkBitmap **mask,
+                                             GdkColor *transparent_color,
+                                             const gchar *filename);
+/*********************************************************************/
+
+
 	GtkTreeViewColumn*  collumn = gtk_tree_view_column_new_with_attributes(
 			"Image",
 			renderer,
@@ -104,11 +121,11 @@ init_tree_view (GtkTreeView* aview)
 
 //	g_object_set_property (G_OBJECT (aview), "expander-column", (GValue*)collumn);
 
-	//gtk_tree_view_insert_column(GTK_TREE_VIEW (view), collumn, -1);
+	gtk_tree_view_insert_column(GTK_TREE_VIEW (view), collumn, -1);
 
 	//g_object_set (G_OBJECT (aview),"expander-column", (GValue*)collumn, "headers-visible", TRUE, NULL);
 
-		
+
 	/* --- Column #1 --- */
 	renderer = gtk_cell_renderer_text_new ();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
