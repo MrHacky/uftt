@@ -1,10 +1,31 @@
 #include "stdafx.h"
 #include "sharelister.h"
+#include "packet.h"
+#include "yarn.h"
+#include "main.h"
 
 //TODO: Put into stdafx.h
 #include <fstream>
 
 using namespace std;
+
+int gatherServers(void *){
+	fprintf(stderr, "Gathering available servers...\n");
+	UFTT_packet pack;
+	pack.type = PT_QUERY_SERVERS;
+	send_packet(&pack, ServerSock);
+	ThreadExit(0);
+}
+
+int get_sharelist(ServerInfo * si) {
+	fprintf(stderr, "Gathering sharelist from server %s...\n", addr2str(si->address).c_str());
+	UFTT_packet_shareinfo p;
+	p.type = PT_QUERY_SHARELIST;
+	p.serverinfo = si;
+	send_packet((UFTT_packet *)&p, ServerSock);
+	ThreadExit( 0 );
+}
+
 
 // TODO: move this somewhere else?
 uint64 FileSize(const char* sFileName) {
@@ -33,7 +54,7 @@ uint64 FileSize(const char* sFileName) {
 #endif
 }
 
-vector<ServerInfo> servers;
+vector<ServerInfo*> servers;
 ServerInfo *myServer;  //ptr into server list (our own server also resides in the share list :)
 
 void init_server_list() {
@@ -56,7 +77,7 @@ FileInfo::FileInfo(const std::string& path) {
 	DIR *dir = opendir(path.c_str());
 
 	attrs = 0;
-	
+
 	string::const_iterator iter;
 	for (iter = path.end(); iter != path.begin() && *(--iter) != '/'; ); // FIXME: '\\' instead of '/' on windows?
 	if (iter != path.end()) ++iter;

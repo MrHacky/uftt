@@ -4,9 +4,14 @@
 #include "main.h"
 #include "yarn.h"
 #include "gooey.h"
+#include "servert.h"
 #include "sharelister.h"
-
+#include "packet.h"
 using namespace std;
+
+bool ServerRestart = false;
+
+THREAD ServertThread;
 
 #define BUFLEN 512
 
@@ -109,7 +114,7 @@ SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr) {
 	}
 
 	addr.sin_family = AF_INET;
-	addr.sin_addr.s_addr = INADDR_ANY; //TODO FIX FOR LINUX
+	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons( bindport );
 
 	retval = bind( sock, ( sockaddr* )&addr, sizeof( addr ) );
@@ -325,6 +330,10 @@ SOCKET UseInterface( int i ) {
 }
 
 SOCKET UseUDP( bool b ) {
+	ServerRestart = true;
+	UFTT_packet restart;
+	restart.type = PT_RESTART_SERVER;
+	send_packet(&restart, ipx_sock);
 	closesocket( ipx_sock );
 	if ( b ) ipx_sock = CreateUDPSocket( port );
 	else  ipx_sock = CreateIPXSocket( port );
@@ -393,8 +402,7 @@ int main( int argc, char* argv[] ) {
 		}
 	}
 	init_server_list(  );
-	bool ServerRestart = false;
-	spawnThread(ServerThread, &ServerRestart);
+	ServertThread = spawnThread(ServerThread, &ServerRestart);
 
 	/* #ifdef USE_GUI */
 	gtk_init (&argc, &argv);

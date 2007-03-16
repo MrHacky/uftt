@@ -1,7 +1,7 @@
 bin_PROGRAMS = uftt uftt.old
-uftt_SOURCES = gladebuf.h gooey.cpp gooey.h main.cpp main.h servert.cpp \
-	sharelister.cpp sharelister_gui.cpp stdafx.h yarn.cpp
-noinst_HEADERS = gladebuf.h gooey.h main.h servert.h sharelister.h \
+uftt_SOURCES = gladebuf.h gooey.cpp gooey.h main.cpp main.h packet.cpp \
+	servert.cpp sharelister.cpp sharelister_gui.cpp stdafx.h yarn.cpp
+noinst_HEADERS = gladebuf.h gooey.h main.h packet.h servert.h sharelister.h \
 	sharelister_gui.h stdafx.h yarn.h
 
 nodist_uftt_SOURCES = gladebuf.cpp

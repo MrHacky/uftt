@@ -12,6 +12,7 @@
 #include "gladebuf.h"
 #include "sharelister.h"
 #include "sharelister_gui.h"
+#include "yarn.h"
 
 using namespace std;
 
@@ -62,6 +63,10 @@ void tvMyShares_target_drag_data_received(GtkWidget          *widget,
 	}
 
 	g_signal_stop_emission_by_name(widget,"drag_data_received"); // Don't know if this is correct, but it makes GTK STFU
+}
+
+void btnUpdateServerList_clicked(GtkWidget *widget, gpointer user_data) {
+  spawnThread(gatherServers, (void*)NULL);
 }
 
 void btnSendMessage_clicked(GtkWidget *widget, gpointer user_data) {
@@ -237,6 +242,15 @@ uint32 show_gooey() {
 		g_signal_connect (G_OBJECT (widget), "clicked", G_CALLBACK (btnReceiveSpam_clicked), NULL);
 	}
 
+	widget = glade_xml_get_widget (main_window, "btnUpdateServerList");
+	if(widget==NULL) {
+		fprintf(stderr,"Error: can not find widget `btnUpdateServerList'!\n");
+		return -1;
+	}
+	else {
+		g_signal_connect (G_OBJECT (widget), "pressed", G_CALLBACK (btnUpdateServerList_clicked), NULL);
+	}
+
 	//Set DnD targets
 	widget = glade_xml_get_widget (main_window, "tvMyShares");
 	if(widget==NULL) {
@@ -263,6 +277,13 @@ uint32 show_gooey() {
 	/* Have the delete event (window close) end the program */
 	widget = glade_xml_get_widget (main_window, "frmMain");
 	g_signal_connect (G_OBJECT (widget), "delete_event", G_CALLBACK (gtk_main_quit), NULL);
+
+// DEBUG
+			ShareInfo* share= new ShareInfo("/home/dafox/Desktop");
+			myServer->add_share(share);
+			add_tree_data(sharetreeview, share);
+
+
 
 	/* start the event loop. TODO: Do this in the background? */
 	//spawnThread(gtk_main(), NULL); ?

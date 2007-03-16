@@ -34,5 +34,10 @@ struct ServerInfo {
 };
 
 void init_server_list();
+int gatherServers(void *);
+int get_sharelist(ServerInfo * si);
+
+extern std::vector<ServerInfo*> servers;
+extern ServerInfo *myServer;
 
 #endif //SHARELISTER_H

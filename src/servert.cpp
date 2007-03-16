@@ -2,15 +2,18 @@
 #include "servert.h"
 #include "main.h"
 #include "yarn.h"
+#include "packet.h"
+#include "sharelister.h"
+
 extern bool udp_hax;
+SOCKET ServerSock;
 
 int WINAPI ServerThread(bool * Restart) {
-	/*FIXME: These #defines need to be user configurable at runtime*/
-	//-------------------------------------------------------------//
-#define SERVER_PORT 55555
-#define RECV_BUFFER_SIZE 1500
-	//-------------------------------------------------------------//
-	SOCKET ServerSock;
+	fprintf(stderr,"Initializing servert\n");
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+
 
 	if(udp_hax) {
 		ServerSock = CreateUDPSocket(SERVER_PORT);
@@ -35,21 +38,48 @@ int WINAPI ServerThread(bool * Restart) {
 		}
 		else {
 			fprintf( stderr,"Received a message from %s:\n",addr2str( &source_addr ).c_str() );
-			switch ( recv_buf[0] ) {
-				case 0x00:
-					fprintf( stderr, "TEST\n" );
+			switch ( recv_buf[0] ) { //first byte indicate packet type
+				case PT_QUERY_SERVERS:
+					fprintf( stderr, "PT_QUERY_SERVERS\n" );
+					UFTT_packet reply;
+					reply.type = PT_REPLY_SERVERS;
+					send_packet(&reply, ServerSock);
 					break;
-				case 0x42:
-					fprintf( stderr, "42\n" );
+				case PT_QUERY_SHARELIST:
+					fprintf( stderr, "PT_QUERY_SHARELIST\n" );
+					//TODO: SpawnThread
+					fprintf(stderr,"Sending Sharelist\n");
+					for(uint32 i = 0; i < myServer->share.size(); ++i) {
+						fprintf(stderr, "Sending share #%i\n",i);
+						reply_servers reply;
+						reply.type = PT_REPLY_SHARELIST;
+						reply.num_shares = myServer->share.size();
+						reply.share_num  = i;
+						reply.UID = myServer->share[i]->UID;
+						reply.name = myServer->share[i]->name;
+						send_packet((UFTT_packet*)&reply, ServerSock);
+					}
+					break;
+				case PT_REPLY_SERVERS: {
+					fprintf( stderr, "PT_REPLY_SERVERS\n" );
+					ServerInfo* serv = new ServerInfo;
+					serv->address = (sockaddr*)malloc(sizeof(sockaddr));
+					memcpy(serv->address, &source_addr, sizeof(sockaddr));
+					servers.push_back(serv);
+					spawnThread(get_sharelist, serv);
+				}; break;
+				case PT_RESTART_SERVER:
+					fprintf( stderr, "Received restart packet\n" );
 					break;
 				default:
-					fprintf( stderr, "Unknown message!" );
+					fprintf( stderr, "Unknown message!\n" );
 					break;
 			}
 		}
 	}
 	fprintf( stderr, "Restarting server ...\n" );
 	*Restart=false;
+	closesocket(ServerSock);
 	spawnThread( ServerThread,Restart );
 	ThreadExit( 0 );
 }

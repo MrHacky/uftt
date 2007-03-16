@@ -19,5 +19,5 @@
   SOCKET CreateIPXSocket( uint16 bindport, sockaddr_ipx* iface_addr = NULL );
   SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr = NULL ) ;
 
-
+  extern bool udp_hax;
 #endif
