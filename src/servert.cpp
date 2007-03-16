@@ -1,9 +1,12 @@
+#include "stdafx.h"
 #include "sharelister_gui.h"
 #include "servert.h"
 #include "main.h"
 #include "yarn.h"
 #include "packet.h"
 #include "sharelister.h"
+
+using namespace std;
 
 extern bool udp_hax;
 SOCKET ServerSock;
@@ -71,6 +74,25 @@ int WINAPI ServerThread(bool * Restart) {
 				case PT_RESTART_SERVER:
 					fprintf( stderr, "Received restart packet\n" );
 					break;
+				case PT_REPLY_SHARELIST: {
+					fprintf( stderr, "PT_REPLY_SHARELIST\n" );
+					reply_servers reply;
+					uint8 * index = (uint8*)recv_buf+1;
+					uint32 num,sum;
+					uint64 UID;
+					string name;
+					deserialize(&index, sum);
+					deserialize(&index, num);
+					deserialize(&index, UID);
+					deserialize(&index, name);
+					fprintf( stderr, "%i/%i :  = %s\n", num+1, sum, name.c_str());
+					/*ServerInfo* serv = new ServerInfo;
+					serv->address = (sockaddr*)malloc(sizeof(sockaddr));
+					memcpy(serv->address, &source_addr, sizeof(sockaddr));
+					servers.push_back(serv);
+					spawnThread(get_sharelist, serv);
+					*/
+				}; break;
 				default:
 					fprintf( stderr, "Unknown message!\n" );
 					break;

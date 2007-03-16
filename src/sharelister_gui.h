@@ -5,8 +5,8 @@
 #include "sharelister.h"
 
 enum {
-	COL_PIX  = 0,
-	COL_NAME,
+//	COL_PIX  = 0,
+	COL_NAME =0,
 	COL_SIZE,
 	NUM_COLS
 } ;

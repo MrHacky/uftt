@@ -98,14 +98,14 @@ init_tree_view (GtkTreeView* aview)
 			//p = gdk_pixbuf_new_from_file("../../src/folder_closed.gif", &err);
 			//g_object_set(renderer,"pixbuf",p,NULL);
 /*/
-	GdkPixbuf* p;
+	GdkPixbuf* p1,*p2;
 	GError *err = 0;
-	p = gdk_pixbuf_new_from_xpm_data((const char**)folder_open_xpm);
+	p1 = gdk_pixbuf_new_from_xpm_data((const char**)folder_open_xpm);
 	fprintf(stderr, "ERROR = %i / \n",err);
-	g_object_set(renderer,"pixbuf-expander-open",p,NULL);
-	p = gdk_pixbuf_new_from_xpm_data((const char**)folder_closed_xpm); //FIXME: Closed.xpm
+	//g_object_set(renderer,"pixbuf-expander-open",p,NULL);
+	p2 = gdk_pixbuf_new_from_xpm_data((const char**)folder_closed_xpm);
 	fprintf(stderr, "ERROR = %i / \n",err);
-	g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
+	//g_object_set(renderer,"pixbuf-expander-closed",p,NULL);
 
 /*	GdkPixmap*  gdk_pixmap_create_from_xpm      (GdkWindow *window,
                                              GdkBitmap **mask,
@@ -114,27 +114,43 @@ init_tree_view (GtkTreeView* aview)
 /*********************************************************************/
 
 
-	GtkTreeViewColumn*  collumn = gtk_tree_view_column_new_with_attributes(
-			"Image",
+	GtkTreeViewColumn*  column ;/*= gtk_tree_view_column_new_with_attributes(
+			"Name",
 			renderer,
 			NULL);
+			*/
+
+	column = gtk_tree_view_column_new ();
+	gtk_tree_view_column_pack_start (column, renderer, FALSE);
 
 //	g_object_set_property (G_OBJECT (aview), "expander-column", (GValue*)collumn);
 
-	gtk_tree_view_insert_column(GTK_TREE_VIEW (view), collumn, -1);
+	gtk_tree_view_column_set_attributes (column, renderer,
+					     "pixbuf-expander-closed", p2,
+					     "pixbuf-expander-open", p1,
+					     NULL);
+
+
+	renderer = gtk_cell_renderer_text_new ();
+	gtk_tree_view_column_pack_start (column, renderer, TRUE);
+	gtk_tree_view_column_set_attributes (column, renderer,
+					     "text", COL_NAME,
+					     NULL);
+
+	gtk_tree_view_insert_column(GTK_TREE_VIEW (view), column, -1);
 
 	//g_object_set (G_OBJECT (aview),"expander-column", (GValue*)collumn, "headers-visible", TRUE, NULL);
 
 
 	/* --- Column #1 --- */
-	renderer = gtk_cell_renderer_text_new ();
+	/*renderer = gtk_cell_renderer_text_new ();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
 																							 -1,
 																							 "Name",
 																							 renderer,
 																							 "text", COL_NAME,
 																							 NULL);
-
+*/
 	/* --- Column #2 --- */
 	renderer = gtk_cell_renderer_text_new ();
 	gtk_tree_view_insert_column_with_attributes (GTK_TREE_VIEW (view),
