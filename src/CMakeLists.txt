@@ -10,6 +10,8 @@ ADD_EXECUTABLE(uftt
 	Types.h
 	SharedData.cpp
 	SharedData.h
+	JobRequest.cpp
+	JobRequest.h
 )
 
 TARGET_LINK_LIBRARIES(uftt
