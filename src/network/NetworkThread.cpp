@@ -167,7 +167,7 @@ void NetworkThread::operator()()
 		//cout << "sel:" << sel << '\n';
 		socklen_t len = sizeof(source_addr);
 		assert(sel >= 0);
-		if (FD_ISSET(udpsock, &readset)) {
+		while (FD_ISSET(udpsock, &readset)) {
 			int msglen = recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len);
 			if (msglen == SOCKET_ERROR) {
 				fprintf(stderr, "Server: recvfrom() failed with error #%i\n", NetGetLastError());
@@ -486,6 +486,15 @@ void NetworkThread::operator()()
 					}
 				}
 			}
+			tv.tv_sec = 0;
+			tv.tv_usec = 0;
+
+			FD_ZERO(&readset);
+			FD_SET(udpsock, &readset);
+
+			// poll for incoming stuff
+			sel = select(udpsock+1, &readset, NULL, NULL, &tv);
+			assert(sel >= 0);
 		}
 
 		{
