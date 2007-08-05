@@ -21,6 +21,15 @@ bool SHA1::operator<(const SHA1& o) const
 	return false;
 }
 
+bool SHA1::operator==(const SHA1& o) const
+{
+	for (int i = 0; i < 20; ++i)
+		if (data[i] != o.data[i])
+			return false;
+	return true;
+}
+
+
 SHA1Hasher::SHA1Hasher()
 {
 	SHA1_Init(&state);

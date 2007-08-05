@@ -12,6 +12,30 @@ using namespace std;
 
 #define SERVER_PORT 12345
 
+// TODO: improve/move elsewhere
+FileInfoRef findFI(const FileInfoRef fi, const SHA1 & hash)
+{
+	if (hash == fi->hash)
+		return fi;
+	FileInfoRef res;
+	BOOST_FOREACH(const FileInfoRef & tfi, fi->files) {
+		res = findFI(tfi, hash);
+		if (res) return res;
+	}
+	return res;
+}
+
+FileInfoRef findFI(const SHA1 & hash)
+{
+	FileInfoRef res;
+	boost::mutex::scoped_lock lock(shares_mutex);
+	BOOST_FOREACH(const ShareInfo & si, MyShares) {
+		res = findFI(si.root, hash);
+		if (res) return res;
+	}
+	return res;
+}
+
 static string addr2str( sockaddr* addr ) {
 	char buf[100];
 	switch ( addr->sa_family ) {
@@ -166,10 +190,29 @@ void NetworkThread::operator()()
 							// TODO: serialize SHA1 object nicer
 							BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
 
-							cout << "TODO: post GUI event for new share:" << name << endl;
 							cbAddShare(name, hash);
 						}
 						
+						break;
+					}
+					case PT_QUERY_CHUNK: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data)
+							rpacket.deserialize(val);
+						FileInfoRef fi = findFI(hash);
+						if (!fi) {
+							cout << "hash not found!" << endl;
+							break;
+						}
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_INFO_CHUNK);
+						spacket.serialize(fi->name);
+
+						spacket.serialize<uint32>(fi->files.size());
+
+						assert(spacket.curpos < 1400);
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
 					default: {
@@ -188,11 +231,29 @@ void NetworkThread::operator()()
 		}
 
 		for (; MyJobs.size() > 0; MyJobs.pop_back()) {
-			const JobRequest& job = MyJobs.back();
+			JobRequest& job = MyJobs.back();
 			switch (job.type) {
 				case PT_QUERY_SERVERS: {
 					spacket.curpos = 0;
 					spacket.serialize<uint8>(PT_QUERY_SERVERS);
+					
+					sockaddr target_addr;
+					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+					
+					udp_addr->sin_family = AF_INET;
+					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+					udp_addr->sin_port = htons( SERVER_PORT );
+
+					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+						cout << "error sending packet: " << NetGetLastError() << endl;
+					break;
+				}
+				case PT_QUERY_CHUNK: {
+					spacket.curpos = 0;
+					spacket.serialize<uint8>(PT_QUERY_CHUNK);
+					
+					BOOST_FOREACH(uint8 & val, job.hash.data)
+						spacket.serialize(val);
 					
 					sockaddr target_addr;
 					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;

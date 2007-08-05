@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include <QTreeWidgetItem>
+
 #include "../SharedData.h"
 #include "../network/Packet.h"
 
@@ -37,7 +39,7 @@ void MainWindow::RefreshButtonClicked()
 
 void MainWindow::AddNewServer()
 {
-	cout << "AddNewServer()" << endl;
+	cout << "TODO?: AddNewServer()" << endl;
 }
 
 void MainWindow::emitAddNewServer()
@@ -47,7 +49,21 @@ void MainWindow::emitAddNewServer()
 
 void MainWindow::AddNewShare(std::string str, SHA1 hash)
 {
-	cout << "newshare:" << str << endl;
+	QTreeWidgetItem* rwi = treedata[hash];
+	if (rwi == NULL) {
+		rwi = new QTreeWidgetItem(OthersSharesTree, 0);
+		rwi->setText(0, str.c_str());
+		treedata[hash] = rwi;
+	}
+	if (rwi->childCount() == 0) {
+		JobRequest job;
+		job.type = PT_QUERY_CHUNK; // refresh
+		job.hash = hash;
+		{
+			boost::mutex::scoped_lock lock(jobs_mutex);
+			JobQueue.push_back(job);
+		}
+	}
 }
 
 void MainWindow::emitAddNewShare(std::string str, SHA1 hash)

@@ -3,9 +3,16 @@
 
 #include "ui_MainWindow.h"
 
+#include <map>
+
+class QTreeWidgetItem;
+
 class MainWindow: public QMainWindow, public Ui::MainWindow
 {
 	Q_OBJECT
+
+	private:
+		std::map<SHA1, QTreeWidgetItem*> treedata;
 
 	public:
 		MainWindow();

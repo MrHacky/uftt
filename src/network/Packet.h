@@ -11,15 +11,17 @@
 enum packet_types {
 	PT_QUERY_SERVERS=0,
 	PT_QUERY_SHARELIST,
+	PT_QUERY_CHUNK,
 	PT_REPLY_SERVERS,
 	PT_REPLY_SHARELIST,
+	PT_INFO_CHUNK,
 	PT_REQUEST_CHUNK,
 	PT_SEND_CHUNK,
 	PT_RESTART_SERVER,
 };
 
 
-//FIXME: Needs to be configurable @runtime
+//TODO: Needs to be configurable @runtime
 #define PACKET_SIZE 1400
 
 
