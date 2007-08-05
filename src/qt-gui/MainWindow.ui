@@ -135,7 +135,7 @@
           <item>
            <widget class="QLineEdit" name="DownloadEdit" >
             <property name="text" >
-             <string>~/uftt/</string>
+             <string>/home/simon/uftt/</string>
             </property>
            </widget>
           </item>

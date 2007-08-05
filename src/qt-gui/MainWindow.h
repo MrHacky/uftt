@@ -13,6 +13,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	private:
 		std::map<SHA1, QTreeWidgetItem*> treedata;
+		std::map<SHA1, FileInfoRef> dirdata;
+		
+		void StartDownload(FileInfoRef fi, const fs::path& path);
 
 	private slots:
 		void DragStart(QTreeWidgetItem*, int);

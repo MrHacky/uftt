@@ -87,6 +87,7 @@ void MainWindow::AddNewFileInfo(void* data)
 {
 	FileInfoRef fi(*((FileInfoRef*)data));
 	delete (FileInfoRef*)data;
+	dirdata[fi->hash] = fi;
 	QTreeWidgetItem* rwi = treedata[fi->hash];
 	if (rwi != NULL) {
 		BOOST_FOREACH(const FileInfoRef& sfi, fi->files) {
@@ -122,5 +123,30 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 void MainWindow::StartDownload()
 {
-	cout << "Start Download!" << DownloadEdit->text().toStdString() << endl;
+	QTreeWidgetItem* rwi = OthersSharesTree->currentItem();
+	SHA1 hash;
+	typedef std::pair<SHA1, QTreeWidgetItem*> pairtype;
+	BOOST_FOREACH(const pairtype & ip, treedata) {
+		if (ip.second == rwi)
+			hash = ip.first;
+	}
+	FileInfoRef fi = dirdata[hash];
+	if (!fi) {
+		cout << "hash not found!" << endl;
+		return;
+	}
+	StartDownload(fi, fs::path(DownloadEdit->text().toStdString()) / rwi->text(0).toStdString());
+	//cout << "Start Download!" <<  << endl;
+}
+
+void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
+{
+	fi = dirdata[fi->hash];
+	cout << "fp:" << path << endl;
+	if (fi->files.size() > 0) {
+		create_directory(path);
+	}
+	BOOST_FOREACH(const FileInfoRef& fir, fi->files) {
+		StartDownload(fir, path / fir->name);
+	}
 }
