@@ -1,11 +1,10 @@
 #include "QSharesTreeWidget.h"
 
-//#include <QImageDrag>
-//#include <QTextDrag>
+#include <QTreeWidgetItem>
+
+#include <boost/foreach.hpp>
 
 #include <iostream>
-
-#include "../files/FileInfo.h"
 
 using namespace std;
 
@@ -33,4 +32,20 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	event->acceptProposedAction();
 
 	FileInfo fi(event->mimeData()->text().toStdString().substr(7));
+	addFileInfo(fi);
+}
+
+void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
+{
+	QTreeWidgetItem* rwi;
+	if (parent)
+	 rwi = new QTreeWidgetItem(parent, 0);
+	else
+	 rwi = new QTreeWidgetItem(this, 0);
+
+	rwi->setText(0, QString(fi.name.c_str()));
+
+	BOOST_FOREACH(const FileInfoRef& iter, fi.files) {
+		addFileInfo(*iter, rwi);
+	}
 }

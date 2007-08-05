@@ -24,6 +24,7 @@ class FileInfo {
 		uint64 UID;
 		FileInfo(const fs::path& path);
 };
+typedef shared_ptr<FileInfo> FileInfoRef;
 
 struct ShareInfo {
 	std::string name;
