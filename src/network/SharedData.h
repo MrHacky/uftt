@@ -10,4 +10,5 @@
 extern std::vector<ShareInfo> MyShares;
 extern boost::mutex shares_mutex;
 
+extern volatile bool terminating;
 #endif
