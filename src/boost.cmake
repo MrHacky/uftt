@@ -22,7 +22,7 @@ ELSE ( WIN32 )
 	# and the libraries are in: /usr/local/lib/
 
 	SET(BOOST_LIB_SUFFIX
-		-gcc41
+		-gcc41-mt
 		CACHE STRING
 		"suffix to use for boost libraries"
 	)

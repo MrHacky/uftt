@@ -1,12 +1,16 @@
 #include "Types.h"
-#include "network/CrossPlatform.h"
-#include "files/FileInfo.h"
 
 #include "qt-gui/QTMain.h"
-
-#include "sha1/SHA1.h"
+#include "network/NetworkThread.h"
 
 int main( int argc, char **argv )
 {
-	return ShowQTGui(argc, argv);
+	boost::thread thrd1((NetworkThread()));
+
+	// main(this) thread will handle the GUI, in addition to any threads QT might create internally
+	bool ret = ShowQTGui(argc, argv);
+
+	thrd1.join();
+
+	return ret;
 }
