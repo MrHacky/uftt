@@ -8,10 +8,15 @@ int main( int argc, char **argv )
 {
 	terminating = false;
 
-	boost::thread thrd1((NetworkThread()));
+	NetworkThread thrd1obj;
 
-	// main(this) thread will handle the GUI, in addition to any threads QT might create internally
-	bool ret = ShowQTGui(argc, argv);
+	QTMain gui(argc, argv);
+
+	gui.BindEvents(&thrd1obj);
+
+	boost::thread thrd1(thrd1obj);
+
+	bool ret = gui.run();
 
 	terminating = true;
 

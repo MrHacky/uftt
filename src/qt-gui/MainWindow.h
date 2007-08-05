@@ -13,7 +13,14 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	public slots:
 		void RefreshButtonClicked();
+		void AddNewServer();
 
+	// thread marshalling stuff
+	signals:
+		void sigAddNewServer();
+	
+	public:
+		void emitAddNewServer();
 };
 
 #endif

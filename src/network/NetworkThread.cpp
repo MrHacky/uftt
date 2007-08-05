@@ -105,14 +105,17 @@ void NetworkThread::operator()()
 		socklen_t len = sizeof(source_addr);
 		assert(sel >= 0);
 		if (FD_ISSET(udpsock, &readset)) {
-			if (recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len) == SOCKET_ERROR) {
+			int msglen = recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len);
+			if (msglen == SOCKET_ERROR) {
 				fprintf(stderr, "Server: recvfrom() failed with error #%i\n", NetGetLastError());
 			} else {
 				rpacket.curpos = 0;
 				uint8 ptype;
 				rpacket.deserialize(ptype);
-				cout << "got packet, type:" << (int)ptype << endl;
-				cout << "from:" << addr2str(&source_addr) << endl;
+				cout << "got packet,\ttype:" << (int)ptype;
+				cout << "\t size:" << msglen;
+				cout << "\tfrom:" << addr2str(&source_addr);
+				cout << endl;
 				switch (ptype) {
 					case PT_QUERY_SERVERS: {
 						spacket.curpos = 0;
@@ -128,6 +131,7 @@ void NetworkThread::operator()()
 					};
 					case PT_REPLY_SERVERS: {
 						cout << "TODO: post GUI event for new server" << endl;
+						cbAddServer();
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_QUERY_SHARELIST);
 
@@ -144,11 +148,21 @@ void NetworkThread::operator()()
 							spacket.serialize<uint32>(MyShares.size());
 							BOOST_FOREACH(const ShareInfo & si, MyShares) {
 								spacket.serialize(si.root->name);
+								// TODO: serialize SHA1 object nicer
 								BOOST_FOREACH(uint8 val, si.root->hash.data)
 									spacket.serialize(val);
 							}
 						}
+						assert(spacket.curpos < 1400);
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
 					};
+					case PT_REPLY_SHARELIST: {
+						cout << "TODO: post GUI event for new share" << endl;
+					}
+					default: {
+						cout << "packet type uknown" << endl;
+					}
 				}
 			}
 		}

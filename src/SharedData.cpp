@@ -7,3 +7,5 @@ volatile bool terminating;
 
 std::vector<JobRequest> JobQueue;
 boost::mutex jobs_mutex;
+
+
