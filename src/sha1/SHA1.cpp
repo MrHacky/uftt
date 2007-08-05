@@ -13,6 +13,14 @@ uint8 SHA1::operator[](int i)
 	return data[i];
 }
 
+bool SHA1::operator<(const SHA1& o)
+{
+	for (int i = 0; i < 20; ++i)
+		if (data[i] < o.data[i])
+			return true;
+	return false;
+}
+
 SHA1Hasher::SHA1Hasher()
 {
 	SHA1_Init(&state);
