@@ -8,13 +8,14 @@
 #include <boost/function.hpp>
 
 #include "../sha1/SHA1.h"
+#include "../JobRequest.h"
 
 class NetworkThread {
 	public:
 		// TODO: use signals for callbacks?
 		boost::function<void()> cbAddServer;
 		boost::function<void(std::string, SHA1)> cbAddShare;
-		boost::function<void(void*)> cbNewFileInfo;
+		boost::function<void(JobRequestRef)> cbNewTreeInfo;
 
 		void operator()();
 };

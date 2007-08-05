@@ -42,6 +42,7 @@ class JobRequestTreeData : public JobRequest {
 		struct child_info {
 			SHA1 hash;
 			std::string name;
+			child_info(SHA1 h, std::string n) : hash(h), name(n) {};
 		};
 		std::vector<child_info> children;
 

@@ -15,6 +15,7 @@ MainWindow::MainWindow()
 {
 	qRegisterMetaType<std::string>("std::string");
 	qRegisterMetaType<SHA1>("SHA1");
+	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
 
@@ -23,7 +24,8 @@ MainWindow::MainWindow()
 
 	connect(this, SIGNAL(sigAddNewServer()), this, SLOT(AddNewServer()));
 	connect(this, SIGNAL(sigAddNewShare(std::string, SHA1)), this, SLOT(AddNewShare(std::string, SHA1)));
-	connect(this, SIGNAL(sigAddNewFileInfo(void*)), this, SLOT(AddNewFileInfo(void*)));
+	connect(this, SIGNAL(sigNewTreeInfo(JobRequestRef)), this, SLOT(NewTreeInfo(JobRequestRef)));
+
 	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
 }
@@ -51,9 +53,9 @@ void MainWindow::emitAddNewServer()
 	emit sigAddNewServer();
 }
 
-void MainWindow::emitAddNewFileInfo(void* data)
+void MainWindow::emitNewTreeInfo(JobRequestRef job)
 {
-	emit sigAddNewFileInfo(data);
+	emit sigNewTreeInfo(job);
 }
 
 void MainWindow::AddNewShare(std::string str, SHA1 hash)
@@ -81,22 +83,31 @@ void MainWindow::emitAddNewShare(std::string str, SHA1 hash)
 	cout << "<emit!" << str << endl;
 }
 
-void MainWindow::AddNewFileInfo(void* data)
+void MainWindow::NewTreeInfo(JobRequestRef basejob)
 {
-	FileInfoRef fi(*((FileInfoRef*)data));
-	delete (FileInfoRef*)data;
-	dirdata[fi->hash] = fi;
+	assert(basejob->type() == JRT_TREEDATA);
+	JobRequestTreeDataRef job = boost::static_pointer_cast<JobRequestTreeData>(basejob);
+
+	if (job->chunkcount == 0)
+		return; // is a blob, not a tree
+	
+	FileInfoRef fi = dirdata[job->hash];
+	if (!fi) {
+		fi = FileInfoRef(new FileInfo());
+		fi->hash = job->hash;
+		dirdata[fi->hash] = fi;
+	}
 	QTreeWidgetItem* rwi = treedata[fi->hash];
 	if (rwi != NULL) {
-		BOOST_FOREACH(const FileInfoRef& sfi, fi->files) {
+		BOOST_FOREACH(const JobRequestTreeData::child_info& ci, job->children) {
 			QTreeWidgetItem* srwi = new QTreeWidgetItem(rwi, 0);
-			srwi->setText(0, sfi->name.c_str());
-			treedata[sfi->hash] = srwi;
-			JobRequestTreeDataRef job(new JobRequestTreeData());
-			job->hash = sfi->hash;
+			srwi->setText(0, ci.name.c_str());
+			treedata[ci.hash] = srwi;
+			JobRequestTreeDataRef newjob(new JobRequestTreeData());
+			newjob->hash = ci.hash;
 			{
 				boost::mutex::scoped_lock lock(jobs_mutex);
-				JobQueue.push_back(job);
+				JobQueue.push_back(newjob);
 			}
 		}
 	}

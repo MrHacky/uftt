@@ -5,6 +5,9 @@
 
 #include <map>
 
+#include "../sha1/SHA1.h"
+#include "../JobRequest.h"
+
 class QTreeWidgetItem;
 
 class MainWindow: public QMainWindow, public Ui::MainWindow
@@ -29,18 +32,18 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void RefreshButtonClicked();
 		void AddNewServer();
 		void AddNewShare(std::string str, SHA1 hash);
-		void AddNewFileInfo(void* data);
+		void NewTreeInfo(JobRequestRef);
 
 	// thread marshalling stuff
 	signals:
 		void sigAddNewServer();
 		void sigAddNewShare(std::string, SHA1);
-		void sigAddNewFileInfo(void*);
+		void sigNewTreeInfo(JobRequestRef);
 
 	public:
 		void emitAddNewServer();
 		void emitAddNewShare(std::string, SHA1);
-		void emitAddNewFileInfo(void*);
+		void emitNewTreeInfo(JobRequestRef);
 };
 
 #endif

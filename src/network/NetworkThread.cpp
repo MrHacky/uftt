@@ -254,7 +254,8 @@ void NetworkThread::operator()()
 								uint32 maxsize = PACKET_SIZE;
 								maxsize -= 1;  // type field
 								maxsize -= 20; // hash field
-								maxsize -= 2;  // num field
+								maxsize -= 4;  // chunk num field
+								maxsize -= 4;  // zero len field
 								BOOST_FOREACH(const FileInfoRef& cfi, fi->files) {
 									lastsize = cursize;
 									cursize += 4;                // 4 bytes for string (name) length
@@ -285,8 +286,7 @@ void NetworkThread::operator()()
 					}
 					case PT_REPLY_TREE_INFO: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data)
-							rpacket.deserialize(val);
+						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
 						
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
@@ -303,6 +303,94 @@ void NetworkThread::operator()()
 						job->children.clear();
 						job->gotinfo = true;
 						job->mtime = 0;
+						break;
+					}
+					case PT_QUERY_TREE_DATA: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						FileInfoRef fi = findFI(hash);
+						if (!fi) {
+							cout << "hash not found!" << endl;
+							break;
+						}
+						uint32 chunknum;
+						rpacket.deserialize(chunknum);
+						uint32 nchunk = 0;
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_REPLY_TREE_DATA);
+						BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+						spacket.serialize(chunknum);
+						{ // count chunks
+							uint32 cursize = 0;
+							uint32 lastsize;
+							uint32 maxsize = PACKET_SIZE;
+							maxsize -= 1;  // type field
+							maxsize -= 20; // hash field
+							maxsize -= 4;  // chunk num field
+							maxsize -= 4;  // zero len field
+							BOOST_FOREACH(const FileInfoRef& cfi, fi->files) {
+								lastsize = cursize;
+								cursize += 4;                // 4 bytes for string (name) length
+								cursize += cfi->name.size(); // x bytes for string (name) data
+								cursize += 20;               // 20 bytes for hash
+
+								if (cursize > maxsize) {
+									++nchunk;
+									cursize -= lastsize;
+								}
+								
+								if (nchunk == chunknum) {
+									spacket.serialize(cfi->name);
+									BOOST_FOREACH(uint8& val, cfi->hash.data) spacket.serialize(val);
+								}
+							}
+						}
+						spacket.serialize<uint32>(0);
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
+						break;
+					}
+					case PT_REPLY_TREE_DATA: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						JobRequestTreeDataRef job = TreeJobs[hash];
+						if (!job) {
+							cout << "dont care for packet" << endl;
+							break;
+						}
+						uint32 chunknum;
+						rpacket.deserialize(chunknum);
+						if (job->gotinfo && job->curchunk == chunknum) {
+							string str;
+							rpacket.deserialize(str);
+							while (str != "") {
+								SHA1 chash;
+								BOOST_FOREACH(uint8& val, chash.data) rpacket.deserialize(val);
+								job->children.push_back(JobRequestTreeData::child_info(chash, str));
+								rpacket.deserialize(str);
+							}
+							++job->curchunk;
+							job->mtime = 0;
+						}
+						break;
+					}
+					case PT_REPLY_BLOB_INFO: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+
+						{
+							JobRequestTreeDataRef job = TreeJobs[hash];
+							if (job) {
+								job->children.clear();
+								job->curchunk = 0;
+								job->chunkcount = 0;
+								job->childcount = 0;
+								job->gotinfo = true;
+								
+								cout << "dont care for packet" << endl;
+								break;
+							}
+						}
 						break;
 					}
 					case PT_REQUEST_CHUNK: {
@@ -430,7 +518,7 @@ void NetworkThread::operator()()
 						spacket.curpos = 0;
 						if (!job->gotinfo) {
 							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
-	
+
 							BOOST_FOREACH(uint8 & val, job->hash.data)
 								spacket.serialize(val);
 						} else {
@@ -442,7 +530,7 @@ void NetworkThread::operator()()
 
 								spacket.serialize(job->curchunk);
 							} else {
-								// TODO: callback
+								cbNewTreeInfo(job);
 								MyJobs.erase(MyJobs.begin() + i);
 							}
 						}
