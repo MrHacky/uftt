@@ -17,7 +17,7 @@ class FileInfo {
 		std::string name;
 		uint32 attrs;
 		uint64 size;
-		std::vector<shared_ptr<FileInfo> > file;
+		std::vector<shared_ptr<FileInfo> > files;
 		uint64 UID;
 		FileInfo(const fs::path& path);
 };

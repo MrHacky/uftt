@@ -1,3 +1,5 @@
+include(boost.cmake)
+
 SUBDIRS(files)
 SUBDIRS(network)
 
