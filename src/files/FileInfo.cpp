@@ -31,3 +31,8 @@ FileInfo::FileInfo(const fs::path& path)
 	hasher.GetResult(hash); // store hash
 	cout << path << '\n';
 }
+
+ShareInfo::ShareInfo(FileInfoRef fi)
+	: root(fi)
+{
+}

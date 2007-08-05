@@ -6,6 +6,9 @@
 
 #include <iostream>
 
+#include "../files/FileInfo.h"
+#include "../network/SharedData.h"
+
 using namespace std;
 
 QSharesTreeWidget::QSharesTreeWidget(QWidget*& widget)
@@ -31,8 +34,14 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	cout << "try\n" << event->mimeData()->text().toStdString() << '\n';
 	event->acceptProposedAction();
 
-	FileInfo fi(event->mimeData()->text().toStdString().substr(7));
-	addFileInfo(fi);
+	FileInfoRef fi( new FileInfo(event->mimeData()->text().toStdString().substr(7)));
+	addFileInfo(*fi);
+	
+	ShareInfo fs(fi);
+	{
+		boost::mutex::scoped_lock lock(shares_mutex);
+		MyShares.push_back(fs);
+	}
 }
 
 void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
@@ -48,4 +57,5 @@ void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
 	BOOST_FOREACH(const FileInfoRef& iter, fi.files) {
 		addFileInfo(*iter, rwi);
 	}
+	
 }

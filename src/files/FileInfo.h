@@ -28,10 +28,8 @@ class FileInfo {
 typedef shared_ptr<FileInfo> FileInfoRef;
 
 struct ShareInfo {
-	std::string name;
 	shared_ptr<FileInfo> root;
-	uint64 UID;
-	ShareInfo(const std::string& path);
+	ShareInfo(shared_ptr<FileInfo> fi);
 };
 
 #endif
