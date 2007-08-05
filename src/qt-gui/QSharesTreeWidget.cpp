@@ -43,7 +43,7 @@ void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
 	else
 	 rwi = new QTreeWidgetItem(this, 0);
 
-	rwi->setText(0, QString(fi.name.c_str()));
+	rwi->setText(0, fi.name.c_str());
 
 	BOOST_FOREACH(const FileInfoRef& iter, fi.files) {
 		addFileInfo(*iter, rwi);

@@ -12,8 +12,8 @@ QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-ADD_EXECUTABLE(uftt-qt
-	Main.cpp
+ADD_LIBRARY(uftt-qt
+	QTMain.cpp
 	MainWindow.cpp
 	MainWindow.h
 	QSharesTreeWidget.cpp
