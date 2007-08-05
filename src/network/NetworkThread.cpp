@@ -144,6 +144,15 @@ void NetworkThread::operator()()
 
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
+	
+	sockaddr bc_addr;
+	{
+		sockaddr_in* bc_inaddr = ( sockaddr_in * )&bc_addr;
+
+		bc_inaddr->sin_family = AF_INET;
+		bc_inaddr->sin_addr.s_addr = INADDR_BROADCAST;
+		bc_inaddr->sin_port = htons( SERVER_PORT );
+	}
 
 	// initialise networkerrno 97
 	while (!terminating) {
@@ -227,7 +236,7 @@ void NetworkThread::operator()()
 						
 						break;
 					}
-					case PT_QUERY_CHUNK: {
+					case PT_QUERY_OBJECT_INFO: {
 						SHA1 hash;
 						BOOST_FOREACH(uint8& val, hash.data)
 							rpacket.deserialize(val);
@@ -237,68 +246,63 @@ void NetworkThread::operator()()
 							break;
 						}
 
-						spacket.curpos = 0;
-						spacket.serialize<uint8>(PT_INFO_CHUNK);
-						BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
-						//spacket.serialize(fi->name);
-
-						uint32 curfile;
-						rpacket.deserialize(curfile);
-
-						while (curfile < fi->files.size() && (spacket.curpos + 20 + fi->files[curfile]->name.size() + 15) < 1400) {
-							spacket.serialize(fi->files[curfile]->name);
-							BOOST_FOREACH(const uint8& val, fi->files[curfile]->hash.data)
-								spacket.serialize(val);
-							++curfile;
+						if (fi->attrs & FATTR_DIR) {
+							uint32 nchunks = 1;
+							{ // count chunks
+								uint32 cursize = 0;
+								uint32 lastsize;
+								uint32 maxsize = PACKET_SIZE;
+								maxsize -= 1;  // type field
+								maxsize -= 20; // hash field
+								maxsize -= 2;  // num field
+								BOOST_FOREACH(const FileInfoRef& cfi, fi->files) {
+									lastsize = cursize;
+									cursize += 4;                // 4 bytes for string (name) length
+									cursize += cfi->name.size(); // x bytes for string (name) data
+									cursize += 20;               // 20 bytes for hash
+	
+									if (cursize > maxsize) {
+										++nchunks;
+										cursize -= lastsize;
+									}
+								}
+							}
+							spacket.curpos = 0;
+							spacket.serialize<uint8>(PT_REPLY_TREE_INFO);
+							BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+							spacket.serialize<uint32>(fi->files.size());
+							spacket.serialize(nchunks);
+						} else {
+							spacket.curpos = 0;
+							spacket.serialize<uint8>(PT_REPLY_BLOB_INFO);
+							BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+							spacket.serialize(fi->size);
 						}
-						spacket.serialize(string(""));
-						if (curfile >= fi->files.size()) curfile = 0;
-						spacket.serialize(curfile);
 
-						assert(spacket.curpos < 1400);
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
-					case PT_INFO_CHUNK: {
+					case PT_REPLY_TREE_INFO: {
 						SHA1 hash;
 						BOOST_FOREACH(uint8& val, hash.data)
 							rpacket.deserialize(val);
-						FileInfoRef fi = inqueuemap[hash];
-						if (!fi) {
-							fi = FileInfoRef(new FileInfo());
-							inqueuemap[hash] = fi;
-							fi->hash = hash;
+						
+						JobRequestTreeDataRef job = TreeJobs[hash];
+						if (!job) {
+							cout << "dont care for packet" << endl;
+							break;
 						}
-						string str;
-						rpacket.deserialize(str);
-						while (str != "") {
-							FileInfoRef sfi(new FileInfo());
-							sfi->name = str;
-							BOOST_FOREACH(uint8& val, sfi->hash.data)
-								rpacket.deserialize(val);
-							fi->files.push_back(sfi);
-							rpacket.deserialize(str);
-						}
-						uint32 nextpos;
-						rpacket.deserialize(nextpos);
+						uint32 numfiles, numchunks;
+						rpacket.deserialize(numfiles);
+						rpacket.deserialize(numchunks);
 
-						if (nextpos == 0) {
-							inqueuemap[hash].reset();
-							FileInfoRef* cfir = new FileInfoRef(fi);
-							cbNewFileInfo((void*)cfir);
-						} else {
-							spacket.curpos = 0;
-							spacket.serialize<uint8>(PT_QUERY_CHUNK);
-
-							BOOST_FOREACH(uint8 & val, hash.data)
-								spacket.serialize(val);
-
-							spacket.serialize<uint32>(nextpos);
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
-								cout << "error sending packet: " << NetGetLastError() << endl;
-						}
-
+						job->childcount = numfiles;
+						job->chunkcount = numchunks;
+						job->curchunk = 0;
+						job->children.clear();
+						job->gotinfo = true;
+						job->mtime = 0;
 						break;
 					}
 					case PT_REQUEST_CHUNK: {
@@ -399,9 +403,10 @@ void NetworkThread::operator()()
 			}
 		}
 
-		for (int i = MyJobs.size(); i > 0; --i) {
+		for (int i = MyJobs.size()-1; i >= 0; --i) {
 			JobRequestRef basejob = MyJobs[i];
-			if (++basejob->time > 10) {
+			if (--basejob->mtime < 0) {
+				basejob->mtime = 10;
 				switch (basejob->type()) {
 					case JRT_SERVERINFO: {
 						spacket.curpos = 0;

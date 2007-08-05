@@ -23,11 +23,11 @@ class JobRequest {
 		JobRequest();
 		JobRequest(const JobRequest& o);
 	protected:
-		JobRequest(uint8 type) : jobtype(type), time(0xFFFF) {};
+		JobRequest(uint8 type) : jobtype(type), mtime(0) {};
 	public:
 		uint8 type() const { return jobtype; };
 
-		uint32 time;
+		int32 mtime;
 };
 typedef boost::shared_ptr<JobRequest> JobRequestRef;
 
