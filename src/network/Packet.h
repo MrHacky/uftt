@@ -1,6 +1,8 @@
 #ifndef PACKET_H
 #define PACKET_H
 
+#include <string>
+
 #include "../Types.h"
 
 #include <boost/utility/enable_if.hpp>
@@ -41,6 +43,11 @@ class UFTT_packet {
 			var = 0;
 			for (int i = 0; i < sizeof(T); ++i)
 				var |= data[curpos++] << (i*8);
+		}
+
+		void serialize(const std::string& var) {
+		}
+		void deserialize(std::string& var) {
 		}
 };
 

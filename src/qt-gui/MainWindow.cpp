@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "../SharedData.h"
+#include "../network/Packet.h"
 
 using namespace std;
 
@@ -20,7 +21,7 @@ MainWindow::~MainWindow()
 void MainWindow::RefreshButtonClicked()
 {
 	JobRequest job;
-	job.type = 1; // refresh
+	job.type = PT_QUERY_SERVERS; // refresh
 	{
 		boost::mutex::scoped_lock lock(jobs_mutex);
 		JobQueue.push_back(job);

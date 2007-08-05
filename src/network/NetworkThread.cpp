@@ -79,7 +79,44 @@ void NetworkThread::operator()()
 				rpacket.curpos = 0;
 				uint8 ptype;
 				rpacket.deserialize(ptype);
-				cout << "got packet, type:" << (int)ptype << '\n';
+				cout << "got packet, type:" << (int)ptype << endl;
+				switch (ptype) {
+					case PT_QUERY_SERVERS: {
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_REPLY_SERVERS);
+
+						sockaddr_in* udp_addr = ( sockaddr_in * )&source_addr;
+
+						udp_addr->sin_family = AF_INET;
+
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
+						break;
+					};
+					case PT_REPLY_SERVERS: {
+						cout << "TODO: post GUI event for new server" << endl;
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_QUERY_SHARELIST);
+
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
+						break;
+					};
+					case PT_QUERY_SHARELIST: {
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_REPLY_SHARELIST);
+
+						{
+							boost::mutex::scoped_lock lock(shares_mutex);
+							spacket.serialize<uint32>(MyShares.size());
+							BOOST_FOREACH(const ShareInfo & si, MyShares) {
+								spacket.serialize(si.root->name);
+								BOOST_FOREACH(uint8 val, si.root->hash.data)
+									spacket.serialize(val);
+							}
+						}
+					};
+				}
 			}
 		}
 
@@ -94,7 +131,7 @@ void NetworkThread::operator()()
 		for (; MyJobs.size() > 0; MyJobs.pop_back()) {
 			const JobRequest& job = MyJobs.back();
 			switch (job.type) {
-				case 1: {
+				case PT_QUERY_SERVERS: {
 					spacket.curpos = 0;
 					spacket.serialize<uint8>(PT_QUERY_SERVERS);
 					
@@ -106,9 +143,7 @@ void NetworkThread::operator()()
 					udp_addr->sin_port = htons( SERVER_PORT );
 
 					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
-						cout << "error sending packet" << endl;
-					else
-						cout << "sent packet!" << endl;
+						cout << "error sending packet: " << NetGetLastError() << endl;
 					break;
 				}
 				default: {
