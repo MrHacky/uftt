@@ -16,6 +16,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	private slots:
 		void DragStart(QTreeWidgetItem*, int);
+		void StartDownload();
 
 	public:
 		MainWindow();

@@ -19,7 +19,8 @@ MainWindow::MainWindow()
 	setupUi(this);
 
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
-	
+	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
+
 	connect(this, SIGNAL(sigAddNewServer()), this, SLOT(AddNewServer()));
 	connect(this, SIGNAL(sigAddNewShare(std::string, SHA1)), this, SLOT(AddNewShare(std::string, SHA1)));
 	connect(this, SIGNAL(sigAddNewFileInfo(void*)), this, SLOT(AddNewFileInfo(void*)));
@@ -117,4 +118,9 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 		// TODO: figure this out...
 	}
 
+}
+
+void MainWindow::StartDownload()
+{
+	cout << "Start Download!" << DownloadEdit->text().toStdString() << endl;
 }

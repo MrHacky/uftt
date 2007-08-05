@@ -119,17 +119,25 @@
            </widget>
           </item>
           <item>
-           <spacer>
-            <property name="orientation" >
-             <enum>Qt::Horizontal</enum>
+           <widget class="QPushButton" name="DownloadButton" >
+            <property name="text" >
+             <string>Download</string>
             </property>
-            <property name="sizeHint" >
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label" >
+            <property name="text" >
+             <string>To:</string>
             </property>
-           </spacer>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="DownloadEdit" >
+            <property name="text" >
+             <string>~/uftt/</string>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
