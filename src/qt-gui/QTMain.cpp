@@ -18,6 +18,8 @@ QTMain::QTMain( int argc, char **argv )
 	impl = new QTImpl();
 	((QTImpl*)impl)->app = new QApplication(argc, argv);
 	((QTImpl*)impl)->wnd = new MainWindow();
+	QObject::connect(((QTImpl*)impl)->wnd->action_Quit, SIGNAL(activated()),
+	                 ((QTImpl*)impl)->app, SLOT(quit()));
 }
 
 QTMain::~QTMain()
