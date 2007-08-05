@@ -10,6 +10,8 @@
 
 using namespace std;
 
+#define SERVER_PORT 12345
+
 static SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr) {
 	sockaddr_in addr;
 	SOCKET sock;
@@ -40,16 +42,7 @@ static SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr) {
 		closesocket( sock );
 		return INVALID_SOCKET;
 	};
-/*
-	// now enable nonblocking
-	unsigned long blk = 1;
-	retval = setsockopt( sock, SOL_SOCKET, SO_BROADCAST, ( char* )&blk, sizeof( blk ) );
-	if ( retval == SOCKET_ERROR ) {
-		cout << "UDP: Unable to enable nonblocking:" << NetGetLastError() << "\n";
-		closesocket( sock );
-		return INVALID_SOCKET;
-	};
-*/
+
 	return sock;
 }
 
@@ -59,10 +52,10 @@ void NetworkThread::operator()()
 	UFTT_packet rpacket;
 	UFTT_packet spacket;
 	sockaddr source_addr;
+	vector<JobRequest> MyJobs;
 
-	udpsock = CreateUDPSocket(12345, NULL);
+	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
-
 
 	// initialise network
 	while (!terminating) {
@@ -75,7 +68,7 @@ void NetworkThread::operator()()
 		FD_SET(udpsock, &readset);
 
 		// poll for incoming stuff
-		int sel = select(1, &readset, NULL, NULL, &tv);
+		int sel = select(udpsock+1, &readset, NULL, NULL, &tv);
 		//cout << "sel:" << sel << '\n';
 		socklen_t len;
 		assert(sel >= 0);
@@ -94,16 +87,33 @@ void NetworkThread::operator()()
 			boost::mutex::scoped_lock lock(jobs_mutex);
 			for (; JobQueue.size() > 0; JobQueue.pop_back()) {
 				const JobRequest& job = JobQueue.back();
-				cout << "got request, type:" << (int)job.type << '\n';
+				MyJobs.push_back(job);
 			}
 		}
-		// poll for outgoing stuff
-		// cerr << '.' << endl;
 
-		{
-			boost::mutex::scoped_lock lock(shares_mutex);
-			BOOST_FOREACH(const ShareInfo& si, MyShares) {
-				cerr << si.root->name << ':' << si.root->size << endl;
+		for (; MyJobs.size() > 0; MyJobs.pop_back()) {
+			const JobRequest& job = MyJobs.back();
+			switch (job.type) {
+				case 1: {
+					spacket.curpos = 0;
+					spacket.serialize<uint8>(PT_QUERY_SERVERS);
+					
+					sockaddr target_addr;
+					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+					
+					udp_addr->sin_family = AF_INET;
+					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+					udp_addr->sin_port = htons( SERVER_PORT );
+
+					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+						cout << "error sending packet" << endl;
+					else
+						cout << "sent packet!" << endl;
+					break;
+				}
+				default: {
+					cout << "unknown job type: " << (int)job.type << endl;
+				}
 			}
 		}
 

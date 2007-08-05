@@ -20,7 +20,7 @@ MainWindow::~MainWindow()
 void MainWindow::RefreshButtonClicked()
 {
 	JobRequest job;
-	job.type = 1;
+	job.type = 1; // refresh
 	{
 		boost::mutex::scoped_lock lock(jobs_mutex);
 		JobQueue.push_back(job);
