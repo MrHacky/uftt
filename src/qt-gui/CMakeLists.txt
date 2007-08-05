@@ -16,8 +16,8 @@ ADD_EXECUTABLE(uftt-qt
 	Main.cpp
 	MainWindow.cpp
 	MainWindow.h
-	qsharestreewidget.cpp
-	qsharestreewidget.h
+	QSharesTreeWidget.cpp
+	QSharesTreeWidget.h
 	${UI_FILES}
 )
 

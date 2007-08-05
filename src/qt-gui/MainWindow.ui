@@ -179,7 +179,7 @@
   <customwidget>
    <class>QSharesTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>qsharestreewidget.h</header>
+   <header>QSharesTreeWidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

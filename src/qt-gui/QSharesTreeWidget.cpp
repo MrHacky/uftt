@@ -1,4 +1,4 @@
-#include "qsharestreewidget.h"
+#include "QSharesTreeWidget.h"
 
 QSharesTreeWidget::QSharesTreeWidget(QWidget*& widget)
 	: QTreeWidget(widget)
