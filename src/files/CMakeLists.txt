@@ -4,5 +4,5 @@ ADD_LIBRARY(uftt-lib-files
 )
 
 TARGET_LINK_LIBRARIES(uftt-lib-files
-	boost_filesystem-gcc41
+	boost_filesystem${BOOST_LIB_SUFFIX}
 )

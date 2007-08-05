@@ -21,7 +21,14 @@ ELSE ( WIN32 )
   # If you build and install boost yourself, the headers are in: /usr/local/include/boost-1_33/
   # and the libraries are in: /usr/local/lib/
 
+	SET(BOOST_LIB_SUFFIX
+		-gcc41
+		CACHE STRING
+		"suffix to use for boost libraries"
+	)
+
   #  "Path to the Boost multi-threaded thread debug libraries.")
+
   SET(BOOST_INCLUDE_PATH
     /usr/local/include/boost-1_33/
     CACHE PATH
