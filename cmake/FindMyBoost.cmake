@@ -24,11 +24,11 @@ SET(BOOST_LIBRARY_SUFFIX
 )
 
 FIND_LIBRARY(BOOST_THREAD_LIBRARY
-	NAMES boost_thread boost_thread${BOOST_LIBRARY_SUFFIX}
+	NAMES boost_thread-mt boost_thread${BOOST_LIBRARY_SUFFIX}
 	PATH /usr/lib /usr/local/lib
 )
 
 FIND_LIBRARY(BOOST_FILESYSTEM_LIBRARY
-	NAMES boost_thread boost_filesystem${BOOST_LIBRARY_SUFFIX}
+	NAMES boost_filesystem-mt boost_filesystem${BOOST_LIBRARY_SUFFIX}
 	PATH /usr/lib /usr/local/lib
 )

@@ -513,7 +513,7 @@ void NetworkThread::operator()()
 					case JRT_SERVERINFO: {
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_QUERY_SERVERS);
-	
+
 						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						MyJobs.erase(MyJobs.begin() + i);
@@ -531,7 +531,7 @@ void NetworkThread::operator()()
 						} else {
 							if (job->curchunk < job->chunkcount) {
 								spacket.serialize<uint8>(PT_QUERY_TREE_DATA);
-		
+
 								BOOST_FOREACH(uint8 & val, job->hash.data)
 									spacket.serialize(val);
 
