@@ -12,6 +12,38 @@ using namespace std;
 
 #define SERVER_PORT 12345
 
+static string addr2str( sockaddr* addr ) {
+	char buf[100];
+	switch ( addr->sa_family ) {
+		case AF_IPX: {
+			sockaddr_ipx* ipx_addr = ( sockaddr_ipx* )addr;
+			snprintf( buf, 100, "%02x%02x%02x%02x:%02x%02x%02x%02x%02x%02x:%i",
+								(( uint8* )( &ipx_addr->sa_netnum ) )[0],
+								(( uint8* )( &ipx_addr->sa_netnum ) )[1],
+								(( uint8* )( &ipx_addr->sa_netnum ) )[2],
+								(( uint8* )( &ipx_addr->sa_netnum ) )[3],
+								( uint8 )ipx_addr->sa_nodenum[0], ( uint8 )ipx_addr->sa_nodenum[1],
+								( uint8 )ipx_addr->sa_nodenum[2], ( uint8 )ipx_addr->sa_nodenum[3],
+								( uint8 )ipx_addr->sa_nodenum[4], ( uint8 )ipx_addr->sa_nodenum[5],
+								ntohs( ipx_addr->sa_socket ) );
+		}
+		; break;
+		case AF_INET: {
+			sockaddr_in* ip_addr = ( sockaddr_in* )addr;
+			snprintf( buf, 100, "%u.%u.%u.%u:%i",
+								(( uint8* )( &ip_addr->sin_addr.s_addr ) )[0],
+								(( uint8* )( &ip_addr->sin_addr.s_addr ) )[1],
+								(( uint8* )( &ip_addr->sin_addr.s_addr ) )[2],
+								(( uint8* )( &ip_addr->sin_addr.s_addr ) )[3],
+								ntohs( ip_addr->sin_port ) );
+		}
+		; break;
+		default:
+			snprintf( buf, 100, "Unknown address family: %i", addr->sa_family);
+	}
+	return string( buf );
+}
+
 static SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr) {
 	sockaddr_in addr;
 	SOCKET sock;
@@ -57,7 +89,7 @@ void NetworkThread::operator()()
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
 
-	// initialise network
+	// initialise networkerrno 97
 	while (!terminating) {
 		struct timeval tv;
 		tv.tv_sec = 0;
@@ -70,7 +102,7 @@ void NetworkThread::operator()()
 		// poll for incoming stuff
 		int sel = select(udpsock+1, &readset, NULL, NULL, &tv);
 		//cout << "sel:" << sel << '\n';
-		socklen_t len;
+		socklen_t len = sizeof(source_addr);
 		assert(sel >= 0);
 		if (FD_ISSET(udpsock, &readset)) {
 			if (recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len) == SOCKET_ERROR) {
@@ -80,6 +112,7 @@ void NetworkThread::operator()()
 				uint8 ptype;
 				rpacket.deserialize(ptype);
 				cout << "got packet, type:" << (int)ptype << endl;
+				cout << "from:" << addr2str(&source_addr) << endl;
 				switch (ptype) {
 					case PT_QUERY_SERVERS: {
 						spacket.curpos = 0;
