@@ -4,3 +4,7 @@ ADD_LIBRARY(uftt-lib-sha1
 	sha1_impl.c
 	sha1_impl.h
 )
+
+TARGET_LINK_LIBRARIES(uftt-lib-sha1
+	boost_filesystem${BOOST_LIB_SUFFIX}
+)

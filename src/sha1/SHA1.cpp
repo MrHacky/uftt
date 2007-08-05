@@ -2,6 +2,11 @@
 
 #include <assert.h>
 
+#include <iostream>
+#include "boost/filesystem/fstream.hpp"
+
+using namespace std;
+
 uint8 SHA1::operator[](int i)
 {
 	assert(i >= 0 && i < 20);
@@ -16,6 +21,27 @@ SHA1Hasher::SHA1Hasher()
 void SHA1Hasher::Update(const void *dataIn, int len)
 {
 	SHA1_Update(&state, dataIn, len);
+}
+
+void SHA1Hasher::Update(const std::string& data)
+{
+	Update(data.data(), data.size());
+}
+
+void SHA1Hasher::Update(const SHA1& data)
+{
+	Update(data.data, 20);
+}
+
+void SHA1Hasher::Update(const fs::path& data)
+{
+	fs::ifstream fstr;
+	fstr.open(data, ios::binary);
+	char buf[1024];
+	int len;
+	while (fstr.read(buf, 1024))
+		Update(buf, fstr.gcount());
+	Update(buf, fstr.gcount());
 }
 
 SHA1 SHA1Hasher::GetResultSafe() const

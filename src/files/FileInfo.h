@@ -2,6 +2,7 @@
 #define FILE_INFO_H
 
 #include "../Types.h"
+#include "../sha1/SHA1.h"
 
 #include <string>
 
@@ -21,7 +22,7 @@ class FileInfo {
 		uint32 attrs;
 		uint64 size;
 		std::vector<shared_ptr<FileInfo> > files;
-		uint64 UID;
+		SHA1 hash;
 		FileInfo(const fs::path& path);
 };
 typedef shared_ptr<FileInfo> FileInfoRef;

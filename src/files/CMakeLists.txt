@@ -4,5 +4,6 @@ ADD_LIBRARY(uftt-lib-files
 )
 
 TARGET_LINK_LIBRARIES(uftt-lib-files
+	uftt-lib-sha1
 	boost_filesystem${BOOST_LIB_SUFFIX}
 )
