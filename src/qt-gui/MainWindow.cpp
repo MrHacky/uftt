@@ -142,11 +142,24 @@ void MainWindow::StartDownload()
 void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 {
 	fi = dirdata[fi->hash];
+	if (!fi) {
+		cout << "hash not found!" << endl;
+		return;
+	}
 	cout << "fp:" << path << endl;
 	if (fi->files.size() > 0) {
 		create_directory(path);
-	}
-	BOOST_FOREACH(const FileInfoRef& fir, fi->files) {
-		StartDownload(fir, path / fir->name);
+		BOOST_FOREACH(const FileInfoRef& fir, fi->files) {
+			StartDownload(fir, path / fir->name);
+		}
+	} else {
+		JobRequest job;
+		job.type = PT_REQUEST_CHUNK; // refresh
+		job.hash = fi->hash;
+		job.path = path;
+		{
+			boost::mutex::scoped_lock lock(jobs_mutex);
+			JobQueue.push_back(job);
+		}
 	}
 }

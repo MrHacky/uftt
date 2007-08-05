@@ -4,6 +4,7 @@
 #include <map>
 
 #include <boost/foreach.hpp>
+#include "boost/filesystem/fstream.hpp"
 
 #include "../SharedData.h"
 #include "CrossPlatform.h"
@@ -33,6 +34,31 @@ FileInfoRef findFI(const SHA1 & hash)
 	BOOST_FOREACH(const ShareInfo & si, MyShares) {
 		res = findFI(si.root, hash);
 		if (res) return res;
+	}
+	return res;
+}
+
+fs::path findfpath(const FileInfoRef fi, const SHA1 & hash)
+{
+	if (hash == fi->hash)
+		return fi->name;
+	fs::path res = "";
+	BOOST_FOREACH(const FileInfoRef & tfi, fi->files) {
+		res = findfpath(tfi, hash);
+		if (res != "") return fs::path(fi->name) / res;
+	}
+	return res;
+}
+
+fs::path findfpath(const SHA1 & hash)
+{
+	fs::path res = "";
+	boost::mutex::scoped_lock lock(shares_mutex);
+	BOOST_FOREACH(const ShareInfo & si, MyShares) {
+		res = findfpath(si.root, hash);
+		fs::path tmp = si.path;
+		tmp.remove_leaf();
+		if (res != "") return tmp / res;
 	}
 	return res;
 }
@@ -111,6 +137,7 @@ void NetworkThread::operator()()
 	sockaddr source_addr;
 	vector<JobRequest> MyJobs;
 	map<SHA1, FileInfoRef> inqueuemap;
+	map<SHA1, fs::path> downpath;
 
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
@@ -209,8 +236,7 @@ void NetworkThread::operator()()
 
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_INFO_CHUNK);
-						BOOST_FOREACH(uint8& val, hash.data)
-							spacket.serialize(val);
+						BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
 						//spacket.serialize(fi->name);
 
 						uint32 curfile;
@@ -272,6 +298,89 @@ void NetworkThread::operator()()
 
 						break;
 					}
+					case PT_REQUEST_CHUNK: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data)
+							rpacket.deserialize(val);
+						fs::path fp = findfpath(hash);
+						if (fp=="") {
+							cout << "hash not found!" << endl;
+							break;
+						}
+						cout << "found path:" << fp << endl;
+
+						uint32 filepos;
+						rpacket.deserialize(filepos);
+						fs::ifstream fstr;
+						fstr.open(fp, ios::binary);
+						fstr.seekg(filepos, ios_base::beg);
+						uint8 buf[1024];
+
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_SEND_CHUNK);
+
+						BOOST_FOREACH(uint8 & val, hash.data)
+							spacket.serialize(val);
+
+						spacket.serialize<uint32>(fstr.tellg());
+						bool eof = fstr.read((char*)buf, 1024);
+						uint32 len = fstr.gcount();
+						spacket.serialize(len);
+						for (int i = 0; i < len; ++i)
+							spacket.serialize(buf[i]);
+
+						if (!eof)
+							spacket.serialize<uint32>(0);
+						else
+							spacket.serialize<uint32>(fstr.tellg());
+
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
+						break;
+					}
+					case PT_SEND_CHUNK: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data)
+							rpacket.deserialize(val);
+						fs::path fp = downpath[hash];
+						if (fp=="") {
+							cout << "hash not found!" << endl;
+							break;
+						}
+						uint32 filepos;
+						uint32 len;
+						rpacket.deserialize(filepos);
+						rpacket.deserialize(len);
+						if (len != 0) {
+							// TODO: find out why this is needed (it kills the file, but why?)
+							fs::fstream fstr; // need fstream instead of ofstream if we want to append
+	
+							// TODO: hmpf. not what i wanted, but works.... find out why
+							fstr.open(fp, ios::out | ios::binary | ios::app);
+							//fstr.seekp(filepos, ios_base::beg);
+	
+							uint8 buf[1024];
+							for (uint i = 0; i < len; ++i)
+								rpacket.deserialize(buf[i]);
+
+							fstr.write((char*)buf, len);
+						}
+
+						rpacket.deserialize(filepos);
+
+						if (filepos != 0) {
+							spacket.curpos = 0;
+							spacket.serialize<uint8>(PT_REQUEST_CHUNK);
+
+							BOOST_FOREACH(uint8 & val, hash.data)
+								spacket.serialize(val);
+
+							spacket.serialize<uint32>(filepos);
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+								cout << "error sending packet: " << NetGetLastError() << endl;
+						}
+						break;
+					}
 					default: {
 						cout << "packet type uknown" << endl;
 					}
@@ -308,21 +417,43 @@ void NetworkThread::operator()()
 				case PT_QUERY_CHUNK: {
 					spacket.curpos = 0;
 					spacket.serialize<uint8>(PT_QUERY_CHUNK);
-					
+
 					BOOST_FOREACH(uint8 & val, job.hash.data)
 						spacket.serialize(val);
-					
+
 					spacket.serialize<uint32>(0);
-					
+
 					sockaddr target_addr;
 					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-					
+
 					udp_addr->sin_family = AF_INET;
 					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
 					udp_addr->sin_port = htons( SERVER_PORT );
 
 					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
 						cout << "error sending packet: " << NetGetLastError() << endl;
+					break;
+				}
+				case PT_REQUEST_CHUNK: {
+					spacket.curpos = 0;
+					spacket.serialize<uint8>(PT_REQUEST_CHUNK);
+
+					BOOST_FOREACH(uint8 & val, job.hash.data)
+						spacket.serialize(val);
+
+					spacket.serialize<uint32>(0); // TODO: support files > 4GB
+
+					sockaddr target_addr;
+					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+
+					udp_addr->sin_family = AF_INET;
+					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+					udp_addr->sin_port = htons( SERVER_PORT );
+
+					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+						cout << "error sending packet: " << NetGetLastError() << endl;
+					
+					downpath[job.hash] = job.path;
 					break;
 				}
 				default: {

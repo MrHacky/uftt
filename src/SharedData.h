@@ -14,9 +14,8 @@ extern volatile bool terminating;
 
 struct JobRequest {
 	uint8 type;
-	union {
-		SHA1 hash;
-	};
+	SHA1 hash;
+	fs::path path;
 };
 
 extern std::vector<JobRequest> JobQueue;

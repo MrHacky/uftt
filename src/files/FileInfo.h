@@ -30,6 +30,7 @@ typedef shared_ptr<FileInfo> FileInfoRef;
 
 struct ShareInfo {
 	shared_ptr<FileInfo> root;
+	fs::path path;
 	ShareInfo(shared_ptr<FileInfo> fi);
 };
 

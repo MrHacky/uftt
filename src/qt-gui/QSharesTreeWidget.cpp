@@ -46,6 +46,7 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 		addFileInfo(*fi);
 		
 		ShareInfo fs(fi);
+		fs.path = str.substr(7);
 		{
 			boost::mutex::scoped_lock lock(shares_mutex);
 			MyShares.push_back(fs);

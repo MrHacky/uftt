@@ -14,7 +14,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	private:
 		std::map<SHA1, QTreeWidgetItem*> treedata;
 		std::map<SHA1, FileInfoRef> dirdata;
-		
+
 		void StartDownload(FileInfoRef fi, const fs::path& path);
 
 	private slots:
@@ -36,8 +36,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void sigAddNewServer();
 		void sigAddNewShare(std::string, SHA1);
 		void sigAddNewFileInfo(void*);
-		
-	
+
 	public:
 		void emitAddNewServer();
 		void emitAddNewShare(std::string, SHA1);

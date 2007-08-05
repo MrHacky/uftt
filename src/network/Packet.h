@@ -20,10 +20,8 @@ enum packet_types {
 	PT_RESTART_SERVER,
 };
 
-
 //TODO: Needs to be configurable @runtime
 #define PACKET_SIZE 1400
-
 
 class UFTT_packet {
 	public:
