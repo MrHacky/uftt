@@ -7,5 +7,5 @@ ADD_LIBRARY(uftt-lib-network
 )
 
 TARGET_LINK_LIBRARIES(uftt-lib-network
-	boost_thread${BOOST_LIB_SUFFIX}
+	${BOOST_THREAD_LIBRARY}
 )

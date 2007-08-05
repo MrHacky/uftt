@@ -1,4 +1,4 @@
-include(boost.cmake)
+FIND_PACKAGE(MyBoost)
 
 SUBDIRS(sha1)
 SUBDIRS(files)
@@ -15,5 +15,5 @@ ADD_EXECUTABLE(uftt
 TARGET_LINK_LIBRARIES(uftt
 	uftt-qt
 	uftt-lib-network
-	boost_thread${BOOST_LIB_SUFFIX}
+	${BOOST_THREAD_LIBRARY}
 )
