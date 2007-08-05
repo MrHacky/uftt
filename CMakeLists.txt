@@ -1,0 +1,3 @@
+PROJECT(UFFT)
+
+SUBDIRS(src)
