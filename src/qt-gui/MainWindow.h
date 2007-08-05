@@ -14,6 +14,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	private:
 		std::map<SHA1, QTreeWidgetItem*> treedata;
 
+	private slots:
+		void DragStart(QTreeWidgetItem*, int);
+
 	public:
 		MainWindow();
 		~MainWindow();

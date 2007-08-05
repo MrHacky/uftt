@@ -23,6 +23,7 @@ MainWindow::MainWindow()
 	connect(this, SIGNAL(sigAddNewServer()), this, SLOT(AddNewServer()));
 	connect(this, SIGNAL(sigAddNewShare(std::string, SHA1)), this, SLOT(AddNewShare(std::string, SHA1)));
 	connect(this, SIGNAL(sigAddNewFileInfo(void*)), this, SLOT(AddNewFileInfo(void*)));
+	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
 }
 
@@ -100,4 +101,20 @@ void MainWindow::AddNewFileInfo(void* data)
 			}
 		}
 	}
+}
+
+void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
+{
+	if (rwi != NULL && col == 0) {
+		QDrag *drag = new QDrag(this);
+		QMimeData *mimeData = new QMimeData;
+
+		mimeData->setText(rwi->text(0));
+		drag->setMimeData(mimeData);
+		//drag->setPixmap(iconPixmap);
+
+		Qt::DropAction dropAction = drag->start();
+		// TODO: figure this out...
+	}
+
 }

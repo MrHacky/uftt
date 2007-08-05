@@ -269,7 +269,6 @@ void NetworkThread::operator()()
 							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
-						
 
 						break;
 					}
