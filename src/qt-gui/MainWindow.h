@@ -9,4 +9,5 @@ class MainWindow: public Ui::MainWindow, public QMainWindow
 		MainWindow();
 		~MainWindow();
 };
+
 #endif

@@ -10,11 +10,14 @@ SET(UI_FILES
 QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 ADD_EXECUTABLE(uftt-qt
 	Main.cpp
 	MainWindow.cpp
 	MainWindow.h
+	qsharestreewidget.cpp
+	qsharestreewidget.h
 	${UI_FILES}
 )
 
