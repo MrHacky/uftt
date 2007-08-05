@@ -21,4 +21,7 @@ ADD_EXECUTABLE(uftt-qt
 	${UI_FILES}
 )
 
-TARGET_LINK_LIBRARIES(uftt-qt ${QT_LIBRARIES})
+TARGET_LINK_LIBRARIES(uftt-qt
+	uftt-lib-files
+	${QT_LIBRARIES}
+)

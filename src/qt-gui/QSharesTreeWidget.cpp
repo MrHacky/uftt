@@ -5,18 +5,20 @@
 
 #include <iostream>
 
+#include "../files/FileInfo.h"
+
 using namespace std;
 
 QSharesTreeWidget::QSharesTreeWidget(QWidget*& widget)
 	: QTreeWidget(widget)
 {
-	setAcceptDrops(true);
 };
 
 void QSharesTreeWidget::dragEnterEvent(QDragEnterEvent* event)
 {
 	cout << "event\n";
-	if (event->mimeData()->hasFormat("text/plain"))
+	if ((event->mimeData()->hasFormat("text/plain"))
+	 && (event->mimeData()->text().toStdString().substr(0, 7) == "file://"))
 		event->acceptProposedAction();
 }
 
@@ -27,7 +29,8 @@ void QSharesTreeWidget::dragMoveEvent(QDragMoveEvent* event)
 
 void QSharesTreeWidget::dropEvent(QDropEvent* event)
 {
-	
 	cout << "try\n" << event->mimeData()->text().toStdString() << '\n';
 	event->acceptProposedAction();
+
+	FileInfo fi(event->mimeData()->text().toStdString().substr(7));
 }
