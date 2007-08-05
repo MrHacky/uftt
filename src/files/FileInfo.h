@@ -1,3 +1,6 @@
+#ifndef FILE_INFO_H
+#define FILE_INFO_H
+
 #include "../Types.h"
 
 #include <string>
@@ -28,3 +31,5 @@ struct ShareInfo {
 	uint64 UID;
 	ShareInfo(const std::string& path);
 };
+
+#endif
