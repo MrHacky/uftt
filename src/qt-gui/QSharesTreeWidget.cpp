@@ -3,6 +3,7 @@
 #include <QTreeWidgetItem>
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include <iostream>
 
@@ -33,14 +34,22 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 {
 	cout << "try\n" << event->mimeData()->text().toStdString() << '\n';
 	event->acceptProposedAction();
-
-	FileInfoRef fi( new FileInfo(event->mimeData()->text().toStdString().substr(7)));
-	addFileInfo(*fi);
 	
-	ShareInfo fs(fi);
-	{
-		boost::mutex::scoped_lock lock(shares_mutex);
-		MyShares.push_back(fs);
+	string text = event->mimeData()->text().toStdString();
+	vector<string> paths;
+	
+	boost::split(paths, text, boost::is_any_of("\n"));
+
+	BOOST_FOREACH(const string& str, paths)
+	if (!str.empty()) {
+		FileInfoRef fi( new FileInfo(str.substr(7)));
+		addFileInfo(*fi);
+		
+		ShareInfo fs(fi);
+		{
+			boost::mutex::scoped_lock lock(shares_mutex);
+			MyShares.push_back(fs);
+		}
 	}
 }
 
