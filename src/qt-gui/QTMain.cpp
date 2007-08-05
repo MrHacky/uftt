@@ -33,6 +33,12 @@ void QTMain::BindEvents(NetworkThread* nwobj)
 		&MainWindow::emitAddNewServer,
 		((QTImpl*)impl)->wnd
 	);
+	//nwobj->cbAddServer = QTSignalFunction();
+	nwobj->cbAddShare = boost::bind(
+		&MainWindow::emitAddNewShare,
+		((QTImpl*)impl)->wnd,
+		_1, _2
+	);
 }
 
 int QTMain::run()

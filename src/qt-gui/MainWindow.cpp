@@ -9,11 +9,16 @@ using namespace std;
 
 MainWindow::MainWindow()
 {
+	qRegisterMetaType<std::string>("std::string");
+	qRegisterMetaType<SHA1>("SHA1");
+
 	setupUi(this);
 
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	
 	connect(this, SIGNAL(sigAddNewServer()), this, SLOT(AddNewServer()));
+	connect(this, SIGNAL(sigAddNewShare(std::string, SHA1)), this, SLOT(AddNewShare(std::string, SHA1)));
+	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
 }
 
 MainWindow::~MainWindow()
@@ -37,7 +42,17 @@ void MainWindow::AddNewServer()
 
 void MainWindow::emitAddNewServer()
 {
-	cout << ">emitAddNewServer()" << endl;
 	emit sigAddNewServer();
-	cout << "<emitAddNewServer()" << endl;
+}
+
+void MainWindow::AddNewShare(std::string str, SHA1 hash)
+{
+	cout << "newshare:" << str << endl;
+}
+
+void MainWindow::emitAddNewShare(std::string str, SHA1 hash)
+{
+	cout << ">emit!" << str << endl;
+	emit sigAddNewShare(str, hash);
+	cout << "<emit!" << str << endl;
 }

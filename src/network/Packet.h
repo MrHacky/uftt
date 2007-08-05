@@ -46,8 +46,20 @@ class UFTT_packet {
 		}
 
 		void serialize(const std::string& var) {
+			uint32 size = var.size();
+			serialize(size);
+			for (uint i = 0; i < size; ++i)
+				serialize<uint8>(var[i]);
 		}
 		void deserialize(std::string& var) {
+			uint32 size;
+			deserialize(size);
+			var.resize(size);
+			for (uint i = 0; i < size; ++i) {
+				uint8 t;
+				deserialize(t);
+				var[i] = t;
+			}
 		}
 };
 
