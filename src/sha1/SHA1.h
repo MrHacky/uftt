@@ -13,7 +13,7 @@ namespace fs = boost::filesystem;
 struct SHA1 {
 	uint8 data[20];
 	uint8 operator[](int i);
-	bool operator<(const SHA1& o);
+	bool operator<(const SHA1& o) const;
 };
 
 class SHA1Hasher {

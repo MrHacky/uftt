@@ -13,7 +13,7 @@ uint8 SHA1::operator[](int i)
 	return data[i];
 }
 
-bool SHA1::operator<(const SHA1& o)
+bool SHA1::operator<(const SHA1& o) const
 {
 	for (int i = 0; i < 20; ++i)
 		if (data[i] < o.data[i])
