@@ -7,7 +7,7 @@
 #include <iostream>
 
 #include "../files/FileInfo.h"
-#include "../network/SharedData.h"
+#include "../SharedData.h"
 
 using namespace std;
 

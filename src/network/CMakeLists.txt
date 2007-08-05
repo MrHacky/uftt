@@ -1,8 +1,6 @@
 ADD_LIBRARY(uftt-lib-network
 	NetworkThread.cpp
 	NetworkThread.h
-	SharedData.cpp
-	SharedData.h
 	Packet.cpp
 	Packet.h
 	CrossPlatform.h

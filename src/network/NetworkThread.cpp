@@ -4,7 +4,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "SharedData.h"
+#include "../SharedData.h"
 #include "CrossPlatform.h"
 
 using namespace std;

@@ -7,6 +7,9 @@ SUBDIRS(qt-gui)
 
 ADD_EXECUTABLE(uftt
 	Main.cpp
+	Types.h
+	SharedData.cpp
+	SharedData.h
 )
 
 TARGET_LINK_LIBRARIES(uftt

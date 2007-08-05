@@ -5,7 +5,7 @@
 
 #include <boost/thread/mutex.hpp>
 
-#include "../files/FileInfo.h"
+#include "files/FileInfo.h"
 
 extern std::vector<ShareInfo> MyShares;
 extern boost::mutex shares_mutex;

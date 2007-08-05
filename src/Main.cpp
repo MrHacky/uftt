@@ -2,7 +2,7 @@
 
 #include "qt-gui/QTMain.h"
 #include "network/NetworkThread.h"
-#include "network/SharedData.h"
+#include "SharedData.h"
 
 int main( int argc, char **argv )
 {
