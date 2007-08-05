@@ -18,6 +18,8 @@ bool SHA1::operator<(const SHA1& o) const
 	for (int i = 0; i < 20; ++i)
 		if (data[i] < o.data[i])
 			return true;
+		else if (data[i] > o.data[i])
+			return false;
 	return false;
 }
 
