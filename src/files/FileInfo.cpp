@@ -4,6 +4,10 @@
 
 using namespace std;
 
+FileInfo::FileInfo()
+{
+}
+
 FileInfo::FileInfo(const fs::path& path)
 {
 	assert(fs::exists(path));

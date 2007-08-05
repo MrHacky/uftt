@@ -1,6 +1,7 @@
 #include "NetworkThread.h"
 
 #include <iostream>
+#include <map>
 
 #include <boost/foreach.hpp>
 
@@ -109,6 +110,7 @@ void NetworkThread::operator()()
 	UFTT_packet spacket;
 	sockaddr source_addr;
 	vector<JobRequest> MyJobs;
+	map<SHA1, FileInfoRef> inqueuemap;
 
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
@@ -204,15 +206,63 @@ void NetworkThread::operator()()
 							cout << "hash not found!" << endl;
 							break;
 						}
+
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_INFO_CHUNK);
-						spacket.serialize(fi->name);
+						BOOST_FOREACH(uint8& val, hash.data)
+							spacket.serialize(val);
+						//spacket.serialize(fi->name);
 
-						spacket.serialize<uint32>(fi->files.size());
+						uint32 curfile;
+						rpacket.deserialize(curfile);
+
+						while (curfile < fi->files.size() && (spacket.curpos + 20 + fi->files[curfile]->name.size() + 10) < 1400) {
+							spacket.serialize(fi->files[curfile]->name);
+							BOOST_FOREACH(const uint8& val, fi->files[curfile]->hash.data)
+								spacket.serialize(val);
+							++curfile;
+						}
+						spacket.serialize(string(""));
+						if (curfile >= fi->files.size()) curfile = 0;
+						spacket.serialize(curfile);
 
 						assert(spacket.curpos < 1400);
 						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
+						break;
+					}
+					case PT_INFO_CHUNK: {
+						SHA1 hash;
+						BOOST_FOREACH(uint8& val, hash.data)
+							rpacket.deserialize(val);
+						FileInfoRef fi = inqueuemap[hash];
+						if (!fi) {
+							fi = FileInfoRef(new FileInfo());
+							inqueuemap[hash] = fi;
+							fi->hash = hash;
+						}
+						string str;
+						rpacket.deserialize(str);
+						while (str != "") {
+							FileInfoRef sfi(new FileInfo());
+							sfi->name = str;
+							BOOST_FOREACH(uint8& val, sfi->hash.data)
+								rpacket.deserialize(val);
+							fi->files.push_back(sfi);
+							rpacket.deserialize(str);
+						}
+						uint32 nextpos;
+						rpacket.deserialize(nextpos);
+
+						if (nextpos == 0) {
+							inqueuemap[hash].reset();
+							FileInfo* cfi = new FileInfo(*fi);
+							cbNewFileInfo((void*)cfi);
+						} else {
+							cout << "TODO: handle spanned info packets" << endl;
+						}
+						
+
 						break;
 					}
 					default: {
@@ -254,6 +304,8 @@ void NetworkThread::operator()()
 					
 					BOOST_FOREACH(uint8 & val, job.hash.data)
 						spacket.serialize(val);
+					
+					spacket.serialize<uint32>(0);
 					
 					sockaddr target_addr;
 					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;

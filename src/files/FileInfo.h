@@ -24,6 +24,7 @@ class FileInfo {
 		std::vector<shared_ptr<FileInfo> > files;
 		SHA1 hash;
 		FileInfo(const fs::path& path);
+		FileInfo();
 };
 typedef shared_ptr<FileInfo> FileInfoRef;
 

@@ -41,6 +41,11 @@ void QTMain::BindEvents(NetworkThread* nwobj)
 		((QTImpl*)impl)->wnd,
 		_1, _2
 	);
+	nwobj->cbNewFileInfo = boost::bind(
+		&MainWindow::emitAddNewFileInfo,
+		((QTImpl*)impl)->wnd,
+		_1
+	);
 }
 
 int QTMain::run()

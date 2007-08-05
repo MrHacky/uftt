@@ -14,6 +14,7 @@ class NetworkThread {
 		// TODO: use signals for callbacks?
 		boost::function<void()> cbAddServer;
 		boost::function<void(std::string, SHA1)> cbAddShare;
+		boost::function<void(void*)> cbNewFileInfo;
 
 		void operator()();
 };
