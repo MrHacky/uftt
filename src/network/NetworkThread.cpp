@@ -385,15 +385,33 @@ void NetworkThread::operator()()
 								job->curchunk = 0;
 								job->chunkcount = 0;
 								job->childcount = 0;
+								job->mtime = 0;
 								job->gotinfo = true;
 								
-								cout << "dont care for packet" << endl;
+								cout << "dont care for packet";// << endl;
+								FileInfoRef fi = findFI(hash);
+								if (fi) cout << ":" << fi->name;
+								cout << endl;
+
 								break;
 							}
 						}
+						JobRequestBlobDataRef job = BlobJobs[hash];
+						if (!job) {
+							cout << "no job" << endl;
+							break;
+						}
+						uint64 fsize;
+						rpacket.deserialize(fsize);
+						job->fsize = fsize;
+						job->chunkcount = (fsize >> 10) + 1;  // x/1024
+						job->offset = fsize & ((1<<10)-1);
+						job->curchunk = 0;
+						job->gotinfo = true;
+						job->mtime = 0;
 						break;
 					}
-					case PT_REQUEST_CHUNK: {
+					case PT_QUERY_BLOB_DATA: {
 						SHA1 hash;
 						BOOST_FOREACH(uint8& val, hash.data)
 							rpacket.deserialize(val);
@@ -404,76 +422,65 @@ void NetworkThread::operator()()
 						}
 						cout << "found path:" << fp << endl;
 
-						uint32 filepos;
-						rpacket.deserialize(filepos);
+						uint32 chunknum;
+						rpacket.deserialize(chunknum);
 						fs::ifstream fstr;
 						fstr.open(fp, ios::binary);
-						fstr.seekg(filepos, ios_base::beg);
+						fstr.seekg(chunknum << 10, ios_base::beg);
 						uint8 buf[1024];
 
 						spacket.curpos = 0;
-						spacket.serialize<uint8>(PT_SEND_CHUNK);
+						spacket.serialize<uint8>(PT_REPLY_BLOB_DATA);
 
 						BOOST_FOREACH(uint8 & val, hash.data)
 							spacket.serialize(val);
 
-						spacket.serialize<uint32>(fstr.tellg());
-						bool eof = fstr.read((char*)buf, 1024);
+						spacket.serialize<uint32>(chunknum);
+						fstr.read((char*)buf, 1024);
 						uint32 len = fstr.gcount();
-						spacket.serialize(len);
 						for (int i = 0; i < len; ++i)
 							spacket.serialize(buf[i]);
-
-						if (!eof)
-							spacket.serialize<uint32>(0);
-						else
-							spacket.serialize<uint32>(fstr.tellg());
 
 						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
-					case PT_SEND_CHUNK: {
+					case PT_REPLY_BLOB_DATA: {
 						SHA1 hash;
 						BOOST_FOREACH(uint8& val, hash.data)
 							rpacket.deserialize(val);
-						fs::path fp = downpath[hash];
-						if (fp=="") {
-							cout << "hash not found!" << endl;
+						JobRequestBlobDataRef job = BlobJobs[hash];
+						if (!job) {
+							cout << "no job" << endl;
 							break;
 						}
-						uint32 filepos;
-						uint32 len;
-						rpacket.deserialize(filepos);
-						rpacket.deserialize(len);
+						uint32 chunknum;
+						rpacket.deserialize(chunknum);
+						if (chunknum != job->curchunk) {
+							cout << "no need for chunk" << endl;
+							break;
+						}
+						uint32 len = 1024;
+						if (chunknum == job->chunkcount-1)
+							len = job->offset;
+						uint8 buf[1024];
+						for (uint i = 0; i < len; ++i)
+							rpacket.deserialize(buf[i]);
+
 						if (len != 0) {
 							// TODO: find out why this is needed (it kills the file, but why?)
 							fs::fstream fstr; // need fstream instead of ofstream if we want to append
 	
 							// TODO: hmpf. not what i wanted, but works.... find out why
+							fs::path fp = job->fpath;
 							fstr.open(fp, ios::out | ios::binary | ios::app);
 							//fstr.seekp(filepos, ios_base::beg);
-	
-							uint8 buf[1024];
-							for (uint i = 0; i < len; ++i)
-								rpacket.deserialize(buf[i]);
 
 							fstr.write((char*)buf, len);
 						}
 
-						rpacket.deserialize(filepos);
-
-						if (filepos != 0) {
-							spacket.curpos = 0;
-							spacket.serialize<uint8>(PT_REQUEST_CHUNK);
-
-							BOOST_FOREACH(uint8 & val, hash.data)
-								spacket.serialize(val);
-
-							spacket.serialize<uint32>(filepos);
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
-								cout << "error sending packet: " << NetGetLastError() << endl;
-						}
+						++job->curchunk;
+						job->mtime = 0;
 						break;
 					}
 					default: {
@@ -494,7 +501,7 @@ void NetworkThread::operator()()
 		for (int i = MyJobs.size()-1; i >= 0; --i) {
 			JobRequestRef basejob = MyJobs[i];
 			if (--basejob->mtime < 0) {
-				basejob->mtime = 10;
+				basejob->mtime = 25;
 				switch (basejob->type()) {
 					case JRT_SERVERINFO: {
 						spacket.curpos = 0;
@@ -531,6 +538,7 @@ void NetworkThread::operator()()
 								spacket.serialize(job->curchunk);
 							} else {
 								cbNewTreeInfo(job);
+								TreeJobs[job->hash].reset();
 								MyJobs.erase(MyJobs.begin() + i);
 							}
 						}
@@ -567,6 +575,7 @@ void NetworkThread::operator()()
 								spacket.serialize(job->curchunk);
 							} else {
 								// TODO: callback
+								BlobJobs[job->hash].reset();
 								MyJobs.erase(MyJobs.begin() + i);
 							}
 						}

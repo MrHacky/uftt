@@ -88,15 +88,19 @@ void MainWindow::NewTreeInfo(JobRequestRef basejob)
 	assert(basejob->type() == JRT_TREEDATA);
 	JobRequestTreeDataRef job = boost::static_pointer_cast<JobRequestTreeData>(basejob);
 
-	if (job->chunkcount == 0)
-		return; // is a blob, not a tree
-	
 	FileInfoRef fi = dirdata[job->hash];
 	if (!fi) {
 		fi = FileInfoRef(new FileInfo());
 		fi->hash = job->hash;
 		dirdata[fi->hash] = fi;
 	}
+
+	if (job->chunkcount == 0) {
+		fi->attrs &= ~FATTR_DIR;
+		return; // is a blob, not a tree
+	}
+	fi->attrs |= FATTR_DIR;
+
 	QTreeWidgetItem* rwi = treedata[fi->hash];
 	if (rwi != NULL) {
 		BOOST_FOREACH(const JobRequestTreeData::child_info& ci, job->children) {
@@ -109,6 +113,14 @@ void MainWindow::NewTreeInfo(JobRequestRef basejob)
 				boost::mutex::scoped_lock lock(jobs_mutex);
 				JobQueue.push_back(newjob);
 			}
+			FileInfoRef nfi = dirdata[ci.hash];
+			if (!nfi) {
+				nfi = FileInfoRef(new FileInfo());
+				nfi->hash = ci.hash;
+				dirdata[nfi->hash] = nfi;
+			}
+			nfi->name = ci.name;
+			fi->files.push_back(nfi);
 		}
 	}
 }
@@ -149,13 +161,14 @@ void MainWindow::StartDownload()
 
 void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 {
+	cout << "fp:" << path << endl;
 	fi = dirdata[fi->hash];
 	if (!fi) {
 		cout << "hash not found!" << endl;
 		return;
 	}
-	cout << "fp:" << path << endl;
-	if (fi->files.size() > 0) {
+	cout << "fa:" << fi->attrs << endl;
+	if (fi->attrs & FATTR_DIR) {
 		create_directory(path);
 		BOOST_FOREACH(const FileInfoRef& fir, fi->files) {
 			StartDownload(fir, path / fir->name);
