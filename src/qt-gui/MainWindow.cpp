@@ -83,7 +83,8 @@ void MainWindow::emitAddNewShare(std::string str, SHA1 hash)
 
 void MainWindow::AddNewFileInfo(void* data)
 {
-	FileInfoRef fi((FileInfo*)data);
+	FileInfoRef fi(*((FileInfoRef*)data));
+	delete (FileInfoRef*)data;
 	QTreeWidgetItem* rwi = treedata[fi->hash];
 	if (rwi != NULL) {
 		BOOST_FOREACH(const FileInfoRef& sfi, fi->files) {

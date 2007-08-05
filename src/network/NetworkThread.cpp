@@ -216,7 +216,7 @@ void NetworkThread::operator()()
 						uint32 curfile;
 						rpacket.deserialize(curfile);
 
-						while (curfile < fi->files.size() && (spacket.curpos + 20 + fi->files[curfile]->name.size() + 10) < 1400) {
+						while (curfile < fi->files.size() && (spacket.curpos + 20 + fi->files[curfile]->name.size() + 15) < 1400) {
 							spacket.serialize(fi->files[curfile]->name);
 							BOOST_FOREACH(const uint8& val, fi->files[curfile]->hash.data)
 								spacket.serialize(val);
@@ -256,10 +256,18 @@ void NetworkThread::operator()()
 
 						if (nextpos == 0) {
 							inqueuemap[hash].reset();
-							FileInfo* cfi = new FileInfo(*fi);
-							cbNewFileInfo((void*)cfi);
+							FileInfoRef* cfir = new FileInfoRef(fi);
+							cbNewFileInfo((void*)cfir);
 						} else {
-							cout << "TODO: handle spanned info packets" << endl;
+							spacket.curpos = 0;
+							spacket.serialize<uint8>(PT_QUERY_CHUNK);
+
+							BOOST_FOREACH(uint8 & val, hash.data)
+								spacket.serialize(val);
+
+							spacket.serialize<uint32>(nextpos);
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
 						
 
