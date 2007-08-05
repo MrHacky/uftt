@@ -17,12 +17,16 @@ FileInfo::FileInfo(const fs::path& path)
 		for ( fs::directory_iterator iter( path );
 		      iter != end_iter;
 		      ++iter ) {
-			shared_ptr<FileInfo> child(new FileInfo(iter->path()));
-			files.push_back(child);
-			size += child->size;
-			// TODO: do this sorted!
-			hasher.Update(child->name);
-			hasher.Update(child->hash);
+			if (fs::exists(iter->path())) {
+				shared_ptr<FileInfo> child(new FileInfo(iter->path()));
+				files.push_back(child);
+				size += child->size;
+				// TODO: do this sorted!
+				hasher.Update(child->name);
+				hasher.Update(child->hash);
+			} else {
+				cout << "broken path?:" << iter->path() << endl;
+			}
 		}
 	} else {
 		hasher.Update(path);
