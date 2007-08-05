@@ -73,22 +73,23 @@ void NetworkThread::operator()()
 		fd_set readset;
 		FD_ZERO(&readset);
 		FD_SET(udpsock, &readset);
-		
+
+		// poll for incoming stuff
 		int sel = select(1, &readset, NULL, NULL, &tv);
-		cout << "sel:" << sel << '\n';
+		//cout << "sel:" << sel << '\n';
 		socklen_t len;
 		assert(sel >= 0);
 		if (FD_ISSET(udpsock, &readset)) {
 			if (recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len) == SOCKET_ERROR) {
-				fprintf(stderr, "Server: recvfrom() failed with error #%i\n",NetGetLastError());
+				fprintf(stderr, "Server: recvfrom() failed with error #%i\n", NetGetLastError());
 			} else {
 				rpacket.curpos = 0;
-				uint8 curtype;
-				rpacket.deserialize(curtype);
+				uint8 ptype;
+				rpacket.deserialize(ptype);
+				cout << "got packet, type:" << ptype << '\n';
 			}
 		}
-		
-		// poll for incoming stuff
+
 		// poll for outgoing stuff
 		cerr << '.' << endl;
 
