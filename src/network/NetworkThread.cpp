@@ -139,8 +139,6 @@ void NetworkThread::operator()()
 	vector<JobRequestRef> MyJobs;
 	map<SHA1, JobRequestTreeDataRef> TreeJobs;
 	map<SHA1, JobRequestBlobDataRef> BlobJobs;
-	map<SHA1, FileInfoRef> inqueuemap;
-	map<SHA1, fs::path> downpath;
 
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
@@ -345,7 +343,7 @@ void NetworkThread::operator()()
 								}
 							}
 						}
-						spacket.serialize<uint32>(0);
+						spacket.serialize(string(""));
 						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
@@ -506,15 +504,8 @@ void NetworkThread::operator()()
 					case JRT_SERVERINFO: {
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_QUERY_SERVERS);
-						
-						sockaddr target_addr;
-						sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-						
-						udp_addr->sin_family = AF_INET;
-						udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-						udp_addr->sin_port = htons( SERVER_PORT );
 	
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						MyJobs.erase(MyJobs.begin() + i);
 						break;
@@ -544,14 +535,7 @@ void NetworkThread::operator()()
 						}
 
 						if (spacket.curpos > 0) {
-							sockaddr target_addr;
-							sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-		
-							udp_addr->sin_family = AF_INET;
-							udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-							udp_addr->sin_port = htons( SERVER_PORT );
-		
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
 						break;
@@ -581,14 +565,7 @@ void NetworkThread::operator()()
 						}
 
 						if (spacket.curpos > 0) {
-							sockaddr target_addr;
-							sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-		
-							udp_addr->sin_family = AF_INET;
-							udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-							udp_addr->sin_port = htons( SERVER_PORT );
-		
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
 						break;
