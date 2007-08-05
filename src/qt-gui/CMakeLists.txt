@@ -7,16 +7,22 @@ SET(UI_FILES
 	MainWindow.ui
 )
 
+SET(UI_SRCS
+	QTMain.cpp
+	MainWindow.cpp
+	QSharesTreeWidget.cpp
+)	
+
+qt4_automoc(${UI_SRCS})
+
 QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 ADD_LIBRARY(uftt-qt
-	QTMain.cpp
-	MainWindow.cpp
+	${UI_SRCS}
 	MainWindow.h
-	QSharesTreeWidget.cpp
 	QSharesTreeWidget.h
 	${UI_FILES}
 )

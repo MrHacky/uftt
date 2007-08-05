@@ -11,4 +11,14 @@ extern std::vector<ShareInfo> MyShares;
 extern boost::mutex shares_mutex;
 
 extern volatile bool terminating;
+
+struct JobRequest {
+	uint8 type;
+	union {
+		SHA1 hash;
+	};
+};
+
+extern std::vector<JobRequest> JobQueue;
+extern boost::mutex jobs_mutex;
 #endif

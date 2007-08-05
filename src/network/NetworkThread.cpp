@@ -86,12 +86,19 @@ void NetworkThread::operator()()
 				rpacket.curpos = 0;
 				uint8 ptype;
 				rpacket.deserialize(ptype);
-				cout << "got packet, type:" << ptype << '\n';
+				cout << "got packet, type:" << (int)ptype << '\n';
 			}
 		}
 
+		{
+			boost::mutex::scoped_lock lock(jobs_mutex);
+			for (; JobQueue.size() > 0; JobQueue.pop_back()) {
+				const JobRequest& job = JobQueue.back();
+				cout << "got request, type:" << (int)job.type << '\n';
+			}
+		}
 		// poll for outgoing stuff
-		cerr << '.' << endl;
+		// cerr << '.' << endl;
 
 		{
 			boost::mutex::scoped_lock lock(shares_mutex);

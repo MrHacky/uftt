@@ -3,11 +3,17 @@
 
 #include "ui_MainWindow.h"
 
-class MainWindow: public Ui::MainWindow, public QMainWindow
+class MainWindow: public QMainWindow, public Ui::MainWindow
 {
+	Q_OBJECT
+
 	public:
 		MainWindow();
 		~MainWindow();
+
+	public slots:
+		void RefreshButtonClicked();
+
 };
 
 #endif
