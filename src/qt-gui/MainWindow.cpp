@@ -34,8 +34,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::RefreshButtonClicked()
 {
-	JobRequest job;
-	job.type = PT_QUERY_SERVERS; // refresh
+	JobRequestQueryServersRef job(new JobRequestQueryServers());
 	{
 		boost::mutex::scoped_lock lock(jobs_mutex);
 		JobQueue.push_back(job);
@@ -66,9 +65,8 @@ void MainWindow::AddNewShare(std::string str, SHA1 hash)
 		treedata[hash] = rwi;
 	}
 	if (rwi->childCount() == 0) {
-		JobRequest job;
-		job.type = PT_QUERY_CHUNK; // refresh
-		job.hash = hash;
+		JobRequestTreeDataRef job(new JobRequestTreeData());
+		job->hash = hash;
 		{
 			boost::mutex::scoped_lock lock(jobs_mutex);
 			JobQueue.push_back(job);
@@ -94,9 +92,8 @@ void MainWindow::AddNewFileInfo(void* data)
 			QTreeWidgetItem* srwi = new QTreeWidgetItem(rwi, 0);
 			srwi->setText(0, sfi->name.c_str());
 			treedata[sfi->hash] = srwi;
-			JobRequest job;
-			job.type = PT_QUERY_CHUNK; // refresh
-			job.hash = sfi->hash;
+			JobRequestTreeDataRef job(new JobRequestTreeData());
+			job->hash = sfi->hash;
 			{
 				boost::mutex::scoped_lock lock(jobs_mutex);
 				JobQueue.push_back(job);
@@ -153,10 +150,9 @@ void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 			StartDownload(fir, path / fir->name);
 		}
 	} else {
-		JobRequest job;
-		job.type = PT_REQUEST_CHUNK; // refresh
-		job.hash = fi->hash;
-		job.path = path;
+		JobRequestBlobDataRef job(new JobRequestBlobData());
+		job->hash = fi->hash;
+		job->fpath = path;
 		{
 			boost::mutex::scoped_lock lock(jobs_mutex);
 			JobQueue.push_back(job);

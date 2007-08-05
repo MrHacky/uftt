@@ -5,6 +5,7 @@
 
 #include <boost/foreach.hpp>
 #include "boost/filesystem/fstream.hpp"
+#include <boost/pointer_cast.hpp>
 
 #include "../SharedData.h"
 #include "CrossPlatform.h"
@@ -135,7 +136,9 @@ void NetworkThread::operator()()
 	UFTT_packet rpacket;
 	UFTT_packet spacket;
 	sockaddr source_addr;
-	vector<JobRequest> MyJobs;
+	vector<JobRequestRef> MyJobs;
+	map<SHA1, JobRequestTreeDataRef> TreeJobs;
+	map<SHA1, JobRequestBlobDataRef> BlobJobs;
 	map<SHA1, FileInfoRef> inqueuemap;
 	map<SHA1, fs::path> downpath;
 
@@ -391,73 +394,106 @@ void NetworkThread::operator()()
 		{
 			boost::mutex::scoped_lock lock(jobs_mutex);
 			for (; JobQueue.size() > 0; JobQueue.pop_back()) {
-				const JobRequest& job = JobQueue.back();
+				const JobRequestRef& job = JobQueue.back();
 				MyJobs.push_back(job);
 			}
 		}
 
-		for (; MyJobs.size() > 0; MyJobs.pop_back()) {
-			JobRequest& job = MyJobs.back();
-			switch (job.type) {
-				case PT_QUERY_SERVERS: {
-					spacket.curpos = 0;
-					spacket.serialize<uint8>(PT_QUERY_SERVERS);
-					
-					sockaddr target_addr;
-					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-					
-					udp_addr->sin_family = AF_INET;
-					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-					udp_addr->sin_port = htons( SERVER_PORT );
+		for (int i = MyJobs.size(); i > 0; --i) {
+			JobRequestRef basejob = MyJobs[i];
+			if (++basejob->time > 10) {
+				switch (basejob->type()) {
+					case JRT_SERVERINFO: {
+						spacket.curpos = 0;
+						spacket.serialize<uint8>(PT_QUERY_SERVERS);
+						
+						sockaddr target_addr;
+						sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+						
+						udp_addr->sin_family = AF_INET;
+						udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+						udp_addr->sin_port = htons( SERVER_PORT );
+	
+						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+							cout << "error sending packet: " << NetGetLastError() << endl;
+						MyJobs.erase(MyJobs.begin() + i);
+						break;
+					}
+					case JRT_TREEDATA: {
+						JobRequestTreeDataRef job = boost::static_pointer_cast<JobRequestTreeData>(basejob);
+						TreeJobs[job->hash] = job;
+						spacket.curpos = 0;
+						if (!job->gotinfo) {
+							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
+	
+							BOOST_FOREACH(uint8 & val, job->hash.data)
+								spacket.serialize(val);
+						} else {
+							if (job->curchunk < job->chunkcount) {
+								spacket.serialize<uint8>(PT_QUERY_TREE_DATA);
+		
+								BOOST_FOREACH(uint8 & val, job->hash.data)
+									spacket.serialize(val);
 
-					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
-						cout << "error sending packet: " << NetGetLastError() << endl;
-					break;
-				}
-				case PT_QUERY_CHUNK: {
-					spacket.curpos = 0;
-					spacket.serialize<uint8>(PT_QUERY_CHUNK);
+								spacket.serialize(job->curchunk);
+							} else {
+								// TODO: callback
+								MyJobs.erase(MyJobs.begin() + i);
+							}
+						}
 
-					BOOST_FOREACH(uint8 & val, job.hash.data)
-						spacket.serialize(val);
+						if (spacket.curpos > 0) {
+							sockaddr target_addr;
+							sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+		
+							udp_addr->sin_family = AF_INET;
+							udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+							udp_addr->sin_port = htons( SERVER_PORT );
+		
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+								cout << "error sending packet: " << NetGetLastError() << endl;
+						}
+						break;
+					}
+					case JRT_BLOBDATA: {
+						JobRequestBlobDataRef job = boost::static_pointer_cast<JobRequestBlobData>(basejob);;
+						BlobJobs[job->hash] = job;
+						spacket.curpos = 0;
+						if (!job->gotinfo) {
+							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
+	
+							BOOST_FOREACH(uint8 & val, job->hash.data)
+								spacket.serialize(val);
+						} else {
+							if (job->curchunk < job->chunkcount) {
+								spacket.serialize<uint8>(PT_QUERY_BLOB_DATA);
+		
+								BOOST_FOREACH(uint8 & val, job->hash.data)
+									spacket.serialize(val);
 
-					spacket.serialize<uint32>(0);
+								spacket.serialize(job->curchunk);
+							} else {
+								// TODO: callback
+								MyJobs.erase(MyJobs.begin() + i);
+							}
+						}
 
-					sockaddr target_addr;
-					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-
-					udp_addr->sin_family = AF_INET;
-					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-					udp_addr->sin_port = htons( SERVER_PORT );
-
-					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
-						cout << "error sending packet: " << NetGetLastError() << endl;
-					break;
-				}
-				case PT_REQUEST_CHUNK: {
-					spacket.curpos = 0;
-					spacket.serialize<uint8>(PT_REQUEST_CHUNK);
-
-					BOOST_FOREACH(uint8 & val, job.hash.data)
-						spacket.serialize(val);
-
-					spacket.serialize<uint32>(0); // TODO: support files > 4GB
-
-					sockaddr target_addr;
-					sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
-
-					udp_addr->sin_family = AF_INET;
-					udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
-					udp_addr->sin_port = htons( SERVER_PORT );
-
-					if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
-						cout << "error sending packet: " << NetGetLastError() << endl;
-					
-					downpath[job.hash] = job.path;
-					break;
-				}
-				default: {
-					cout << "unknown job type: " << (int)job.type << endl;
+						if (spacket.curpos > 0) {
+							sockaddr target_addr;
+							sockaddr_in* udp_addr = ( sockaddr_in * )&target_addr;
+		
+							udp_addr->sin_family = AF_INET;
+							udp_addr->sin_addr.s_addr = INADDR_BROADCAST;
+							udp_addr->sin_port = htons( SERVER_PORT );
+		
+							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &target_addr, sizeof( target_addr ) ) == SOCKET_ERROR)
+								cout << "error sending packet: " << NetGetLastError() << endl;
+						}
+						break;
+					}
+					default: {
+						cout << "unknown job type: " << (int)basejob->type() << endl;
+					}
 				}
 			}
 		}

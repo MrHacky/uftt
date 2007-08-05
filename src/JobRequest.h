@@ -14,6 +14,7 @@ enum {
 	JRT_NONE = 0,
 	JRT_TREEDATA,
 	JRT_BLOBDATA,
+	JRT_SERVERINFO,
 };
 
 class JobRequest {
@@ -22,9 +23,11 @@ class JobRequest {
 		JobRequest();
 		JobRequest(const JobRequest& o);
 	protected:
-		JobRequest(uint8 type) : jobtype(type) {};
+		JobRequest(uint8 type) : jobtype(type), time(0xFFFF) {};
 	public:
 		uint8 type() const { return jobtype; };
+
+		uint32 time;
 };
 typedef boost::shared_ptr<JobRequest> JobRequestRef;
 
@@ -68,5 +71,11 @@ class JobRequestBlobData : public JobRequest {
 		bool gotinfo;
 };
 typedef boost::shared_ptr<JobRequestBlobData> JobRequestBlobDataRef;
+
+class JobRequestQueryServers : public JobRequest {
+	public:
+		JobRequestQueryServers() : JobRequest(JRT_SERVERINFO) {};
+};
+typedef boost::shared_ptr<JobRequestQueryServers> JobRequestQueryServersRef;
 
 #endif

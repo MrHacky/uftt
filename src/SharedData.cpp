@@ -5,7 +5,7 @@ boost::mutex shares_mutex;
 
 volatile bool terminating;
 
-std::vector<JobRequest> JobQueue;
+std::vector<JobRequestRef> JobQueue;
 boost::mutex jobs_mutex;
 
 
