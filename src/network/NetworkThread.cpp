@@ -6,6 +6,7 @@
 
 #include "../SharedData.h"
 #include "CrossPlatform.h"
+#include "Packet.h"
 
 using namespace std;
 
@@ -39,19 +40,54 @@ static SOCKET CreateUDPSocket( uint16 bindport, sockaddr_in* iface_addr) {
 		closesocket( sock );
 		return INVALID_SOCKET;
 	};
+/*
+	// now enable nonblocking
+	unsigned long blk = 1;
+	retval = setsockopt( sock, SOL_SOCKET, SO_BROADCAST, ( char* )&blk, sizeof( blk ) );
+	if ( retval == SOCKET_ERROR ) {
+		cout << "UDP: Unable to enable nonblocking:" << NetGetLastError() << "\n";
+		closesocket( sock );
+		return INVALID_SOCKET;
+	};
+*/
 	return sock;
 }
-
 
 void NetworkThread::operator()()
 {
 	SOCKET udpsock;
-	udpsock = CreateUDPSocket(12345, NULL);
+	UFTT_packet rpacket;
+	UFTT_packet spacket;
+	sockaddr source_addr;
 
+	udpsock = CreateUDPSocket(12345, NULL);
 	assert(udpsock != INVALID_SOCKET);
+
 
 	// initialise network
 	while (!terminating) {
+		struct timeval tv;
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;
+
+		fd_set readset;
+		FD_ZERO(&readset);
+		FD_SET(udpsock, &readset);
+		
+		int sel = select(1, &readset, NULL, NULL, &tv);
+		cout << "sel:" << sel << '\n';
+		socklen_t len;
+		assert(sel >= 0);
+		if (FD_ISSET(udpsock, &readset)) {
+			if (recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len) == SOCKET_ERROR) {
+				fprintf(stderr, "Server: recvfrom() failed with error #%i\n",NetGetLastError());
+			} else {
+				rpacket.curpos = 0;
+				uint8 curtype;
+				rpacket.deserialize(curtype);
+			}
+		}
+		
 		// poll for incoming stuff
 		// poll for outgoing stuff
 		cerr << '.' << endl;
@@ -63,6 +99,5 @@ void NetworkThread::operator()()
 			}
 		}
 
-		usleep(200000);
 	}
 }

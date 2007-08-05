@@ -36,7 +36,7 @@ class UFTT_packet {
 		}
 		template <typename T>
 			typename boost::enable_if<boost::is_arithmetic<T> >::type
-			deserialize(const T& var)
+			deserialize(T& var)
 		{
 			var = 0;
 			for (int i = 0; i < sizeof(T); ++i)
