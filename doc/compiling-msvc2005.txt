@@ -1,0 +1,32 @@
+* Install Visual C++ 2005 Express Edition with the Microsoft Platform SDK
+
+(From http://msdn2.microsoft.com/en-us/express/aa700755.aspx)
+
+Step 1: Install Visual C++ Express.
+If you haven't done so already, install Visual C++ Express.
+
+Step 2: Install the Microsoft Platform SDK. 
+Install the Platform SDK over the Web from the Download Center. Follow the instructions and install the SDK for the x86 platform.
+-include core build env
+-include web build env
+
+Step 3: Update the Visual C++ directories in the Projects and Solutions section in the Options dialog box. 
+Add the paths to the appropriate subsection:
+
+Executable files: C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Bin
+Include files: C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Include
+Library files: C:\Program Files\Microsoft Platform SDK for Windows Server 2003 R2\Lib
+
+
+* Install CMake
+
+http://www.cmake.org/files/v2.4/cmake-2.4.7-win32-x86.exe
+
+* Install Qt
+
+TODO
+
+* Install boost
+
+TODO
+
