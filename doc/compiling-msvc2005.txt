@@ -24,7 +24,12 @@ http://www.cmake.org/files/v2.4/cmake-2.4.7-win32-x86.exe
 
 * Install Qt
 
-TODO
+- get Qt-4.3.1-bin-msvc2005.rar 
+    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.3.1-bin-msvc2005.rar
+- unpack it somewhere
+    * %QTDIR% will refer to the directory you unpacked
+- add %QTDIR%\bin to the system path 
+    * my computer, right click, properties, advanced, Environment Variables, PATH system variable
 
 * Install boost
 
