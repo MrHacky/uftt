@@ -51,9 +51,9 @@ void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
 {
 	QTreeWidgetItem* rwi;
 	if (parent)
-	 rwi = new QTreeWidgetItem(parent, 0);
+		rwi = new QTreeWidgetItem(parent, 0);
 	else
-	 rwi = new QTreeWidgetItem(this, 0);
+		rwi = new QTreeWidgetItem(this, 0);
 
 	rwi->setText(0, fi.name.c_str());
 
