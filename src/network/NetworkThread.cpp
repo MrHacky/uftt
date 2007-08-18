@@ -145,6 +145,17 @@ void NetworkThread::operator()()
 	map<SHA1, JobRequestTreeDataRef> TreeJobs;
 	map<SHA1, JobRequestBlobDataRef> BlobJobs;
 
+#ifdef HAVE_WINSOCK
+	{
+		WORD wVersionRequested;
+		WSADATA wsaData;
+		int err;
+		wVersionRequested = MAKEWORD( 2, 0 );
+		err = WSAStartup( wVersionRequested, &wsaData );
+		assert(err == 0);
+	}
+#endif
+
 	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
 	assert(udpsock != INVALID_SOCKET);
 	
