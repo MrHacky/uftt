@@ -33,5 +33,19 @@ http://www.cmake.org/files/v2.4/cmake-2.4.7-win32-x86.exe
 
 * Install boost
 
-TODO
+- download the boost installer
+    * from http://www.boost-consulting.com/boost_1_34_0_setup.exe
+      (http://www.boost-consulting.com/products/free)
+- run it
+    select Visual Studio 8 integration
+    select multithread and multithread, debug
+    select at least headers, thread lib, and filesystem lib
 
+* Compile
+
+- run CMake
+    * source dir is trunk of the checkout
+    * create builddir somewhere (ex: trunk/build)
+    * configure, configure, ok
+
+- open project file in builddir and compile!
