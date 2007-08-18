@@ -1,9 +1,9 @@
 #include "QSharesTreeWidget.h"
 
 #include <QTreeWidgetItem>
+#include <QUrl>
 
 #include <boost/foreach.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include <iostream>
 
@@ -19,9 +19,7 @@ QSharesTreeWidget::QSharesTreeWidget(QWidget*& widget)
 
 void QSharesTreeWidget::dragEnterEvent(QDragEnterEvent* event)
 {
-	cout << "event\n";
-	if ((event->mimeData()->hasFormat("text/plain"))
-	 && (event->mimeData()->text().toStdString().substr(0, 7) == "file://"))
+	if (event->mimeData()->hasUrls())
 		event->acceptProposedAction();
 }
 
@@ -35,18 +33,13 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	cout << "try\n" << event->mimeData()->text().toStdString() << '\n';
 	event->acceptProposedAction();
 	
-	string text = event->mimeData()->text().toStdString();
-	vector<string> paths;
-	
-	boost::split(paths, text, boost::is_any_of("\n"));
-
-	BOOST_FOREACH(const string& str, paths)
-	if (!str.empty()) {
-		FileInfoRef fi( new FileInfo(str.substr(7)));
+	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
+		const string str(url.toLocalFile().toStdString());
+		FileInfoRef fi(new FileInfo(str));
 		addFileInfo(*fi);
 		
 		ShareInfo fs(fi);
-		fs.path = str.substr(7);
+		fs.path = str;
 		{
 			boost::mutex::scoped_lock lock(shares_mutex);
 			MyShares.push_back(fs);
