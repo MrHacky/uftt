@@ -57,7 +57,6 @@ void SHA1Hasher::Update(const fs::path& data)
 	fs::ifstream fstr;
 	fstr.open(data, ios::binary);
 	char buf[1024];
-	int len;
 	while (fstr.read(buf, 1024))
 		Update(buf, fstr.gcount());
 	Update(buf, fstr.gcount());

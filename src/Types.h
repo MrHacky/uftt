@@ -15,4 +15,6 @@ typedef boost::int32_t  int32;
 typedef boost::uint64_t uint64;
 typedef boost::int64_t  int64;
 
+typedef unsigned int uint;
+
 #endif

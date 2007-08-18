@@ -16,7 +16,7 @@ int main( int argc, char **argv )
 
 	boost::thread thrd1(thrd1obj);
 
-	bool ret = gui.run();
+	int ret = gui.run();
 
 	terminating = true;
 

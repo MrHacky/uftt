@@ -64,6 +64,11 @@ fs::path findfpath(const SHA1 & hash)
 	return res;
 }
 
+#ifdef WIN32
+	// TODO: remove snprintf calls, replace with boost::format or something
+	#define snprintf _snprintf
+#endif
+
 static string addr2str( sockaddr* addr ) {
 	char buf[100];
 	switch ( addr->sa_family ) {
@@ -168,7 +173,7 @@ void NetworkThread::operator()()
 		socklen_t len = sizeof(source_addr);
 		assert(sel >= 0);
 		while (FD_ISSET(udpsock, &readset)) {
-			int msglen = recvfrom(udpsock, rpacket.data, 1400, 0, &source_addr, &len);
+			int msglen = recvfrom(udpsock, (char*)rpacket.data, 1400, 0, &source_addr, &len);
 			if (msglen == SOCKET_ERROR) {
 				fprintf(stderr, "Server: recvfrom() failed with error #%i\n", NetGetLastError());
 			} else {
@@ -188,7 +193,7 @@ void NetworkThread::operator()()
 
 						udp_addr->sin_family = AF_INET;
 
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					};
@@ -197,7 +202,7 @@ void NetworkThread::operator()()
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_QUERY_SHARELIST);
 
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					};
@@ -215,14 +220,14 @@ void NetworkThread::operator()()
 							}
 						}
 						assert(spacket.curpos < 1400);
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					};
 					case PT_REPLY_SHARELIST: {
 						uint32 numshares;
 						rpacket.deserialize(numshares);
-						for (int i = 0; i < numshares; ++i) {
+						for (uint i = 0; i < numshares; ++i) {
 							string name;
 							SHA1 hash;
 							rpacket.deserialize(name);
@@ -278,7 +283,7 @@ void NetworkThread::operator()()
 							spacket.serialize(fi->size);
 						}
 
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
@@ -344,7 +349,7 @@ void NetworkThread::operator()()
 							}
 						}
 						spacket.serialize(string(""));
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
@@ -436,10 +441,10 @@ void NetworkThread::operator()()
 						spacket.serialize<uint32>(chunknum);
 						fstr.read((char*)buf, 1024);
 						uint32 len = fstr.gcount();
-						for (int i = 0; i < len; ++i)
+						for (uint i = 0; i < len; ++i)
 							spacket.serialize(buf[i]);
 
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
@@ -514,7 +519,7 @@ void NetworkThread::operator()()
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_QUERY_SERVERS);
 
-						if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						MyJobs.erase(MyJobs.begin() + i);
 						break;
@@ -544,7 +549,7 @@ void NetworkThread::operator()()
 						}
 
 						if (spacket.curpos > 0) {
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
+							if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
 						break;
@@ -574,7 +579,7 @@ void NetworkThread::operator()()
 						}
 
 						if (spacket.curpos > 0) {
-							if (sendto(udpsock, spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
+							if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof( bc_addr ) ) == SOCKET_ERROR)
 								cout << "error sending packet: " << NetGetLastError() << endl;
 						}
 						break;

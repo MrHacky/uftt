@@ -51,5 +51,5 @@ void QTMain::BindEvents(NetworkThread* nwobj)
 int QTMain::run()
 {
 	((QTImpl*)impl)->wnd->show();
-	((QTImpl*)impl)->app->exec();
+	return ((QTImpl*)impl)->app->exec();
 }
