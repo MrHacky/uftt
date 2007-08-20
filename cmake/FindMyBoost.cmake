@@ -42,7 +42,7 @@ ELSE(WIN32)
 		CACHE STRING
 		"suffix to use for boost libraries"
 	)
-	
+
 	FIND_LIBRARY(BOOST_THREAD_LIBRARY
 		NAMES boost_thread-mt boost_thread${BOOST_LIBRARY_SUFFIX}
 		PATH "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
