@@ -35,14 +35,16 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	
 	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
 		const string str(url.toLocalFile().toStdString());
-		FileInfoRef fi(new FileInfo(str));
-		addFileInfo(*fi);
-		
-		ShareInfo fs(fi);
-		fs.path = str;
-		{
-			boost::mutex::scoped_lock lock(shares_mutex);
-			MyShares.push_back(fs);
+		if (!str.empty()) {
+			FileInfoRef fi(new FileInfo(str));
+			addFileInfo(*fi);
+			
+			ShareInfo fs(fi);
+			fs.path = str;
+			{
+				boost::mutex::scoped_lock lock(shares_mutex);
+				MyShares.push_back(fs);
+			}
 		}
 	}
 }
