@@ -62,5 +62,4 @@ void QSharesTreeWidget::addFileInfo(const FileInfo& fi, QTreeWidgetItem* parent)
 	BOOST_FOREACH(const FileInfoRef& iter, fi.files) {
 		addFileInfo(*iter, rwi);
 	}
-	
 }
