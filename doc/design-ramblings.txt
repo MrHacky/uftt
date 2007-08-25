@@ -1,0 +1,27 @@
+=== ramblings about design ===
+
+Just some thinking about the (distant?) future of UFTT :-p
+
+Some concepts might need to be introduced for extensibility etc: 
+  * link = some particular way to communicate with other clients
+    examples: a connected TCP-connection
+              an IPX/UDP broadcast interface
+              an IPX/UDP p2p semi-connection
+              a multicast connection
+  * a single client process can be connected to another client process via multiple links
+    examples: both udp and tcp connection over same ethernet cable
+              both wired and wireless connection
+  * these links will not be 'special' and will be handles just as if they
+    had different endpoint clients
+  * a method might be needed to mark links as being bundled over the same hardware
+      (sharing bandwidth etc)
+    , but this is independent of whether the links are for the same endpoint or not
+  * would be really need if that could be autodetected to some usually sensible defaults :-)
+
+Other stuff to think about:
+  * multiple links may share the same network backend?
+  * broadcast links always available, even without known endpoints
+  * links can have more than 1 endpoint (broadcast, multicast)
+  * broadcast links can 'discover' endpoints by themselves
+
+
