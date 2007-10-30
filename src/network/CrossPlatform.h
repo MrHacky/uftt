@@ -7,7 +7,7 @@
 	#if defined(__WIN32__) || defined(WIN32)
 		// borland/msvs win32 specifics..
 		#define HAVE_WINSOCK
-		#define HAVE_WSNWLINK_H
+		//#define HAVE_WSNWLINK_H
 	#endif
 
 	#if defined(HAVE_WINSOCK)
