@@ -45,12 +45,21 @@ ELSE(WIN32 AND NOT MINGW)
 
 	FIND_LIBRARY(BOOST_THREAD_LIBRARY
 		NAMES boost_thread-mt boost_thread${BOOST_LIBRARY_SUFFIX}
-		PATHS "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
+		PATHS "${BOOST_LIBRARY_DIR}" 
+		      "${BOOST_INCLUDE_DIR}/lib"
+		      "${BOOST_INCLUDE_DIR}/../lib"
+		      /usr/lib /usr/local/lib
 	)
 
 	FIND_LIBRARY(BOOST_FILESYSTEM_LIBRARY
 		NAMES boost_filesystem-mt boost_filesystem${BOOST_LIBRARY_SUFFIX}
-		PATHS "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
+		PATHS "${BOOST_LIBRARY_DIR}"
+		      "${BOOST_INCLUDE_DIR}/lib"
+		      "${BOOST_INCLUDE_DIR}/../lib"
+		      /usr/lib /usr/local/lib
 	)
 
 ENDIF(WIN32 AND NOT MINGW)
+
+MARK_AS_ADVANCED(BOOST_LIBRARY_DIR)
+
