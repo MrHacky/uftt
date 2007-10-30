@@ -1,0 +1,37 @@
+- Installing mingw
+
+the qt installer will do this for you if you want
+
+- Install QT libraries for mingw
+
+Download qt-win-opensource-4.3.2-mingw.exe
+(http://trolltech.com/developer/downloads/qt/windows)
+
+- Install boost libraries for mingw
+
+fix filesystem header
+
+There is an "inline" missing in filesystem/convenience.hpp
+
+# define BOOST_FS_FUNC_STRING std::string
+
+should be
+
+# define BOOST_FS_FUNC_STRING inline std::string
+
+- Compile
+
+start a cmd window
+make sure your mingw bin dir and your qt bin dir are in the path
+run CMakeSetup.exe (its in c:\Program Files\CMake\bin probably)
+choose MinGW Makefiles
+configure
+make sure boost paths are correct
+set BOOST_LIBRARY_SUFFIX correct (-mgw34-mt-1_34_1)
+configure
+ok
+run mingw-make
+
+enjoy!
+
+ 
