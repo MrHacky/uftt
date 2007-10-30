@@ -16,7 +16,7 @@ FIND_PATH(BOOST_INCLUDE_DIR
 		"C:/Program Files/boost/boost_1_34"
 )
 
-IF(WIN32)
+IF(WIN32 AND NOT MINGW)
 	# depend on autolinking on windows
 	SET(BOOST_THREAD_LIBRARY "")
 	SET(BOOST_FILESYSTEM_LIBRARY "")
@@ -25,7 +25,7 @@ IF(WIN32)
 		CACHE PATH
 		"path to boost library files"
 	)
-ELSE(WIN32)
+ELSE(WIN32 AND NOT MINGW)
 	SET(BOOST_LIBRARY_DIR
 		"${BOOST_INCLUDE_DIR}/../lib"
 		CACHE PATH
@@ -45,12 +45,12 @@ ELSE(WIN32)
 
 	FIND_LIBRARY(BOOST_THREAD_LIBRARY
 		NAMES boost_thread-mt boost_thread${BOOST_LIBRARY_SUFFIX}
-		PATH "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
+		PATHS "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
 	)
 
 	FIND_LIBRARY(BOOST_FILESYSTEM_LIBRARY
 		NAMES boost_filesystem-mt boost_filesystem${BOOST_LIBRARY_SUFFIX}
-		PATH "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
+		PATHS "${BOOST_LIBRARY_DIR}" /usr/lib /usr/local/lib
 	)
 
-ENDIF(WIN32)
+ENDIF(WIN32 AND NOT MINGW)
