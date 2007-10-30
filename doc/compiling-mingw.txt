@@ -33,5 +33,3 @@ ok
 run mingw-make
 
 enjoy!
-
- 
