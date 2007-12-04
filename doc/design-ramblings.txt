@@ -11,12 +11,12 @@ Some concepts might need to be introduced for extensibility etc:
   * a single client process can be connected to another client process via multiple links
     examples: both udp and tcp connection over same ethernet cable
               both wired and wireless connection
-  * these links will not be 'special' and will be handles just as if they
+  * these links will not be 'special' and will be handled just as if they
     had different endpoint clients
   * a method might be needed to mark links as being bundled over the same hardware
       (sharing bandwidth etc)
     , but this is independent of whether the links are for the same endpoint or not
-  * would be really need if that could be autodetected to some usually sensible defaults :-)
+  * would be really neat if that could be autodetected to some usually sensible defaults :-)
 
 Other stuff to think about:
   * multiple links may share the same network backend?
@@ -24,4 +24,15 @@ Other stuff to think about:
   * links can have more than 1 endpoint (broadcast, multicast)
   * broadcast links can 'discover' endpoints by themselves
 
+
+=== Info on diagram and stuff ===
+
+* ShareMount
+	An array of these structures define the layout of your share.
+	It binds a path on the filesystem to a virtual path in your share.
+	From this point of view you(everyone) has only 1 share.
+	Multiple ShareMounts can be used to populate this share from various sources on your filesystems.
+	A ShareMount with an empty 'fs::path' represents an empty directory.
+	The virtpath cannot actually exist on the filesystem as reachable from another ShareMount.
+	Shorter virtpaths take priority (they can make the longer virtpaths invalid by the above rule).
 
