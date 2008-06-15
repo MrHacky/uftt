@@ -85,7 +85,10 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 		fs::fstream fstr; // need fstream instead of ofstream if we want to append
 
 		// TODO: hmpf. not what i wanted, but works.... find out why
-		fstr.open(fpath, ios::out | ios::binary | ios::app);
+		if (chunknum == 0)
+			fstr.open(fpath, ios::out | ios::binary);
+		else
+			fstr.open(fpath, ios::out | ios::binary | ios::app);
 		//fstr.seekp(filepos, ios_base::beg);
 
 		fstr.write((char*)buf, len);
