@@ -227,7 +227,7 @@ void NetworkThread::operator()()
 							BOOST_FOREACH(const ShareInfo & si, MyShares) {
 								spacket.serialize(si.root->name);
 								// TODO: serialize SHA1 object nicer
-								BOOST_FOREACH(uint8 val, si.root->hash.data) spacket.serialize(val);
+								spacket.serialize(si.root->hash);
 							}
 						}
 						assert(spacket.curpos < 1400);
@@ -242,8 +242,7 @@ void NetworkThread::operator()()
 							string name;
 							SHA1 hash;
 							rpacket.deserialize(name);
-							// TODO: serialize SHA1 object nicer
-							BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+							rpacket.deserialize(hash);
 
 							cbAddShare(name, hash);
 						}
@@ -252,8 +251,7 @@ void NetworkThread::operator()()
 					}
 					case PT_QUERY_OBJECT_INFO: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data)
-							rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						FileInfoRef fi = findFI(hash);
 						if (!fi) {
 							cout << "hash not found!" << endl;
@@ -284,13 +282,13 @@ void NetworkThread::operator()()
 							}
 							spacket.curpos = 0;
 							spacket.serialize<uint8>(PT_REPLY_TREE_INFO);
-							BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+							spacket.serialize(hash);
 							spacket.serialize<uint32>(fi->files.size());
 							spacket.serialize(nchunks);
 						} else {
 							spacket.curpos = 0;
 							spacket.serialize<uint8>(PT_REPLY_BLOB_INFO);
-							BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+							spacket.serialize(hash);
 							spacket.serialize(fi->size);
 						}
 
@@ -300,7 +298,7 @@ void NetworkThread::operator()()
 					}
 					case PT_REPLY_TREE_INFO: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
@@ -321,7 +319,7 @@ void NetworkThread::operator()()
 					}
 					case PT_QUERY_TREE_DATA: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						FileInfoRef fi = findFI(hash);
 						if (!fi) {
 							cout << "hash not found!" << endl;
@@ -332,7 +330,7 @@ void NetworkThread::operator()()
 						uint32 nchunk = 0;
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_REPLY_TREE_DATA);
-						BOOST_FOREACH(uint8& val, hash.data) spacket.serialize(val);
+						spacket.serialize(hash);
 						spacket.serialize(chunknum);
 						{ // count chunks
 							uint32 cursize = 0;
@@ -355,7 +353,7 @@ void NetworkThread::operator()()
 								
 								if (nchunk == chunknum) {
 									spacket.serialize(cfi->name);
-									BOOST_FOREACH(uint8& val, cfi->hash.data) spacket.serialize(val);
+									spacket.serialize(cfi->hash);
 								}
 							}
 						}
@@ -366,7 +364,7 @@ void NetworkThread::operator()()
 					}
 					case PT_REPLY_TREE_DATA: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
 							cout << "dont care for packet" << endl;
@@ -379,7 +377,7 @@ void NetworkThread::operator()()
 							rpacket.deserialize(str);
 							while (str != "") {
 								SHA1 chash;
-								BOOST_FOREACH(uint8& val, chash.data) rpacket.deserialize(val);
+								rpacket.deserialize(chash);
 								job->children.push_back(JobRequestTreeData::child_info(chash, str));
 								rpacket.deserialize(str);
 							}
@@ -390,7 +388,7 @@ void NetworkThread::operator()()
 					}
 					case PT_REPLY_BLOB_INFO: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data) rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 
 						{
 							JobRequestTreeDataRef job = TreeJobs[hash];
@@ -427,8 +425,7 @@ void NetworkThread::operator()()
 					}
 					case PT_QUERY_BLOB_DATA: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data)
-							rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						fs::path fp = findfpath(hash);
 						if (fp=="") {
 							cout << "hash not found!" << endl;
@@ -446,8 +443,7 @@ void NetworkThread::operator()()
 						spacket.curpos = 0;
 						spacket.serialize<uint8>(PT_REPLY_BLOB_DATA);
 
-						BOOST_FOREACH(uint8 & val, hash.data)
-							spacket.serialize(val);
+						spacket.serialize(hash);
 
 						spacket.serialize<uint32>(chunknum);
 						fstr.read((char*)buf, 1024);
@@ -461,8 +457,7 @@ void NetworkThread::operator()()
 					}
 					case PT_REPLY_BLOB_DATA: {
 						SHA1 hash;
-						BOOST_FOREACH(uint8& val, hash.data)
-							rpacket.deserialize(val);
+						rpacket.deserialize(hash);
 						JobRequestBlobDataRef job = BlobJobs[hash];
 						if (!job) {
 							cout << "no job" << endl;
@@ -542,14 +537,12 @@ void NetworkThread::operator()()
 						if (!job->gotinfo) {
 							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
 
-							BOOST_FOREACH(uint8 & val, job->hash.data)
-								spacket.serialize(val);
+							spacket.serialize(job->hash);
 						} else {
 							if (job->curchunk < job->chunkcount) {
 								spacket.serialize<uint8>(PT_QUERY_TREE_DATA);
 
-								BOOST_FOREACH(uint8 & val, job->hash.data)
-									spacket.serialize(val);
+								spacket.serialize(job->hash);
 
 								spacket.serialize(job->curchunk);
 							} else {
@@ -572,14 +565,12 @@ void NetworkThread::operator()()
 						if (!job->gotinfo) {
 							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
 	
-							BOOST_FOREACH(uint8 & val, job->hash.data)
-								spacket.serialize(val);
+							spacket.serialize(job->hash);
 						} else {
 							if (job->curchunk < job->chunkcount) {
 								spacket.serialize<uint8>(PT_QUERY_BLOB_DATA);
 		
-								BOOST_FOREACH(uint8 & val, job->hash.data)
-									spacket.serialize(val);
+								spacket.serialize(job->hash);
 
 								spacket.serialize(job->curchunk);
 							} else {
