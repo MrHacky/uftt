@@ -15,11 +15,7 @@ class QTImpl {
 		MainWindow wnd;
 
 		QTImpl( int argc, char **argv )
-			: app(argc,argv)
-		{
-			QObject::connect(wnd.action_Quit, SIGNAL(triggered()),
-			                 &app           , SLOT(quit()));
-		}
+			: app(argc,argv) { };
 
 	private:
 		QTImpl(const QTImpl&);
