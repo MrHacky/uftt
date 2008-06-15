@@ -5,6 +5,7 @@
 
 #include <string>
 #include <vector>
+#include <queue>
 
 #include <boost/shared_ptr.hpp>
 
@@ -54,10 +55,16 @@ class JobRequestTreeData : public JobRequest {
 };
 typedef boost::shared_ptr<JobRequestTreeData> JobRequestTreeDataRef;
 
+#define MAX_BUFFER_SIZE 256
+#define MAX_CHUNK_SIZE 1024 // haxxy...
+
 class JobRequestBlobData : public JobRequest {
-	private:
 	public:
-		JobRequestBlobData() : JobRequest(JRT_BLOBDATA), gotinfo(false) {};
+		uint8 buffer[MAX_BUFFER_SIZE][MAX_CHUNK_SIZE];
+		bool usebuf[MAX_BUFFER_SIZE];
+	public:
+		JobRequestBlobData() : JobRequest(JRT_BLOBDATA), gotinfo(false)
+			{ for (int i = 0; i < MAX_BUFFER_SIZE; ++i) usebuf[i]=false; };
 
 		// request info
 		SHA1 hash;

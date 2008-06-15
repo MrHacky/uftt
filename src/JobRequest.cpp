@@ -47,18 +47,35 @@ void JobRequestBlobData::handleChunk(uint64 offset, uint32 len, uint8* buf)
 	assert(false);
 }
 
+uint32 buftest[256];
+
 void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* buf)
 {
 	assert(chunksize == 1024);
 
+	uint32 cbi = chunknum&0xff;
 	if (chunknum != curchunk) {
 		LOG("don't need chunk! " << "need:" << curchunk << "  got:" << chunknum);
+		if (chunknum < curchunk) {
+			LOG("AND its into the past!");
+		} else if (chunknum < curchunk+255) {
+			if (!usebuf[cbi]) {
+				usebuf[cbi] = true;
+				buftest[cbi] = chunknum;
+				memcpy(buffer[cbi], buf, 1024);
+			} else
+				LOG("AND we already have it!");
+		} else
+			LOG("AND it is too far into the future!");
 		return;
-	}
+	} else if (usebuf[cbi])
+		usebuf[cbi] = false;
 
 	uint32 len = 1024;
 	if (chunknum == chunkcount-1)
 		len = offset;
+
+	++curchunk; ++cbi; cbi &= 0xff;
 
 	if (len != 0) {
 		// TODO: find out why this is needed (it kills the file, but why?)
@@ -69,8 +86,16 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 		//fstr.seekp(filepos, ios_base::beg);
 
 		fstr.write((char*)buf, len);
+
+		while (usebuf[cbi]) {
+			if (curchunk == chunkcount-1) len = offset;
+			if (len != 0) fstr.write((char*)buffer[cbi], len);
+			LOG("Used chunk from buffer:" << curchunk);
+			assert(buftest[cbi] == curchunk);
+			usebuf[cbi] = false;
+			++curchunk; ++cbi; cbi &= 0xff;
+		}
 	}
 
-	++curchunk;
 	mtime = 0;
 }
