@@ -8,6 +8,7 @@
 #include <boost/pointer_cast.hpp>
 
 #include "../SharedData.h"
+#include "../Logger.h"
 #include "CrossPlatform.h"
 #include "Packet.h"
 
@@ -156,7 +157,14 @@ void NetworkThread::operator()()
 	}
 #endif
 
-	udpsock = CreateUDPSocket(SERVER_PORT, NULL);
+	for (int i = 0; i < 10; ++i) {
+		udpsock = CreateUDPSocket(SERVER_PORT+i, NULL);
+		if (udpsock != INVALID_SOCKET) {
+			cout << "Port: " << SERVER_PORT+i << endl;
+			break;
+		}
+	}
+		
 	assert(udpsock != INVALID_SOCKET);
 	
 	sockaddr bc_addr;
@@ -194,7 +202,7 @@ void NetworkThread::operator()()
 				//cout << "got packet,\ttype:" << (int)ptype;
 				//cout << "\t size:" << msglen;
 				//cout << "\tfrom:" << addr2str(&source_addr);
-				cout << endl;
+				//cout << endl;
 				switch (ptype) {
 					case PT_QUERY_SERVERS: {
 						spacket.curpos = 0;
@@ -206,6 +214,9 @@ void NetworkThread::operator()()
 
 						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
+
+						//cout << "setting BC addr" << addr2str(&source_addr) << endl;;
+						//memcpy(&bc_addr, &source_addr, sizeof(sockaddr_in));
 						break;
 					};
 					case PT_REPLY_SERVERS: {
@@ -254,7 +265,7 @@ void NetworkThread::operator()()
 						rpacket.deserialize(hash);
 						FileInfoRef fi = findFI(hash);
 						if (!fi) {
-							cout << "hash not found!" << endl;
+							LOG("hash not found!");
 							break;
 						}
 
@@ -302,7 +313,7 @@ void NetworkThread::operator()()
 						
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
-							cout << "dont care for packet" << endl;
+							LOG("dont care for packet");
 							break;
 						}
 						uint32 numfiles, numchunks;
@@ -322,7 +333,7 @@ void NetworkThread::operator()()
 						rpacket.deserialize(hash);
 						FileInfoRef fi = findFI(hash);
 						if (!fi) {
-							cout << "hash not found!" << endl;
+							LOG("hash not found!");
 							break;
 						}
 						uint32 chunknum;
@@ -367,7 +378,7 @@ void NetworkThread::operator()()
 						rpacket.deserialize(hash);
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
-							cout << "dont care for packet" << endl;
+							LOG("dont care for packet");
 							break;
 						}
 						uint32 chunknum;
@@ -400,17 +411,17 @@ void NetworkThread::operator()()
 								job->mtime = 0;
 								job->gotinfo = true;
 								
-								cout << "dont care for packet";// << endl;
-								FileInfoRef fi = findFI(hash);
-								if (fi) cout << ":" << fi->name;
-								cout << endl;
+								//FileInfoRef fi = findFI(hash);
+								//At the moment the GUI requests trees for *all* children,
+								//whithout knowing whether they are actually trees
+								//LOG("dont care for packet:" << (fi ? fi->name : ""));
 
 								break;
 							}
 						}
 						JobRequestBlobDataRef job = BlobJobs[hash];
 						if (!job) {
-							cout << "no job" << endl;
+							LOG("no job");
 							break;
 						}
 						uint64 fsize;
@@ -428,31 +439,43 @@ void NetworkThread::operator()()
 						rpacket.deserialize(hash);
 						fs::path fp = findfpath(hash);
 						if (fp=="") {
-							cout << "hash not found!" << endl;
+							LOG("hash not found!");
 							break;
 						}
 						//cout << "found path:" << fp << endl;
 
 						uint32 chunknum;
+						uint8  chunkcnt;
 						rpacket.deserialize(chunknum);
-						fs::ifstream fstr;
-						fstr.open(fp, ios::binary);
-						fstr.seekg(chunknum << 10, ios_base::beg);
-						uint8 buf[1024];
+						rpacket.deserialize(chunkcnt);
 
-						spacket.curpos = 0;
-						spacket.serialize<uint8>(PT_REPLY_BLOB_DATA);
+						int32 ind, len;
+						uint8 buf[1024*255];
+						{
+							fs::ifstream fstr;
+							fstr.open(fp, ios::binary);
+							fstr.seekg(chunknum << 10, ios_base::beg);
 
-						spacket.serialize(hash);
+							fstr.read((char*)buf, chunkcnt*1024);
+							len = fstr.gcount();
+						}
+						ind = -1;
+						while (ind < len) {
+							if (ind == -1) ind = 0;
+							spacket.curpos = 0;
+							spacket.serialize<uint8>(PT_REPLY_BLOB_DATA);
 
-						spacket.serialize<uint32>(chunknum);
-						fstr.read((char*)buf, 1024);
-						uint32 len = fstr.gcount();
-						for (uint i = 0; i < len; ++i)
-							spacket.serialize(buf[i]);
+							spacket.serialize(hash);
+							spacket.serialize(chunknum);
 
-						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
-							cout << "error sending packet: " << NetGetLastError() << endl;
+							for (int i = 0; i < 1024 && ind < len; ++i, ++ind)
+								spacket.serialize(buf[ind]);
+
+							if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof( source_addr ) ) == SOCKET_ERROR)
+								cout << "error sending packet: " << NetGetLastError() << endl;
+
+							++chunknum;
+						}
 						break;
 					}
 					case PT_REPLY_BLOB_DATA: {
@@ -460,40 +483,18 @@ void NetworkThread::operator()()
 						rpacket.deserialize(hash);
 						JobRequestBlobDataRef job = BlobJobs[hash];
 						if (!job) {
-							cout << "no job" << endl;
+							LOG("no job found");
 							break;
 						}
 						uint32 chunknum;
 						rpacket.deserialize(chunknum);
-						if (chunknum != job->curchunk) {
-							cout << "no need for chunk" << endl;
-							break;
-						}
-						uint32 len = 1024;
-						if (chunknum == job->chunkcount-1)
-							len = job->offset;
-						uint8 buf[1024];
-						for (uint i = 0; i < len; ++i)
-							rpacket.deserialize(buf[i]);
 
-						if (len != 0) {
-							// TODO: find out why this is needed (it kills the file, but why?)
-							fs::fstream fstr; // need fstream instead of ofstream if we want to append
-	
-							// TODO: hmpf. not what i wanted, but works.... find out why
-							fs::path fp = job->fpath;
-							fstr.open(fp, ios::out | ios::binary | ios::app);
-							//fstr.seekp(filepos, ios_base::beg);
+						job->handleChunk(chunknum, 1024, rpacket.data+rpacket.curpos);
 
-							fstr.write((char*)buf, len);
-						}
-
-						++job->curchunk;
-						job->mtime = 0;
 						break;
 					}
 					default: {
-						cout << "packet type uknown" << endl;
+						LOG("packet type uknown");
 					}
 				}
 			}
@@ -573,6 +574,8 @@ void NetworkThread::operator()()
 								spacket.serialize(job->hash);
 
 								spacket.serialize(job->curchunk);
+								LOG("requesting:" << job->curchunk);
+								spacket.serialize<uint8>(100);
 							} else {
 								// TODO: callback
 								BlobJobs[job->hash].reset();
@@ -587,7 +590,7 @@ void NetworkThread::operator()()
 						break;
 					}
 					default: {
-						cout << "unknown job type: " << (int)basejob->type() << endl;
+						LOG("unknown job type: " << (int)basejob->type());
 					}
 				}
 			}

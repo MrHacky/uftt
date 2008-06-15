@@ -55,6 +55,7 @@ class JobRequestTreeData : public JobRequest {
 typedef boost::shared_ptr<JobRequestTreeData> JobRequestTreeDataRef;
 
 class JobRequestBlobData : public JobRequest {
+	private:
 	public:
 		JobRequestBlobData() : JobRequest(JRT_BLOBDATA), gotinfo(false) {};
 
@@ -70,6 +71,9 @@ class JobRequestBlobData : public JobRequest {
 		uint16 offset;
 		uint32 curchunk;
 		bool gotinfo;
+
+		void handleChunk(uint64 offset, uint32 len, uint8* buf);
+		void handleChunk(uint32 chunknum, uint32 chunksize, uint8* buf);
 };
 typedef boost::shared_ptr<JobRequestBlobData> JobRequestBlobDataRef;
 
