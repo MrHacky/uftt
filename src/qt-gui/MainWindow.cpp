@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include <QTreeWidgetItem>
+#include <QFile>
 
 #include <boost/foreach.hpp>
 
@@ -20,6 +21,15 @@ MainWindow::MainWindow()
 
 	setupUi(this);
 
+	// load layout from file
+	QFile layoutfile("uftt.lyt");
+	if (layoutfile.open(QIODevice::ReadOnly)) {
+		QByteArray data = layoutfile.readAll();
+		if (data.size() > 0)
+			restoreState(data);
+		layoutfile.close();
+	}
+
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
 
@@ -29,6 +39,19 @@ MainWindow::MainWindow()
 
 	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
+}
+
+void MainWindow::closeEvent(QCloseEvent * evnt)
+{
+	// save layout to file
+	QFile layoutfile("uftt.lyt");
+	if (layoutfile.open(QIODevice::WriteOnly)) {
+		QByteArray data = saveState();
+		if (data.size() > 0)
+			layoutfile.write(data);
+		layoutfile.close();
+	}
+	QWidget::closeEvent(evnt);
 }
 
 MainWindow::~MainWindow()

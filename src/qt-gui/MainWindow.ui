@@ -5,8 +5,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>790</width>
-    <height>574</height>
+    <width>729</width>
+    <height>593</height>
    </rect>
   </property>
   <property name="windowTitle" >
@@ -16,14 +16,14 @@
    <bool>true</bool>
   </property>
   <property name="dockOptions" >
-   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks</set>
+   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs</set>
   </property>
   <widget class="QWidget" name="centralwidget" >
-   <layout class="QHBoxLayout" >
-    <item>
+   <layout class="QGridLayout" >
+    <item row="0" column="0" >
      <widget class="QLabel" name="label_2" >
       <property name="text" >
-       <string>Yay!!</string>
+       <string>!UFTT!</string>
       </property>
      </widget>
     </item>
@@ -34,7 +34,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>790</width>
+     <width>729</width>
      <height>19</height>
     </rect>
    </property>
@@ -50,8 +50,11 @@
    <property name="minimumSize" >
     <size>
      <width>0</width>
-     <height>220</height>
+     <height>0</height>
     </size>
+   </property>
+   <property name="features" >
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
    </property>
    <property name="windowTitle" >
     <string>My Shares</string>
@@ -88,11 +91,14 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidget_2" >
+   <property name="features" >
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
+   </property>
    <property name="windowTitle" >
     <string>Other's Shares</string>
    </property>
    <attribute name="dockWidgetArea" >
-    <number>8</number>
+    <number>4</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2" >
     <layout class="QVBoxLayout" >
@@ -160,6 +166,19 @@
     </layout>
    </widget>
   </widget>
+  <widget class="QDockWidget" name="dockWidget_3" >
+   <property name="features" >
+    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
+   </property>
+   <property name="windowTitle" >
+    <string>Debug Log</string>
+   </property>
+   <attribute name="dockWidgetArea" >
+    <number>8</number>
+   </attribute>
+   <widget class="QWidget" name="dockWidgetContents_3" />
+  </widget>
+  <widget class="QStatusBar" name="statusBar" />
   <action name="action_Quit" >
    <property name="text" >
     <string>&amp;Quit</string>

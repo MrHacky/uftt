@@ -9,6 +9,7 @@
 #include "../JobRequest.h"
 
 class QTreeWidgetItem;
+class QCloseEvent;
 
 class MainWindow: public QMainWindow, public Ui::MainWindow
 {
@@ -19,6 +20,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		std::map<SHA1, FileInfoRef> dirdata;
 
 		void StartDownload(FileInfoRef fi, const fs::path& path);
+
+	protected:
+		virtual void closeEvent(QCloseEvent * event);
 
 	private slots:
 		void DragStart(QTreeWidgetItem*, int);
