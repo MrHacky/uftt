@@ -4,7 +4,6 @@ find_package(Qt4 REQUIRED)
 add_definitions(${QT_DEFINITIONS})
 include(${QT_USE_FILE})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 IF(MINGW AND NOT QT_SHARED) 
 	SET(QT_LIBRARIES "${QT_LIBRARIES}" Imm32 Winmm gdi32 comdlg32 oleaut32 winspool Ws2_32 ole32 uuid)
 ENDIF(MINGW AND NOT QT_SHARED)
@@ -20,7 +19,7 @@ SET(UI_SRCS
 	QSharesTreeWidget.cpp
 )	
 
-qt4_automoc(${UI_SRCS})
+QT4_AUTOMOC(${UI_SRCS})
 
 QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 
