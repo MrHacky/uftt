@@ -7,6 +7,8 @@
 #include <vector>
 #include <queue>
 
+#include <time.h>
+
 #include <boost/shared_ptr.hpp>
 
 #include "sha1/SHA1.h"
@@ -24,11 +26,12 @@ class JobRequest {
 		JobRequest();
 		JobRequest(const JobRequest& o);
 	protected:
-		JobRequest(uint8 type) : jobtype(type), mtime(0) {};
+		JobRequest(uint8 type) : jobtype(type), mtime(0), start_time(clock()) {};
 	public:
 		uint8 type() const { return jobtype; };
 
 		int32 mtime;
+		clock_t start_time;
 };
 typedef boost::shared_ptr<JobRequest> JobRequestRef;
 
@@ -63,8 +66,8 @@ class JobRequestBlobData : public JobRequest {
 		uint8 buffer[MAX_BUFFER_SIZE][MAX_CHUNK_SIZE];
 		bool usebuf[MAX_BUFFER_SIZE];
 	public:
-		JobRequestBlobData() : JobRequest(JRT_BLOBDATA), gotinfo(false)
-			{ for (int i = 0; i < MAX_BUFFER_SIZE; ++i) usebuf[i]=false; };
+		JobRequestBlobData();
+		~JobRequestBlobData();
 
 		// request info
 		SHA1 hash;

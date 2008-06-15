@@ -109,6 +109,23 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 bool JobRequestBlobData::timeout(uint32& reqchunk, uint8& reqcnt)
 {
 	reqchunk = curchunk;
-	reqcnt = 8;
+	int i;
+	for (i = 0; i < 8 && !usebuf[(i+curchunk)&0xff]; ++i) {};
+
+	reqcnt = i;
 	return true;
+}
+
+JobRequestBlobData::JobRequestBlobData()
+	: JobRequest(JRT_BLOBDATA), gotinfo(false)
+{
+	for (int i = 0; i < MAX_BUFFER_SIZE; ++i) 
+		usebuf[i]=false;
+};
+
+JobRequestBlobData::~JobRequestBlobData()
+{
+	clock_t end_time = clock();
+	uint64 msecs = (end_time - start_time) * (uint64)1000 / CLOCKS_PER_SEC;
+	LOG("duration: " << msecs);
 }
