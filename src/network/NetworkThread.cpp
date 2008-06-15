@@ -569,14 +569,17 @@ void NetworkThread::operator()()
 							spacket.serialize(job->hash);
 						} else {
 							if (job->curchunk < job->chunkcount) {
-								spacket.serialize<uint8>(PT_QUERY_BLOB_DATA);
-		
-								spacket.serialize(job->hash);
-
-								spacket.serialize(job->curchunk);
-								LOG("requesting: " << job->fpath << ':' << job->curchunk);
-								spacket.serialize<uint8>(100);
+								uint32 reqnum;
+								uint8  reqcnt;
+								if (job->timeout(reqnum, reqcnt)) {
+									spacket.serialize<uint8>(PT_QUERY_BLOB_DATA);
+									spacket.serialize(job->hash);
+									spacket.serialize(reqnum);
+									spacket.serialize(reqcnt);
+									LOG("requesting: " << job->fpath << ':' << reqnum << '(' << (int)reqcnt << ')');
+								}
 							} else {
+								LOG("Downoad of file finished: " << job->fpath);
 								// TODO: callback
 								BlobJobs[job->hash].reset();
 								MyJobs.erase(MyJobs.begin() + i);

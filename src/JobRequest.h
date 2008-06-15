@@ -81,6 +81,8 @@ class JobRequestBlobData : public JobRequest {
 
 		void handleChunk(uint64 offset, uint32 len, uint8* buf);
 		void handleChunk(uint32 chunknum, uint32 chunksize, uint8* buf);
+
+		bool timeout(uint32& reqchunk, uint8& reqcnt);
 };
 typedef boost::shared_ptr<JobRequestBlobData> JobRequestBlobDataRef;
 

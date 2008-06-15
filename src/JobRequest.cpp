@@ -99,3 +99,10 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 
 	mtime = 0;
 }
+
+bool JobRequestBlobData::timeout(uint32& reqchunk, uint8& reqcnt)
+{
+	reqchunk = curchunk;
+	reqcnt = 8;
+	return true;
+}
