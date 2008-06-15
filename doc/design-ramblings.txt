@@ -36,3 +36,52 @@ Other stuff to think about:
 	The virtpath cannot actually exist on the filesystem as reachable from another ShareMount.
 	Shorter virtpaths take priority (they can make the longer virtpaths invalid by the above rule).
 
+=== Something about events and actions ===
+
+There are several events that can happen:
+  * Receive data from network
+  * Gui requests something (dirlisting, download start)
+  * download/dirlist finished
+  * timeout expired
+
+Threads:
+  * GUI thread
+  * network thread
+  * fileIO thread (hashing?)
+
+Use case 1:
+ 1. GUI requests client discovery
+ 2. network sends local discovery broadcast
+ 3. network receives response(s)
+ 4. GUI shows clients
+ 5. GUI requests dir structure (root) of client A
+ 6. GUI requests dir structure (root) of client B
+ 7. network sends dir structure requests (local? broadcast?)
+ 8. receive dir structure of A
+ 9. show A dir structure in GUI
+10. timeout for B
+11. re-request B
+12. receive dir structure of B
+13. show B dir structure in GUI
+
+Information need in use case 1:
+- list of UDP interfaces, which serve as client providers (step 2)
+- OBJid to links mapping (in case we don't broadcast, (step 5,6,7)
+*
+- from hash to dirlist or filesystem path(blob)
+- list of (tree) OBJid's of which we know their contents (names, hashes, ?size?)
+- list of (blob) OBJid's of which we know their contents (from filesystem)
+- list of (blob) OBJid's of which we know their contents (in memory, paritally?)
+*
+fsblobs sha1->modtime+fspath
+fstrees sha1->modtime+fspath+(list of sha1's + names)
+memtrees sha1->(list of sha1's + names)
+memblobs
+
+Jobs/actions/events:
+- Client discovery request
+- 
+
+1. Network thread receives some data
+2. It notifies the link to which it belongs
+
