@@ -5,7 +5,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>729</width>
+    <width>917</width>
     <height>593</height>
    </rect>
   </property>
@@ -34,7 +34,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>729</width>
+     <width>917</width>
      <height>19</height>
     </rect>
    </property>
@@ -44,7 +44,14 @@
     </property>
     <addaction name="action_Quit" />
    </widget>
+   <widget class="QMenu" name="menu_View" >
+    <property name="title" >
+     <string>&amp;View</string>
+    </property>
+    <addaction name="action_Debug_Window" />
+   </widget>
    <addaction name="menu_File" />
+   <addaction name="menu_View" />
   </widget>
   <widget class="QDockWidget" name="dockWidget" >
    <property name="minimumSize" >
@@ -166,9 +173,9 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockWidget_3" >
+  <widget class="QDockWidget" name="dockWidgetDebug" >
    <property name="features" >
-    <set>QDockWidget::DockWidgetFloatable|QDockWidget::DockWidgetMovable|QDockWidget::NoDockWidgetFeatures</set>
+    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle" >
     <string>Debug Log</string>
@@ -179,7 +186,7 @@
    <widget class="QWidget" name="dockWidgetContents_3" >
     <layout class="QHBoxLayout" >
      <item>
-      <widget class="QTextBrowser" name="debugText" />
+      <widget class="QTextEdit" name="debugText" />
      </item>
     </layout>
    </widget>
@@ -188,6 +195,14 @@
   <action name="action_Quit" >
    <property name="text" >
     <string>&amp;Quit</string>
+   </property>
+  </action>
+  <action name="action_Debug_Window" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>&amp;Debug Window</string>
    </property>
   </action>
  </widget>
@@ -220,6 +235,38 @@
     <hint type="destinationlabel" >
      <x>394</x>
      <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>dockWidgetDebug</sender>
+   <signal>visibilityChanged(bool)</signal>
+   <receiver>action_Debug_Window</receiver>
+   <slot>setChecked(bool)</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>364</x>
+     <y>438</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>action_Debug_Window</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>dockWidgetDebug</receiver>
+   <slot>setVisible(bool)</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>364</x>
+     <y>438</y>
     </hint>
    </hints>
   </connection>

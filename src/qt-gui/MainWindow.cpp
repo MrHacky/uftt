@@ -13,13 +13,16 @@
 
 using namespace std;
 
-QTextEdit* logtext;
+static LogHelper loghelper;
+
+void LogHelper::append(QString str)
+{
+	emit logAppend(str);
+}
 
 void qt_log_append(std::string str)
 {
-	if (logtext) {
-		logtext->append(QString(str.c_str()));
-	}
+	loghelper.append(QString(str.c_str()));
 }
 
 MainWindow::MainWindow()
@@ -30,8 +33,7 @@ MainWindow::MainWindow()
 
 	setupUi(this);
 
-	logtext = this->debugText;
-
+	connect(&loghelper, SIGNAL(logAppend(QString)), this->debugText, SLOT(append(QString)));
 	// load layout from file
 	QFile layoutfile("uftt.lyt");
 	if (layoutfile.open(QIODevice::ReadOnly)) {

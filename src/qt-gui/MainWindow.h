@@ -50,4 +50,14 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void emitNewTreeInfo(JobRequestRef);
 };
 
+class LogHelper: public QObject {
+	Q_OBJECT
+
+	signals:
+		void logAppend(QString);
+
+	public:
+		void append(QString);
+};
+
 #endif
