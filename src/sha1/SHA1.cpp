@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include <iostream>
+#include <boost/foreach.hpp>
 #include "boost/filesystem/fstream.hpp"
 
 using namespace std;
@@ -31,6 +32,15 @@ bool SHA1::operator==(const SHA1& o) const
 	return true;
 }
 
+void SHA1::serialize(UFTT_packet* packet) const
+{
+	BOOST_FOREACH(const uint8& val, data) packet->serialize(val);
+}
+
+void SHA1::deserialize(UFTT_packet* packet)
+{
+	BOOST_FOREACH(uint8& val, data) packet->deserialize(val);
+}
 
 SHA1Hasher::SHA1Hasher()
 {

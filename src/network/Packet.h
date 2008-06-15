@@ -40,8 +40,9 @@ class UFTT_packet {
 			serialize(const T& var)
 		{
 			for (int i = 0; i < sizeof(T); ++i)
-				data[curpos++] = (var >> (i*8)) & 0xFF;
+				data[curpos++] = (uint8)((var >> (i*8)) & 0xFF);
 		}
+
 		template <typename T>
 			typename boost::enable_if<boost::is_unsigned<T> >::type
 			deserialize(T& var)
@@ -49,6 +50,20 @@ class UFTT_packet {
 			var = 0;
 			for (int i = 0; i < sizeof(T); ++i)
 				var |= data[curpos++] << (i*8);
+		}
+
+		template <typename T>
+			typename boost::disable_if<boost::is_fundamental<T> >::type
+			serialize(const T& var)
+		{
+			var.serialize(this);
+		}
+
+		template <typename T>
+			typename boost::disable_if<boost::is_fundamental<T> >::type
+			deserialize(T& var)
+		{
+			var.deserialize(this);
 		}
 
 		void serialize(const std::string& var) {
