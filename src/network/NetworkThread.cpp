@@ -574,7 +574,7 @@ void NetworkThread::operator()()
 								spacket.serialize(job->hash);
 
 								spacket.serialize(job->curchunk);
-								LOG("requesting:" << job->curchunk);
+								LOG("requesting: " << job->fpath << ':' << job->curchunk);
 								spacket.serialize<uint8>(100);
 							} else {
 								// TODO: callback

@@ -52,7 +52,7 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 	assert(chunksize == 1024);
 
 	if (chunknum != curchunk) {
-		LOG("don't need chunk!");
+		LOG("don't need chunk! " << "need:" << curchunk << "  got:" << chunknum);
 		return;
 	}
 
