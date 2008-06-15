@@ -27,6 +27,7 @@ ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
 	MainWindow.h
 	QSharesTreeWidget.h
+	QtLogger.h
 	${UI_FILES}
 )
 

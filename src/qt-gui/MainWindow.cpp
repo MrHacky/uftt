@@ -13,6 +13,15 @@
 
 using namespace std;
 
+QTextEdit* logtext;
+
+void qt_log_append(std::string str)
+{
+	if (logtext) {
+		logtext->append(QString(str.c_str()));
+	}
+}
+
 MainWindow::MainWindow()
 {
 	qRegisterMetaType<std::string>("std::string");
@@ -20,6 +29,8 @@ MainWindow::MainWindow()
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
+
+	logtext = this->debugText;
 
 	// load layout from file
 	QFile layoutfile("uftt.lyt");
