@@ -28,6 +28,7 @@ ADD_LIBRARY(uftt-qt
 	MainWindow.h
 	QSharesTreeWidget.h
 	QtLogger.h
+	QtBooster.h
 	${UI_FILES}
 )
 

@@ -46,10 +46,6 @@ MainWindow::MainWindow()
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
 
-	connect(this, SIGNAL(sigAddNewServer()), this, SLOT(AddNewServer()));
-	connect(this, SIGNAL(sigAddNewShare(std::string, SHA1)), this, SLOT(AddNewShare(std::string, SHA1)));
-	connect(this, SIGNAL(sigNewTreeInfo(JobRequestRef)), this, SLOT(NewTreeInfo(JobRequestRef)));
-
 	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
 }
@@ -85,16 +81,6 @@ void MainWindow::AddNewServer()
 	LOG("TODO?: AddNewServer()");
 }
 
-void MainWindow::emitAddNewServer()
-{
-	emit sigAddNewServer();
-}
-
-void MainWindow::emitNewTreeInfo(JobRequestRef job)
-{
-	emit sigNewTreeInfo(job);
-}
-
 void MainWindow::AddNewShare(std::string str, SHA1 hash)
 {
 	QTreeWidgetItem* rwi = treedata[hash];
@@ -111,13 +97,6 @@ void MainWindow::AddNewShare(std::string str, SHA1 hash)
 			JobQueue.push_back(job);
 		}
 	}
-}
-
-void MainWindow::emitAddNewShare(std::string str, SHA1 hash)
-{
-	LOG(">emit!" << str);
-	emit sigAddNewShare(str, hash);
-	LOG("<emit!" << str);
 }
 
 void MainWindow::NewTreeInfo(JobRequestRef basejob)

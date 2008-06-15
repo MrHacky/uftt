@@ -5,6 +5,7 @@
 #include <boost/bind.hpp>
 
 #include "MainWindow.h"
+#include "QtBooster.h"
 
 using namespace std;
 
@@ -34,18 +35,14 @@ QTMain::~QTMain()
 void QTMain::BindEvents(NetworkThread* nwobj)
 {
 	nwobj->cbAddServer = boost::bind(
-		&MainWindow::emitAddNewServer,
-		&impl->wnd
+		QtBooster(&impl->wnd, SLOT(AddNewServer()))
 	);
-	//nwobj->cbAddServer = QTSignalFunction();
 	nwobj->cbAddShare = boost::bind(
-		&MainWindow::emitAddNewShare,
-		&impl->wnd,
+		QtBooster(&impl->wnd, SLOT(AddNewShare(std::string, SHA1))),
 		_1, _2
 	);
 	nwobj->cbNewTreeInfo = boost::bind(
-		&MainWindow::emitNewTreeInfo,
-		&impl->wnd,
+		QtBooster(&impl->wnd, SLOT(NewTreeInfo(JobRequestRef))),
 		_1
 	);
 }
