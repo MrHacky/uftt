@@ -1,5 +1,7 @@
 #include "FileInfo.h"
 
+#include "../Logger.h"
+
 #include <iostream>
 
 using namespace std;
@@ -29,7 +31,7 @@ FileInfo::FileInfo(const fs::path& path)
 				hasher.Update(child->name);
 				hasher.Update(child->hash);
 			} else {
-				cout << "broken path?:" << iter->path() << endl;
+				LOG("broken path?:" << iter->path());
 			}
 		}
 	} else {
@@ -37,7 +39,7 @@ FileInfo::FileInfo(const fs::path& path)
 		size = fs::file_size(path);
 	}
 	hasher.GetResult(hash); // store hash
-	cout << path << '\n';
+	//cout << path << '\n';
 }
 
 ShareInfo::ShareInfo(FileInfoRef fi)

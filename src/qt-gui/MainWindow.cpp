@@ -7,6 +7,7 @@
 #include <boost/foreach.hpp>
 
 #include "../SharedData.h"
+#include "../Logger.h"
 #include "../network/Packet.h"
 
 using namespace std;
@@ -45,7 +46,7 @@ void MainWindow::RefreshButtonClicked()
 
 void MainWindow::AddNewServer()
 {
-	cout << "TODO?: AddNewServer()" << endl;
+	LOG("TODO?: AddNewServer()");
 }
 
 void MainWindow::emitAddNewServer()
@@ -78,9 +79,9 @@ void MainWindow::AddNewShare(std::string str, SHA1 hash)
 
 void MainWindow::emitAddNewShare(std::string str, SHA1 hash)
 {
-	cout << ">emit!" << str << endl;
+	LOG(">emit!" << str);
 	emit sigAddNewShare(str, hash);
-	cout << "<emit!" << str << endl;
+	LOG("<emit!" << str);
 }
 
 void MainWindow::NewTreeInfo(JobRequestRef basejob)
@@ -152,7 +153,7 @@ void MainWindow::StartDownload()
 	}
 	FileInfoRef fi = dirdata[hash];
 	if (!fi) {
-		cout << "hash not found!" << endl;
+		LOG("hash not found!");
 		return;
 	}
 	StartDownload(fi, fs::path(DownloadEdit->text().toStdString()) / rwi->text(0).toStdString());
@@ -161,13 +162,13 @@ void MainWindow::StartDownload()
 
 void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 {
-	cout << "fp:" << path << endl;
+	LOG("fp:" << path);
 	fi = dirdata[fi->hash];
 	if (!fi) {
-		cout << "hash not found!" << endl;
+		LOG("hash not found!");
 		return;
 	}
-	cout << "fa:" << fi->attrs << endl;
+	LOG("fa:" << fi->attrs);
 	if (fi->attrs & FATTR_DIR) {
 		create_directory(path);
 		BOOST_FOREACH(const FileInfoRef& fir, fi->files) {

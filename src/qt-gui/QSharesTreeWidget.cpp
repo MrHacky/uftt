@@ -9,6 +9,7 @@
 
 #include "../files/FileInfo.h"
 #include "../SharedData.h"
+#include "../Logger.h"
 
 using namespace std;
 
@@ -30,7 +31,7 @@ void QSharesTreeWidget::dragMoveEvent(QDragMoveEvent* event)
 
 void QSharesTreeWidget::dropEvent(QDropEvent* event)
 {
-	cout << "try\n" << event->mimeData()->text().toStdString() << '\n';
+	LOG("try=" << event->mimeData()->text().toStdString());
 	event->acceptProposedAction();
 	
 	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
