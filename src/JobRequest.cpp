@@ -63,13 +63,16 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 				usebuf[cbi] = true;
 				buftest[cbi] = chunknum;
 				memcpy(buffer[cbi], buf, 1024);
-			} else
+			} else {
 				LOG("AND we already have it!");
-		} else
+			}
+			mtime = 0;
+		} else { 
 			LOG("AND it is too far into the future!");
+		}
 		return;
-	} else if (usebuf[cbi])
-		usebuf[cbi] = false;
+	} else 
+		assert(!usebuf[cbi]);
 
 	uint32 len = 1024;
 	if (chunknum == chunkcount-1)
