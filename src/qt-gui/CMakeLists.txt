@@ -1,7 +1,18 @@
-cmake_minimum_required(VERSION 2.4.0) # needed for Qt4
-find_package(Qt4 REQUIRED) # find and setup Qt4 for this project
-
+# CMake >= 2.4.0 is needed for Qt4
+cmake_minimum_required(VERSION 2.4.0) 
+find_package(Qt4 REQUIRED)
+add_definitions(${QT_DEFINITIONS})
 include(${QT_USE_FILE})
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+IF(MINGW AND NOT QT_SHARED) 
+	SET(QT_LIBRARIES "${QT_LIBRARIES}" Imm32 Winmm gdi32 comdlg32 oleaut32 winspool Ws2_32 ole32 uuid)
+ENDIF(MINGW AND NOT QT_SHARED)
+IF(MINGW)
+	SET(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -mwindows")
+ENDIF(MINGW)
+
+
 
 SET(UI_FILES
 	MainWindow.ui
@@ -16,9 +27,6 @@ SET(UI_SRCS
 qt4_automoc(${UI_SRCS})
 
 QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
