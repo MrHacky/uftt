@@ -191,9 +191,9 @@ void NetworkThread::operator()()
 				rpacket.curpos = 0;
 				uint8 ptype;
 				rpacket.deserialize(ptype);
-				cout << "got packet,\ttype:" << (int)ptype;
-				cout << "\t size:" << msglen;
-				cout << "\tfrom:" << addr2str(&source_addr);
+				//cout << "got packet,\ttype:" << (int)ptype;
+				//cout << "\t size:" << msglen;
+				//cout << "\tfrom:" << addr2str(&source_addr);
 				cout << endl;
 				switch (ptype) {
 					case PT_QUERY_SERVERS: {
@@ -434,7 +434,7 @@ void NetworkThread::operator()()
 							cout << "hash not found!" << endl;
 							break;
 						}
-						cout << "found path:" << fp << endl;
+						//cout << "found path:" << fp << endl;
 
 						uint32 chunknum;
 						rpacket.deserialize(chunknum);
