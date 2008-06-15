@@ -303,7 +303,7 @@ void NetworkThread::operator()()
 							spacket.serialize(fi->size);
 						}
 
-						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
@@ -369,7 +369,7 @@ void NetworkThread::operator()()
 							}
 						}
 						spacket.serialize(string(""));
-						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &bc_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
+						if (sendto(udpsock, (char*)spacket.data, spacket.curpos, 0, &source_addr, sizeof(bc_addr) ) == SOCKET_ERROR)
 							cout << "error sending packet: " << NetGetLastError() << endl;
 						break;
 					}
