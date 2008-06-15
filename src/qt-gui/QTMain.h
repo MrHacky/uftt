@@ -5,7 +5,9 @@
 
 class QTMain {
 	private:
-		 void* impl;
+		// implementation class (PIMPL idiom)
+		class QTImpl* impl;
+
 	public:
 		QTMain( int argc, char **argv );
 		~QTMain();

@@ -8,48 +8,54 @@
 
 using namespace std;
 
-struct QTImpl {
-	QApplication* app;
-	MainWindow* wnd;
+// implementation class (PIMPL idiom)
+class QTImpl {
+	public:
+		QApplication app;
+		MainWindow wnd;
+
+		QTImpl( int argc, char **argv )
+			: app(argc,argv)
+		{
+			QObject::connect(wnd.action_Quit, SIGNAL(triggered()),
+			                 &app           , SLOT(quit()));
+		}
+
+	private:
+		QTImpl(const QTImpl&);
 };
 
 QTMain::QTMain( int argc, char **argv )
 {
-	impl = new QTImpl();
-	((QTImpl*)impl)->app = new QApplication(argc, argv);
-	((QTImpl*)impl)->wnd = new MainWindow();
-	QObject::connect(((QTImpl*)impl)->wnd->action_Quit, SIGNAL(activated()),
-	                 ((QTImpl*)impl)->app, SLOT(quit()));
+	impl = new QTImpl(argc, argv);
 }
 
 QTMain::~QTMain()
 {
-	delete ((QTImpl*)impl)->wnd;
-	delete ((QTImpl*)impl)->app;
-	delete ((QTImpl*)impl);
+	delete impl;
 }
 
 void QTMain::BindEvents(NetworkThread* nwobj)
 {
 	nwobj->cbAddServer = boost::bind(
 		&MainWindow::emitAddNewServer,
-		((QTImpl*)impl)->wnd
+		&impl->wnd
 	);
 	//nwobj->cbAddServer = QTSignalFunction();
 	nwobj->cbAddShare = boost::bind(
 		&MainWindow::emitAddNewShare,
-		((QTImpl*)impl)->wnd,
+		&impl->wnd,
 		_1, _2
 	);
 	nwobj->cbNewTreeInfo = boost::bind(
 		&MainWindow::emitNewTreeInfo,
-		((QTImpl*)impl)->wnd,
+		&impl->wnd,
 		_1
 	);
 }
 
 int QTMain::run()
 {
-	((QTImpl*)impl)->wnd->show();
-	return ((QTImpl*)impl)->app->exec();
+	impl->wnd.show();
+	return impl->app.exec();
 }
