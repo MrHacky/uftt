@@ -1,4 +1,5 @@
 #include "MainWindow.moc"
+#include <boost/asio.hpp>
 
 #include <iostream>
 
@@ -12,8 +13,12 @@
 #include <QDropEvent>
 
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QProcess>
+#include <QStringList>
 
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "QDebugStream.h"
 
@@ -45,6 +50,8 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
+
+	askonupdates = true;
 
 //	debugText->setTextFormat(Qt::LogText);
 	new QDebugStream(std::cout, debugText);
@@ -93,6 +100,12 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	mainimpl.sig_new_share.connect(
 		QTBOOSTER(this, MainWindow::addSimpleShare)
+	);
+	mainimpl.sig_new_autoupdate.connect(
+		QTBOOSTER(this, MainWindow::new_autoupdate)
+	);
+	mainimpl.sig_download_ready.connect(
+		QTBOOSTER(this, MainWindow::download_done)
 	);
 
 	mainimpl.slot_refresh_shares();
@@ -272,7 +285,6 @@ void MainWindow::addLocalShare(std::string url)
 	boost::filesystem::path path = url;
 	mainimpl.slot_add_local_share(path.leaf(), path);
 }
-
 void MainWindow::onDropTriggered(QDropEvent* evt)
 {
 	LOG("try=" << evt->mimeData()->text().toStdString());
@@ -351,4 +363,158 @@ void MainWindow::on_buttonBrowse_clicked()
 		DownloadEdit->text());
 	if (!directory.isEmpty())
 		this->DownloadEdit->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
+}
+
+extern string thebuildstring;
+
+bool isbetter(std::string newstr, std::string oldstr)
+{
+	size_t newpos = newstr.find_last_of("-");
+	size_t oldpos = oldstr.find_last_of("-");
+
+	string newcfg = newstr.substr(0, newpos);
+	string oldcfg = oldstr.substr(0, oldpos);
+
+	if (newcfg != oldcfg) return false;
+
+	string newver = newstr.substr(newpos+1);
+	string oldver = oldstr.substr(oldpos+1);
+
+	vector<string> newvervec;
+	vector<string> oldvervec;
+	boost::split(newvervec, newver, boost::is_any_of("._"));
+	boost::split(oldvervec, oldver, boost::is_any_of("._"));
+
+	if (newvervec.size() != oldvervec.size())
+		return false;
+
+	for (int i = 0; i < newvervec.size(); ++i) {
+		int newnum = atoi(newvervec[i].c_str());
+		int oldnum = atoi(oldvervec[i].c_str());
+		if (oldnum > newnum) return false;
+		if (oldnum < newnum) return true;
+	}
+
+	// they are the same....
+	return false;
+}
+
+void MainWindow::new_autoupdate(std::string url)
+{
+	size_t pos = url.find_last_of("\\/");
+	string bnr = url.substr(pos+1);
+	if (!isbetter(bnr, thebuildstring)) {
+		return;
+	}
+	cout << "new autoupdate: " << url << '\n';
+	if (!askonupdates)
+		return;
+	QMessageBox::StandardButton res = QMessageBox::question(this,
+		QString("Auto Update"),
+		QString::fromStdString(url),
+		QMessageBox::Yes|QMessageBox::No|QMessageBox::NoToAll,
+		QMessageBox::No);
+
+	if (res == QMessageBox::NoToAll)
+		askonupdates = false;
+	if (res != QMessageBox::Yes)
+		return;
+
+	auto_update_url = url;
+	auto_update_path = DownloadEdit->text().toStdString();
+	mainimpl.slot_download_share(url, auto_update_path);
+
+	//QDialog::
+}
+
+enum {
+	RF_NEW_CONSOLE   = 1 << 0,
+	RF_WAIT_FOR_EXIT = 1 << 1,
+};
+
+int RunDirect(const string& cmd, const vector<string>* args, const string& wd, int flags) {
+	string command;
+
+	STARTUPINFO si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+
+	command = cmd;
+
+	// TODO args
+	if (args) {
+		for (unsigned int i = 0; i < args->size(); ++i) {
+			command += " \"";
+			command += (*args)[i];
+			command += "\"";
+		}
+	}
+
+	int res = -1;
+	if (CreateProcess(
+			NULL,
+			TEXT((char*)command.c_str()),
+			NULL,
+			NULL,
+			FALSE,
+			(flags & RF_NEW_CONSOLE) ? CREATE_NEW_CONSOLE : 0,
+			NULL, (wd=="") ? NULL : TEXT(wd.c_str()), &si, &pi))
+	{
+		if (flags & RF_WAIT_FOR_EXIT) {
+			DWORD exitcode;
+			WaitForSingleObject(pi.hProcess, INFINITE);
+			if (GetExitCodeProcess(pi.hProcess, &exitcode))
+				res = exitcode;
+		} else
+			res = 0;
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	}
+
+	return res;
+}
+
+bool checksigniature(const std::vector<uint8>& file);
+
+void MainWindow::download_done(std::string url)
+{
+	cout << "download complete: " << url << '\n';
+	if (url == auto_update_url) {
+		size_t pos = auto_update_url.find_last_of("\\/");
+		string fname = auto_update_url.substr(pos+1) + ".exe";
+		auto_update_path /= fname;
+		cout << "autoupdate: " << auto_update_path << "!\n";
+
+		{
+			vector<uint8> newfile;
+			uint32 todo = boost::filesystem::file_size(auto_update_path);
+			newfile.resize(todo);
+			ifstream istr(auto_update_path.native_file_string().c_str(), ios_base::in|ios_base::binary);
+			istr.read((char*)&newfile[0], todo);
+			uint32 read = istr.gcount();
+			if (read != todo) {
+				cout << "failed to read the new file\n";
+				return;
+			}
+			if (!checksigniature(newfile)) {
+				cout << "failed to verify the new file's signiature\n";
+				return;
+			}
+		}
+
+		string program = auto_update_path.native_file_string();
+		vector<string> args;
+		args.push_back("--runtest");
+		int test = RunDirect(program, &args, "", RF_NEW_CONSOLE|RF_WAIT_FOR_EXIT);
+
+		if (test != 0) {
+			cout << "--runtest failed!\n";
+			return;
+		}
+
+		args.clear();
+		args.push_back("--replace");
+		args.push_back(QCoreApplication::applicationFilePath().toStdString());
+		int replace = RunDirect(program, &args, "", RF_NEW_CONSOLE);
+		this->action_Quit->trigger();
+	}
 }

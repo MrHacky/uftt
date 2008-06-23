@@ -17,15 +17,22 @@
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 
+#include <string>
+
 using namespace std;
 
 using boost::asio::ipx;
 
+std::string thebuildstring;
+#define UFTT_PORT (47189)
 
 #define BUFSIZE (1024*1024*16)
 std::vector<uint8*> testbuffers;
 
 typedef boost::shared_ptr<std::vector<uint8> > shared_vec;
+
+shared_vec exefile;
+bool hassignedbuild(false);
 
 #define GETBUF(x) \
 	(	(x->empty()) \
@@ -142,6 +149,9 @@ class SimpleTCPConnection {
 		std::vector<dirsender> quesenddir;
 
 		void getsharepath(std::string sharename);
+		void sig_download_ready(std::string url);
+
+		bool dldone;
 
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
@@ -149,12 +159,33 @@ class SimpleTCPConnection {
 			, socket(service_)
 			, backend(backend_)
 		{
+			dldone = false;
 		}
 
 		void handle_tcp_accept()
 		{
 			shared_vec rbuf(new std::vector<uint8>());
 			rbuf->resize(4);
+			boost::asio::async_read(socket, GETBUF(rbuf),
+				boost::bind(&SimpleTCPConnection::handle_recv_protver, this, _1, rbuf));
+		}
+
+		void handle_recv_protver(const boost::system::error_code& e, shared_vec rbuf) {
+			if (e) {
+				cout << "error: " << e.message() << '\n';
+				return;
+			}
+			uint32 protver = 0;
+			protver |= (rbuf->at(0) <<  0);
+			protver |= (rbuf->at(1) <<  8);
+			protver |= (rbuf->at(2) << 16);
+			protver |= (rbuf->at(3) << 24);
+
+			if (protver != 1) {
+				cout << "error: unknown tcp protocol version: " << protver << '\n';
+				return;
+			}
+
 			boost::asio::async_read(socket, GETBUF(rbuf),
 				boost::bind(&SimpleTCPConnection::handle_recv_namelen, this, _1, rbuf));
 		}
@@ -261,9 +292,55 @@ class SimpleTCPConnection {
 				sharename.push_back(rbuf->at(i));
 			cout << "got share name: " << sharename << '\n';
 			getsharepath(sharename);
+			if (sharepath == "") {
+				cout << "share not found\n";
+				if (sharename == thebuildstring) {
+					string name = thebuildstring + ".exe";
+					rbuf->resize(16 + name.size());
+					header hdr;
+					hdr.type = 0x01; // file
+					hdr.size = exefile->size();
+					hdr.nlen = name.size();
+					memcpy(&(*rbuf)[0], &hdr, 16);
+					memcpy(&(*rbuf)[16], name.data(), hdr.nlen);
+					boost::asio::async_write(socket, GETBUF(rbuf),
+						boost::bind(&SimpleTCPConnection::sent_autoupdate_header, this, _1, rbuf));
+				}
+				return;
+			}
 			cout << "got share path: " << sharepath << '\n';
 			sendpath(sharepath, sharename);
 			checkwhattosend();
+		}
+
+		void sent_autoupdate_header(const boost::system::error_code& e, shared_vec sbuf) {
+			if (e) {
+				cout << "error: " << e.message() << '\n';
+				return;
+			}
+			boost::asio::async_write(socket, GETBUF(exefile),
+						boost::bind(&SimpleTCPConnection::sent_autoupdate_file, this, _1, sbuf));
+		}
+
+		void sent_autoupdate_file(const boost::system::error_code& e, shared_vec sbuf) {
+			if (e) {
+				cout << "error: " << e.message() << '\n';
+				return;
+			}
+			header hdr;
+			hdr.type = 0x04;
+			sbuf->resize(16);
+			memcpy(&(*sbuf)[0], &hdr, 16);
+			boost::asio::async_write(socket, GETBUF(sbuf),
+				boost::bind(&SimpleTCPConnection::sent_autoupdate_finish, this, _1, sbuf));
+		}
+
+		void sent_autoupdate_finish(const boost::system::error_code& e, shared_vec sbuf) {
+			if (e) {
+				cout << "error: " << e.message() << '\n';
+				return;
+			}
+			socket.close();
 		}
 
 		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath)
@@ -272,12 +349,12 @@ class SimpleTCPConnection {
 			sharepath = dlpath;
 
 			shared_vec sbuf(new std::vector<uint8>());
-/*
+
 			sbuf->push_back(1); // protocol version
 			sbuf->push_back(0); // protocol version
 			sbuf->push_back(0); // protocol version
 			sbuf->push_back(0); // protocol version
-*/
+
 			uint32 namelen = name.size();
 			sbuf->push_back((namelen >>  0)&0xff);
 			sbuf->push_back((namelen >>  8)&0xff);
@@ -337,7 +414,7 @@ class SimpleTCPConnection {
 				}; break;
 				case 4: { // ..
 					cout << "download finished!\n";
-					socket.close();
+					dldone = true;
 				}; break;
 			}
 		}
@@ -436,6 +513,15 @@ class SimpleTCPConnection {
 				if (size == 0) {
 					delete done;
 					file->close();
+	
+					// wtf hax!!!
+					this->sig_download_ready(
+						 string("uftt://")
+						+socket.remote_endpoint().address().to_string()
+						+"/"+sharename
+					);
+					socket.close();
+
 					return;
 				}
 				size -= wbuf->size();
@@ -512,7 +598,7 @@ class SimpleBackend {
 							case 1: { // type = broadcast;
 								typedef std::pair<const std::string, boost::filesystem::path> shareiter;
 								BOOST_FOREACH(shareiter& item, sharelist)
-								if (item.first.size() < 0xff) {
+								if (item.first.size() < 0xff && !item.second.empty()) {
 									uint8 udp_send_buf[1024];
 									memcpy(udp_send_buf, udp_recv_buf, 4);
 									udp_send_buf[4] = 2;
@@ -529,6 +615,25 @@ class SimpleBackend {
 									if (err)
 										cout << "reply failed: " << err.message() << '\n';
 								}
+								if (len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]) {
+									string rbs((char*)&udp_recv_buf[6], (char*)&udp_recv_buf[6] + udp_recv_buf[5]);
+									if (hassignedbuild) {
+										uint8 udp_send_buf[1024];
+										memcpy(udp_send_buf, udp_recv_buf, 4);
+										udp_send_buf[4] = 3;
+										udp_send_buf[5] = thebuildstring.size();
+										memcpy(&udp_send_buf[6], thebuildstring.data(), thebuildstring.size());
+										boost::system::error_code err;
+										udpsocket.send_to(
+											boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
+											udp_recv_addr,
+											0,
+											err
+										);
+										if (err)
+											cout << "reply failed: " << err.message() << '\n';
+									}
+								}
 							}; break;
 							case 2: { // type = reply;
 								if (len >= 6) {
@@ -541,6 +646,23 @@ class SimpleBackend {
 										surl += '/';
 										surl += sname;
 										sig_new_share(surl);
+									}
+								}
+							}; break;
+							case 3: { // type = autoupdate share
+								if (len >= 6) {
+									uint32 slen = udp_recv_buf[5];
+									if (len >= slen+6) {
+										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
+										//cout << "test: " << sname << '/' << thebuildstring << '\n';
+										if (sname != thebuildstring) {
+											std::string surl;
+											surl += "uftt://";
+											surl += udp_recv_addr.address().to_string();
+											surl += '/';
+											surl += sname;
+											sig_new_autoupdate(surl);
+										}
 									}
 								}
 							}; break;
@@ -564,11 +686,16 @@ class SimpleBackend {
 
 			udp_send_buf[4] = 1; // type = broadcast;
 
+			uint32 bslen = thebuildstring.size();
+			if (bslen > 0xff) bslen = 0;
+			udp_send_buf[5] = (uint8)bslen; // type = broadcast;
+			for (uint i = 0; i < bslen; ++i)
+				udp_send_buf[6+i] = thebuildstring[i];
+
 			boost::system::error_code err;
 			udpsocket.send_to(
-				boost::asio::buffer(udp_send_buf, 5), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 54345),
-				//boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 54345),
+				boost::asio::buffer(udp_send_buf, 6+bslen), 
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT),
 				0
 				,err
 			);
@@ -600,7 +727,7 @@ class SimpleBackend {
 			boost::system::error_code err;
 			udpsocket.send_to(
 				boost::asio::buffer(udp_send_buf, name.size()+6), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 54345),
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT),
 				0,
 				err
 			);
@@ -617,7 +744,7 @@ class SimpleBackend {
 			string share = shareurl.substr(slashpos+1);
 			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
 			conlist.push_back(newconn);
-			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), 54345);
+			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), UFTT_PORT);
 			newconn->socket.open(ep.protocol());
 			cout << "Connecting...\n";
 			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath));
@@ -640,17 +767,15 @@ class SimpleBackend {
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());
-			udpsocket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address(), 54345));
+			udpsocket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address(), UFTT_PORT));
 			udpsocket.set_option(boost::asio::ip::udp::socket::broadcast(true));
 
 			tcplistener.open(boost::asio::ip::tcp::v4());
-			tcplistener.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address(), 54345));
+			tcplistener.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address(), UFTT_PORT));
 			tcplistener.listen(16);
 
 			start_udp_receive();
 			start_tcp_accept();
-
-			send_broadcast_query();
 
 			boost::thread tt(boost::bind(&SimpleBackend::servicerunfunc, this));
 			servicerunner.swap(tt);
@@ -661,6 +786,8 @@ class SimpleBackend {
 		}
 
 		boost::signal<void(std::string)> sig_new_share;
+		boost::signal<void(std::string)> sig_new_autoupdate;
+		boost::signal<void(std::string)> sig_download_ready;
 
 		void slot_refresh_shares()
 		{
@@ -681,6 +808,11 @@ class SimpleBackend {
 void SimpleTCPConnection::getsharepath(std::string sharename)
 {
 	backend->getsharepath(this, sharename);
+}
+
+void SimpleTCPConnection::sig_download_ready(std::string url)
+{
+	backend->sig_download_ready(url);
 }
 
 int runtest() {
@@ -725,7 +857,7 @@ int runtest() {
 			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432), settrue(&connected));
 	
 			boost::asio::deadline_timer wd(service);
-			wd.expires_from_now(boost::posix_time::seconds(2));
+			wd.expires_from_now(boost::posix_time::seconds(10));
 			wd.async_wait(settrue(&timedout));
 			
 			do {
@@ -809,35 +941,253 @@ int runtest() {
 	}
 }
 
+enum {
+	RF_NEW_CONSOLE   = 1 << 0,
+	RF_WAIT_FOR_EXIT = 1 << 1,
+};
+
+int RunDirect(const string& cmd, const vector<string>* args, const string& wd, int flags);
+
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
+char thepubkey[] = 
+"-----BEGIN RSA PUBLIC KEY-----\n"
+"MIICCgKCAgEAprtlIDKFC0jgAL05jc1dyqN3ptxAI3oOBvHwLuDgTPpH9C5kHNaB\n"
+"MiMO+gZ2AUBZny/aRIlAMrjjKEqbdUk9Xyu+MIBPsUy+wO8xYLMK7mXkwhfgKNDS\n"
+"blYi8wueROOJrB8BsIWnAI2Jir7nfGWFekeMBc28HPOClCwy+aGED9yV/+iS3w40\n"
+"InMXr3s0ISkfEZ4zZQ54KfMvNAeO0bF6f4jA1F1zFnWH3YHC3dSp8jnWev8dMLTh\n"
+"dyRhZpYEyUds/uNTXd68TXctjE1PKx9ycv1npxijFXjqBaD9z8j4yq4/xj+NxRf5\n"
+"a7hmlCBP1lmzv26uZbrqBE1R7MbA6qpj9ez3cFEaHjjdA5l3vpcVeaC2RcFNwxJC\n"
+"dG7ojetDKI5JeuiOvb4d0DAl9yBAg49iaHHKoXKTaKQN3JsAk5n18pC2EzDirDxH\n"
+"ynGTB7SW46jVEMb9yG4kTSRwcGjh10PYGrS+GUrD8i6df5PlRY75MrF9kxW3L+HM\n"
+"Ls9CsIK4LN9uFAcdp7syXPuLBwO9Q85uGkS+AJxMt2Ek1GEoHDNlopUmL8fzJ8wW\n"
+"iVhg6bOjDi0Pv5JvpI19Qw8DcZDdsdAEEwQ5wiq98GG+Nf02f1NGoI4Vm1oKk8QQ\n"
+"7jbaFEd+p6pVKv2zv16UnoasyZBVmdkAHY4dRhwqz227rJCJMz2TndUCAwEAAQ==\n"
+"-----END RSA PUBLIC KEY-----\n";
+
+// returns true when signature checks out
+bool checksigniature(const std::vector<uint8>& file) {
+	RSA* rsapub = NULL;
+
+	BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
+	rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
+	BIO_free(pubmem);
+
+	if (!rsapub)
+		return false;
+
+	EVP_PKEY evppub;
+	EVP_PKEY_assign_RSA(&evppub, rsapub);
+
+	if (file.size() < 8)
+		return false;
+
+	string sigstr = "----";
+
+	for (int i = 0; i < 4; ++i)
+		sigstr[i] = file[file.size()-4+i];
+
+	if (sigstr != "UFTT")
+		return false;
+	
+	uint32 sigsize = 0;
+	for (int i = 0; i < 4; ++i)
+		sigsize |= file[file.size()-8+i] << (i*8);
+	
+	if (file.size() < (sigsize*2)+8)
+		return false;
+
+	vector<uint8> sig;
+	sig.resize(sigsize);
+	for (int i = 0; i < sigsize; ++i)
+		sig[i] = file[file.size()-8-sigsize+i];
+
+	int res;
+	EVP_MD_CTX verifyctx;
+	res = EVP_VerifyInit(&verifyctx, EVP_sha1());
+	if (res != 1) return false;
+	res = EVP_VerifyUpdate(&verifyctx, &file[0], file.size()-8-sigsize);
+	if (res != 1) return false;
+	res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), &evppub);
+	if (res != 1) return false;
+
+	return true;
+}
+
 int imain( int argc, char **argv )
 {
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
 
-	if (argc > 3 && string(argv[1]) == "--replace")
-		cout << "Not implemented yet!\n";
+	if (argc > 2 && string(argv[1]) == "--delete") {
+		int retries = 10;
+		while (boost::filesystem::exists(argv[2]) && retries > 0) {
+			--retries;
+			Sleep((10-retries)*100);
+			boost::filesystem::remove(argv[2]);
+		}
+	}
 
-	if (argc > 2 && string(argv[1]) == "--delete")
-		cout << "Not implemented yet!\n";
+	{
+		exefile = shared_vec(new vector<uint8>());
+		uint32 todo = boost::filesystem::file_size(argv[0]);
+		exefile->resize(todo);
+		ifstream istr(argv[0], ios_base::in|ios_base::binary);
+		istr.read((char*)&((*exefile)[0]), todo);
+		uint32 read = istr.gcount();
+		if (read != todo) {
+			cout << "failed to read ourself\n";
+			exefile->resize(0);
+		}
+	}
 
-	cout << "Creating network backend...";
+	if (true) {
+		RSA* rsapub = NULL;// = RSA_generate_key(4096, 65537, NULL, NULL);
+		RSA* rsapriv = NULL;
+
+		{
+			FILE* privfile = fopen("c:\\temp\\uftt.private.key.dat", "rb");
+			if (privfile) {
+				rsapriv = PEM_read_RSAPrivateKey(privfile, NULL, NULL, NULL);
+				fclose(privfile);
+			}
+
+			BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
+			rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
+			BIO_free(pubmem);
+		}
+		EVP_PKEY evppub;
+		EVP_PKEY evppriv;
+
+		EVP_PKEY_assign_RSA(&evppub, rsapub);
+		EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+
+		if (checksigniature(*exefile)) {
+			cout << "yay! this is a signed binary!\n";
+			hassignedbuild = true;
+		} else if (rsapriv) {
+			// it's not signed, but we have access to a private key
+			// so we can sign it ourselves!
+
+			uint sigsize = EVP_PKEY_size(&evppriv);
+			vector<uint8> sig;
+			sig.resize(sigsize);
+
+			EVP_MD_CTX signctx;
+			EVP_SignInit(&signctx, EVP_sha1());
+
+			int r1 = EVP_SignUpdate(&signctx, &((*exefile)[0]), exefile->size());
+			int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+
+			if (r1==1 && r2==1) {
+
+				for (int i = 0; i < sigsize; ++i)
+					exefile->push_back(sig[i]);
+				exefile->push_back((sigsize >> 0) & 0xff);
+				exefile->push_back((sigsize >> 8) & 0xff);
+				exefile->push_back((sigsize >>16) & 0xff);
+				exefile->push_back((sigsize >>24) & 0xff);
+				exefile->push_back('U');
+				exefile->push_back('F');
+				exefile->push_back('T');
+				exefile->push_back('T');
+
+				hassignedbuild = true;
+				cout << "yay! we just signed this binary!\n";
+
+				// write signed build to file for debug purposes
+				ofstream sexe("uftt-signed.exe", ios_base::out|ios_base::binary);
+				sexe.write((char*)&((*exefile)[0]), exefile->size());
+				sexe.close();
+			}
+		}
+	}
+
+	if (argc > 2 && string(argv[1]) == "--replace") {
+		cout << "Not implemented yet!\n";
+		ofstream ostr;
+		int retries = 10;
+		while (!ostr.is_open() && retries >0) {
+			cout << "retrying...\n";
+			--retries;
+			Sleep((10-retries)*100);
+			ostr.open(argv[2], ios_base::trunc|ios_base::out|ios_base::binary);
+		}
+		cout << "open:" << ostr.is_open() << '\n';
+		if (ostr.is_open()) {
+			ostr.write((char*)&((*exefile)[0]), exefile->size());
+			if (ostr.fail())
+				cout << "error writing\n";
+			ostr.close();
+			cout << "rewritten!\n";
+		}
+		string program(argv[2]);
+		vector<string> args;
+		args.push_back("--delete");
+		args.push_back(argv[0]);
+		cout << program << '\n';
+		int run = RunDirect(program, &args, "", RF_NEW_CONSOLE);
+		return run;
+	};
+
+
+	try {
+		thebuildstring = string(BUILD_STRING);
+		stringstream sstamp;
+		
+		int month, day, year;
+		{
+			char temp [] = __DATE__;
+			unsigned char i;
+
+			// ANSI C Standard month names
+			const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+			year = atoi(temp + 7);
+			*(temp + 6) = 0;
+			day = atoi(temp + 4);
+			*(temp + 3) = 0;
+			for (i = 0; i < 12; i++) {
+				if (!strcmp(temp, months[i])) {
+					month = i + 1;
+				}
+			}
+		}
+
+		string tstamp(__TIME__);
+		BOOST_FOREACH(char& chr, tstamp)
+			if (chr == ':') chr = '_';
+
+		sstamp << year << '_' << month << '_' << day << '_' << tstamp;
+
+		size_t pos = thebuildstring.find("$(TIMESTAMP)");
+		if (pos != string::npos) {
+			thebuildstring.erase(pos, strlen("$(TIMESTAMP)"));
+			thebuildstring.insert(pos, sstamp.str());
+		}
+	} catch (...) {
+	}
+
 	SimpleBackend backend;
-	cout << "Done\n";
-	//NetworkThread thrd1obj;
 
 	QTMain gui(argc, argv);
 
 	gui.BindEvents(&backend);
 
-	//boost::thread thrd1(thrd1obj);
+	backend.slot_refresh_shares();
+
+	cout << "Build: " << thebuildstring << '\n';
+	cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
 
 	int ret = gui.run();
 
 	terminating = true;
 
-	//thrd1.join();
 	// hax...
-	exit(0);
+	exit(ret);
 
 	return ret;
 }
