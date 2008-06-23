@@ -385,15 +385,15 @@ bool isbetter(std::string newstr, std::string oldstr)
 	boost::split(newvervec, newver, boost::is_any_of("._"));
 	boost::split(oldvervec, oldver, boost::is_any_of("._"));
 
-	if (newvervec.size() != oldvervec.size())
-		return false;
-
-	for (int i = 0; i < newvervec.size(); ++i) {
+	for (int i = 0; i < newvervec.size() && i < oldvervec.size(); ++i) {
 		int newnum = atoi(newvervec[i].c_str());
 		int oldnum = atoi(oldvervec[i].c_str());
 		if (oldnum > newnum) return false;
 		if (oldnum < newnum) return true;
 	}
+
+	if (newvervec.size() != oldvervec.size())
+		return false;
 
 	// they are the same....
 	return false;
