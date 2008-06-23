@@ -14,8 +14,24 @@
 #include <boost/asio/ip/basic_resolver_query.hpp>
 #include <boost/asio/detail/socket_types.hpp>
 
+// symbols needed from platform headers:
+// - AF_IPX
+// - NSPROTO_IPX
+// - SOCKADDR_IPX
+
 #ifdef WIN32
 #include <Wsipx.h>
+
+#define sipx_node sa_nodenum
+#define sipx_port sa_socket
+#define sipx_network sa_netnum
+#define sipx_family sa_family
+#else
+#include <netipx/ipx.h>
+
+#define NSPROTO_IPX PF_IPX
+#define SOCKADDR_IPX sockaddr_ipx
+
 #endif
 
 namespace boost {
@@ -23,6 +39,10 @@ namespace asio {
 
 namespace detail {
 namespace ipx {
+	class endpoint;
+	class address;
+}
+}
 
 /// Encapsulates the flags needed for IPX.
 /**
@@ -40,8 +60,8 @@ class ipx
 public:
   /// The type of a UDP endpoint.
   typedef basic_datagram_socket<ipx> socket;
-  typedef class endpoint endpoint;
-  typedef class address address;
+  typedef detail::ipx::endpoint endpoint;
+  typedef detail::ipx::address address;
 
   /// Obtain an identifier for the type of the protocol.
   int type() const
@@ -60,32 +80,23 @@ public:
   {
     return AF_IPX;
   }
-
-  /// Compare two protocols for equality.
-  friend bool operator==(const ipx& p1, const ipx& p2)
-  {
-    return true;
-  }
-
-  /// Compare two protocols for inequality.
-  friend bool operator!=(const ipx& p1, const ipx& p2)
-  {
-    return true;
-  }
 };
+
+namespace detail {
+namespace ipx {
 
 class address {
 	public:
-		boost::array<unsigned char, 4> netnum;
-		boost::array<unsigned char, 6> nodenum;
+		boost::array<unsigned char, 4> network;
+		boost::array<unsigned char, 6> node;
 
 	static address broadcast_all()
 	{
 		address ret;
 		for (int i = 0; i < 4; ++i)
-			ret.netnum[i] = 0xff;
+			ret.network[i] = 0xff;
 		for (int i = 0; i < 6; ++i)
-			ret.nodenum[i] = 0xff;
+			ret.node[i] = 0xff;
 		return ret;
 	}
 
@@ -93,9 +104,9 @@ class address {
 	{
 		address ret;
 		for (int i = 0; i < 4; ++i)
-			ret.netnum[i] = 0x00;
+			ret.network[i] = 0x00;
 		for (int i = 0; i < 6; ++i)
-			ret.nodenum[i] = 0xff;
+			ret.node[i] = 0xff;
 		return ret;
 	}
 
@@ -103,54 +114,54 @@ class address {
 	{
 		address ret;
 		for (int i = 0; i < 4; ++i)
-			ret.netnum[i] = 0;
+			ret.network[i] = 0;
 		for (int i = 0; i < 6; ++i)
-			ret.nodenum[i] = 0;
+			ret.node[i] = 0;
 		return ret;
 	}
 };
 
 class endpoint {
 public:
-	typedef ipx protocol_type;
+	typedef boost::asio::ipx protocol_type;
 
 	endpoint()
 	{
 		memset(&saddr, 0, sizeof(saddr));
-		saddr.sa_family = AF_IPX;
+		saddr.sipx_family = AF_IPX;
 	}
 
 	endpoint(const address& addr, const unsigned short port)
 	{
 		memset(&saddr, 0, sizeof(saddr));
-		saddr.sa_family = AF_IPX;
+		saddr.sipx_family = AF_IPX;
 		// no host<->network byte order conversion for net/node num?
 		for (int i = 0; i < 4; ++i)
-			saddr.sa_netnum[i] = addr.netnum[i];
+			((char*)&saddr.sipx_network)[i] = addr.network[i];
 		for (int i = 0; i < 6; ++i)
-			saddr.sa_nodenum[i] = addr.nodenum[i];
-		saddr.sa_socket = htons(port);
+			saddr.sipx_node[i] = addr.node[i];
+		saddr.sipx_port = htons(port);
 	}
 
-	address address() const
+	protocol_type::address getAddress() const
 	{
 		protocol_type::address ret;
 		// no host<->network byte order conversion for net/node num?
 		for (int i = 0; i < 4; ++i)
-			ret.netnum[i] = saddr.sa_netnum[i];
+			ret.network[i] = ((char*)&saddr.sipx_network)[i];
 		for (int i = 0; i < 6; ++i)
-			ret.nodenum[i] = saddr.sa_nodenum[i];
+			ret.node[i] = saddr.sipx_node[i];
 		return ret;
 	}
 
 	unsigned short port() const
 	{
-		return ntohs(saddr.sa_socket);
+		return ntohs(saddr.sipx_port);
 	}
 
 	protocol_type protocol() const
 	{
-		return ipx();
+		return protocol_type();
 	}
 
 	sockaddr* data()
@@ -171,12 +182,16 @@ public:
 	void resize(size_t s)
 	{
 		if (s > capacity())
-			throw std::exception("invalid size");
+			throw std::exception();// wth! ubuntu??? "invalid size");
 	}
 
 	size_t capacity() const
 	{
 		return sizeof(saddr); // 14?
+	}
+
+	std::ostream& operator<<(std::ostream& os)
+	{
 	}
 
 private:
@@ -187,7 +202,7 @@ private:
 } // namespace ipx
 } // namespace detail
 
-using detail::ipx::ipx;
+//using detail::ipx::ipx;
 
 } // namespace asio
 } // namespace boost
