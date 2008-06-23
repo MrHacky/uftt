@@ -676,11 +676,74 @@ int runtest() {
 		cout << "Loaded dll dependancies...Success\n";
 
 		// todo, put something more here, like:
-		cout << "Testing synchronous network I/O...";
-		cout << "Skipped\n";
+		cout << "Testing (a)synchronous network I/O...";
+		{
+			char sstr[] = "sendstring";
+			char rstr[] = "1234567890";
+			bool recvstarted = false;
+			bool received = false;
+			bool connected = false;
+			bool accepted = false;
+			bool sent = false;
 
-		cout << "Testing asynchronous network I/O...";
-		cout << "Skipped\n";
+			struct settrue {
+				bool* value;
+				settrue(bool* value_) : value(value_) {};
+				void operator()(const boost::system::error_code& ec, size_t len = 0)
+				{ 
+					boost::asio::detail::throw_error(ec);
+					*value = true;
+				}
+			};
+
+			boost::asio::io_service service;
+			boost::asio::ip::tcp::acceptor acceptor(service);
+			boost::asio::ip::tcp::socket ssock(service);
+			boost::asio::ip::tcp::socket rsock(service);
+
+			acceptor.open(boost::asio::ip::tcp::v4());
+			acceptor.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432));
+			acceptor.listen(16);
+
+			acceptor.async_accept(ssock, settrue(&accepted));
+
+			rsock.open(boost::asio::ip::tcp::v4());
+			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432), settrue(&connected));
+
+			int tries = 1000;
+
+			do {
+				service.poll_one();
+				--tries;
+				if (accepted && !sent) {
+					// sync write here
+					boost::asio::write(ssock, boost::asio::buffer(sstr));
+					sent = true;
+				}
+				if (connected && !recvstarted) {
+					// async read here
+					boost::asio::async_read(rsock, boost::asio::buffer(rstr), settrue(&received));
+					recvstarted = true;
+				}
+				if (tries == 50 && !connected) {
+					rsock.async_connect(acceptor.local_endpoint(), settrue(&connected));
+				}
+			} while (tries > 0 && !received);
+			//cout << "t: " << tries << '\n';
+			//cout << "s: " << sstr << '\n';
+			//cout << "r: " << rstr << '\n';
+			if (!connected)
+				throw std::runtime_error("connect failed");
+			if (!accepted)
+				throw std::runtime_error("accept failed");
+			if (!sent)
+				throw std::runtime_error("send failed");
+			if (!recvstarted || !received)
+				throw std::runtime_error("receive failed");
+			if (string(sstr) != string(rstr))
+				throw std::runtime_error("transfer failed");
+		}
+		cout << "Success\n";
 
 		cout << "Testing asynchronous disk I/O...";
 		cout << "Skipped\n";
