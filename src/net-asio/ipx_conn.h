@@ -6,6 +6,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <queue>
 
 #include "../types.h"
@@ -45,7 +46,7 @@ struct ipx_packet {
 	uint16 datalen;
 };
 
-boost::asio::deadline_timer::duration_type short_timeout = boost::posix_time::milliseconds(250);          // 250ms
+boost::asio::deadline_timer::duration_type short_timeout = boost::posix_time::milliseconds(750);          // 250ms
 boost::asio::deadline_timer::duration_type stats_timeout = boost::posix_time::milliseconds(100);          // 100ms
 
 boost::asio::deadline_timer::duration_type disconn_timeout = boost::posix_time::milliseconds(10*1000*60); // 10min
@@ -102,22 +103,30 @@ class ipx_conn {
 			check_recv_queues();
 		}
 
+		uint32 send_undelivered;
+
 		void check_send_queues()
 		{
 			if (snd_una == snd_nxt && !send_queue.empty()) {
-				uint32 trylen = send_queue.front().first.second;
+				std::pair<std::pair<const void*, uint32>, boost::function<void(const boost::system::error_code&, size_t len)> >
+					&front = send_queue.front();
+				uint32 trylen = front.first.second;
 				if (trylen > ipx_packet::sendmtu)
 					trylen = ipx_packet::sendmtu;
 				initsendpack(sendpack, trylen);
-				memcpy(sendpack.data, send_queue.front().first.first, sendpack.datalen);
+				memcpy(sendpack.data, front.first.first, trylen);
 				sendpack.seqnum = snd_nxt++;
 				send_packet();
-				//send_queue.front().first.first = ((char*)send_queue.front().first.first) + trylen;
-				//send_queue.front().first.second -= trylen;
-				//if (send_queue.front().first.second == 0) {
-					service.dispatch(boost::bind(send_queue.front().second, boost::system::error_code(), sendpack.datalen));
+				front.first.first = ((char*)front.first.first) + trylen;
+				front.first.second -= trylen;
+				send_undelivered += trylen;
+				if (front.first.second == 0) {
+					if (front.second) {
+						service.dispatch(boost::bind(front.second, boost::system::error_code(), send_undelivered));
+						send_undelivered = 0;
+					}
 					send_queue.pop_front();
-				//}
+				}
 			}
 		}
 
@@ -232,6 +241,7 @@ class ipx_conn {
 			: service(service_), state(closed), short_timer(service_), long_timer(service_)
 		{
 			rcv_wnd = 1;
+			send_undelivered = 0;
 		};
 
 		template <typename MBS, typename Handler>
@@ -265,28 +275,29 @@ class ipx_conn {
 		template <typename CBS, typename Handler>
 		void async_write_some(CBS& cbs, const Handler& handler)
 		{
-			const void* buf = NULL;
-			size_t buflen = 0;
 			typename CBS::const_iterator iter = cbs.begin();
 			typename CBS::const_iterator end = cbs.end();
-			for (;buflen == 0 && iter != end; ++iter) {
+			size_t tlen = 0;
+			for (;iter != end; ++iter) {
 				// at least 1 buffer
 				boost::asio::const_buffer buffer(*iter);
-				buf = boost::asio::buffer_cast<const void*>(buffer);
-				buflen = boost::asio::buffer_size(buffer);
+				const void* buf = boost::asio::buffer_cast<const void*>(buffer);
+				size_t buflen = boost::asio::buffer_size(buffer);
+				if (buflen > 0) {
+					tlen += buflen;
+					send_queue.push_back(
+						std::pair<std::pair<const void*, uint32>, boost::function<void(const boost::system::error_code&, size_t len)> >(
+							std::pair<const void*, uint32>(buf, buflen),
+							boost::function<void(const boost::system::error_code&, size_t len)>()
+						)
+					);
+				}
 			}
-			if (buflen == 0) {
-				// no-op
+			if (tlen == 0)
 				service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
-				return;
-			};
+			else
+				send_queue.back().second = handler;
 
-			send_queue.push_back(
-				std::pair<std::pair<const void*, uint32>, boost::function<void(const boost::system::error_code&, size_t len)> >(
-					std::pair<const void*, uint32>(buf, buflen),
-					handler
-				)
-			);
 			check_queues();
 		}
 
@@ -401,8 +412,8 @@ class ipx_acceptor: public boost::asio::ipx::socket {
 					} // ignoring requests otherwise...
 				} else if (recvpack.recvqid < conninfo.size() && conninfo[recvpack.recvqid]) {
 					ipx_conn* peer = conninfo[recvpack.recvqid];
-					peer->endpoint = recvaddr;
-					if (recvpack.sendqid == peer->rqid && recvaddr == peer->endpoint)
+					//peer->endpoint = recvaddr;
+					if (recvpack.sendqid == peer->rqid /*&& recvaddr == peer->endpoint*/)
 						peer->handle_read(&recvpack, len);
 				}
 			}
