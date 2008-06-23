@@ -54,6 +54,9 @@
    <addaction name="menu_View" />
   </widget>
   <widget class="QDockWidget" name="dockWidget" >
+   <property name="enabled" >
+    <bool>true</bool>
+   </property>
    <property name="minimumSize" >
     <size>
      <width>0</width>
@@ -72,7 +75,7 @@
    <widget class="QWidget" name="dockWidgetContents" >
     <layout class="QVBoxLayout" >
      <item>
-      <widget class="QSharesTreeWidget" name="treeWidget" >
+      <widget class="QDragDropTreeWidget" name="treeWidget" >
        <property name="sizePolicy" >
         <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
          <horstretch>0</horstretch>
@@ -134,7 +137,7 @@
    <widget class="QWidget" name="dockWidgetContents_2" >
     <layout class="QVBoxLayout" >
      <item>
-      <widget class="QTreeWidget" name="OthersSharesTree" >
+      <widget class="QDragDropTreeWidget" name="OthersSharesTree" >
        <column>
         <property name="text" >
          <string>Name</string>
@@ -239,9 +242,9 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>QSharesTreeWidget</class>
+   <class>QDragDropTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>QSharesTreeWidget.h</header>
+   <header>QDragDropTreeWidget.h</header>
   </customwidget>
  </customwidgets>
  <tabstops>

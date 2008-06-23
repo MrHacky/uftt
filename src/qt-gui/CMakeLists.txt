@@ -17,7 +17,7 @@ SET(UI_FILES
 SET(UI_SRCS
 	QTMain.cpp
 	MainWindow.cpp
-	QSharesTreeWidget.cpp
+	QDragDropSignalWidget.cpp
 )	
 
 QT4_AUTOMOC(${UI_SRCS})
@@ -27,7 +27,8 @@ QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
 	MainWindow.h
-	QSharesTreeWidget.h
+	QDragDropTreeWidget.h
+	QDragDropSignalWidget.h
 	QtLogger.h
 	QtBooster.h
 	${UI_FILES}

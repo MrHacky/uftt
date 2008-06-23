@@ -4,6 +4,12 @@
 
 #include <QTreeWidgetItem>
 #include <QFile>
+#include <QUrl>
+
+#include <QWidget>
+#include <QDrag>
+#include <QMimeData>
+#include <QDropEvent>
 
 #include <boost/foreach.hpp>
 
@@ -51,6 +57,14 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
+
+	connect(treeWidget->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
+	connect(treeWidget->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
+	connect(treeWidget->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+
+	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
+	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
+	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
 
 	mainimpl.sig_new_share.connect(
 		QTBOOSTER(this, MainWindow::addSimpleShare)
@@ -225,4 +239,44 @@ void MainWindow::addLocalShare(std::string url)
 {
 	boost::filesystem::path path = url;
 	mainimpl.slot_add_local_share(path.leaf(), path);
+}
+
+void MainWindow::onDropTriggered(QDropEvent* evt)
+{
+	LOG("try=" << evt->mimeData()->text().toStdString());
+	evt->acceptProposedAction();
+
+	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls()) {
+		// weird stuff here, next line gives a weird error popup in release mode,
+		// but the program continues just fine...
+		// string str(url.toLocalFile().toStdString());
+		// next one give no popup
+		string str(url.toLocalFile().toAscii().data());
+
+		if (!str.empty()) {
+			this->addLocalShare(str);
+			/*
+			FileInfoRef fi(new FileInfo(str));
+			addFileInfo(*fi);
+			
+			ShareInfo fs(fi);
+			fs.path = str;
+			{
+				boost::mutex::scoped_lock lock(shares_mutex);
+				MyShares.push_back(fs);
+			}
+			*/
+		}
+	}
+}
+
+void MainWindow::onDragEnterTriggered(QDragEnterEvent* evt)
+{
+	if (evt->mimeData()->hasUrls())
+		evt->acceptProposedAction();
+}
+
+void MainWindow::onDragMoveTriggered(QDragMoveEvent* evt)
+{
+	QWidget::dragMoveEvent(evt);
 }
