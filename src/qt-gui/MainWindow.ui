@@ -19,15 +19,19 @@
    <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs</set>
   </property>
   <widget class="QWidget" name="centralwidget" >
-   <layout class="QGridLayout" >
-    <item row="1" column="0" >
-     <widget class="QLabel" name="label_2" >
-      <property name="text" >
-       <string>!UFTT!</string>
-      </property>
-     </widget>
-    </item>
-   </layout>
+   <widget class="QLabel" name="label_2" >
+    <property name="geometry" >
+     <rect>
+      <x>876</x>
+      <y>9</y>
+      <width>32</width>
+      <height>263</height>
+     </rect>
+    </property>
+    <property name="text" >
+     <string>!UFTT!</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar" >
    <property name="geometry" >
@@ -48,14 +52,13 @@
     <property name="title" >
      <string>&amp;View</string>
     </property>
-    <addaction name="action_Debug_Window" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_View" />
   </widget>
   <widget class="QDockWidget" name="dockShares" >
    <property name="features" >
-    <set>QDockWidget::DockWidgetMovable</set>
+    <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
    <property name="windowTitle" >
     <string>Share List</string>
@@ -162,14 +165,11 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidgetDebug" >
-   <property name="features" >
-    <set>QDockWidget::AllDockWidgetFeatures</set>
-   </property>
    <property name="windowTitle" >
     <string>Debug Log</string>
    </property>
    <attribute name="dockWidgetArea" >
-    <number>8</number>
+    <number>4</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3" >
     <layout class="QHBoxLayout" >
@@ -201,7 +201,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>treeWidget</tabstop>
   <tabstop>SharesTree</tabstop>
   <tabstop>RefreshButton</tabstop>
   <tabstop>DownloadButton</tabstop>
@@ -238,22 +237,6 @@
     <hint type="destinationlabel" >
      <x>-1</x>
      <y>-1</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>action_Debug_Window</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>dockWidgetDebug</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>-1</x>
-     <y>-1</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>364</x>
-     <y>438</y>
     </hint>
    </hints>
   </connection>

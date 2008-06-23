@@ -60,7 +60,7 @@ class QtBooster {
 			}
 
 			target = obj;
-			assert(target->objectName() == objectname.c_str());
+			//assert(target->objectName() == objectname.c_str());
 
 			const QMetaObject* mo = target->metaObject();
 			assert(objectname == mo->className());

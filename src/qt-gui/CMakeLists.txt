@@ -29,6 +29,7 @@ ADD_LIBRARY(uftt-qt
 	MainWindow.h
 	QDragDropTreeWidget.h
 	QDragDropSignalWidget.h
+	QDebugStream.h
 	QtLogger.h
 	QtBooster.h
 	QTMain.h

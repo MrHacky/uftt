@@ -462,7 +462,7 @@ class SimpleBackend {
 			service.run();
 		}
 
-		void start_tcp_accept()	{
+		void start_tcp_accept() {
 			newconn = SimpleTCPConnectionRef(new SimpleTCPConnection(service, this));
 			tcplistener.async_accept(newconn->socket,
 				boost::bind(&SimpleBackend::handle_tcp_accept, this, boost::asio::placeholders::error));

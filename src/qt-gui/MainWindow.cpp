@@ -15,6 +15,8 @@
 
 #include <boost/foreach.hpp>
 
+#include "QDebugStream.h"
+
 #include "../SharedData.h"
 #include "../Logger.h"
 //#include "../network/Packet.h"
@@ -43,7 +45,21 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
+
+//	debugText->setTextFormat(Qt::LogText);
+	new QDebugStream(std::cout, debugText);
+
+
 	this->setCentralWidget(&QWidget());
+
+	BOOST_FOREACH(QObject* obj, children()) {
+		if (QString(obj->metaObject()->className()) == "QDockWidget") {
+			QDockWidget* dock = (QDockWidget*)obj;
+			menu_View->addAction(dock->toggleViewAction());
+			dock->setAllowedAreas(Qt::TopDockWidgetArea);
+			this->addDockWidget(Qt::TopDockWidgetArea, dock);
+		}
+	}
 
 	buttonAdd2->hide();
 	buttonAdd3->hide();
