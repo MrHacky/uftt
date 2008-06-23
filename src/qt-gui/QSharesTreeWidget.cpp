@@ -36,6 +36,7 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	
 	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
 		const string str(url.toLocalFile().toStdString());
+		QString qstr = url.toString();
 		if (!str.empty()) {
 			FileInfoRef fi(new FileInfo(str));
 			addFileInfo(*fi);

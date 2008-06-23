@@ -1,7 +1,8 @@
 #ifndef QT_MAIN_H
 #define QT_MAIN_H
 
-#include "../network/NetworkThread.h"
+//#include "../network/NetworkThread.h"
+class NetworkThread;
 
 class QTMain {
 	private:

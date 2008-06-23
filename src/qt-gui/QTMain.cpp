@@ -34,6 +34,7 @@ QTMain::~QTMain()
 
 void QTMain::BindEvents(NetworkThread* nwobj)
 {
+	/*
 	nwobj->cbAddServer = boost::bind(
 		QtBooster(&impl->wnd, SLOT(AddNewServer()))
 	);
@@ -45,6 +46,7 @@ void QTMain::BindEvents(NetworkThread* nwobj)
 		QtBooster(&impl->wnd, SLOT(NewTreeInfo(JobRequestRef))),
 		_1
 	);
+	*/
 }
 
 int QTMain::run()

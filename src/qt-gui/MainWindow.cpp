@@ -9,7 +9,9 @@
 
 #include "../SharedData.h"
 #include "../Logger.h"
-#include "../network/Packet.h"
+//#include "../network/Packet.h"
+
+#include "windows.h"
 
 using namespace std;
 
@@ -41,6 +43,57 @@ MainWindow::MainWindow()
 		if (data.size() > 0)
 			restoreState(data);
 		layoutfile.close();
+	}
+
+	HMODULE hmod = 0;
+	if (hmod == 0) hmod = GetModuleHandle(TEXT("qtcore4.dll"));
+	if (hmod == 0) hmod = GetModuleHandle(TEXT("qtcored4.dll"));
+
+	boost::shared_ptr<QString> qptr(new QString());
+	QString* nptr = qptr.get();
+
+	QList<int> lint;
+
+	lint.append(6);
+	lint.append(1);
+	lint.append(4);
+	lint.append(2);
+	lint.append(5);
+	lint.append(3);
+
+	qptr->append("hello world");
+
+
+	std::string testing;
+	QString filePath;
+	{
+		QT_WA({
+	        wchar_t module_name[256];
+	        GetModuleFileNameW(hmod, module_name, sizeof(module_name) / sizeof(wchar_t));
+	        filePath = QString::fromUtf16((ushort *)module_name);
+	    }, {
+	        char module_name[256];
+	        GetModuleFileNameA(hmod, module_name, sizeof(module_name));
+	        filePath = QString::fromLocal8Bit(module_name);
+	    });
+	}
+
+	std::basic_string<unsigned short> usstr;
+	std::basic_string<wchar_t> wcstr = L"uint16 string";
+
+	wcstr.push_back((wchar_t)0x20AC);
+	wcstr.push_back((wchar_t)0x2345);
+	BOOST_FOREACH(wchar_t ch, wcstr) {
+		usstr.push_back(ch);
+	}
+	testing = filePath.toStdString();
+	QString qtst = filePath;
+	QString unitst = QString::fromUtf16(usstr.c_str());
+	qtst[0] = 0x1234;
+	qtst[1] = 0x2345;
+	QList<QString> libpaths = QCoreApplication::libraryPaths();
+	BOOST_FOREACH(QString& ba, libpaths) {
+		this->debugText->append(ba);
 	}
 
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));

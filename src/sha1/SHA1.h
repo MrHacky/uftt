@@ -6,7 +6,7 @@ extern "C" {
 }
 
 #include "../Types.h"
-#include "../network/Packet.h"
+//#include "../network/Packet.h"
 
 #include "boost/filesystem.hpp"
 namespace fs = boost::filesystem;
@@ -17,8 +17,8 @@ struct SHA1 {
 	bool operator<(const SHA1& o) const;
 	bool operator==(const SHA1& o) const;
 
-	void serialize(UFTT_packet* packet) const;
-	void deserialize(UFTT_packet* packet);
+	//void serialize(UFTT_packet* packet) const;
+	//void deserialize(UFTT_packet* packet);
 };
 
 class SHA1Hasher {
