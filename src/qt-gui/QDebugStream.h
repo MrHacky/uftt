@@ -68,8 +68,7 @@ protected:
 
  void append(const char* line)
  {
-	 QString str(line);
-	 appender(str);
+	appender(QString(line));
  }
 
  boost::function<void(QString)> appender;

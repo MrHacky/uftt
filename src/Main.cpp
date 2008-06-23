@@ -472,6 +472,7 @@ class SimpleBackend {
 			if (e) {
 				cout << "tcp accept failed: " << e.message() << '\n';
 			} else {
+				cout << "handling tcp accept\n";
 				conlist.push_back(newconn);
 				newconn->handle_tcp_accept();
 				start_tcp_accept();
@@ -607,6 +608,7 @@ class SimpleBackend {
 			conlist.push_back(newconn);
 			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), 54345);
 			newconn->socket.open(ep.protocol());
+			cout << "Connecting...\n";
 			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath));
 		}
 
@@ -615,6 +617,7 @@ class SimpleBackend {
 			if (e) {
 				cout << "connect failed: " << e.message() << '\n';
 			} else {
+				cout << "Connected!\n";
 				conn->handle_tcp_connect(name, dlpath);
 			}
 		}
@@ -631,7 +634,7 @@ class SimpleBackend {
 
 			tcplistener.open(boost::asio::ip::tcp::v4());
 			tcplistener.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address(), 54345));
-			tcplistener.listen();
+			tcplistener.listen(16);
 
 			start_udp_receive();
 			start_tcp_accept();
