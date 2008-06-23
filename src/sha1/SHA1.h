@@ -8,7 +8,7 @@ extern "C" {
 #include "../Types.h"
 //#include "../network/Packet.h"
 
-#include "boost/filesystem.hpp"
+#include "boost/filesystem/path.hpp"
 namespace fs = boost::filesystem;
 
 struct SHA1 {
