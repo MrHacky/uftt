@@ -10,6 +10,7 @@
 #include "../files/FileInfo.h"
 #include "../SharedData.h"
 #include "../Logger.h"
+#include "MainWindow.h"
 
 using namespace std;
 
@@ -36,8 +37,10 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 	
 	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
 		const string str(url.toLocalFile().toStdString());
-		QString qstr = url.toString();
+		
 		if (!str.empty()) {
+			((MainWindow*)this->parent()->parent()->parent())->addLocalShare(str);
+			/*
 			FileInfoRef fi(new FileInfo(str));
 			addFileInfo(*fi);
 			
@@ -47,6 +50,7 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 				boost::mutex::scoped_lock lock(shares_mutex);
 				MyShares.push_back(fs);
 			}
+			*/
 		}
 	}
 }

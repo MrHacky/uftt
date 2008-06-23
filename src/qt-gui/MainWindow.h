@@ -1,12 +1,15 @@
 #ifndef MAIN_H
 #define MAIN_H
 
+#include "QTMain.h"
 #include "ui_MainWindow.h"
 
 #include <map>
 
 #include "../sha1/SHA1.h"
 #include "../JobRequest.h"
+
+
 
 class QTreeWidgetItem;
 class QCloseEvent;
@@ -16,6 +19,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	Q_OBJECT
 
 	private:
+		QTMain& mainimpl;
 		std::map<SHA1, QTreeWidgetItem*> treedata;
 		std::map<SHA1, FileInfoRef> dirdata;
 
@@ -24,25 +28,27 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	protected:
 		virtual void closeEvent(QCloseEvent * event);
 
-	private slots:
+	private Q_SLOTS:
 		void DragStart(QTreeWidgetItem*, int);
 		void StartDownload();
 
 	public:
-		MainWindow();
+		MainWindow(QTMain& mainimpl_);
 		~MainWindow();
 
-	public slots:
+	public Q_SLOTS:
 		void RefreshButtonClicked();
 		void AddNewServer();
 		void AddNewShare(std::string str, SHA1 hash);
 		void NewTreeInfo(JobRequestRef);
+		void addSimpleShare(std::string sharename);
+		void addLocalShare(std::string url);
 };
 
 class LogHelper: public QObject {
 	Q_OBJECT
 
-	signals:
+	Q_SIGNALS:
 		void logAppend(QString);
 
 	public:

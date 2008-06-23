@@ -11,13 +11,15 @@
 #include "../Logger.h"
 //#include "../network/Packet.h"
 
+#include "QtBooster.h"
+
 using namespace std;
 
 static LogHelper loghelper;
 
 void LogHelper::append(QString str)
 {
-	emit logAppend(str);
+	logAppend(str);
 }
 
 void qt_log_append(std::string str)
@@ -25,7 +27,8 @@ void qt_log_append(std::string str)
 	loghelper.append(QString(str.c_str()));
 }
 
-MainWindow::MainWindow()
+MainWindow::MainWindow(QTMain& mainimpl_)
+: mainimpl(mainimpl_)
 {
 	qRegisterMetaType<std::string>("std::string");
 	qRegisterMetaType<SHA1>("SHA1");
@@ -48,6 +51,10 @@ MainWindow::MainWindow()
 
 	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
+
+	mainimpl.sig_new_share.connect(
+		QTBOOSTER(this, MainWindow::addSimpleShare)
+	);
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
@@ -69,16 +76,30 @@ MainWindow::~MainWindow()
 
 void MainWindow::RefreshButtonClicked()
 {
+	/*
 	JobRequestQueryServersRef job(new JobRequestQueryServers());
 	{
 		boost::mutex::scoped_lock lock(jobs_mutex);
 		JobQueue.push_back(job);
-	}
+	}*/
+	mainimpl.slot_refresh_shares();
 }
 
 void MainWindow::AddNewServer()
 {
 	LOG("TODO?: AddNewServer()");
+}
+
+void MainWindow::addSimpleShare(std::string sharename)
+{
+	QString qsharename = QString::fromStdString(sharename);
+
+	QList<QTreeWidgetItem*> fres = OthersSharesTree->findItems(qsharename, 0);
+
+	if (fres.empty()) {
+		QTreeWidgetItem* rwi = new QTreeWidgetItem(OthersSharesTree, 0);
+		rwi->setText(0, qsharename);
+	}	
 }
 
 void MainWindow::AddNewShare(std::string str, SHA1 hash)
@@ -198,4 +219,10 @@ void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 			JobQueue.push_back(job);
 		}
 	}
+}
+
+void MainWindow::addLocalShare(std::string url)
+{
+	boost::filesystem::path path = url;
+	mainimpl.slot_add_local_share(path.leaf(), path);
 }

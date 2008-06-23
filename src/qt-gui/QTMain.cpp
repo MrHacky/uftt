@@ -15,8 +15,11 @@ class QTImpl {
 		QApplication app;
 		MainWindow wnd;
 
-		QTImpl( int argc, char **argv )
-			: app(argc,argv) { };
+		QTImpl( int argc, char **argv, QTMain& owner_)
+			: app(argc, argv), wnd(owner_)
+		{
+
+		};
 
 	private:
 		QTImpl(const QTImpl&);
@@ -24,29 +27,12 @@ class QTImpl {
 
 QTMain::QTMain( int argc, char **argv )
 {
-	impl = new QTImpl(argc, argv);
+	impl = new QTImpl(argc, argv, *this);
 }
 
 QTMain::~QTMain()
 {
 	delete impl;
-}
-
-void QTMain::BindEvents(NetworkThread* nwobj)
-{
-	/*
-	nwobj->cbAddServer = boost::bind(
-		QtBooster(&impl->wnd, SLOT(AddNewServer()))
-	);
-	nwobj->cbAddShare = boost::bind(
-		QtBooster(&impl->wnd, SLOT(AddNewShare(std::string, SHA1))),
-		_1, _2
-	);
-	nwobj->cbNewTreeInfo = boost::bind(
-		QtBooster(&impl->wnd, SLOT(NewTreeInfo(JobRequestRef))),
-		_1
-	);
-	*/
 }
 
 int QTMain::run()
