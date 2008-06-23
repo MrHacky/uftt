@@ -40,13 +40,13 @@ class JobRequestTreeData : public JobRequest {
 		JobRequestTreeData() : JobRequest(JRT_TREEDATA), gotinfo(false) {};
 
 		// request info
-		SHA1 hash;
+		SHA1C hash;
 
 		// reply info
 		struct child_info {
-			SHA1 hash;
+			SHA1C hash;
 			std::string name;
-			child_info(SHA1 h, std::string n) : hash(h), name(n) {};
+			child_info(SHA1C h, std::string n) : hash(h), name(n) {};
 		};
 		std::vector<child_info> children;
 
@@ -70,7 +70,7 @@ class JobRequestBlobData : public JobRequest {
 		~JobRequestBlobData();
 
 		// request info
-		SHA1 hash;
+		SHA1C hash;
 		fs::path fpath;
 
 		// reply info

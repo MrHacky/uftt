@@ -8,13 +8,13 @@
 
 using namespace std;
 
-uint8 SHA1::operator[](int i)
+uint8 SHA1C::operator[](int i)
 {
 	assert(i >= 0 && i < 20);
 	return data[i];
 }
 
-bool SHA1::operator<(const SHA1& o) const
+bool SHA1C::operator<(const SHA1C& o) const
 {
 	for (int i = 0; i < 20; ++i)
 		if (data[i] < o.data[i])
@@ -24,7 +24,7 @@ bool SHA1::operator<(const SHA1& o) const
 	return false;
 }
 
-bool SHA1::operator==(const SHA1& o) const
+bool SHA1C::operator==(const SHA1C& o) const
 {
 	for (int i = 0; i < 20; ++i)
 		if (data[i] != o.data[i])
@@ -59,7 +59,7 @@ void SHA1Hasher::Update(const std::string& data)
 	Update(data.data(), data.size());
 }
 
-void SHA1Hasher::Update(const SHA1& data)
+void SHA1Hasher::Update(const SHA1C& data)
 {
 	Update(data.data, 20);
 }
@@ -74,27 +74,27 @@ void SHA1Hasher::Update(const fs::path& data)
 	Update(buf, fstr.gcount());
 }
 
-SHA1 SHA1Hasher::GetResultSafe() const
+SHA1C SHA1Hasher::GetResultSafe() const
 {
-	SHA1 res;
+	SHA1C res;
 	GetResultSafe(res);
 	return res;
 }
 
-void SHA1Hasher::GetResultSafe(SHA1& hash) const
+void SHA1Hasher::GetResultSafe(SHA1C& hash) const
 {
 	SHA_CTX res = state;
 	SHA1_Final(hash.data, &res);
 }
 
-SHA1 SHA1Hasher::GetResult()
+SHA1C SHA1Hasher::GetResult()
 {
-	SHA1 res;
+	SHA1C res;
 	GetResult(res);
 	return res;
 }
 
-void SHA1Hasher::GetResult(SHA1& hash)
+void SHA1Hasher::GetResult(SHA1C& hash)
 {
 	SHA1_Final(hash.data, &state);
 }

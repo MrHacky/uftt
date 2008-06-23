@@ -19,8 +19,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	private:
 		QTMain& mainimpl;
-		std::map<SHA1, QTreeWidgetItem*> treedata;
-		std::map<SHA1, FileInfoRef> dirdata;
+		std::map<SHA1C, QTreeWidgetItem*> treedata;
+		std::map<SHA1C, FileInfoRef> dirdata;
 
 		void StartDownload(FileInfoRef fi, const fs::path& path);
 
@@ -40,7 +40,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	public Q_SLOTS:
 		void RefreshButtonClicked();
 		void AddNewServer();
-		void AddNewShare(std::string str, SHA1 hash);
+		void AddNewShare(std::string str, SHA1C hash);
 		void NewTreeInfo(JobRequestRef);
 		void addSimpleShare(std::string sharename);
 		void addLocalShare(std::string url);

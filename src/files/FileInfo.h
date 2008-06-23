@@ -22,7 +22,7 @@ class FileInfo {
 		uint32 attrs;
 		uint64 size;
 		std::vector<shared_ptr<FileInfo> > files;
-		SHA1 hash;
+		SHA1C hash;
 		FileInfo(const fs::path& path);
 		FileInfo();
 };

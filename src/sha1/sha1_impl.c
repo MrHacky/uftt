@@ -33,6 +33,9 @@
  * GPL.
  */
 
+
+#ifndef USE_OPENSSL
+
 #include "sha1_impl.h"
 
 static void shaHashBlock(SHA_CTX *ctx);
@@ -149,3 +152,5 @@ static void shaHashBlock(SHA_CTX *ctx) {
   ctx->H[3] += D;
   ctx->H[4] += E;
 }
+
+#endif

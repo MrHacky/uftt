@@ -39,7 +39,7 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
 	qRegisterMetaType<std::string>("std::string");
-	qRegisterMetaType<SHA1>("SHA1");
+	qRegisterMetaType<SHA1C>("SHA1C");
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
@@ -125,7 +125,7 @@ void MainWindow::addSimpleShare(std::string sharename)
 	}	
 }
 
-void MainWindow::AddNewShare(std::string str, SHA1 hash)
+void MainWindow::AddNewShare(std::string str, SHA1C hash)
 {
 	QTreeWidgetItem* rwi = treedata[hash];
 	if (rwi == NULL) {
@@ -204,8 +204,8 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 void MainWindow::StartDownload()
 {
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
-	SHA1 hash;
-	typedef std::pair<SHA1, QTreeWidgetItem*> pairtype;
+	SHA1C hash;
+	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
 	BOOST_FOREACH(const pairtype & ip, treedata) {
 		if (ip.second == rwi)
 			hash = ip.first;
