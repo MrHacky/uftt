@@ -127,7 +127,6 @@ class SimpleBackend {
 										sig_new_share(surl);
 									}
 								}
-								cout << "todo\n";
 							}; break;
 						}
 					}
@@ -230,8 +229,54 @@ class SimpleBackend {
 		}
 };
 
+int runtest() {
+	try {
+		// TEST 0: all dependencies(dlls) have been loaded
+		cout << "Loaded dll dependancies...Success\n";
+
+		// todo, put something more here, like:
+		cout << "Testing synchronous network I/O...";
+		cout << "Skipped\n";
+
+		cout << "Testing asynchronous network I/O...";
+		cout << "Skipped\n";
+
+		cout << "Testing asynchronous disk I/O...";
+		cout << "Skipped\n";
+
+		cout << "Testing boost libraries...";
+		cout << "Skipped\n";
+
+		cout << "Testing qt libraries...";
+		cout << "Skipped\n";
+
+		return 0; // everything worked, success!
+	} catch (std::exception& e) {
+		cout << "Failed!\n";
+		cout << "\n";
+		cout << "Reason: " << e.what() << '\n';
+		cout << flush;
+		return 1; // error
+	} catch (...) {
+		cout << "Failed!\n";
+		cout << "\n";
+		cout << "Reason: Unknown\n";
+		cout << flush;
+		return 1; // error
+	}
+}
+
 int main( int argc, char **argv )
 {
+	if (argc > 1 && string(argv[1]) == "--runtest")
+		return runtest();
+
+	if (argc > 2 && string(argv[1]) == "--replace")
+		cout << "Not implemented yet!\n";
+
+	if (argc > 2 && string(argv[1]) == "--delete")
+		cout << "Not implemented yet!\n";
+
 	SimpleBackend backend;
 	//NetworkThread thrd1obj;
 
