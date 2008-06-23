@@ -34,7 +34,6 @@ endif(OPENSSL_FOUND)
 ADD_EXECUTABLE(bench
 	Benchmark.cpp
 	Types.h
-	Logger.cpp
 	Logger.h
 )
 

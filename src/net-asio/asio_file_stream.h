@@ -12,6 +12,7 @@
 #else
 #define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 #endif
+
 /*
 #include <io.h>
 #include <fcntl.h>
@@ -244,7 +245,8 @@ namespace services {
 				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
 					return boost::system::error_code();
-				return boost::system::error_code(-1, boost::asio::error::get_system_category());
+				//std::cout << "error opening file\n";
+				return boost::system::error_code(boost::asio::error::access_denied, boost::asio::error::get_system_category());
 			}
 
 			void close() {
@@ -284,6 +286,13 @@ namespace services {
 				}
 
 				void operator()() {
+					if (fd == NULL) {
+						service.dispatch(boost::bind<void>(handler,
+							boost::system::error_code(boost::asio::error::bad_descriptor),
+							0)
+						);
+						return;
+					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
 							boost::system::error_code(error, boost::asio::error::get_system_category()),
@@ -338,7 +347,7 @@ namespace services {
 				void operator()() {
 					if (fd == NULL) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::error_code(-1, boost::asio::error::get_system_category()),
+							boost::system::error_code(boost::asio::error::bad_descriptor),
 							0)
 						);
 						return;
