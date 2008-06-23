@@ -10,12 +10,17 @@
 
 #include "../types.h"
 
+bool is_ack_acceptable(uint32 snduna, uint32 segack, uint32 sndnxt) {
+	//return (0 < (segack-snduna)) && ((segack-snduna) <= (sndnxt-snduna));
+	return (segack!=snduna && (segack-snduna) <= (sndnxt-snduna));
+}
+
 #define IPX_MAX_MTU 2048
 struct ipx_packet {
 	enum constants {
 		headersize = 4*4,
 		maxmtu = 2048,
-		sendmtu = 1024,
+		sendmtu = 1400,
 		datasize = maxmtu-headersize,
 	};
 
@@ -100,12 +105,19 @@ class ipx_conn {
 		void check_send_queues()
 		{
 			if (snd_una == snd_nxt && !send_queue.empty()) {
-				initsendpack(sendpack, send_queue.front().first.second);
+				uint32 trylen = send_queue.front().first.second;
+				if (trylen > ipx_packet::sendmtu)
+					trylen = ipx_packet::sendmtu;
+				initsendpack(sendpack, trylen);
 				memcpy(sendpack.data, send_queue.front().first.first, sendpack.datalen);
-				service.dispatch(boost::bind(send_queue.front().second, boost::system::error_code(), sendpack.datalen));
-				send_queue.pop_front();
 				sendpack.seqnum = snd_nxt++;
 				send_packet();
+				//send_queue.front().first.first = ((char*)send_queue.front().first.first) + trylen;
+				//send_queue.front().first.second -= trylen;
+				//if (send_queue.front().first.second == 0) {
+					service.dispatch(boost::bind(send_queue.front().second, boost::system::error_code(), sendpack.datalen));
+					send_queue.pop_front();
+				//}
 			}
 		}
 
@@ -182,9 +194,9 @@ class ipx_conn {
 								// handle rerror
 							} else {
 								memcpy(recv_queue.front().first.first, pack->data, pack->datalen);
+								++rcv_nxt;
 								service.dispatch(boost::bind(recv_queue.front().second, boost::system::error_code(), pack->datalen));
 								recv_queue.pop_front();
-								++rcv_nxt;
 							}
 
 						}
@@ -194,8 +206,10 @@ class ipx_conn {
 						setstate(established);
 					}
 					check_queues();
-					initsendpack(sendpackonce);
-					send_packet_once();
+					if (pack->seqnum != rcv_nxt) {
+						initsendpack(sendpackonce);
+						send_packet_once();
+					}
 				}; break;
 				case finwait1: {
 				}; break;
