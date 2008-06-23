@@ -556,10 +556,10 @@ class SimpleBackend {
 			boost::system::error_code err;
 			udpsocket.send_to(
 				boost::asio::buffer(udp_send_buf, 5), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("255.255.255.255"), 54345),
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 54345),
 				//boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 54345),
-				0,
-				err
+				0
+				,err
 			);
 
 			if (err)
@@ -589,7 +589,7 @@ class SimpleBackend {
 			boost::system::error_code err;
 			udpsocket.send_to(
 				boost::asio::buffer(udp_send_buf, name.size()+6), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("255.255.255.255"), 54345),
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 54345),
 				0,
 				err
 			);
