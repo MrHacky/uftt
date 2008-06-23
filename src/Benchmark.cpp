@@ -18,7 +18,7 @@ using namespace std;
 
 using boost::asio::ipx;
 
-#define TESTBUFSIZE (1024*1024*16)
+uint32 TESTBUFSIZE = (1024*1024*16);
 std::vector<uint8*> testbuffers;
 std::vector<boost::asio::mutable_buffer> bufseq;
 
@@ -84,7 +84,8 @@ void connection_ready(const boost::system::error_code& e, ConnType* conn, bool s
 
 int imain( int argc, char **argv )
 {
-	uint32 numbuffers = 2;
+	TESTBUFSIZE = 1024*1024*1*2;
+	uint32 numbuffers = 32*2*2*2;
 	cout << "initializing buffers" << flush;
 	try {
 		for (int i = 0; i < numbuffers; ++i) {
@@ -122,7 +123,7 @@ int imain( int argc, char **argv )
 		cout << "accept started" << endl;
 	} catch (...) {
 		tcp_sock.open(boost::asio::ip::tcp::v4());
-		tcp_sock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("10.0.0.1"), 2345),
+		tcp_sock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 2345),
 			boost::bind(&connection_ready<boost::asio::ip::tcp::socket>, _1, &tcp_sock, false));
 		cout << "connect started" << endl;
 	}
