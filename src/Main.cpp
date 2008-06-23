@@ -12,7 +12,6 @@
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 
-
 using namespace std;
 
 using boost::asio::ipx;
@@ -271,7 +270,7 @@ int main( int argc, char **argv )
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
 
-	if (argc > 2 && string(argv[1]) == "--replace")
+	if (argc > 3 && string(argv[1]) == "--replace")
 		cout << "Not implemented yet!\n";
 
 	if (argc > 2 && string(argv[1]) == "--delete")
