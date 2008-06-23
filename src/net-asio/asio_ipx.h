@@ -20,9 +20,9 @@
 
 namespace boost {
 namespace asio {
-namespace ipx {
 
-class endpoint;
+namespace detail {
+namespace ipx {
 
 /// Encapsulates the flags needed for IPX.
 /**
@@ -39,7 +39,9 @@ class ipx
 {
 public:
   /// The type of a UDP endpoint.
-  typedef endpoint endpoint;
+  typedef basic_datagram_socket<ipx> socket;
+  typedef class endpoint endpoint;
+  typedef class address address;
 
   /// Obtain an identifier for the type of the protocol.
   int type() const
@@ -132,7 +134,7 @@ public:
 
 	address address() const
 	{
-		::boost::asio::ipx::address ret;
+		protocol_type::address ret;
 		// no host<->network byte order conversion for net/node num?
 		for (int i = 0; i < 4; ++i)
 			ret.netnum[i] = saddr.sa_netnum[i];
@@ -182,9 +184,11 @@ private:
 
 };
 
-typedef basic_datagram_socket<ipx> socket;
-
 } // namespace ipx
+} // namespace detail
+
+using detail::ipx::ipx;
+
 } // namespace asio
 } // namespace boost
 
