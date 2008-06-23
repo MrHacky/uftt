@@ -339,9 +339,19 @@ class SimpleTCPConnection {
 
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
 
-			rbuf->resize(hdr.size);
+			bool* done = new bool;
+			*done = false;
+
+			// kick off handle_ready_file for when the file is ready to write
+			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
+			gdiskio->async_open_file((sharepath / name), services::diskio_filetype::out|services::diskio_filetype::create,
+				*file,
+				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, hdr.size, rbuf, rbuf));
+
+			// kick off async_read for when we received some data (capped by file size)
+			rbuf->resize((hdr.size>1024*1024*10) ? 1024*1024*10 : hdr.size);
 			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, name, rbuf));
+				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, hdr.size, rbuf));
 
 		}
 
@@ -359,36 +369,78 @@ class SimpleTCPConnection {
 			start_recv_header(rbuf);
 		}
 
-		void handle_recv_file(const boost::system::error_code& e, std::string name, shared_vec rbuf) {
-			if (e) {
-				cout << "error: " << e.message() << '\n';
-				return;
-			}
-			//cout << "got file '" << (sharepath / name) << "' of size: " << rbuf->size() << '\n';
-			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
-			gdiskio->async_open_file((sharepath / name), services::diskio_filetype::out|services::diskio_filetype::create,
-				*file, boost::bind(&SimpleTCPConnection::handle_open_file, this, _1, file, rbuf));
-			shared_vec nrbuf(new std::vector<uint8>());
-			start_recv_header(nrbuf);
-		}
-
-		void handle_open_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, shared_vec wbuf)
+		/** handle file receiving 
+		 *  @param e    an error occured
+		 *  @param done true if file is ready to write (handle_ready_file already fired)
+		 *  @param size amount of bytes left to receive for the file
+		 *  @param wbuf the buffer into which we received the data
+		 */
+		void handle_recv_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf)
 		{
 			if (e) {
 				cout << "error: " << e.message() << '\n';
 				return;
 			}
-			boost::asio::async_write(*file, GETBUF(wbuf),
-				boost::bind(&SimpleTCPConnection::handle_write_file, this, _1, file, wbuf));
+
+			size -= wbuf->size();
+
+			if (!*done) {
+				*done = true;
+				if (size == 0)
+					start_recv_header(shared_vec(new std::vector<uint8>()));
+			} else {
+				shared_vec nrbuf;
+				if (size == 0) {
+					*done = true;
+					start_recv_header(shared_vec(new std::vector<uint8>()));
+				} else {
+					*done = false;
+					nrbuf = shared_vec(new std::vector<uint8>());
+					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : size);
+					boost::asio::async_read(socket, GETBUF(nrbuf),
+						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
+				};
+				boost::asio::async_write(*file, GETBUF(wbuf),
+					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf));
+			}
 		}
 
-		void handle_write_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, shared_vec wbuf)
+		/** handle file ready to write
+		 *  @param e       an error occured
+		 *  @param done    true if there is data ready to write (except if size==0, then we close the file)
+		 *  @param size    amount of bytes left to write for the file
+		 *  @param wbuf    the buffer from where we will write the data
+		 *  @param curbuf  the buffer containing previous data (unused)
+		 */
+		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf)
 		{
 			if (e) {
 				cout << "error: " << e.message() << '\n';
 				return;
 			}
-			file->close();
+
+			if (!*done) {
+				*done = true;
+			} else {
+				if (size == 0) {
+					delete done;
+					file->close();
+					return;
+				}
+				size -= wbuf->size();
+				shared_vec nrbuf;
+				if (size == 0) {
+					*done = true;
+				} else {
+					*done = false;
+					nrbuf = shared_vec(new std::vector<uint8>());
+					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : size);
+					boost::asio::async_read(socket, GETBUF(nrbuf),
+						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
+				};
+				boost::asio::async_write(*file, GETBUF(wbuf),
+					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf));
+			}
 		}
 };
 typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
