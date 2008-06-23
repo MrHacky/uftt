@@ -206,6 +206,8 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 void MainWindow::StartDownload()
 {
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
+	if (!rwi)
+		return;
 	QString name = rwi->text(0);
 	mainimpl.slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()));
 	return;

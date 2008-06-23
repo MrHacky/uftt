@@ -336,6 +336,13 @@ namespace services {
 				}
 
 				void operator()() {
+					if (fd == NULL) {
+						service.dispatch(boost::bind<void>(handler,
+							boost::system::error_code(-1, boost::asio::error::get_system_category()),
+							0)
+						);
+						return;
+					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
 							boost::system::error_code(error, boost::asio::error::get_system_category()),
