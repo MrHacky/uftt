@@ -1,6 +1,6 @@
 #include "Types.h"
 
-
+#include "BuildString.h"
 #include "qt-gui/QTMain.h"
 //#include "network/NetworkThread.h"
 #include "net-asio/asio_ipx.h"
@@ -246,7 +246,7 @@ class SimpleTCPConnection {
 				return;
 			}
 			sharename.clear();
-			for (int i = 0; i < rbuf->size(); ++i)
+			for (uint i = 0; i < rbuf->size(); ++i)
 				sharename.push_back(rbuf->at(i));
 			cout << "got share name: " << sharename << '\n';
 			getsharepath(sharename);
@@ -349,7 +349,7 @@ class SimpleTCPConnection {
 				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, hdr.size, rbuf, rbuf));
 
 			// kick off async_read for when we received some data (capped by file size)
-			rbuf->resize((hdr.size>1024*1024*10) ? 1024*1024*10 : hdr.size);
+			rbuf->resize((hdr.size>1024*1024*10) ? 1024*1024*10 : (uint32)hdr.size); // cast is ok because of ?:
 			boost::asio::async_read(socket, GETBUF(rbuf),
 				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, hdr.size, rbuf));
 
@@ -396,7 +396,7 @@ class SimpleTCPConnection {
 				} else {
 					*done = false;
 					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : size);
+					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
 					boost::asio::async_read(socket, GETBUF(nrbuf),
 						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
@@ -434,7 +434,7 @@ class SimpleTCPConnection {
 				} else {
 					*done = false;
 					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : size);
+					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
 					boost::asio::async_read(socket, GETBUF(nrbuf),
 						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};

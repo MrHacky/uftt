@@ -113,7 +113,7 @@ class ipx_conn {
 				uint32 trylen = front.first.second;
 				if (trylen > ipx_packet::sendmtu)
 					trylen = ipx_packet::sendmtu;
-				initsendpack(sendpack, trylen);
+				initsendpack(sendpack, (uint16)trylen); // mtu always < 0xffff
 				memcpy(sendpack.data, front.first.first, trylen);
 				sendpack.seqnum = snd_nxt++;
 				send_packet();

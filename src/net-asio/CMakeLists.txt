@@ -4,7 +4,7 @@ ADD_LIBRARY(lib-net-asio
 	asio_ipx.h
 	asio_ipx.cpp
 	ipx_conn.h
-	ipx_conn.cpp
+	#ipx_conn.cpp
 )
 
 #TARGET_LINK_LIBRARIES(lib-net-asio

@@ -19,6 +19,7 @@ ADD_EXECUTABLE(uftt
 	JobRequest.h
 	Logger.cpp
 	Logger.h
+	BuildString.h
 )
 
 if(OPENSSL_FOUND)

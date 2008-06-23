@@ -29,10 +29,10 @@ void memcopy_test() {
 	uint32 chunksize = 512;//TESTBUFSIZE; // must cleanly divide TESTBUFSIZE
 	uint32 numbuffer = testbuffers.size() / 2;
 
-	for (int i = 0; i < numbuffer; ++i) {
+	for (uint i = 0; i < numbuffer; ++i) {
 		uint8* frombuf = testbuffers[i];
 		uint8* tobuf   = testbuffers[i + numbuffer];
-		for (int j = 0; j < TESTBUFSIZE; j += chunksize, frombuf += chunksize, tobuf += chunksize)
+		for (uint j = 0; j < TESTBUFSIZE; j += chunksize, frombuf += chunksize, tobuf += chunksize)
 			memcpy(tobuf, frombuf, chunksize);
 	}
 	ptime stop(microsec_clock::local_time());
@@ -88,9 +88,9 @@ int imain( int argc, char **argv )
 	uint32 numbuffers = 32*2*2*2;
 	cout << "initializing buffers" << flush;
 	try {
-		for (int i = 0; i < numbuffers; ++i) {
+		for (uint i = 0; i < numbuffers; ++i) {
 			uint8* buf = new uint8[TESTBUFSIZE];
-			for (int j = 0; j < TESTBUFSIZE; ++j) {
+			for (uint j = 0; j < TESTBUFSIZE; ++j) {
 				buf[j] = j & 0xff;
 			}
 			testbuffers.push_back(buf);
