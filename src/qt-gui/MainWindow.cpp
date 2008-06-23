@@ -11,6 +11,8 @@
 #include <QMimeData>
 #include <QDropEvent>
 
+#include <QFileDialog>
+
 #include <boost/foreach.hpp>
 
 #include "../SharedData.h"
@@ -41,30 +43,37 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 
 	setupUi(this);
+	this->setCentralWidget(&QWidget());
+
+	buttonAdd2->hide();
+	buttonAdd3->hide();
+
+	this->resize(550,350);
 
 	connect(&loghelper, SIGNAL(logAppend(QString)), this->debugText, SLOT(append(QString)));
 	// load layout from file
 	QFile layoutfile("uftt.lyt");
-	if (layoutfile.open(QIODevice::ReadOnly)) {
+	if (false && layoutfile.open(QIODevice::ReadOnly)) {
 		QByteArray data = layoutfile.readAll();
 		if (data.size() > 0)
 			restoreState(data);
 		layoutfile.close();
-	}
+	} else
+		this->dockWidgetDebug->hide();
 
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
 
-	connect(OthersSharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
+	connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
 
-	connect(treeWidget->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
-	connect(treeWidget->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
-	connect(treeWidget->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
+	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
+	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
 
-	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
-	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
-	connect(OthersSharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
+	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
+	connect(SharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
 
 	mainimpl.sig_new_share.connect(
 		QTBOOSTER(this, MainWindow::addSimpleShare)
@@ -108,10 +117,10 @@ void MainWindow::addSimpleShare(std::string sharename)
 {
 	QString qsharename = QString::fromStdString(sharename);
 
-	QList<QTreeWidgetItem*> fres = OthersSharesTree->findItems(qsharename, 0);
+	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qsharename, 0);
 
 	if (fres.empty()) {
-		QTreeWidgetItem* rwi = new QTreeWidgetItem(OthersSharesTree, 0);
+		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
 		rwi->setText(0, qsharename);
 	}	
 }
@@ -120,7 +129,7 @@ void MainWindow::AddNewShare(std::string str, SHA1 hash)
 {
 	QTreeWidgetItem* rwi = treedata[hash];
 	if (rwi == NULL) {
-		rwi = new QTreeWidgetItem(OthersSharesTree, 0);
+		rwi = new QTreeWidgetItem(SharesTree, 0);
 		rwi->setText(0, str.c_str());
 		treedata[hash] = rwi;
 	}
@@ -194,7 +203,7 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 void MainWindow::StartDownload()
 {
-	QTreeWidgetItem* rwi = OthersSharesTree->currentItem();
+	QTreeWidgetItem* rwi = SharesTree->currentItem();
 	SHA1 hash;
 	typedef std::pair<SHA1, QTreeWidgetItem*> pairtype;
 	BOOST_FOREACH(const pairtype & ip, treedata) {
@@ -279,4 +288,44 @@ void MainWindow::onDragEnterTriggered(QDragEnterEvent* evt)
 void MainWindow::onDragMoveTriggered(QDragMoveEvent* evt)
 {
 	QWidget::dragMoveEvent(evt);
+}
+
+void MainWindow::on_buttonAdd1_clicked()
+{
+	QString directory;
+	directory = QFileDialog::getExistingDirectory(this,
+		tr("Choose directory to share"),
+		"");
+	if (!directory.isEmpty())
+		this->addLocalShare(directory.toStdString());
+}
+
+void MainWindow::on_buttonAdd2_clicked()
+{
+	QString directory;
+	directory = QFileDialog::getExistingDirectory(this,
+		tr("Choose directory to share"),
+		"",0);
+	if (!directory.isEmpty())
+		this->addLocalShare(directory.toStdString());
+}
+
+void MainWindow::on_buttonAdd3_clicked()
+{
+	QString directory;
+	directory = QFileDialog::getOpenFileName (this, tr("Choose file to share"),
+		"",
+		tr("any (*)"));
+	if (!directory.isEmpty())
+		this->addLocalShare(directory.toStdString());
+}
+
+void MainWindow::on_buttonBrowse_clicked()
+{
+	QString directory;
+	directory = QFileDialog::getExistingDirectory(this,
+		tr("Choose directory to share"),
+		DownloadEdit->text());
+	if (!directory.isEmpty())
+		this->DownloadEdit->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
 }

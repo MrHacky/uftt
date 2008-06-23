@@ -44,6 +44,12 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void NewTreeInfo(JobRequestRef);
 		void addSimpleShare(std::string sharename);
 		void addLocalShare(std::string url);
+
+		void on_buttonAdd1_clicked();
+		void on_buttonAdd2_clicked();
+		void on_buttonAdd3_clicked();
+
+		void on_buttonBrowse_clicked();
 };
 
 class LogHelper: public QObject {
