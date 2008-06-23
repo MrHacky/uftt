@@ -152,6 +152,7 @@ class SimpleTCPConnection {
 		void sig_download_ready(std::string url);
 
 		bool dldone;
+		uint32 open_files;
 
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
@@ -160,6 +161,7 @@ class SimpleTCPConnection {
 			, backend(backend_)
 		{
 			dldone = false;
+			open_files = 0;
 		}
 
 		void handle_tcp_accept()
@@ -255,8 +257,12 @@ class SimpleTCPConnection {
 				memcpy(&(*sbuf)[0], &hdr, 16);
 
 				boost::asio::async_write(socket, GETBUF(sbuf),
-					boost::bind(&boost::asio::ip::tcp::socket::close, &socket));
+					boost::bind(&SimpleTCPConnection::handle_sent_everything, this, _1, sbuf ));
 			}
+		}
+
+		void handle_sent_everything(const boost::system::error_code& e, shared_vec sbuf) {
+			socket.close();
 		}
 
 		void handle_sent_filedirinfo(const boost::system::error_code& e, shared_vec sbuf) {
@@ -415,6 +421,14 @@ class SimpleTCPConnection {
 				case 4: { // ..
 					cout << "download finished!\n";
 					dldone = true;
+					if (dldone && open_files == 0) {
+						this->sig_download_ready(
+							 string("uftt://")
+							+socket.remote_endpoint().address().to_string()
+							+"/"+sharename
+						);
+						socket.close(); // do this after the sig so the endpoint is still valid
+					}
 				}; break;
 			}
 		}
@@ -430,6 +444,7 @@ class SimpleTCPConnection {
 			bool* done = new bool;
 			*done = false;
 
+			++open_files;
 			// kick off handle_ready_file for when the file is ready to write
 			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
 			gdiskio->async_open_file((sharepath / name), services::diskio_filetype::out|services::diskio_filetype::create,
@@ -513,14 +528,17 @@ class SimpleTCPConnection {
 				if (size == 0) {
 					delete done;
 					file->close();
-	
+					--open_files;
+
 					// wtf hax!!!
-					this->sig_download_ready(
-						 string("uftt://")
-						+socket.remote_endpoint().address().to_string()
-						+"/"+sharename
-					);
-					socket.close();
+					if (dldone && open_files == 0) {
+						this->sig_download_ready(
+							 string("uftt://")
+							+socket.remote_endpoint().address().to_string()
+							+"/"+sharename
+						);
+						socket.close(); // do this after the sig so the endpoint is still valid
+					}
 
 					return;
 				}
@@ -1098,6 +1116,10 @@ int imain( int argc, char **argv )
 
 				hassignedbuild = true;
 				cout << "yay! we just signed this binary!\n";
+				if (!checksigniature(*exefile)) {
+					cout << "WTF! this is not possible!!!\n";
+					return 1;
+				}
 
 				// write signed build to file for debug purposes
 				ofstream sexe("uftt-signed.exe", ios_base::out|ios_base::binary);
