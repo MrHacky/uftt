@@ -645,6 +645,8 @@ class SimpleBackend {
 			start_udp_receive();
 			start_tcp_accept();
 
+			send_broadcast_query();
+
 			boost::thread tt(boost::bind(&SimpleBackend::servicerunfunc, this));
 			servicerunner.swap(tt);
 		}
@@ -691,6 +693,7 @@ int runtest() {
 			bool connected = false;
 			bool accepted = false;
 			bool sent = false;
+			bool timedout = false;
 
 			struct settrue {
 				bool* value;
@@ -715,12 +718,13 @@ int runtest() {
 
 			rsock.open(boost::asio::ip::tcp::v4());
 			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432), settrue(&connected));
-
-			int tries = 1000;
-
+	
+			boost::asio::deadline_timer wd(service);
+			wd.expires_from_now(boost::posix_time::seconds(2));
+			wd.async_wait(settrue(&timedout));
+			
 			do {
-				service.poll_one();
-				--tries;
+				service.run_one();
 				if (accepted && !sent) {
 					// sync write here
 					boost::asio::write(ssock, boost::asio::buffer(sstr));
@@ -731,13 +735,15 @@ int runtest() {
 					boost::asio::async_read(rsock, boost::asio::buffer(rstr), settrue(&received));
 					recvstarted = true;
 				}
-				if (tries == 50 && !connected) {
-					rsock.async_connect(acceptor.local_endpoint(), settrue(&connected));
-				}
-			} while (tries > 0 && !received);
+				//if (tries == 50 && !connected) {
+				//	rsock.async_connect(acceptor.local_endpoint(), settrue(&connected));
+				//}
+			} while (!timedout && !received);
 			//cout << "t: " << tries << '\n';
 			//cout << "s: " << sstr << '\n';
 			//cout << "r: " << rstr << '\n';
+			if (timedout)
+				cout << "Timed out...";
 			if (!connected)
 				throw std::runtime_error("connect failed");
 			if (!accepted)
@@ -748,6 +754,28 @@ int runtest() {
 				throw std::runtime_error("receive failed");
 			if (string(sstr) != string(rstr))
 				throw std::runtime_error("transfer failed");
+		}
+		cout << "Success\n";
+
+		cout << "Testing udp broadcast...";
+		{
+			char sstr[] = "sendstring";
+			char rstr[] = "1234567890";
+			boost::asio::io_service service;
+			boost::asio::ip::udp::socket udpsocket(service);
+			
+			udpsocket.open(boost::asio::ip::udp::v4());
+			//udpsocket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address(), 23432));
+			udpsocket.set_option(boost::asio::ip::udp::socket::broadcast(true));
+
+			udpsocket.send_to(
+				boost::asio::buffer(sstr), 
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 23432)
+				//boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432),
+				,0
+			);
+
+
 		}
 		cout << "Success\n";
 
