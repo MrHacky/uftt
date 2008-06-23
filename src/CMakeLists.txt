@@ -20,6 +20,14 @@ ADD_EXECUTABLE(uftt
 	Logger.h
 )
 
+ADD_EXECUTABLE(bench
+	Benchmark.cpp
+	Types.h
+	Logger.cpp
+	Logger.h
+)
+
+
 TARGET_LINK_LIBRARIES(uftt
 	uftt-qt
 	lib-net-asio

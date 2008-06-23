@@ -89,7 +89,7 @@ namespace services {
 			template <typename Path, typename Handler>
 			void async_create_directory(const Path& path, const Handler& handler)
 			{
-				work_io_service.post(
+				work_io_service.dispatch(
 					helper_create_directory<Path, Handler>(io_service_, path, handler)
 				);
 			}
@@ -97,7 +97,7 @@ namespace services {
 			template <typename Path, typename Handler>
 			void async_open_file(const Path& path, int flags, filetype& file, const Handler& handler)
 			{
-				work_io_service.post(
+				work_io_service.dispatch(
 					helper_open_file<Path, Handler>(io_service_, path, flags, file, handler)
 				);
 			}
@@ -119,7 +119,7 @@ namespace services {
 				void operator()() {
 					boost::system::error_code res;
 					res = file.open(path, flags);
-					service.post(boost::bind(handler, res));
+					service.dispatch(boost::bind(handler, res));
 				}
 			};
 
@@ -141,7 +141,7 @@ namespace services {
 					} catch (boost::filesystem::basic_filesystem_error<Path>& e) {
 						res = e.code();
 					}
-					service.post(boost::bind(handler, res));
+					service.dispatch(boost::bind(handler, res));
 				}
 			};
 
@@ -257,7 +257,7 @@ namespace services {
 			template <typename MBS, typename Handler>
 			void async_read_some(MBS& mbs, const Handler& handler)
 			{
-				service.get_work_service().post(
+				service.get_work_service().dispatch(
 					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler)
 				);
 			}
@@ -265,7 +265,7 @@ namespace services {
 			template <typename CBS, typename Handler>
 			void async_write_some(CBS& cbs, const Handler& handler)
 			{
-				service.get_work_service().post(
+				service.get_work_service().dispatch(
 					helper_write_some<CBS, Handler>(service.get_io_service(), cbs, fd, handler)
 				);
 			}
@@ -285,7 +285,7 @@ namespace services {
 
 				void operator()() {
 					if (int error = ferror(fd)) {
-						service.post(boost::bind<void>(handler,
+						service.dispatch(boost::bind<void>(handler,
 							boost::system::error_code(error, boost::asio::error::get_system_category()),
 							0)
 						);
@@ -303,13 +303,13 @@ namespace services {
 					}
 					if (buflen == 0) {
 						// no-op
-						service.post(boost::bind<void>(handler, boost::system::error_code(), 0));
+						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 						return;
 					};
 					size_t written = fwrite(buf, 1, buflen, fd);
 
 					if (written == 0) {
-						service.post(boost::bind<void>(handler,
+						service.dispatch(boost::bind<void>(handler,
 							boost::system::error_code(ferror(fd), boost::asio::error::get_system_category()),
 							0)
 						);
@@ -319,7 +319,7 @@ namespace services {
 						// this is an error, but we ignore it and hope the next write will return 0
 						// this is so we can report this partial success to the handler
 					}
-					service.post(boost::bind<void>(handler, boost::system::error_code(), written));
+					service.dispatch(boost::bind<void>(handler, boost::system::error_code(), written));
 				}
 			};
 
@@ -337,7 +337,7 @@ namespace services {
 
 				void operator()() {
 					if (int error = ferror(fd)) {
-						service.post(boost::bind<void>(handler,
+						service.dispatch(boost::bind<void>(handler,
 							boost::system::error_code(error, boost::asio::error::get_system_category()),
 							0)
 						);
@@ -355,30 +355,30 @@ namespace services {
 					}
 					if (buflen == 0) {
 						// no-op
-						service.post(boost::bind<void>(handler, boost::system::error_code(), 0));
+						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 						return;
 					};
 					size_t read = fread(buf, 1, buflen, fd);
 
 					if (read == 0) {
 						if (feof(fd)) {
-							service.post(boost::bind<void>(handler,
+							service.dispatch(boost::bind<void>(handler,
 								boost::asio::error::eof,
 								0)
 							);
-							return;
+						} else {
+							service.dispatch(boost::bind<void>(handler,
+								boost::system::error_code(ferror(fd), boost::asio::error::get_system_category()),
+								0)
+							);
 						}
-						service.post(boost::bind<void>(handler,
-							boost::system::error_code(ferror(fd), boost::asio::error::get_system_category()),
-							0)
-						);
 						return;
 					}
 					if (read < buflen) {
 						// this is an error, but we ignore it and hope the next read will return 0
 						// this is so we can report this partial success to the handler
 					}
-					service.post(boost::bind<void>(handler, boost::system::error_code(), read));
+					service.dispatch(boost::bind<void>(handler, boost::system::error_code(), read));
 				}
 			};
 	};

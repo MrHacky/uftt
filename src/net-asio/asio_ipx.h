@@ -2,36 +2,34 @@
 #define ASIO_IPX
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1200)
-# pragma once
+#  pragma once
 #endif // defined(_MSC_VER) && (_MSC_VER >= 1200)
 
 #include <boost/asio/detail/push_options.hpp>
 
 #include <boost/asio/basic_datagram_socket.hpp>
-#include <boost/asio/ip/basic_endpoint.hpp>
-#include <boost/asio/ip/basic_resolver.hpp>
-#include <boost/asio/ip/basic_resolver_iterator.hpp>
-#include <boost/asio/ip/basic_resolver_query.hpp>
-#include <boost/asio/detail/socket_types.hpp>
 
 // symbols needed from platform headers:
 // - AF_IPX
 // - NSPROTO_IPX
 // - SOCKADDR_IPX
+//   - .sipx_node
+//   - .sipx_port
+//   - .sipx_network
+//   - .sipx_family
 
 #ifdef WIN32
-#include <Wsipx.h>
+	#include <Wsipx.h>
 
-#define sipx_node sa_nodenum
-#define sipx_port sa_socket
-#define sipx_network sa_netnum
-#define sipx_family sa_family
+	#define sipx_node sa_nodenum
+	#define sipx_port sa_socket
+	#define sipx_network sa_netnum
+	#define sipx_family sa_family
 #else
-#include <netipx/ipx.h>
+	#include <netipx/ipx.h>
 
-#define NSPROTO_IPX PF_IPX
-#define SOCKADDR_IPX sockaddr_ipx
-
+	#define NSPROTO_IPX PF_IPX
+	#define SOCKADDR_IPX sockaddr_ipx
 #endif
 
 namespace boost {
@@ -100,7 +98,7 @@ class address {
 		return ret;
 	}
 
-	static address broadcast_local()
+	static address broadcast()
 	{
 		address ret;
 		for (int i = 0; i < 4; ++i)
@@ -137,7 +135,7 @@ public:
 		saddr.sipx_family = AF_IPX;
 		// no host<->network byte order conversion for net/node num?
 		for (int i = 0; i < 4; ++i)
-			((char*)&saddr.sipx_network)[i] = addr.network[i];
+			((char*)&saddr.sipx_network)[i] = addr.network[i]; // TODO: verify/fix LE/BE problem
 		for (int i = 0; i < 6; ++i)
 			saddr.sipx_node[i] = addr.node[i];
 		saddr.sipx_port = htons(port);
@@ -148,7 +146,7 @@ public:
 		protocol_type::address ret;
 		// no host<->network byte order conversion for net/node num?
 		for (int i = 0; i < 4; ++i)
-			ret.network[i] = ((char*)&saddr.sipx_network)[i];
+			ret.network[i] = ((char*)&saddr.sipx_network)[i]; // TODO: verify/fix LE/BE problem
 		for (int i = 0; i < 6; ++i)
 			ret.node[i] = saddr.sipx_node[i];
 		return ret;
@@ -182,7 +180,7 @@ public:
 	void resize(size_t s)
 	{
 		if (s > capacity())
-			throw std::exception();// wth! ubuntu??? "invalid size");
+			throw std::runtime_error("invalid size");
 	}
 
 	size_t capacity() const
@@ -194,6 +192,10 @@ public:
 	{
 	}
 
+	bool operator==(const endpoint& o) const {
+		return (0 == memcmp(this, &o, size()));
+	}
+
 private:
 	SOCKADDR_IPX saddr;
 
@@ -201,9 +203,6 @@ private:
 
 } // namespace ipx
 } // namespace detail
-
-//using detail::ipx::ipx;
-
 } // namespace asio
 } // namespace boost
 
