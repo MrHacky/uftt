@@ -51,6 +51,7 @@ struct filesender {
 		fsize = boost::filesystem::file_size(path);
 		file.open(path, services::diskio_filetype::in);
 		hsent = false;
+		//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 	};
 
 	template <typename Handler>
@@ -69,6 +70,7 @@ struct filesender {
 			return;
 		}
 		buf->resize(1024*1024);
+		//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
 		file.async_read_some(GETBUF(buf), handler);
 	};
 };
@@ -173,18 +175,22 @@ class SimpleTCPConnection {
 		}
 
 		void sendfileinfo(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
+			//cout << ">sendfileinfo(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
 			if (e) {
 				if (cursendfile.fsize == 0) {
+					//cout << "closing file\n";
 					cursendfile.file.close();
 					cursendfile.name = "";
 					checkwhattosend();
-				} else
-					cout << "error: " << e.message() << '\n';
+				} else {
+					cout << "file read error: " << e.message() << '\n';
+				}
 				return;
 			}
 
 			sbuf->resize(len);
 			cursendfile.fsize -= len;
+			//cout << ">async_write(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
 			boost::asio::async_write(socket, GETBUF(sbuf),
 				boost::bind(&SimpleTCPConnection::handle_sent_filedirinfo, this, _1, sbuf));
 		}
@@ -770,7 +776,7 @@ int runtest() {
 	}
 }
 
-int main( int argc, char **argv )
+int imain( int argc, char **argv )
 {
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
@@ -781,7 +787,9 @@ int main( int argc, char **argv )
 	if (argc > 2 && string(argv[1]) == "--delete")
 		cout << "Not implemented yet!\n";
 
+	cout << "Creating network backend...";
 	SimpleBackend backend;
+	cout << "Done\n";
 	//NetworkThread thrd1obj;
 
 	QTMain gui(argc, argv);
@@ -799,4 +807,14 @@ int main( int argc, char **argv )
 	exit(0);
 
 	return ret;
+}
+
+int main( int argc, char **argv ) {
+	try {
+		return imain(argc, argv);
+	} catch (std::exception& e) {
+		cout << "exception: " << e.what() << '\n';
+	} catch (...) {
+		cout << "unknown exception\n";
+	}
 }
