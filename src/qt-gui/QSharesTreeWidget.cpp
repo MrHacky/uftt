@@ -34,11 +34,16 @@ void QSharesTreeWidget::dropEvent(QDropEvent* event)
 {
 	LOG("try=" << event->mimeData()->text().toStdString());
 	event->acceptProposedAction();
-	
+
+
 	BOOST_FOREACH(const QUrl & url, event->mimeData()->urls()) {
-		const string str(url.toLocalFile().toStdString());
-		
+		//QString qurl = url.toLocalFile();
+		//std::string surl(qurl.toAscii().data());
+		//continue;
+		string str(url.toLocalFile().toAscii().data());
+
 		if (!str.empty()) {
+			// haxxy
 			((MainWindow*)this->parent()->parent()->parent())->addLocalShare(str);
 			/*
 			FileInfoRef fi(new FileInfo(str));
