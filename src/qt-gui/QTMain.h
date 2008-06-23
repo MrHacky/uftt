@@ -19,17 +19,17 @@ class QTMain {
 		{
 			t->sig_new_share.connect(sig_new_share);
 
-			slot_download_share.connect(boost::bind(&T::slot_download_share, t));
 			slot_refresh_shares.connect(boost::bind(&T::slot_refresh_shares, t));
 			slot_add_local_share.connect(boost::bind(&T::slot_add_local_share, t, _1, _2));
+			slot_download_share.connect(boost::bind(&T::slot_download_share, t, _1, _2));
 			// do something smart...
 		}
 
 		boost::signal<void(std::string)> sig_new_share;
 
-		boost::signal<void()> slot_download_share;
 		boost::signal<void()> slot_refresh_shares;
 		boost::signal<void(std::string,boost::filesystem::path)> slot_add_local_share;
+		boost::signal<void(std::string,boost::filesystem::path)> slot_download_share;
 		
 		int run();
 };

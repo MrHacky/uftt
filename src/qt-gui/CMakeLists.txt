@@ -31,6 +31,7 @@ ADD_LIBRARY(uftt-qt
 	QDragDropSignalWidget.h
 	QtLogger.h
 	QtBooster.h
+	QTMain.h
 	${UI_FILES}
 )
 

@@ -78,6 +78,8 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	mainimpl.sig_new_share.connect(
 		QTBOOSTER(this, MainWindow::addSimpleShare)
 	);
+
+	mainimpl.slot_refresh_shares();
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
@@ -204,6 +206,9 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 void MainWindow::StartDownload()
 {
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
+	QString name = rwi->text(0);
+	mainimpl.slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()));
+	return;
 	SHA1C hash;
 	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
 	BOOST_FOREACH(const pairtype & ip, treedata) {
@@ -258,9 +263,9 @@ void MainWindow::onDropTriggered(QDropEvent* evt)
 	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls()) {
 		// weird stuff here, next line gives a weird error popup in release mode,
 		// but the program continues just fine...
-		// string str(url.toLocalFile().toStdString());
+		string str(url.toLocalFile().toStdString());
 		// next one give no popup
-		string str(url.toLocalFile().toAscii().data());
+		// string str(url.toLocalFile().toAscii().data());
 
 		if (!str.empty()) {
 			this->addLocalShare(str);
