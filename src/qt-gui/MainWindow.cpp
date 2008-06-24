@@ -534,3 +534,13 @@ void MainWindow::SetBackend(SimpleBackend* be)
 
 	backend->slot_refresh_shares();
 }
+
+void MainWindow::on_buttonManualQuery_clicked()
+{
+	backend->do_manual_query(editManualQuery->text().toStdString());
+}
+
+void MainWindow::on_buttonManualPublish_clicked()
+{
+	backend->do_manual_publish(editManualPublish->text().toStdString());
+}

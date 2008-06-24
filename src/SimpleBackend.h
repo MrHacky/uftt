@@ -594,44 +594,7 @@ class SimpleBackend {
 						std::cout << "got packet type " << (int)udp_recv_buf[4] << "\n";
 						switch (udp_recv_buf[4]) {
 							case 1: { // type = broadcast;
-								typedef std::pair<const std::string, boost::filesystem::path> shareiter;
-								BOOST_FOREACH(shareiter& item, sharelist)
-								if (item.first.size() < 0xff && !item.second.empty()) {
-									uint8 udp_send_buf[1024];
-									memcpy(udp_send_buf, udp_recv_buf, 4);
-									udp_send_buf[4] = 2;
-									udp_send_buf[5] = item.first.size();
-									memcpy(&udp_send_buf[6], item.first.data(), item.first.size());
-									
-									boost::system::error_code err;
-									udpsocket.send_to(
-										boost::asio::buffer(udp_send_buf, item.first.size()+6), 
-										udp_recv_addr,
-										0,
-										err
-									);
-									if (err)
-										std::cout << "reply failed: " << err.message() << '\n';
-								}
-								if (len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]) {
-									std::string rbs((char*)&udp_recv_buf[6], (char*)&udp_recv_buf[6] + udp_recv_buf[5]);
-									if (hassignedbuild) {
-										uint8 udp_send_buf[1024];
-										memcpy(udp_send_buf, udp_recv_buf, 4);
-										udp_send_buf[4] = 3;
-										udp_send_buf[5] = thebuildstring.size();
-										memcpy(&udp_send_buf[6], thebuildstring.data(), thebuildstring.size());
-										boost::system::error_code err;
-										udpsocket.send_to(
-											boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
-											udp_recv_addr,
-											0,
-											err
-										);
-										if (err)
-											std::cout << "reply failed: " << err.message() << '\n';
-									}
-								}
+								send_publish(udp_recv_addr, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
 							}; break;
 							case 2: { // type = reply;
 								if (len >= 6) {
@@ -674,7 +637,7 @@ class SimpleBackend {
 				start_udp_receive();
 		}
 
-		void send_broadcast_query() {
+		void send_query(boost::asio::ip::udp::endpoint ep) {
 			uint8 udp_send_buf[1024];
 			uint32 udp_protocol_version = 1;
 			udp_send_buf[0] = (udp_protocol_version >>  0) & 0xff;
@@ -693,13 +656,51 @@ class SimpleBackend {
 			boost::system::error_code err;
 			udpsocket.send_to(
 				boost::asio::buffer(udp_send_buf, 6+bslen), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT),
+				ep,
 				0
 				,err
 			);
 
 			if (err)
-				std::cout << "broadcast failed: " << err.message() << '\n';
+				std::cout << "query failed: " << err.message() << '\n';
+		}
+
+		void send_publish(boost::asio::ip::udp::endpoint ep, bool buildstoo) {
+			typedef std::pair<const std::string, boost::filesystem::path> shareiter;
+			BOOST_FOREACH(shareiter& item, sharelist)
+			if (item.first.size() < 0xff && !item.second.empty()) {
+				uint8 udp_send_buf[1024];
+				memcpy(udp_send_buf, udp_recv_buf, 4);
+				udp_send_buf[4] = 2;
+				udp_send_buf[5] = item.first.size();
+				memcpy(&udp_send_buf[6], item.first.data(), item.first.size());
+				
+				boost::system::error_code err;
+				udpsocket.send_to(
+					boost::asio::buffer(udp_send_buf, item.first.size()+6), 
+					ep,
+					0,
+					err
+				);
+				if (err)
+					std::cout << "publish failed: " << err.message() << '\n';
+			}
+			if (buildstoo && hassignedbuild) {
+				uint8 udp_send_buf[1024];
+				memcpy(udp_send_buf, udp_recv_buf, 4);
+				udp_send_buf[4] = 3;
+				udp_send_buf[5] = thebuildstring.size();
+				memcpy(&udp_send_buf[6], thebuildstring.data(), thebuildstring.size());
+				boost::system::error_code err;
+				udpsocket.send_to(
+					boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
+					ep,
+					0,
+					err
+				);
+				if (err)
+					std::cout << "publish failed: " << err.message() << '\n';
+			}
 		}
 
 		void add_local_share(std::string name, boost::filesystem::path path)
@@ -707,31 +708,8 @@ class SimpleBackend {
 			if (sharelist[name] != "")
 				std::cout << "warning: replacing share with identical name\n";
 			sharelist[name] = path;
-			/*
-			std::string url = "uftt://127.0.0.1/";
-			url += name;
-			sig_new_share(url);
-			*/
-			uint8 udp_send_buf[1024];
-			uint32 udp_protocol_version = 1;
-			udp_send_buf[0] = (udp_protocol_version >>  0) & 0xff;
-			udp_send_buf[1] = (udp_protocol_version >>  8) & 0xff;
-			udp_send_buf[2] = (udp_protocol_version >> 16) & 0xff;
-			udp_send_buf[3] = (udp_protocol_version >> 24) & 0xff;
-			udp_send_buf[4] = 2;
-			udp_send_buf[5] = name.size();
-			memcpy(&udp_send_buf[6], name.data(), name.size());
-			
-			boost::system::error_code err;
-			udpsocket.send_to(
-				boost::asio::buffer(udp_send_buf, name.size()+6), 
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT),
-				0,
-				err
-			);
-			if (err)
-				std::cout << "advertise failed: " << err.message() << '\n';
 
+			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), false);
 		}
 
 		void download_share(std::string shareurl, boost::filesystem::path dlpath)
@@ -790,7 +768,7 @@ class SimpleBackend {
 
 		void slot_refresh_shares()
 		{
-			service.post(boost::bind(&SimpleBackend::send_broadcast_query, this));
+			service.post(boost::bind(&SimpleBackend::send_query, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT)));
 		}
 
 		void slot_add_local_share(std::string name, boost::filesystem::path path)
@@ -801,5 +779,17 @@ class SimpleBackend {
 		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath)
 		{
 			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath));
+		}
+
+		void do_manual_query(std::string hostname) {
+			service.post(boost::bind(&SimpleBackend::send_query, this,
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
+			));
+		}
+
+		void do_manual_publish(std::string hostname) {
+			service.post(boost::bind(&SimpleBackend::send_publish, this,
+				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
+			, true));
 		}
 };
