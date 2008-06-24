@@ -10,11 +10,11 @@ SUBDIRS(files)
 SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
 
-ADD_EXECUTABLE(uftt
+SET(UFTT_SOURCES
 	Main.cpp
 
 	Types.h
-	BuildString.h         BuildStringMacros.cpp
+	BuildString.h
 	SimpleBackend.h       SimpleBackend.cpp
 	
 	SharedData.cpp
@@ -25,23 +25,19 @@ ADD_EXECUTABLE(uftt
 	Logger.h
 )
 
+SET(UFTT_LIBRARIES
+	uftt-qt
+	lib-net-asio
+)
+
+ADD_EXECUTABLE(uftt ${UFTT_SOURCES} BuildStringMacros.cpp)
+
 ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp"
- 	COMMAND "${CMAKE_COMMAND}"
-  	ARGS -E touch "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp"
- 	COMMENT "VerionTarget"
- 	DEPENDS uftt
-  	)
-
-ADD_CUSTOM_TARGET(VersionTarget ALL 
-	   COMMAND "${CMAKE_COMMAND}" -E touch "${CMAKE_CURRENT_SOURCE_DIR}/src/BuildStringMacros.cpp"
-	   )
-
-ADD_DEPENDENCIES(uftt VersionTarget)
-#	   [COMMAND command2 [args2...] ...]
-#	   [DEPENDS depend depend depend ... ]
-#	   [WORKING_DIRECTORY dir]
-#	   [COMMENT comment] [VERBATIM])
-
+	COMMAND "${CMAKE_COMMAND}"
+	ARGS -E touch "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp"
+	COMMENT "VerionTarget"
+	DEPENDS ${UFTT_SOURCES} ${UFTT_LIBRARIES}
+	)
 
 if(OPENSSL_FOUND)
 	add_definitions("-DUSE_OPENSSL")
@@ -59,17 +55,13 @@ ADD_EXECUTABLE(bench
 )
 
 IF(MSVC)
-
 	#SET_TARGET_PROPERTIES(uftt PROPERTIES
 	#	LINK_FLAGS "/SUBSYSTEM:WINDOWS qtmain.lib"
 	#)
-	#GET_TARGET_PROPERTY(CURPROPS uftt LINK_FLAGS_RELEASE)
-	#MESSAGE(${CURPROPS})
 ENDIF(MSVC)
 
 TARGET_LINK_LIBRARIES(uftt
-	uftt-qt
-	lib-net-asio
 	${BOOST_THREAD_LIBRARY}
+	${UFTT_LIBRARIES}
 )
 
