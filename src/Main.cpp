@@ -237,6 +237,8 @@ bool checksigniature(const std::vector<uint8>& file) {
 	return true;
 }
 
+
+
 int imain( int argc, char **argv )
 {
 	if (argc > 1 && string(argv[1]) == "--runtest")
@@ -364,7 +366,7 @@ int imain( int argc, char **argv )
 		
 		int month, day, year;
 		{
-			char temp [] = __DATE__;
+			char* temp = build_string_macro_date;
 			unsigned char i;
 
 			// ANSI C Standard month names
@@ -380,7 +382,7 @@ int imain( int argc, char **argv )
 			}
 		}
 
-		string tstamp(__TIME__);
+		string tstamp(build_string_macro_time);
 		BOOST_FOREACH(char& chr, tstamp)
 			if (chr == ':') chr = '_';
 

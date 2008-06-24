@@ -654,12 +654,15 @@ class SimpleBackend {
 				udp_send_buf[6+i] = thebuildstring[i];
 
 			boost::system::error_code err;
-			udpsocket.send_to(
-				boost::asio::buffer(udp_send_buf, 6+bslen), 
-				ep,
-				0
-				,err
-			);
+			if (ep.address() != boost::asio::ip::address_v4::broadcast())
+				udpsocket.send_to(
+					boost::asio::buffer(udp_send_buf, 6+bslen), 
+					ep,
+					0
+					,err
+				);
+			else
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, 6+bslen), ep.port(), 0, err);
 
 			if (err)
 				std::cout << "query failed: " << err.message() << '\n';
@@ -676,12 +679,15 @@ class SimpleBackend {
 				memcpy(&udp_send_buf[6], item.first.data(), item.first.size());
 				
 				boost::system::error_code err;
-				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, item.first.size()+6), 
-					ep,
-					0,
-					err
-				);
+				if (ep.address() != boost::asio::ip::address_v4::broadcast())
+					udpsocket.send_to(
+						boost::asio::buffer(udp_send_buf, item.first.size()+6), 
+						ep,
+						0,
+						err
+					);
+				else
+					this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, item.first.size()+6), ep.port(), 0, err);
 				if (err)
 					std::cout << "publish failed: " << err.message() << '\n';
 			}
@@ -692,12 +698,15 @@ class SimpleBackend {
 				udp_send_buf[5] = thebuildstring.size();
 				memcpy(&udp_send_buf[6], thebuildstring.data(), thebuildstring.size());
 				boost::system::error_code err;
-				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
-					ep,
-					0,
-					err
-				);
+				if (ep.address() != boost::asio::ip::address_v4::broadcast())
+					udpsocket.send_to(
+						boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
+						ep,
+						0,
+						err
+					);
+				else
+					this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), ep.port(), 0, err);
 				if (err)
 					std::cout << "publish failed: " << err.message() << '\n';
 			}
@@ -733,6 +742,25 @@ class SimpleBackend {
 			} else {
 				std::cout << "Connected!\n";
 				conn->handle_tcp_connect(name, dlpath);
+			}
+		}
+
+		std::vector<boost::asio::ip::address> get_broadcast_adresses();
+
+		template<typename BUF> 
+		void send_udp_broadcast(boost::asio::ip::udp::socket& sock, BUF& buf, uint16 port, int flags, boost::system::error_code& err)
+		{
+			std::vector<boost::asio::ip::address> adresses;
+			adresses = this->get_broadcast_adresses();
+			BOOST_FOREACH(boost::asio::ip::address& addr, adresses) {
+				udpsocket.send_to(
+					buf, 
+					boost::asio::ip::udp::endpoint(addr, port),
+					flags,
+					err
+				);
+				if (err)
+					std::cout << "broadcast failed: " << err.message() << '\n';
 			}
 		}
 	public:
