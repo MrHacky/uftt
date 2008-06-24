@@ -404,6 +404,8 @@ int imain( int argc, char **argv )
 	gui.BindEvents(&backend);
 
 	backend.slot_refresh_shares();
+	// TODO: resolve 255.255.255.255 to bc addr in backend (win2000 can't do it itself)
+	backend.do_manual_publish("255.255.255.255");
 
 	cout << "Build: " << thebuildstring << '\n';
 	cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
