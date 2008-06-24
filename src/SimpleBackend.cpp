@@ -1,5 +1,7 @@
 #include "SimpleBackend.h"
 
+#include <set>
+
 using namespace std;
 
 void SimpleTCPConnection::getsharepath(std::string sharename)
@@ -14,10 +16,13 @@ void SimpleTCPConnection::sig_download_ready(std::string url)
 
 std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 {
-	std::vector<boost::asio::ip::address> result;
+	typedef std::vector<boost::asio::ip::address> rtype;
+
+	// use set to avoid duplicates
+	std::set<boost::asio::ip::address> result;
 
 	// for backup...
-	result.push_back(boost::asio::ip::address_v4::broadcast());
+	result.insert(boost::asio::ip::address_v4::broadcast());
 
 // TODO: test linux implementation below
 // TODO: unify win+linux implementations
@@ -27,7 +32,8 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 		SOCKET sd = WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
 		if (sd == SOCKET_ERROR) {
 			cerr << "Failed to get a socket. Error " << WSAGetLastError() <<
-				endl; return result;
+				endl;
+			return rtype(result.begin(), result.end());
 		}
 
 		INTERFACE_INFO InterfaceList[20];
@@ -36,7 +42,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 				sizeof(InterfaceList), &nBytesReturned, 0, 0) == SOCKET_ERROR) {
 			cerr << "Failed calling WSAIoctl: error " << WSAGetLastError() <<
 					endl;
-			return result;
+			return rtype(result.begin(), result.end());
 		}
 
 		int nNumInterfaces = nBytesReturned / sizeof(INTERFACE_INFO);
@@ -70,8 +76,9 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 			if (!(nFlags & IFF_LOOPBACK) && (nFlags & IFF_BROADCAST)) {
 				for (int i = 0; i < 4; ++i)
 					ifaddr[i] |= ~nmaddr[i];
-				result.push_back(boost::asio::ip::address_v4(ifaddr));
-				cout << "broadcast: " << result.back() << '\n';
+				boost::asio::ip::address_v4 naddr(ifaddr);
+				result.insert(naddr);
+				cout << "broadcast: " << naddr << '\n';
 			}
 		}
 
@@ -110,7 +117,5 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 	}
 	#endif
 
-
-
-	return result;
+	return rtype(result.begin(), result.end());
 }
