@@ -11,6 +11,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/version.hpp>
 
 #define NVP(x,y) (boost::serialization::make_nvp(x,y))
 
@@ -41,5 +42,7 @@ class UFTTSettings {
 			ar & NVP("sizey"   , sizey);
 		}
 };
+
+BOOST_CLASS_VERSION(UFTTSettings, 1)
 
 #endif//UFTT_SETTINGS_H

@@ -3,6 +3,8 @@
 #include <fstream>
 //#include <boost/filesystem.hpp>
 
+const int settings_version = 1;
+
 UFTTSettings::UFTTSettings()
 {
 	posx  = posy  = 0;
