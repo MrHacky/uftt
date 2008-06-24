@@ -397,6 +397,7 @@ int imain( int argc, char **argv )
 	SimpleBackend backend;
 
 	QTMain gui(argc, argv);
+	FreeConsole();
 
 	gui.BindEvents(&backend);
 
