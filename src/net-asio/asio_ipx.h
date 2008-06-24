@@ -88,35 +88,42 @@ class address {
 		boost::array<unsigned char, 4> network;
 		boost::array<unsigned char, 6> node;
 
-	static address broadcast_all()
-	{
-		address ret;
-		for (int i = 0; i < 4; ++i)
-			ret.network[i] = 0xff;
-		for (int i = 0; i < 6; ++i)
-			ret.node[i] = 0xff;
-		return ret;
-	}
+		bool operator<(const address&o) {
+			if (network < o.network) return true;
+			if (network > o.network) return false;
+			return node < o.node;
+		}
 
-	static address broadcast()
-	{
-		address ret;
-		for (int i = 0; i < 4; ++i)
-			ret.network[i] = 0x00;
-		for (int i = 0; i < 6; ++i)
-			ret.node[i] = 0xff;
-		return ret;
-	}
+	//static public:
+		static address broadcast_all()
+		{
+			address ret;
+			for (int i = 0; i < 4; ++i)
+				ret.network[i] = 0xff;
+			for (int i = 0; i < 6; ++i)
+				ret.node[i] = 0xff;
+			return ret;
+		}
 
-	static address local()
-	{
-		address ret;
-		for (int i = 0; i < 4; ++i)
-			ret.network[i] = 0;
-		for (int i = 0; i < 6; ++i)
-			ret.node[i] = 0;
-		return ret;
-	}
+		static address broadcast()
+		{
+			address ret;
+			for (int i = 0; i < 4; ++i)
+				ret.network[i] = 0x00;
+			for (int i = 0; i < 6; ++i)
+				ret.node[i] = 0xff;
+			return ret;
+		}
+
+		static address local()
+		{
+			address ret;
+			for (int i = 0; i < 4; ++i)
+				ret.network[i] = 0;
+			for (int i = 0; i < 6; ++i)
+				ret.node[i] = 0;
+			return ret;
+		}
 };
 
 class endpoint {
@@ -142,6 +149,11 @@ public:
 	}
 
 	protocol_type::address getAddress() const
+	{
+		return address();
+	}
+
+	protocol_type::address address() const
 	{
 		protocol_type::address ret;
 		// no host<->network byte order conversion for net/node num?
