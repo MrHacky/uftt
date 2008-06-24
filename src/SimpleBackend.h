@@ -591,7 +591,7 @@ class SimpleBackend {
 						(udp_recv_buf[2] << 16) |
 						(udp_recv_buf[3] << 24);
 					if (rpver == 1 && len >= 5) {
-						std::cout << "got packet type " << (int)udp_recv_buf[4] << "\n";
+						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << udp_recv_addr << "\n";
 						switch (udp_recv_buf[4]) {
 							case 1: { // type = broadcast;
 								send_publish(udp_recv_addr, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
