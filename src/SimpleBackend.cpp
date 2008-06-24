@@ -1,6 +1,7 @@
 #include "SimpleBackend.h"
 
 #include <set>
+//#include "net-asio/asio_ipx.h"
 
 using namespace std;
 
@@ -26,8 +27,10 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 
 // TODO: test linux implementation below
 // TODO: unify win+linux implementations
-// NOTE: do these methods also work for ipx?
+// TODO: make function out of ipx method below, and figure out where to put that
+// TODO: make SIO_ADDRESS_LIST_CHANGE windows IOCP async_ function
 #if WIN32
+	// udp interface probe for windows
 	{
 		SOCKET sd = WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
 		if (sd == SOCKET_ERROR) {
@@ -86,7 +89,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 	}
 #endif
 
-	// network probe for linux (untested):
+	// udp interface probe for linux (untested):
 	#if 0
 
 	#include<sys/types.h>
@@ -114,6 +117,59 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 			printf("found device %s,\n", ifr->ifr_name,);
 			}
 		return 0;
+	}
+	#endif
+
+	// ipx interface probe for windows
+	#if 0
+	{
+		SOCKET sd = WSASocket(AF_IPX, SOCK_DGRAM, NSPROTO_IPX, 0, 0, 0);
+		if (sd == SOCKET_ERROR) {
+			cerr << "Failed to get a socket. Error " << WSAGetLastError() <<
+				endl;
+			return rtype(result.begin(), result.end());
+		}
+
+		INTERFACE_INFO InterfaceList[20];
+		unsigned long nBytesReturned;
+
+		struct _SOCKET_ADDRESS_LIST {
+	INT iAddressCount;
+	SOCKET_ADDRESS Address[20];
+} SOCKET_ADDRESS_LIST, FAR * LPSOCKET_ADDRESS_LIST;
+
+
+
+		if (WSAIoctl(sd, SIO_ADDRESS_LIST_QUERY, 0, 0, &SOCKET_ADDRESS_LIST,
+				sizeof(SOCKET_ADDRESS_LIST), &nBytesReturned, 0, 0) == SOCKET_ERROR) {
+			cout << "Failed calling WSAIoctl: error " << WSAGetLastError() <<
+					endl;
+			return rtype(result.begin(), result.end());
+		}
+
+		int nNumInterfaces = nBytesReturned / sizeof(INTERFACE_INFO);
+		//cout << "There are " << nNumInterfaces << " interfaces:" << endl;
+		for (int i = 0; i < SOCKET_ADDRESS_LIST.iAddressCount; ++i) {
+			boost::asio::ipx::endpoint nep;
+			if (nep.capacity() <= SOCKET_ADDRESS_LIST.Address[i].iSockaddrLength)
+				memcpy(nep.data(), &SOCKET_ADDRESS_LIST.Address[i], SOCKET_ADDRESS_LIST.Address[i].iSockaddrLength);
+			boost::asio::ipx::address naddr = nep.getAddress();
+			//cout << naddr.network;
+			cout << '-';
+			//cout << naddr.node;
+			cout << '\n';
+			/*
+			if (!(nFlags & IFF_LOOPBACK) && (nFlags & IFF_BROADCAST)) {
+				for (int i = 0; i < 4; ++i)
+					ifaddr[i] |= ~nmaddr[i];
+				boost::asio::ip::address_v4 naddr(ifaddr);
+				result.insert(naddr);
+				cout << "broadcast: " << naddr << '\n';
+			}
+			*/
+		}
+
+		//return 0;
 	}
 	#endif
 
