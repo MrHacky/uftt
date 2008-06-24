@@ -408,11 +408,15 @@ void MainWindow::new_autoupdate(std::string url)
 	cout << "new autoupdate: " << url << '\n';
 	if (!askonupdates)
 		return;
+	static bool dialogshowing = false;
+	if (dialogshowing) return;
+	dialogshowing = true;
 	QMessageBox::StandardButton res = QMessageBox::question(this,
 		QString("Auto Update"),
 		QString::fromStdString(url),
 		QMessageBox::Yes|QMessageBox::No|QMessageBox::NoToAll,
 		QMessageBox::No);
+	dialogshowing = false;
 
 	if (res == QMessageBox::NoToAll)
 		askonupdates = false;
