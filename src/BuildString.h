@@ -24,3 +24,6 @@
 #define BUILD_STRING_VERSION "-" VERSION_MAJOR_STRING "." VERSION_MINOR_STRING "." VERSION_REV_STRING
 
 #define BUILD_STRING ("uftt-" BUILD_STRING_PLATFORM BUILD_STRING_LINKAGE BUILD_STRING_VERSION)
+
+extern char build_string_macro_date[];
+extern char build_string_macro_time[];
