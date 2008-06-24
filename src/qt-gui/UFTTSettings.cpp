@@ -1,0 +1,39 @@
+#include "UFTTSettings.h"
+
+#include <fstream>
+//#include <boost/filesystem.hpp>
+
+UFTTSettings::UFTTSettings()
+{
+	posx  = posy  = 0;
+	sizex = sizey = 0;
+}
+
+bool UFTTSettings::load(boost::filesystem::path path_)
+{
+	path = path_;
+	try {
+		std::ifstream ifs(path.native_file_string().c_str());
+		if (!ifs.is_open()) return false;
+		boost::archive::xml_iarchive ia(ifs);
+		ia & NVP("settings", *this);
+		return true;
+	} catch (std::exception& e) {
+		std::cout << "Load settings failed: " << e.what() << '\n';
+		return false;
+	}
+}
+
+bool UFTTSettings::save()
+{
+	try {
+		std::ofstream ofs(path.native_file_string().c_str());
+		if (!ofs.is_open()) return false;
+		boost::archive::xml_oarchive oa(ofs);
+		oa & NVP("settings", *this);
+		return true;
+	} catch (std::exception& e) {
+		std::cout << "Load settings failed: " << e.what() << '\n';
+		return false;
+	}
+}

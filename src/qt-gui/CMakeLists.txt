@@ -11,12 +11,15 @@ ENDIF(MINGW AND NOT QT_SHARED)
 
 SET(UI_FILES
 	MainWindow.ui
+	DialogDirectoryChooser.ui
 )
 
 SET(UI_SRCS
 	QTMain.cpp
 	MainWindow.cpp
 	QDragDropSignalWidget.cpp
+	DialogDirectoryChooser.cpp
+	UFTTSettings.cpp
 )	
 
 QT4_AUTOMOC(${UI_SRCS})
@@ -26,8 +29,10 @@ QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
 	MainWindow.h
+	UFTTSettings.h
 	QDragDropTreeWidget.h
 	QDragDropSignalWidget.h
+	DialogDirectoryChooser.h
 	QDebugStream.h
 	QtLogger.h
 	QtBooster.h

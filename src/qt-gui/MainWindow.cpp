@@ -28,6 +28,9 @@
 //#include "../network/Packet.h"
 
 #include "QtBooster.h"
+#include "DialogDirectoryChooser.h"
+
+#include <shlobj.h>
 
 using namespace std;
 
@@ -43,12 +46,69 @@ void qt_log_append(std::string str)
 	loghelper.append(QString(str.c_str()));
 }
 
+boost::filesystem::path getFolderLocation(int nFolder)
+{
+	boost::filesystem::path retval;
+	PIDLIST_ABSOLUTE pidlist;
+	HRESULT res = SHGetSpecialFolderLocation(
+		NULL,
+		nFolder,
+		//NULL,
+		//0,
+		&pidlist
+	);
+	if (res != S_OK) return retval;
+	
+	LPSTR Path = new TCHAR[MAX_PATH]; 
+	if (SHGetPathFromIDList(pidlist, Path))
+		retval = Path; 
+
+	delete[] Path;
+	ILFree(pidlist);
+	return retval;
+}
+
+spathlist getSettingPathList() {
+	spathlist result;
+	result.push_back(spathinfo("Current directory"      , "./uftt.dat"));
+	result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
+	result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
+	result.push_back(spathinfo("Common Application Data", getFolderLocation(CSIDL_COMMON_APPDATA) / "UFTT" / "uftt.dat"));
+	return result;
+}
+
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
 	qRegisterMetaType<std::string>("std::string");
 	qRegisterMetaType<SHA1C>("SHA1C");
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
+
+	boost::filesystem::path settings_path;
+	{
+		spathlist spl = getSettingPathList();
+		BOOST_FOREACH(const spathinfo& spi, spl) {
+			if (!spi.second.empty() && boost::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
+				settings_path = spi.second;
+				break;
+			}
+		}
+
+		if (settings_path.empty()) {
+			DialogDirectoryChooser dialog(this);
+			dialog.setPaths(spl);
+			int result;
+			do {
+				result = dialog.exec();
+				if (result == QDialog::Accepted)
+					settings_path = dialog.getPath();
+			} while (settings_path.empty() && result == QDialog::Accepted);
+			boost::filesystem::path dir = settings_path.branch_path();
+			boost::filesystem::create_directories(dir);
+		}
+	}
+
+	bool settingsloaded = settings.load(settings_path);
 
 	setupUi(this);
 
@@ -75,33 +135,37 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	connect(&loghelper, SIGNAL(logAppend(QString)), this->debugText, SLOT(append(QString)));
 
 	/* load/set dock layout */
-	{
+	if (!settingsloaded && boost::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
 		if (layoutfile.open(QIODevice::ReadOnly)) {
 			QRect rect;
 			layoutfile.read((char*)&rect, sizeof(QRect));
-			this->setGeometry(rect);
+			settings.posx = rect.x();
+			settings.posy = rect.y();
+			settings.sizex = rect.width();
+			settings.sizey = rect.height();
 			QByteArray data = layoutfile.readAll();
-			if (data.size() > 0)
-				restoreState(data);
-			layoutfile.close();
-		} else {
-			// default layout
-			this->resize(750,550);
-			this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);
-			this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );
+			settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+			layoutfile.remove();
 		}
 	}
 
+	/* apply settings */
+	if (settings.sizex != 0 && settings.sizey !=0)
+		this->setGeometry(QRect(QPoint(settings.posx, settings.posy), QSize(settings.sizex, settings.sizey)));
+	else
+		this->resize(750, 550);
+
+	if (settings.dockinfo.size() > 0)
+		this->restoreState(QByteArray((char*)&settings.dockinfo[0],settings.dockinfo.size()));
+	else {
+		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );	}
+
+	/* connect Qt signals/slots */
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
 
-	connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
-	//connect(this, SIGNAL(sigAddNewShare()), this, SLOT(AddNewShare()));
-
-	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
-	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
-	//connect(treeWidget->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+	//connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
@@ -110,16 +174,19 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
-	// save layout to file
-	QFile layoutfile("uftt.layout");
-	if (layoutfile.open(QIODevice::WriteOnly)) {
-		QRect rect = this->geometry();
-		layoutfile.write((char*)&rect, sizeof(QRect));
-		QByteArray data = saveState();
-		if (data.size() > 0)
-			layoutfile.write(data);
-		layoutfile.close();
-	}
+	/* put stuff back into settings */
+	settings.posx = this->x();
+	settings.posy = this->y();
+	settings.sizex = this->width();
+	settings.sizey = this->height();
+
+	settings.dockinfo.clear();
+	QByteArray data = saveState();
+	settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+
+	/* and save them */
+	settings.save();
+
 	QWidget::closeEvent(evnt);
 }
 

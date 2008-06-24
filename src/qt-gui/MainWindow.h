@@ -3,6 +3,7 @@
 
 #include "QTMain.h"
 #include "ui_MainWindow.h"
+#include "UFTTSettings.h"
 
 #include <map>
 
@@ -20,6 +21,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	Q_OBJECT
 
 	private:
+		UFTTSettings settings;
 		QTMain& mainimpl;
 		std::map<SHA1C, QTreeWidgetItem*> treedata;
 		std::map<SHA1C, FileInfoRef> dirdata;
