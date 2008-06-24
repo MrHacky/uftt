@@ -9,6 +9,8 @@ UFTTSettings::UFTTSettings()
 {
 	posx  = posy  = 0;
 	sizex = sizey = 0;
+
+	dl_path = "C:/temp";
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)

@@ -161,6 +161,8 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	else {
 		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );	}
 
+	DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
+
 	/* connect Qt signals/slots */
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
@@ -183,6 +185,8 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	settings.dockinfo.clear();
 	QByteArray data = saveState();
 	settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+
+	settings.dl_path = DownloadEdit->text().toStdString();
 
 	/* and save them */
 	settings.save();

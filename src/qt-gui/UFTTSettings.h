@@ -31,6 +31,7 @@ class UFTTSettings {
 		int posy;
 		int sizex;
 		int sizey;
+		boost::filesystem::path dl_path;
 
 	public:
 		template<class Archive>
@@ -40,9 +41,44 @@ class UFTTSettings {
 			ar & NVP("posy"    , posy);
 			ar & NVP("sizex"   , sizex);
 			ar & NVP("sizey"   , sizey);
+			if (version >=  2) ar & NVP("downloadpath", dl_path);
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 1)
+BOOST_CLASS_VERSION(UFTTSettings, 2)
+
+///////////////////////////////////////////////////////////////////////////////
+//  Serialization support for boost::filesystem::path
+namespace boost { namespace serialization {
+
+	template<class Archive>
+inline void save (Archive & ar, boost::filesystem::path const& p, 
+    const unsigned int /* file_version */)
+{
+    using namespace boost::serialization;
+    std::string path_str(p.string());
+    ar & make_nvp("path", path_str);
+}
+
+template<class Archive>
+inline void load (Archive & ar, boost::filesystem::path &p,
+    const unsigned int /* file_version */)
+{
+    using namespace boost::serialization;
+    std::string path_str;
+    ar & make_nvp("path", path_str);
+    p = boost::filesystem::path(path_str);//, boost::filesystem::native);
+}
+
+// split non-intrusive serialization function member into separate
+// non intrusive save/load member functions
+template<class Archive>
+inline void serialize (Archive & ar, boost::filesystem::path &p,
+    const unsigned int file_version)
+{
+    boost::serialization::split_free(ar, p, file_version);
+}
+
+} } // namespace boost::serializatio
 
 #endif//UFTT_SETTINGS_H
