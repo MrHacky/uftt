@@ -72,18 +72,26 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	buttonAdd2->hide();
 	buttonAdd3->hide();
 
-	this->resize(550,350);
-
 	connect(&loghelper, SIGNAL(logAppend(QString)), this->debugText, SLOT(append(QString)));
-	// load layout from file
-	QFile layoutfile("uftt.lyt");
-	if (false && layoutfile.open(QIODevice::ReadOnly)) {
-		QByteArray data = layoutfile.readAll();
-		if (data.size() > 0)
-			restoreState(data);
-		layoutfile.close();
-	} else
-		this->dockWidgetDebug->hide();
+
+	/* load/set dock layout */
+	{
+		QFile layoutfile("uftt.layout");
+		if (layoutfile.open(QIODevice::ReadOnly)) {
+			QRect rect;
+			layoutfile.read((char*)&rect, sizeof(QRect));
+			this->setGeometry(rect);
+			QByteArray data = layoutfile.readAll();
+			if (data.size() > 0)
+				restoreState(data);
+			layoutfile.close();
+		} else {
+			// default layout
+			this->resize(750,550);
+			this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);
+			this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );
+		}
+	}
 
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
 	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
@@ -103,8 +111,10 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
 	// save layout to file
-	QFile layoutfile("uftt.lyt");
+	QFile layoutfile("uftt.layout");
 	if (layoutfile.open(QIODevice::WriteOnly)) {
+		QRect rect = this->geometry();
+		layoutfile.write((char*)&rect, sizeof(QRect));
 		QByteArray data = saveState();
 		if (data.size() > 0)
 			layoutfile.write(data);
