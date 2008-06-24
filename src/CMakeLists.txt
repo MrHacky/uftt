@@ -12,14 +12,17 @@ SUBDIRS(qt-gui)
 
 ADD_EXECUTABLE(uftt
 	Main.cpp
+
 	Types.h
+	BuildString.h
+	SimpleBackend.h       SimpleBackend.cpp
+	
 	SharedData.cpp
 	SharedData.h
 	JobRequest.cpp
 	JobRequest.h
 	Logger.cpp
 	Logger.h
-	BuildString.h
 )
 
 if(OPENSSL_FOUND)
