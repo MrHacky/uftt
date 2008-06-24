@@ -783,6 +783,7 @@ class SimpleBackend {
 			conn->sharepath = sharelist[name];
 		}
 
+		// the main public interface starts here...
 		boost::signal<void(std::string)> sig_new_share;
 		boost::signal<void(std::string)> sig_new_autoupdate;
 		boost::signal<void(std::string)> sig_download_ready;

@@ -35,6 +35,11 @@ QTMain::~QTMain()
 	delete impl;
 }
 
+void QTMain::BindEvents(SimpleBackend* t)
+{
+	impl->wnd.SetBackend(t);
+}
+
 int QTMain::run()
 {
 	impl->wnd.show();

@@ -24,6 +24,7 @@
 
 #include "../SharedData.h"
 #include "../Logger.h"
+#include "../SimpleBackend.h"
 //#include "../network/Packet.h"
 
 #include "QtBooster.h"
@@ -97,18 +98,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
-
-	mainimpl.sig_new_share.connect(
-		QTBOOSTER(this, MainWindow::addSimpleShare)
-	);
-	mainimpl.sig_new_autoupdate.connect(
-		QTBOOSTER(this, MainWindow::new_autoupdate)
-	);
-	mainimpl.sig_download_ready.connect(
-		QTBOOSTER(this, MainWindow::download_done)
-	);
-
-	mainimpl.slot_refresh_shares();
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
@@ -136,7 +125,7 @@ void MainWindow::RefreshButtonClicked()
 		boost::mutex::scoped_lock lock(jobs_mutex);
 		JobQueue.push_back(job);
 	}*/
-	mainimpl.slot_refresh_shares();
+	backend->slot_refresh_shares();
 }
 
 void MainWindow::AddNewServer()
@@ -238,7 +227,7 @@ void MainWindow::StartDownload()
 	if (!rwi)
 		return;
 	QString name = rwi->text(0);
-	mainimpl.slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()));
+	backend->slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()));
 	return;
 	SHA1C hash;
 	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
@@ -283,7 +272,7 @@ void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 void MainWindow::addLocalShare(std::string url)
 {
 	boost::filesystem::path path = url;
-	mainimpl.slot_add_local_share(path.leaf(), path);
+	backend->slot_add_local_share(path.leaf(), path);
 }
 void MainWindow::onDropTriggered(QDropEvent* evt)
 {
@@ -422,7 +411,7 @@ void MainWindow::new_autoupdate(std::string url)
 
 	auto_update_url = url;
 	auto_update_path = DownloadEdit->text().toStdString();
-	mainimpl.slot_download_share(url, auto_update_path);
+	backend->slot_download_share(url, auto_update_path);
 
 	//QDialog::
 }
@@ -517,4 +506,21 @@ void MainWindow::download_done(std::string url)
 		int replace = RunDirect(program, &args, "", RF_NEW_CONSOLE);
 		this->action_Quit->trigger();
 	}
+}
+
+void MainWindow::SetBackend(SimpleBackend* be)
+{
+	backend = be;
+
+	backend->sig_new_share.connect(
+		QTBOOSTER(this, MainWindow::addSimpleShare)
+	);
+	backend->sig_new_autoupdate.connect(
+		QTBOOSTER(this, MainWindow::new_autoupdate)
+	);
+	backend->sig_download_ready.connect(
+		QTBOOSTER(this, MainWindow::download_done)
+	);
+
+	backend->slot_refresh_shares();
 }

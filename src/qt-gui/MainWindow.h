@@ -13,6 +13,8 @@
 class QTreeWidgetItem;
 class QCloseEvent;
 
+class SimpleBackend;
+
 class MainWindow: public QMainWindow, public Ui::MainWindow
 {
 	Q_OBJECT
@@ -24,6 +26,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		bool askonupdates;
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
+		SimpleBackend* backend;
 
 		void StartDownload(FileInfoRef fi, const fs::path& path);
 
@@ -38,6 +41,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDropTriggered(QDropEvent* evt);
 	public:
 		MainWindow(QTMain& mainimpl_);
+		void SetBackend(SimpleBackend* be);
 		~MainWindow();
 
 	public Q_SLOTS:
