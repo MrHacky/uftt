@@ -112,8 +112,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	setupUi(this);
 
-	askonupdates = true;
-
 //	debugText->setTextFormat(Qt::LogText);
 	new QDebugStream(std::cout, debugText);
 
@@ -161,7 +159,9 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	else {
 		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );	}
 
-	DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
+	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
+	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
+
 
 	/* connect Qt signals/slots */
 	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
@@ -455,7 +455,7 @@ bool isbetter(std::string newstr, std::string oldstr)
 	boost::split(newvervec, newver, boost::is_any_of("._"));
 	boost::split(oldvervec, oldver, boost::is_any_of("._"));
 
-	for (int i = 0; i < newvervec.size() && i < oldvervec.size(); ++i) {
+	for (uint i = 0; i < newvervec.size() && i < oldvervec.size(); ++i) {
 		int newnum = atoi(newvervec[i].c_str());
 		int oldnum = atoi(oldvervec[i].c_str());
 		if (oldnum > newnum) return false;
@@ -471,14 +471,14 @@ bool isbetter(std::string newstr, std::string oldstr)
 
 void MainWindow::new_autoupdate(std::string url)
 {
+	if (!settings.autoupdate)
+		return;
 	size_t pos = url.find_last_of("\\/");
 	string bnr = url.substr(pos+1);
 	if (!isbetter(bnr, thebuildstring)) {
 		return;
 	}
 	cout << "new autoupdate: " << url << '\n';
-	if (!askonupdates)
-		return;
 	static bool dialogshowing = false;
 	if (dialogshowing) return;
 	dialogshowing = true;
@@ -490,7 +490,7 @@ void MainWindow::new_autoupdate(std::string url)
 	dialogshowing = false;
 
 	if (res == QMessageBox::NoToAll)
-		askonupdates = false;
+		this->actionEnableAutoupdate->setChecked(false);
 	if (res != QMessageBox::Yes)
 		return;
 
@@ -616,4 +616,9 @@ void MainWindow::on_buttonManualQuery_clicked()
 void MainWindow::on_buttonManualPublish_clicked()
 {
 	backend->do_manual_publish(editManualPublish->text().toStdString());
+}
+
+void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
+{
+	settings.autoupdate = value;
 }

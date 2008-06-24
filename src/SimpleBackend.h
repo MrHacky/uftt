@@ -615,15 +615,12 @@ class SimpleBackend {
 									uint32 slen = udp_recv_buf[5];
 									if (len >= slen+6) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-										//cout << "test: " << sname << '/' << thebuildstring << '\n';
-										if (sname != thebuildstring) {
-											std::string surl;
-											surl += "uftt://";
-											surl += udp_recv_addr.address().to_string();
-											surl += '/';
-											surl += sname;
-											sig_new_autoupdate(surl);
-										}
+										std::string surl;
+										surl += "uftt://";
+										surl += udp_recv_addr.address().to_string();
+										surl += '/';
+										surl += sname;
+										sig_new_autoupdate(surl);
 									}
 								}
 							}; break;

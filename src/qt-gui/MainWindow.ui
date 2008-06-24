@@ -10,7 +10,7 @@
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>UFTT</string>
+   <string>MainWindow</string>
   </property>
   <property name="dockNestingEnabled" >
    <bool>true</bool>
@@ -53,8 +53,15 @@
      <string>&amp;View</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menu_Options" >
+    <property name="title" >
+     <string>&amp;Options</string>
+    </property>
+    <addaction name="actionEnableAutoupdate" />
+   </widget>
    <addaction name="menu_File" />
    <addaction name="menu_View" />
+   <addaction name="menu_Options" />
   </widget>
   <widget class="QDockWidget" name="dockShares" >
    <property name="features" >
@@ -240,6 +247,14 @@
    </property>
    <property name="text" >
     <string>&amp;Debug Window</string>
+   </property>
+  </action>
+  <action name="actionEnableAutoupdate" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Enable &amp;Autoupdate</string>
    </property>
   </action>
  </widget>

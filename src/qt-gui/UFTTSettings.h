@@ -32,6 +32,7 @@ class UFTTSettings {
 		int sizex;
 		int sizey;
 		boost::filesystem::path dl_path;
+		bool autoupdate;
 
 	public:
 		template<class Archive>
@@ -42,10 +43,11 @@ class UFTTSettings {
 			ar & NVP("sizex"   , sizex);
 			ar & NVP("sizey"   , sizey);
 			if (version >=  2) ar & NVP("downloadpath", dl_path);
+			if (version >=  3) ar & NVP("autoupdate"  , autoupdate);
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 2)
+BOOST_CLASS_VERSION(UFTTSettings, 3)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

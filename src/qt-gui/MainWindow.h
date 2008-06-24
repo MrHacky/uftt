@@ -62,6 +62,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonManualQuery_clicked();
 		void on_buttonManualPublish_clicked();
 
+		void on_actionEnableAutoupdate_toggled(bool);
+
 		void new_autoupdate(std::string url);
 		void download_done(std::string url);
 };
