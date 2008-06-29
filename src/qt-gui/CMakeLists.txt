@@ -16,6 +16,7 @@ SET(UI_FILES
 
 SET(UI_SRCS
 	QTMain.cpp
+	QMarshaller.cpp
 	MainWindow.cpp
 	QDragDropSignalWidget.cpp
 	DialogDirectoryChooser.cpp
@@ -32,6 +33,7 @@ ADD_LIBRARY(uftt-qt
 	UFTTSettings.h
 	QDragDropTreeWidget.h
 	QDragDropSignalWidget.h
+	QMarshaller.h
 	DialogDirectoryChooser.h
 	QDebugStream.h
 	QtLogger.h
