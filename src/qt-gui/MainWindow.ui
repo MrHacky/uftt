@@ -10,7 +10,7 @@
    </rect>
   </property>
   <property name="windowTitle" >
-   <string>MainWindow</string>
+   <string>UFTT</string>
   </property>
   <property name="dockNestingEnabled" >
    <bool>true</bool>
