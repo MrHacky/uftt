@@ -631,7 +631,8 @@ void MainWindow::download_done(std::string url)
 	cout << "download complete: " << url << '\n';
 	if (url == auto_update_url) {
 		size_t pos = auto_update_url.find_last_of("\\/");
-		string fname = auto_update_url.substr(pos+1) + ".exe";
+		string bname = auto_update_url.substr(pos+1);
+		string fname = bname + ".exe";
 		auto_update_path /= fname;
 		cout << "autoupdate: " << auto_update_path << "!\n";
 
@@ -655,6 +656,7 @@ void MainWindow::download_done(std::string url)
 		string program = auto_update_path.native_file_string();
 		vector<string> args;
 		args.push_back("--runtest");
+		args.push_back(bname);
 		int test = RunDirect(program, &args, "", RF_NEW_CONSOLE|RF_WAIT_FOR_EXIT);
 
 		if (test != 0) {
