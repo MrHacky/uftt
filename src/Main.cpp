@@ -331,6 +331,8 @@ void signcheck_handler(bool issigned) {
 
 int imain( int argc, char **argv )
 {
+	if (argc > 1)
+		AttachConsole((DWORD)-1);
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
 
@@ -422,7 +424,6 @@ int imain( int argc, char **argv )
 	SimpleBackend backend;
 
 	QTMain gui(argc, argv);
-	FreeConsole();
 
 	gui.BindEvents(&backend);
 
