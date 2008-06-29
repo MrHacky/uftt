@@ -13,6 +13,10 @@
 - refactor console for linux
 - refactor console, to always show in debug mode, and in release mode when we have something to say
 - refactor out byte value to string conversion to utulity header
+- process --delete asynchronously
+- read 'exefile' asynchronously
+- allow ipx-semi connections in architecture, and gui, and make it not too haxxy
+- implement udp-semi connections, and plug them into the now shiny architecture
 - [DONE] show task list with download status
 - [DONE] show download tasks in task list
 - [DONE] verify/sign (startup) in diskio work thread
