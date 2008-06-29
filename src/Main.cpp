@@ -392,8 +392,9 @@ void calcbuildstring() {
 
 int imain( int argc, char **argv )
 {
+	bool madeConsole = false;
 	if (argc > 1 && !platform::hasConsole()) {
-		platform::newConsole();
+		madeConsole = platform::newConsole();
 		cout << "new console opened" << endl;
 	}
 
@@ -489,7 +490,9 @@ int imain( int argc, char **argv )
 	QTMain gui(argc, argv);
 
 	gui.BindEvents(&backend);
-	platform::freeConsole();
+
+	if (madeConsole)
+		platform::freeConsole();
 
 	cout << "Build: " << thebuildstring << '\n';
 
@@ -515,13 +518,15 @@ int imain( int argc, char **argv )
 }
 
 int main( int argc, char **argv ) {
+	int ret = -1;
 	try {
-		int i = imain(argc, argv);
-		return i;
+		ret = imain(argc, argv);
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	} catch (...) {
 		cout << "unknown exception\n";
 	}
-	return -1;
+	if (ret != 0 && platform::hasConsole())
+		platform::msSleep(30*1000);
+	return ret;
 }

@@ -34,6 +34,7 @@ namespace platform {
 	// allocates a new console for stdout
 	bool newConsole()
 	{
+		if (hasConsole()) return false;
 #ifdef WIN32
 		int hConHandle;
 		long lStdHandle;
@@ -66,6 +67,7 @@ namespace platform {
 		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
 		// point to console as well
 		ios::sync_with_stdio();
+		haveConsole = true;
 		return true;
 #else
 		return false;
@@ -75,8 +77,10 @@ namespace platform {
 	// frees the stdout console
 	bool freeConsole()
 	{
+		if (!hasConsole()) return false;
 #ifdef WIN32
 		::FreeConsole();
+		haveConsole = false;
 		return true;
 #else
 		return false;
