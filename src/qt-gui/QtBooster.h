@@ -338,4 +338,16 @@ void generateQtBoosterImplementation(std::string fname) {
 }
 #endif//#if 0
 
+/* idea
+
+for a function object f1 for which the following expression is valid
+f1(a1, a2, a3, ... , an)
+make sure the following expression
+x(a1, a2, a3, ... , an)
+is equivalent to
+post(boost::bind(f1, a1, a2, a3, ... , an))
+
+x(f1) = boost::bind(post, boost::bind(f1, a1, a2, a3, ... , an))
+*/
+
 #endif//QT_BOOSTER_H
