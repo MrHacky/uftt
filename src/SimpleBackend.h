@@ -159,7 +159,8 @@ class SimpleTCPConnection {
 		boost::signal<void(uint64,std::string,uint32)> sig_progress;
 
 		void start_update_progress() {
-			progress_timer.expires_from_now(boost::posix_time::seconds(1));
+			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
+			progress_timer.expires_from_now(boost::posix_time::milliseconds(250));
 			progress_timer.async_wait(boost::bind(&SimpleTCPConnection::update_progress_handler, this, boost::asio::placeholders::error));
 		}
 
@@ -640,6 +641,7 @@ class SimpleBackend {
 				std::cout << "handling tcp accept\n";
 				conlist.push_back(newconn);
 				newconn->handle_tcp_accept();
+				sig_new_upload("upload", conlist.size()-1);
 				start_tcp_accept();
 			}
 		}
@@ -831,6 +833,11 @@ class SimpleBackend {
 					std::cout << "broadcast failed: " << err.message() << '\n';
 			}
 		}
+		void attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32)> handler)
+		{
+			conlist[num]->sig_progress.connect(handler);
+		}
+
 	public:
 		SimpleBackend()
 			: udpsocket(service)
@@ -859,6 +866,7 @@ class SimpleBackend {
 
 		// the main public interface starts here...
 		boost::signal<void(std::string)> sig_new_share;
+		boost::signal<void(std::string,int)> sig_new_upload;
 		boost::signal<void(std::string)> sig_new_autoupdate;
 		boost::signal<void(std::string)> sig_download_ready;
 
@@ -875,6 +883,11 @@ class SimpleBackend {
 		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
 		{
 			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath, handler));
+		}
+
+		void slot_attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32)> handler)
+		{
+			service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, num, handler));
 		}
 
 		void do_manual_query(std::string hostname) {

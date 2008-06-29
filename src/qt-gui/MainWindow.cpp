@@ -683,6 +683,9 @@ void MainWindow::SetBackend(SimpleBackend* be)
 	backend->sig_download_ready.connect(
 		QTBOOSTER(this, MainWindow::download_done)
 	);
+	backend->sig_new_upload.connect(
+		QTBOOSTER(this, MainWindow::new_upload)
+	);
 }
 
 void MainWindow::on_buttonManualQuery_clicked()
@@ -707,4 +710,19 @@ void MainWindow::on_buttonClearCompletedTasks_clicked()
 		if (twi->text(3) == "Completed")
 			delete twi;
 	}
+}
+
+void MainWindow::new_upload(std::string name, int num)
+{
+	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
+	twi->setText(0, QString::fromStdString(name));
+	//twi->setText(1, QString::fromStdString(STRFORMAT("%d", 0)));
+	//twi->setText(3, QString("Starting..."));
+	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
+	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(
+		QTBOOSTER(this, MainWindow::download_progress),
+		//boost::bind(&MainWindow::download_progress, this, _1, _2, _3),
+		twi, _1, _2, starttime, _3);
+	backend->slot_attach_progress_handler(num, handler);
+	handler(0, "Starting", 0);
 }
