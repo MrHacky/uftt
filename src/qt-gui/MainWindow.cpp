@@ -543,7 +543,8 @@ int RunDirect(const string& cmd, const vector<string>* args, const string& wd, i
 			res = 0;
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
-	}
+	} else
+		cout << "CreateProcess failed\n";
 
 	return res;
 }
@@ -588,7 +589,7 @@ void MainWindow::download_done(std::string url)
 
 		args.clear();
 		args.push_back("--replace");
-		args.push_back(QCoreApplication::applicationFilePath().toStdString());
+		args.push_back(boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString()).native_file_string());
 		int replace = RunDirect(program, &args, "", RF_NEW_CONSOLE);
 		this->action_Quit->trigger();
 	}

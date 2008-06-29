@@ -17,6 +17,8 @@ SET(UFTT_SOURCES
 	BuildString.h
 	SimpleBackend.h       SimpleBackend.cpp
 	
+	guicon.cpp            guicon.h
+	
 	SharedData.cpp
 	SharedData.h
 	JobRequest.cpp

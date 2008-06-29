@@ -19,6 +19,8 @@
 
 #include <string>
 
+#include "guicon.h"
+
 using namespace std;
 
 using boost::asio::ipx;
@@ -319,7 +321,7 @@ struct SignatureChecker {
 };
 
 
-void signcheck_handler(bool issigned) {
+void signcheck_handler(bool issigned, SimpleBackend* backend) {
 	if (issigned) {
 		hassignedbuild = true;
 		cout << "Signed: yes\n";
@@ -327,64 +329,11 @@ void signcheck_handler(bool issigned) {
 		hassignedbuild = false;
 		cout << "Signed: no\n";
 	}
+	// we waited for this!
+	backend->do_manual_publish("255.255.255.255");
 }
 
-int imain( int argc, char **argv )
-{
-	if (argc > 1)
-		AttachConsole((DWORD)-1);
-	if (argc > 1 && string(argv[1]) == "--runtest")
-		return runtest();
-
-	if (argc > 2 && string(argv[1]) == "--delete") {
-		int retries = 10;
-		while (boost::filesystem::exists(argv[2]) && retries > 0) {
-			--retries;
-			Sleep((10-retries)*100);
-			boost::filesystem::remove(argv[2]);
-		}
-	}
-
-	{
-		exefile = shared_vec(new vector<uint8>());
-		uint32 todo = boost::filesystem::file_size(argv[0]);
-		exefile->resize(todo);
-		ifstream istr(argv[0], ios_base::in|ios_base::binary);
-		istr.read((char*)&((*exefile)[0]), todo);
-		uint32 read = istr.gcount();
-		if (read != todo) {
-			cout << "failed to read ourself\n";
-			exefile->resize(0);
-		}
-	}
-
-	if (argc > 2 && string(argv[1]) == "--replace") {
-		cout << "Not implemented yet!\n";
-		ofstream ostr;
-		int retries = 10;
-		while (!ostr.is_open() && retries >0) {
-			cout << "retrying...\n";
-			--retries;
-			Sleep((10-retries)*100);
-			ostr.open(argv[2], ios_base::trunc|ios_base::out|ios_base::binary);
-		}
-		cout << "open:" << ostr.is_open() << '\n';
-		if (ostr.is_open()) {
-			ostr.write((char*)&((*exefile)[0]), exefile->size());
-			if (ostr.fail())
-				cout << "error writing\n";
-			ostr.close();
-			cout << "rewritten!\n";
-		}
-		string program(argv[2]);
-		vector<string> args;
-		args.push_back("--delete");
-		args.push_back(argv[0]);
-		cout << program << '\n';
-		int run = RunDirect(program, &args, "", RF_NEW_CONSOLE);
-		return run;
-	};
-
+void calcbuildstring() {
 	try {
 		thebuildstring = string(BUILD_STRING);
 		stringstream sstamp;
@@ -420,19 +369,114 @@ int imain( int argc, char **argv )
 		}
 	} catch (...) {
 	}
+}
+
+int imain( int argc, char **argv )
+{
+	if (argc > 1) {
+		RedirectIOToConsole();
+		cout << "console output" << endl;
+	}
+
+	calcbuildstring();
+
+	if (argc > 1 && string(argv[1]) == "--runtest") {
+		//if (!(argc > 2) ||
+		if ((argc > 2) &&
+			(string(argv[2]) != thebuildstring))
+			return 1;
+		return runtest();
+	}
+
+	if (argc > 2 && string(argv[1]) == "--delete") {
+		int retries = 30;
+		while (boost::filesystem::exists(argv[2]) && retries > 0) {
+			cout << "delete retry" << '\n';
+			--retries;
+			Sleep((30-retries)*100);
+			try {
+				boost::filesystem::remove(argv[2]);
+			} catch (...) {
+				cout << "failed!\n";
+			}
+		}
+		cout << "delete done\n";
+		cout << flush;
+	}
+
+	{
+		exefile = shared_vec(new vector<uint8>());
+		uint32 todo = boost::filesystem::file_size(argv[0]);
+		cout << "file_size: " << todo << "\n";
+		exefile->resize(todo);
+		ifstream istr(argv[0], ios_base::in|ios_base::binary);
+		istr.read((char*)&((*exefile)[0]), todo);
+		uint32 read = istr.gcount();
+		if (read != todo) {
+			cout << "failed to read ourself\n";
+			exefile->resize(0);
+		}
+	}
+
+	if (argc > 2 && string(argv[1]) == "--replace") {
+		cout << "Not implemented yet!\n";
+		int retries = 30;
+		boost::filesystem::path program(argv[2]);
+		bool written = false;
+		while (!written && retries >0) {
+			cout << "retrying...\n";
+			--retries;
+			Sleep((30-retries)*100);
+			{
+				ofstream ostr;
+				ostr.open(program.native_file_string().c_str(), ios_base::trunc|ios_base::out|ios_base::binary);
+				cout << "open:" << ostr.is_open() << '\n';
+				if (ostr.is_open()) {
+					cout << exefile->size() << '\n';
+					ostr.write((char*)&((*exefile)[0]), exefile->size());
+					if (ostr.fail()) {
+						cout << "error writing\n";
+						cout << "ostr.bad(): " << ostr.bad() << '\n';
+						cout << "errno: " << errno << '\n';
+						cout << "GetLastError(): " << GetLastError() << '\n';
+					} else 
+						written = true;
+					ostr.flush();
+					ostr.close();
+					cout << "rewritten!\n";
+				}
+			}
+		}
+		cout << flush;
+		vector<string> args;
+		args.push_back("--delete");
+		args.push_back(argv[0]);
+		cout << program << '\n';
+		cout << "running: " << program << "\n";
+		cout << "with arguments\n";
+		//Sleep(5000);
+		cout << "now!" << endl;
+		int run = RunDirect(program.native_file_string(), &args, "", 0);
+		cout << run << endl;
+		return run;
+	};
+
+
 
 	SimpleBackend backend;
 
+	cout << flush;
 	QTMain gui(argc, argv);
 
 	gui.BindEvents(&backend);
+	FreeConsole();
 
 	gdiskio->get_work_service().post(SignatureChecker(gdiskio->get_io_service(), exefile,
-		boost::bind(&signcheck_handler, _1)));
+		boost::bind(&signcheck_handler, _1, &backend)));
 
 	backend.slot_refresh_shares();
 	// TODO: resolve 255.255.255.255 to bc addr in backend (win2000 can't do it itself)
-	backend.do_manual_publish("255.255.255.255");
+	//backend.do_manual_publish("255.255.255.255");
 
 	cout << "Build: " << thebuildstring << '\n';
 	//cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
@@ -442,6 +486,7 @@ int imain( int argc, char **argv )
 	terminating = true;
 
 	// hax...
+	
 	exit(ret);
 
 	return ret;
@@ -449,10 +494,12 @@ int imain( int argc, char **argv )
 
 int main( int argc, char **argv ) {
 	try {
-		return imain(argc, argv);
+		int i = imain(argc, argv);
+		return i;
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	} catch (...) {
 		cout << "unknown exception\n";
 	}
+	return -1;
 }
