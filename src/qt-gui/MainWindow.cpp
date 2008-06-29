@@ -25,6 +25,7 @@
 #include "../SharedData.h"
 #include "../Logger.h"
 #include "../SimpleBackend.h"
+#include "../util/StrFormat.h"
 //#include "../network/Packet.h"
 
 #include "QtBooster.h"
@@ -33,6 +34,11 @@
 #include <shlobj.h>
 
 using namespace std;
+
+void tester(uint64 tfx, std::string sts)
+{
+	cout << "update: " << sts << ": " << tfx << '\n';
+}
 
 static LogHelper loghelper;
 
@@ -82,8 +88,11 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
 	qRegisterMetaType<std::string>("std::string");
+	qRegisterMetaType<QTreeWidgetItem*>("QTreeWidgetItem*");
+	qRegisterMetaType<uint64>("uint64");
 	qRegisterMetaType<SHA1C>("SHA1C");
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
+	qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
 
 	boost::filesystem::path settings_path;
 	{
@@ -313,7 +322,19 @@ void MainWindow::StartDownload()
 	if (!rwi)
 		return;
 	QString name = rwi->text(0);
-	backend->slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()));
+
+	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
+	twi->setText(0, name);
+	//twi->setText(1, QString::fromStdString(STRFORMAT("%d", 0)));
+	//twi->setText(3, QString("Starting..."));
+	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
+	boost::function<void(uint64, std::string)> handler = boost::bind(
+		QTBOOSTER(this, MainWindow::download_progress),
+		//boost::bind(&MainWindow::download_progress, this, _1, _2, _3),
+		twi, _1, _2, starttime);
+	handler(0, "Starting");
+//		boost::bind(&MainWindow::download_progress, this&tester, _1, _2);
+	backend->slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()), handler);
 	return;
 	SHA1C hash;
 	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
@@ -328,6 +349,16 @@ void MainWindow::StartDownload()
 	}
 	StartDownload(fi, fs::path(DownloadEdit->text().toStdString()) / rwi->text(0).toStdString());
 	//cout << "Start Download!" <<  << endl;
+}
+
+void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime)
+{
+	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
+	boost::posix_time::time_duration elapsed = curtime-starttime;
+
+	twi->setText(1, QString::fromStdString(STRFORMAT("%d", tfx)));
+	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
+	twi->setText(3, QString::fromStdString(sts));
 }
 
 void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
@@ -501,7 +532,8 @@ void MainWindow::new_autoupdate(std::string url)
 
 	auto_update_url = url;
 	auto_update_path = DownloadEdit->text().toStdString();
-	backend->slot_download_share(url, auto_update_path);
+	boost::function<void(uint64, std::string)> handler = boost::bind(&tester, _1, _2);
+	backend->slot_download_share(url, auto_update_path, handler);
 
 	//QDialog::
 }
@@ -627,4 +659,13 @@ void MainWindow::on_buttonManualPublish_clicked()
 void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
 {
 	settings.autoupdate = value;
+}
+
+void MainWindow::on_buttonClearCompletedTasks_clicked()
+{
+	for(int i = this->listTasks->topLevelItemCount(); i > 0; --i) {
+		QTreeWidgetItem* twi = this->listTasks->topLevelItem(i-1);
+		if (twi->text(3) == "Completed")
+			delete twi;
+	}
 }

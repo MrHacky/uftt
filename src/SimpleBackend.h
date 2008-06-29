@@ -132,6 +132,7 @@ class SimpleTCPConnection {
 		void sig_download_ready(std::string url);
 
 		bool dldone;
+		bool uldone;
 		uint32 open_files;
 
 	public:
@@ -142,9 +143,9 @@ class SimpleTCPConnection {
 			, backend(backend_)
 		{
 			dldone = false;
+			uldone = false;
 			open_files = 0;
 			transfered_bytes = 0;
-			//start_update_progress();
 		}
 
 		uint64 transfered_bytes;
@@ -161,14 +162,21 @@ class SimpleTCPConnection {
 			if (e) {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
-				//cout << "
-				sig_progress(transfered_bytes, "Transferring");
-				start_update_progress();
+				if (dldone && open_files == 0) {
+					sig_progress(transfered_bytes, "Completed");
+				} else if (uldone) {
+					sig_progress(transfered_bytes, "Completed");
+				} else {
+					sig_progress(transfered_bytes, "Transfering");
+					start_update_progress();
+				}
 			}
 		}
 
 		void handle_tcp_accept()
 		{
+			// TODO: connect handler somewhere
+			start_update_progress();
 			shared_vec rbuf(new std::vector<uint8>());
 			rbuf->resize(4);
 			boost::asio::async_read(socket, GETBUF(rbuf),
@@ -229,6 +237,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
+			transfered_bytes += len;
 			sbuf->resize(len);
 			cursendfile.fsize -= len;
 			//cout << ">async_write(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
@@ -265,6 +274,7 @@ class SimpleTCPConnection {
 		}
 
 		void handle_sent_everything(const boost::system::error_code& e, shared_vec sbuf) {
+			uldone = true;
 			socket.close();
 		}
 
@@ -378,7 +388,7 @@ class SimpleTCPConnection {
 			//boost::asio::async_write(socket,
 			//socket.async_write(
 
-			//cout << "todo: handle tcp connect\n";
+			start_update_progress();
 		}
 
 		void handle_sent_name(const boost::system::error_code& e, shared_vec sbuf) {
@@ -488,6 +498,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
+			transfered_bytes += wbuf->size();
 			size -= wbuf->size();
 
 			if (!*done) {
@@ -741,13 +752,14 @@ class SimpleBackend {
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), false);
 		}
 
-		void download_share(std::string shareurl, boost::filesystem::path dlpath)
+		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string)> handler)
 		{
 			shareurl.erase(0, 7);
 			size_t slashpos = shareurl.find_first_of("\\/");
 			std::string host = shareurl.substr(0, slashpos);
 			std::string share = shareurl.substr(slashpos+1);
 			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
+			newconn->sig_progress.connect(handler);
 			conlist.push_back(newconn);
 			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), UFTT_PORT);
 			newconn->socket.open(ep.protocol());
@@ -824,9 +836,9 @@ class SimpleBackend {
 			service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
 		}
 
-		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath)
+		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string)> handler)
 		{
-			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath));
+			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath, handler));
 		}
 
 		void do_manual_query(std::string hostname) {

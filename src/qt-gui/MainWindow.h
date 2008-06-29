@@ -11,6 +11,9 @@
 #include "../JobRequest.h"
 #include "../files/FileInfo.h"
 
+#include <boost/asio.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 class QTreeWidgetItem;
 class QCloseEvent;
 
@@ -66,6 +69,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void new_autoupdate(std::string url);
 		void download_done(std::string url);
+
+		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime);
+		void on_buttonClearCompletedTasks_clicked();
 };
 
 class LogHelper: public QObject {
