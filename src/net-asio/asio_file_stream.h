@@ -315,6 +315,11 @@ namespace services {
 						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 						return;
 					};
+					//> DEBUG HAX
+					service.dispatch(boost::bind<void>(handler, boost::system::error_code(), buflen));
+					return;
+					//< DEBUG HAX
+
 					size_t written = fwrite(buf, 1, buflen, fd);
 
 					if (written == 0) {
