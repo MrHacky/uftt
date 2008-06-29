@@ -149,9 +149,10 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	}
 
 	/* apply settings */
-	if (settings.sizex != 0 && settings.sizey !=0)
-		this->setGeometry(QRect(QPoint(settings.posx, settings.posy), QSize(settings.sizex, settings.sizey)));
-	else
+	if (settings.sizex != 0 && settings.sizey !=0) {
+		this->resize(QSize(settings.sizex, settings.sizey));
+		this->move(QPoint(settings.posx, settings.posy));
+	} else
 		this->resize(750, 550);
 
 	if (settings.dockinfo.size() > 0)
@@ -177,10 +178,10 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
 	/* put stuff back into settings */
-	settings.posx = this->x();
-	settings.posy = this->y();
-	settings.sizex = this->width();
-	settings.sizey = this->height();
+	settings.posx = this->pos().x();
+	settings.posy = this->pos().y();
+	settings.sizex = this->size().width();
+	settings.sizey = this->size().height();
 
 	settings.dockinfo.clear();
 	QByteArray data = saveState();
