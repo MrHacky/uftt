@@ -21,7 +21,7 @@
 
 #include <string>
 
-#include "guicon.h"
+#include "Platform.h"
 
 using namespace std;
 
@@ -165,13 +165,6 @@ int runtest() {
 		return 1; // error
 	}
 }
-
-enum {
-	RF_NEW_CONSOLE   = 1 << 0,
-	RF_WAIT_FOR_EXIT = 1 << 1,
-};
-
-int RunDirect(const string& cmd, const vector<string>* args, const string& wd, int flags);
 
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
@@ -376,9 +369,9 @@ void calcbuildstring() {
 
 int imain( int argc, char **argv )
 {
-	if (argc > 1) {
-		RedirectIOToConsole();
-		cout << "console output" << endl;
+	if (argc > 1 && !platform::hasConsole()) {
+		platform::newConsole();
+		cout << "new console opened" << endl;
 	}
 
 	calcbuildstring();
@@ -396,7 +389,7 @@ int imain( int argc, char **argv )
 		while (boost::filesystem::exists(argv[2]) && retries > 0) {
 			cout << "delete retry" << '\n';
 			--retries;
-			Sleep((30-retries)*100);
+			platform::msSleep((30-retries)*100);
 			try {
 				boost::filesystem::remove(argv[2]);
 			} catch (...) {
@@ -429,7 +422,7 @@ int imain( int argc, char **argv )
 		if (exefile->size() == 0) {
 			cout << "self size 0, aborting..\n";
 			cout << flush;
-			Sleep(10000);
+			platform::msSleep(10000);
 			return 1;
 		}
 		int retries = 30;
@@ -438,7 +431,7 @@ int imain( int argc, char **argv )
 		while (!written && retries >0) {
 			cout << "retrying...\n";
 			--retries;
-			Sleep((30-retries)*100);
+			platform::msSleep((30-retries)*100);
 			{
 				ofstream ostr;
 				ostr.open(program.native_file_string().c_str(), ios_base::trunc|ios_base::out|ios_base::binary);
@@ -450,7 +443,6 @@ int imain( int argc, char **argv )
 						cout << "error writing\n";
 						cout << "ostr.bad(): " << ostr.bad() << '\n';
 						cout << "errno: " << errno << '\n';
-						cout << "GetLastError(): " << GetLastError() << '\n';
 					} else 
 						written = true;
 					ostr.flush();
@@ -466,9 +458,9 @@ int imain( int argc, char **argv )
 		cout << program << '\n';
 		cout << "running: " << program << "\n";
 		//cout << "with arguments\n";
-		//Sleep(5000);
+		//platform::msSleep(5000);
 		//cout << "now!" << endl;
-		int run = RunDirect(program.native_file_string(), &args, "", RF_NEW_CONSOLE);
+		int run = platform::RunCommand(program.native_file_string(), &args, "", platform::RF_NEW_CONSOLE);
 		cout << run << endl;
 		return run;
 	};
@@ -479,7 +471,7 @@ int imain( int argc, char **argv )
 	QTMain gui(argc, argv);
 
 	gui.BindEvents(&backend);
-	//FreeConsole();
+	platform::freeConsole();
 
 	cout << "Build: " << thebuildstring << '\n';
 

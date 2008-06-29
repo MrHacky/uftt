@@ -17,8 +17,9 @@ SET(UFTT_SOURCES
 	BuildString.h         BuildVersion.inc
 	SimpleBackend.h       SimpleBackend.cpp
 	
-	guicon.cpp            guicon.h
 	qt-gui/Icons/icon.rc
+	
+	Platform.h            Platform.cpp
 	
 	SharedData.cpp
 	SharedData.h

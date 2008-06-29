@@ -27,13 +27,12 @@
 #include "../SharedData.h"
 #include "../Logger.h"
 #include "../SimpleBackend.h"
+#include "../Platform.h"
 #include "../util/StrFormat.h"
 //#include "../network/Packet.h"
 
 #include "QtBooster.h"
 #include "DialogDirectoryChooser.h"
-
-#include <shlobj.h>
 
 using namespace std;
 
@@ -105,38 +104,6 @@ void qt_log_append(std::string str)
 	loghelper.append(QString(str.c_str()));
 }
 
-boost::filesystem::path getFolderLocation(int nFolder)
-{
-	boost::filesystem::path retval;
-	PIDLIST_ABSOLUTE pidlist;
-	HRESULT res = SHGetSpecialFolderLocation(
-		NULL,
-		nFolder,
-		//NULL,
-		//0,
-		&pidlist
-	);
-	if (res != S_OK) return retval;
-	
-	LPSTR Path = new TCHAR[MAX_PATH]; 
-	if (SHGetPathFromIDList(pidlist, Path))
-		retval = Path; 
-
-	delete[] Path;
-	ILFree(pidlist);
-	return retval;
-}
-
-spathlist getSettingPathList() {
-	spathlist result;
-	boost::filesystem::path currentdir(boost::filesystem::current_path<boost::filesystem::path>());
-	result.push_back(spathinfo("Current directory"      , currentdir / "uftt.dat"));
-	result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
-	result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
-	result.push_back(spathinfo("Common Application Data", getFolderLocation(CSIDL_COMMON_APPDATA) / "UFTT" / "uftt.dat"));
-	return result;
-}
-
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
@@ -150,7 +117,7 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	boost::filesystem::path settings_path;
 	{
-		spathlist spl = getSettingPathList();
+		spathlist spl = platform::getSettingPathList();
 		BOOST_FOREACH(const spathinfo& spi, spl) {
 			if (!spi.second.empty() && boost::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
 				settings_path = spi.second;
@@ -472,6 +439,7 @@ void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
 void MainWindow::addLocalShare(std::string url)
 {
 	boost::filesystem::path path = url;
+	if (path.leaf() == ".") path.remove_leaf(); // linux thingy
 	backend->slot_add_local_share(path.leaf(), path);
 }
 void MainWindow::onDropTriggered(QDropEvent* evt)
@@ -621,53 +589,6 @@ void MainWindow::new_autoupdate(std::string url)
 	//QDialog::
 }
 
-enum {
-	RF_NEW_CONSOLE   = 1 << 0,
-	RF_WAIT_FOR_EXIT = 1 << 1,
-};
-
-int RunDirect(const string& cmd, const vector<string>* args, const string& wd, int flags) {
-	string command;
-
-	STARTUPINFO si = { sizeof(si) };
-	PROCESS_INFORMATION pi;
-
-	command = cmd;
-
-	// TODO args
-	if (args) {
-		for (unsigned int i = 0; i < args->size(); ++i) {
-			command += " \"";
-			command += (*args)[i];
-			command += "\"";
-		}
-	}
-
-	int res = -1;
-	if (CreateProcess(
-			NULL,
-			TEXT((char*)command.c_str()),
-			NULL,
-			NULL,
-			FALSE,
-			(flags & RF_NEW_CONSOLE) ? CREATE_NEW_CONSOLE : 0,
-			NULL, (wd=="") ? NULL : TEXT(wd.c_str()), &si, &pi))
-	{
-		if (flags & RF_WAIT_FOR_EXIT) {
-			DWORD exitcode;
-			WaitForSingleObject(pi.hProcess, INFINITE);
-			if (GetExitCodeProcess(pi.hProcess, &exitcode))
-				res = exitcode;
-		} else
-			res = 0;
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-	} else
-		cout << "CreateProcess failed\n";
-
-	return res;
-}
-
 bool checksigniature(const std::vector<uint8>& file);
 
 void MainWindow::download_done(std::string url)
@@ -701,7 +622,7 @@ void MainWindow::download_done(std::string url)
 		vector<string> args;
 		args.push_back("--runtest");
 		args.push_back(bname);
-		int test = RunDirect(program, &args, "", RF_NEW_CONSOLE|RF_WAIT_FOR_EXIT);
+		int test = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
 
 		if (test != 0) {
 			cout << "--runtest failed!\n";
@@ -711,7 +632,7 @@ void MainWindow::download_done(std::string url)
 		args.clear();
 		args.push_back("--replace");
 		args.push_back(boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString()).native_file_string());
-		int replace = RunDirect(program, &args, "", RF_NEW_CONSOLE);
+		int replace = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE);
 		this->action_Quit->trigger();
 	}
 }
