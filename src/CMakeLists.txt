@@ -14,7 +14,7 @@ SET(UFTT_SOURCES
 	Main.cpp
 
 	Types.h
-	BuildString.h
+	BuildString.h         BuildVersion.inc
 	SimpleBackend.h       SimpleBackend.cpp
 	
 	guicon.cpp            guicon.h
@@ -58,7 +58,7 @@ ADD_EXECUTABLE(bench
 
 IF(MSVC)
 	SET_TARGET_PROPERTIES(uftt PROPERTIES
-		LINK_FLAGS "/SUBSYSTEM:WINDOWS qtmain.lib"
+		LINK_FLAGS "/SUBSYSTEM:WINDOWS"
 	)
 ENDIF(MSVC)
 

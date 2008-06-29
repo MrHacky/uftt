@@ -1,5 +1,5 @@
 # CMake >= 2.4.0 is needed for Qt4
-cmake_minimum_required(VERSION 2.4.0) 
+# cmake_minimum_required(VERSION 2.4.0) 
 find_package(Qt4 REQUIRED)
 add_definitions("${QT_DEFINITIONS} -DQT_NO_KEYWORDS")
 include(${QT_USE_FILE})
@@ -43,4 +43,5 @@ ADD_LIBRARY(uftt-qt
 TARGET_LINK_LIBRARIES(uftt-qt
 	uftt-lib-files
 	${QT_LIBRARIES}
+	${QT_QTMAIN_LIBRARY}
 )
