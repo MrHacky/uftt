@@ -147,7 +147,11 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	new QDebugStream(std::cout, debugText);
 
 
-	this->setCentralWidget(&QWidget());
+	{
+		QWidget* cw = new QWidget();
+		this->setCentralWidget(cw);
+		delete cw;
+	}
 
 	this->setDockOptions(QMainWindow::DockOptions(QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs));
 
