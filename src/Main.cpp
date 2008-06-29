@@ -188,7 +188,7 @@ char thepubkey[] =
 "-----END RSA PUBLIC KEY-----\n";
 
 // returns true when signature checks out
-bool checksigniature(const std::vector<uint8>& file) {
+bool checksigniature(const std::vector<uint8>& file, const std::string& bstring_expect) {
 	RSA* rsapub = NULL;
 
 	BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
@@ -224,6 +224,23 @@ bool checksigniature(const std::vector<uint8>& file) {
 	for (uint i = 0; i < sigsize; ++i)
 		sig[i] = file[file.size()-8-sigsize+i];
 
+	uint32 bstrsize = bstring_expect.size();
+	if (bstrsize > 0xff)
+		return false;
+
+	if (file[file.size()-8-sigsize-1] != bstrsize)
+		return false;
+
+	if (file.size() < sigsize+8+1+bstrsize)
+		return false;
+
+	std::string bstring_file;
+	for (uint i = 0; i < bstrsize; ++i)
+		bstring_file.push_back((char)file[file.size()-8-sigsize-1-bstrsize+i]);
+
+	if (bstring_file != bstring_expect)
+		return false;
+
 	int res;
 	EVP_MD_CTX verifyctx;
 	res = EVP_VerifyInit(&verifyctx, EVP_sha1());
@@ -240,9 +257,10 @@ struct SignatureChecker {
 	boost::asio::io_service& service;
 	shared_vec file;
 	boost::function<void(bool)> handler;
+	std::string bstring;
 
-	SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const boost::function<void(bool)>& handler_)
-		: service(service_), file(file_), handler(handler_)
+	SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const std::string bstring_, const boost::function<void(bool)>& handler_)
+		: service(service_), file(file_), handler(handler_), bstring(bstring_)
 	{
 	}
 
@@ -267,12 +285,17 @@ struct SignatureChecker {
 		EVP_PKEY_assign_RSA(&evppub, rsapub);
 		EVP_PKEY_assign_RSA(&evppriv, rsapriv);
 
-		if (checksigniature(*exefile)) {
+		if (checksigniature(*exefile, bstring)) {
 			cout << "yay! this is a signed binary!\n";
 			hassignedbuild = true;
-		} else if (rsapriv) {
+		} else if (rsapriv && !(bstring.size() > 0xff)) {
 			// it's not signed, but we have access to a private key
 			// so we can sign it ourselves!
+
+			// first append buildstring
+			for (uint i = 0; i < bstring.size(); ++i)
+				exefile->push_back(bstring[i]);
+			exefile->push_back(bstring.size());
 
 			uint sigsize = EVP_PKEY_size(&evppriv);
 			vector<uint8> sig;
@@ -297,7 +320,7 @@ struct SignatureChecker {
 				exefile->push_back('T');
 				exefile->push_back('T');
 
-				if (checksigniature(*exefile)) {
+				if (checksigniature(*exefile, bstring)) {
 					hassignedbuild = true;
 					cout << "yay! we just signed this binary!\n";
 
@@ -376,13 +399,8 @@ int imain( int argc, char **argv )
 
 	calcbuildstring();
 
-	if (argc > 1 && string(argv[1]) == "--runtest") {
-		//if (!(argc > 2) ||
-		if ((argc > 2) &&
-			(string(argv[2]) != thebuildstring))
-			return 1;
+	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
-	}
 
 	if (argc > 2 && string(argv[1]) == "--delete") {
 		int retries = 30;
@@ -475,7 +493,7 @@ int imain( int argc, char **argv )
 
 	cout << "Build: " << thebuildstring << '\n';
 
-	gdiskio->get_work_service().post(SignatureChecker(gdiskio->get_io_service(), exefile,
+	gdiskio->get_work_service().post(SignatureChecker(gdiskio->get_io_service(), exefile, thebuildstring,
 		boost::bind(&signcheck_handler, _1, &backend)));
 
 	backend.slot_refresh_shares();

@@ -589,7 +589,7 @@ void MainWindow::new_autoupdate(std::string url)
 	//QDialog::
 }
 
-bool checksigniature(const std::vector<uint8>& file);
+bool checksigniature(const std::vector<uint8>& file, const std::string& bstring_expect);
 
 void MainWindow::download_done(std::string url)
 {
@@ -612,7 +612,7 @@ void MainWindow::download_done(std::string url)
 				cout << "failed to read the new file\n";
 				return;
 			}
-			if (!checksigniature(newfile)) {
+			if (!checksigniature(newfile, bname)) {
 				cout << "failed to verify the new file's signiature\n";
 				return;
 			}
@@ -621,7 +621,6 @@ void MainWindow::download_done(std::string url)
 		string program = auto_update_path.native_file_string();
 		vector<string> args;
 		args.push_back("--runtest");
-		args.push_back(bname);
 		int test = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
 
 		if (test != 0) {
