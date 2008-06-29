@@ -406,8 +406,12 @@ int imain( int argc, char **argv )
 
 	{
 		exefile = shared_vec(new vector<uint8>());
-		uint32 todo = boost::filesystem::file_size(argv[0]);
-		cout << "file_size: " << todo << "\n";
+		boost::uintmax_t todomax = boost::filesystem::file_size(argv[0]);
+		cout << "file_size: " << todomax << "\n";
+		if (todomax > 0xffffffff) {
+			cout << "executable too large\n";
+		}
+		uint32 todo = (uint32)todomax; //cast safe due to above check
 		exefile->resize(todo);
 		ifstream istr(argv[0], ios_base::in|ios_base::binary);
 		istr.read((char*)&((*exefile)[0]), todo);
