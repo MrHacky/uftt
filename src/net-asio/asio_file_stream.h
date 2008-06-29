@@ -212,6 +212,7 @@ namespace services {
 		private:
 			diskio_service& service;
 			FILE* fd;
+			uint32 testlen;
 
 		public:
 			enum openmode {
@@ -228,6 +229,7 @@ namespace services {
 				: service(service_)
 			{
 				fd = NULL;
+				testlen = 716244992;//683*1024*1024;
 			}
 
 			boost::asio::io_service& get_io_service()
@@ -260,7 +262,7 @@ namespace services {
 			void async_read_some(MBS& mbs, const Handler& handler)
 			{
 				service.get_work_service().dispatch(
-					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler)
+					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler, testlen)
 				);
 			}
 
@@ -345,9 +347,10 @@ namespace services {
 				MBS mbs;
 				FILE* fd;
 				Handler handler;
+				uint32& testlen;
 
-				helper_read_some(boost::asio::io_service& service_, MBS& mbs_, FILE* fd_, const Handler& handler_)
-					: service(service_), mbs(mbs_), fd(fd_), handler(handler_)
+				helper_read_some(boost::asio::io_service& service_, MBS& mbs_, FILE* fd_, const Handler& handler_, uint32& testlen_)
+					: service(service_), mbs(mbs_), fd(fd_), handler(handler_), testlen(testlen_)
 				{
 				}
 
@@ -381,6 +384,20 @@ namespace services {
 						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 						return;
 					};
+
+					//> DEBUG HAX
+					/*
+					size_t hxread = buflen;
+					if (hxread > testlen) hxread = testlen;
+					testlen -= hxread;
+					if (hxread > 0)
+						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), hxread));
+					else
+						service.dispatch(boost::bind<void>(handler, boost::system::error_code(-1,boost::asio::error::get_system_category()), 0));
+					return;
+					*/
+					//< DEBUG HAX
+
 					size_t read = fread(buf, 1, buflen, fd);
 
 					if (read == 0) {
