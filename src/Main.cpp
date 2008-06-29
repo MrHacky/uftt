@@ -222,7 +222,7 @@ bool checksigniature(const std::vector<uint8>& file) {
 
 	vector<uint8> sig;
 	sig.resize(sigsize);
-	for (int i = 0; i < sigsize; ++i)
+	for (uint i = 0; i < sigsize; ++i)
 		sig[i] = file[file.size()-8-sigsize+i];
 
 	int res;
@@ -237,36 +237,17 @@ bool checksigniature(const std::vector<uint8>& file) {
 	return true;
 }
 
+struct SignatureChecker {
+	boost::asio::io_service& service;
+	shared_vec file;
+	boost::function<void(bool)> handler;
 
-
-int imain( int argc, char **argv )
-{
-	if (argc > 1 && string(argv[1]) == "--runtest")
-		return runtest();
-
-	if (argc > 2 && string(argv[1]) == "--delete") {
-		int retries = 10;
-		while (boost::filesystem::exists(argv[2]) && retries > 0) {
-			--retries;
-			Sleep((10-retries)*100);
-			boost::filesystem::remove(argv[2]);
-		}
-	}
-
+	SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const boost::function<void(bool)>& handler_)
+		: service(service_), file(file_), handler(handler_)
 	{
-		exefile = shared_vec(new vector<uint8>());
-		uint32 todo = boost::filesystem::file_size(argv[0]);
-		exefile->resize(todo);
-		ifstream istr(argv[0], ios_base::in|ios_base::binary);
-		istr.read((char*)&((*exefile)[0]), todo);
-		uint32 read = istr.gcount();
-		if (read != todo) {
-			cout << "failed to read ourself\n";
-			exefile->resize(0);
-		}
 	}
 
-	if (true) {
+	void operator()() {
 		RSA* rsapub = NULL;// = RSA_generate_key(4096, 65537, NULL, NULL);
 		RSA* rsapriv = NULL;
 
@@ -306,7 +287,7 @@ int imain( int argc, char **argv )
 
 			if (r1==1 && r2==1) {
 
-				for (int i = 0; i < sigsize; ++i)
+				for (uint i = 0; i < sigsize; ++i)
 					exefile->push_back(sig[i]);
 				exefile->push_back((sigsize >> 0) & 0xff);
 				exefile->push_back((sigsize >> 8) & 0xff);
@@ -321,7 +302,8 @@ int imain( int argc, char **argv )
 				cout << "yay! we just signed this binary!\n";
 				if (!checksigniature(*exefile)) {
 					cout << "WTF! this is not possible!!!\n";
-					return 1;
+					service.post(boost::bind(handler, false));
+					return;
 				}
 
 				// write signed build to file for debug purposes
@@ -329,6 +311,48 @@ int imain( int argc, char **argv )
 				sexe.write((char*)&((*exefile)[0]), exefile->size());
 				sexe.close();
 			}
+		}
+
+		service.post(boost::bind(handler, hassignedbuild));
+	}
+
+};
+
+
+void signcheck_handler(bool issigned) {
+	if (issigned) {
+		hassignedbuild = true;
+		cout << "Signed: yes\n";
+	} else {
+		hassignedbuild = false;
+		cout << "Signed: no\n";
+	}
+}
+
+int imain( int argc, char **argv )
+{
+	if (argc > 1 && string(argv[1]) == "--runtest")
+		return runtest();
+
+	if (argc > 2 && string(argv[1]) == "--delete") {
+		int retries = 10;
+		while (boost::filesystem::exists(argv[2]) && retries > 0) {
+			--retries;
+			Sleep((10-retries)*100);
+			boost::filesystem::remove(argv[2]);
+		}
+	}
+
+	{
+		exefile = shared_vec(new vector<uint8>());
+		uint32 todo = boost::filesystem::file_size(argv[0]);
+		exefile->resize(todo);
+		ifstream istr(argv[0], ios_base::in|ios_base::binary);
+		istr.read((char*)&((*exefile)[0]), todo);
+		uint32 read = istr.gcount();
+		if (read != todo) {
+			cout << "failed to read ourself\n";
+			exefile->resize(0);
 		}
 	}
 
@@ -358,7 +382,6 @@ int imain( int argc, char **argv )
 		int run = RunDirect(program, &args, "", RF_NEW_CONSOLE);
 		return run;
 	};
-
 
 	try {
 		thebuildstring = string(BUILD_STRING);
@@ -403,12 +426,15 @@ int imain( int argc, char **argv )
 
 	gui.BindEvents(&backend);
 
+	gdiskio->get_work_service().post(SignatureChecker(gdiskio->get_io_service(), exefile,
+		boost::bind(&signcheck_handler, _1)));
+
 	backend.slot_refresh_shares();
 	// TODO: resolve 255.255.255.255 to bc addr in backend (win2000 can't do it itself)
 	backend.do_manual_publish("255.255.255.255");
 
 	cout << "Build: " << thebuildstring << '\n';
-	cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
+	//cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
 
 	int ret = gui.run();
 
