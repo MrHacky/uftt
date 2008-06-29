@@ -17,6 +17,8 @@
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 
+#include <fstream>
+
 #include <string>
 
 #include "guicon.h"
@@ -35,6 +37,16 @@ std::vector<uint8*> testbuffers;
 shared_vec exefile;
 bool hassignedbuild(false);
 
+			struct settrue {
+				bool* value;
+				settrue(bool* value_) : value(value_) {};
+				void operator()(const boost::system::error_code& ec, const size_t len = 0)
+				{ 
+					boost::asio::detail::throw_error(ec);
+					*value = true;
+				}
+				typedef void result_type;
+			};
 
 int runtest() {
 	try {
@@ -53,15 +65,7 @@ int runtest() {
 			bool sent = false;
 			bool timedout = false;
 
-			struct settrue {
-				bool* value;
-				settrue(bool* value_) : value(value_) {};
-				void operator()(const boost::system::error_code& ec, size_t len = 0)
-				{ 
-					boost::asio::detail::throw_error(ec);
-					*value = true;
-				}
-			};
+
 
 			boost::asio::io_service service;
 			boost::asio::ip::tcp::acceptor acceptor(service);

@@ -21,4 +21,4 @@ class DialogDirectoryChooser : public QDialog, public Ui::DialogDirectoryChooser
 		boost::filesystem::path getPath();
 };
 
-#endif DIALOG_DIRECTORY_CHOOSER_H
+#endif//DIALOG_DIRECTORY_CHOOSER_H

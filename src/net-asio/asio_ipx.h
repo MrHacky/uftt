@@ -150,10 +150,11 @@ public:
 
 	protocol_type::address getAddress() const
 	{
-		return address();
+		return address_();
 	}
 
-	protocol_type::address address() const
+	// name address for this function fails on gcc...
+	protocol_type::address address_() const
 	{
 		protocol_type::address ret;
 		// no host<->network byte order conversion for net/node num?

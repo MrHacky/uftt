@@ -66,7 +66,8 @@ namespace services {
 				: io_service_(io_service)
 				, work_(new boost::asio::io_service::work(work_io_service))
 			{
-				work_thread.swap(boost::thread(boost::bind(&diskio_service::thread_loop, this)));
+				boost::thread tt(boost::bind(&diskio_service::thread_loop, this));
+				work_thread.swap(tt);
 			}
 
 			typedef diskio_filetype filetype;
@@ -117,11 +118,7 @@ namespace services {
 				{
 				}
 
-				void operator()() {
-					boost::system::error_code res;
-					res = file.open(path, flags);
-					service.dispatch(boost::bind(handler, res));
-				}
+				void operator()();
 			};
 
 			template <typename Path, typename Handler>
@@ -259,7 +256,7 @@ namespace services {
 			}
 
 			template <typename MBS, typename Handler>
-			void async_read_some(MBS& mbs, const Handler& handler)
+			void async_read_some(MBS mbs, const Handler& handler)
 			{
 				service.get_work_service().dispatch(
 					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler, testlen)
@@ -423,6 +420,14 @@ namespace services {
 			};
 	};
 #endif
+
+	template <typename Path, typename Handler>
+	inline void diskio_service::helper_open_file<Path, Handler>::operator()()
+	{
+		boost::system::error_code res;
+		res = file.open(path, flags);
+		service.dispatch(boost::bind(handler, res));
+	}
 
 } // namespace services
 

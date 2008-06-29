@@ -115,7 +115,7 @@ struct dirsender {
 class SimpleTCPConnection {
 	private: 
 		friend class SimpleBackend;
-		SimpleBackend* backend;
+		class SimpleBackend* backend;
 
 		boost::asio::io_service& service;
 		boost::asio::ip::tcp::socket socket;
@@ -818,7 +818,7 @@ class SimpleBackend {
 		std::vector<boost::asio::ip::address> get_broadcast_adresses();
 
 		template<typename BUF> 
-		void send_udp_broadcast(boost::asio::ip::udp::socket& sock, BUF& buf, uint16 port, int flags, boost::system::error_code& err)
+		void send_udp_broadcast(boost::asio::ip::udp::socket& sock, BUF buf, uint16 port, int flags, boost::system::error_code& err)
 		{
 			std::vector<boost::asio::ip::address> adresses;
 			adresses = this->get_broadcast_adresses();

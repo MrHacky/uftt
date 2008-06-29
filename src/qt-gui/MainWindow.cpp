@@ -2,6 +2,7 @@
 #include <boost/asio.hpp>
 
 #include <iostream>
+#include <fstream>
 
 #include <QTreeWidgetItem>
 #include <QFile>
