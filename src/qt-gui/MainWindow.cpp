@@ -70,7 +70,8 @@ boost::filesystem::path getFolderLocation(int nFolder)
 
 spathlist getSettingPathList() {
 	spathlist result;
-	result.push_back(spathinfo("Current directory"      , "./uftt.dat"));
+	boost::filesystem::path currentdir(boost::filesystem::current_path<boost::filesystem::path>());
+	result.push_back(spathinfo("Current directory"      , currentdir / "uftt.dat"));
 	result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
 	result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
 	result.push_back(spathinfo("Common Application Data", getFolderLocation(CSIDL_COMMON_APPDATA) / "UFTT" / "uftt.dat"));
@@ -158,7 +159,10 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	if (settings.dockinfo.size() > 0)
 		this->restoreState(QByteArray((char*)&settings.dockinfo[0],settings.dockinfo.size()));
 	else {
-		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );	}
+		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);
+		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );
+		this->dockManualConnect->hide();
+	}
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
