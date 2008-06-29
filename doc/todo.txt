@@ -1,9 +1,8 @@
-- optimise sender with 10MB buffer
-- optimise sender with buffer queue
+- [partial] optimise sender with buffer queue
 - optimise receiver with buffer queue
 - allow management of local shares
 - remember local share
-- show upload tasks in task list
+- [partial] show upload tasks in task list
 - [partial] make nice application icons
 - allow custom broadcast ip's
 - allow custom broadcast dns names
@@ -11,6 +10,9 @@
 - clean up connections when they are done
 - refactor autoupdate so it can be easily disabled in linux
 - make ufft work in linux
+- refactor console for linux
+- refactor console, to always show in debug mode, and in release mode when we have something to say
+- refactor out byte value to string conversion to utulity header
 - [DONE] show task list with download status
 - [DONE] show download tasks in task list
 - [DONE] verify/sign (startup) in diskio work thread
