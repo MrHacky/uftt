@@ -12,12 +12,6 @@
   <property name="windowTitle" >
    <string>UFTT</string>
   </property>
-  <property name="dockNestingEnabled" >
-   <bool>true</bool>
-  </property>
-  <property name="dockOptions" >
-   <set>QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs</set>
-  </property>
   <widget class="QWidget" name="centralwidget" >
    <widget class="QLabel" name="label_2" >
     <property name="geometry" >

@@ -182,11 +182,14 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	this->setCentralWidget(&QWidget());
 
+	this->setDockOptions(QMainWindow::DockOptions(QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs));
+
 	BOOST_FOREACH(QObject* obj, children()) {
 		if (QString(obj->metaObject()->className()) == "QDockWidget") {
 			QDockWidget* dock = (QDockWidget*)obj;
 			menu_View->addAction(dock->toggleViewAction());
 			dock->setAllowedAreas(Qt::TopDockWidgetArea);
+			dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 			this->addDockWidget(Qt::TopDockWidgetArea, dock);
 		}
 	}
