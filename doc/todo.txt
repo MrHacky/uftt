@@ -1,0 +1,10 @@
+-optimise sender with 10MB buffer
+-optimise sender with buffer queue
+-optimise receiver with buffer queue
+-allow management of local shares
+-remember local share
+-show task list with download status
+-show upload tasks in task list
+-show upload tasks in task list
+- [DONE] verify/sign (startup) in diskio work thread
+- republish when above is done 
