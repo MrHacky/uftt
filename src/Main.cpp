@@ -428,7 +428,6 @@ int imain( int argc, char **argv )
 			Sleep(10000);
 			return 1;
 		}
-		cout << "Not implemented yet!\n";
 		int retries = 30;
 		boost::filesystem::path program(argv[2]);
 		bool written = false;
@@ -462,10 +461,10 @@ int imain( int argc, char **argv )
 		args.push_back(argv[0]);
 		cout << program << '\n';
 		cout << "running: " << program << "\n";
-		cout << "with arguments\n";
+		//cout << "with arguments\n";
 		//Sleep(5000);
-		cout << "now!" << endl;
-		int run = RunDirect(program.native_file_string(), &args, "", 0);
+		//cout << "now!" << endl;
+		int run = RunDirect(program.native_file_string(), &args, "", RF_NEW_CONSOLE);
 		cout << run << endl;
 		return run;
 	};
