@@ -10,19 +10,27 @@ Find_Path(OPENSSL_INCLUDE_DIR
 	${OPENSSL_EXTRALIB_INCLUDE_PATHS}
 )
 
+# seems to be called just 'libssl' on linux, so we use that
 Find_Library(OPENSSL_LIBRARY
-	ssleay32
+	ssl
 	/usr/lib /usr/local/lib
 	${OPENSSL_EXTRALIB_LIBRARY_PATHS}
 )
 
+# win32 only, no idea.... we just use it whenever we find it
 Find_Library(EAY32_LIBRARY
-	libeay32
+	eay32
 	/usr/lib /usr/local/lib
 	${OPENSSL_EXTRALIB_LIBRARY_PATHS}
 )
 
 IF(OPENSSL_INCLUDE_DIR AND OPENSSL_LIBRARY)
+	IF(EAY32_LIBRARY)
+		SET(OPENSSL_LIBRARY
+			"${OPENSSL_LIBRARY}"
+			"${EAY32_LIBRARY}"
+		)
+	ENDIF(EAY32_LIBRARY)
 	SET(OPENSSL_FOUND TRUE)
 	MESSAGE(STATUS "Found OpenSSL library")
 ENDIF(OPENSSL_INCLUDE_DIR AND OPENSSL_LIBRARY)
