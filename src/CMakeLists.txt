@@ -18,6 +18,7 @@ SET(UFTT_SOURCES
 	SimpleBackend.h       SimpleBackend.cpp
 	
 	guicon.cpp            guicon.h
+	qt-gui/Icons/icon.rc
 	
 	SharedData.cpp
 	SharedData.h
