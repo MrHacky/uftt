@@ -1,10 +1,17 @@
--optimise sender with 10MB buffer
--optimise sender with buffer queue
--optimise receiver with buffer queue
--allow management of local shares
--remember local share
--show task list with download status
--show upload tasks in task list
--show upload tasks in task list
+- optimise sender with 10MB buffer
+- optimise sender with buffer queue
+- optimise receiver with buffer queue
+- allow management of local shares
+- remember local share
+- show upload tasks in task list
+- [partial] make nice application icons
+- allow custom broadcast ip's
+- allow custom broadcast dns names
+- fix opening mounted iso's
+- clean up connections when they are done
+- refactor autoupdate so it can be easily disabled in linux
+- make ufft work in linux
+- [DONE] show task list with download status
+- [DONE] show download tasks in task list
 - [DONE] verify/sign (startup) in diskio work thread
-- republish when above is done 
+- [DONE] republish when above is done
