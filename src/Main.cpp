@@ -300,18 +300,17 @@ struct SignatureChecker {
 				exefile->push_back('T');
 				exefile->push_back('T');
 
-				hassignedbuild = true;
-				cout << "yay! we just signed this binary!\n";
-				if (!checksigniature(*exefile)) {
-					cout << "WTF! this is not possible!!!\n";
-					service.post(boost::bind(handler, false));
-					return;
-				}
+				if (checksigniature(*exefile)) {
+					hassignedbuild = true;
+					cout << "yay! we just signed this binary!\n";
 
-				// write signed build to file for debug purposes
-				ofstream sexe("uftt-signed.exe", ios_base::out|ios_base::binary);
-				sexe.write((char*)&((*exefile)[0]), exefile->size());
-				sexe.close();
+					// write signed build to file for debug purposes
+					ofstream sexe("uftt-signed.exe", ios_base::out|ios_base::binary);
+					sexe.write((char*)&((*exefile)[0]), exefile->size());
+					sexe.close();
+				} else {
+					cout << "bah! signing failed, private/public key mismatch.\n";
+				}
 			}
 		}
 
@@ -423,6 +422,12 @@ int imain( int argc, char **argv )
 	}
 
 	if (argc > 2 && string(argv[1]) == "--replace") {
+		if (exefile->size() == 0) {
+			cout << "self size 0, aborting..\n";
+			cout << flush;
+			Sleep(10000);
+			return 1;
+		}
 		cout << "Not implemented yet!\n";
 		int retries = 30;
 		boost::filesystem::path program(argv[2]);
@@ -465,8 +470,6 @@ int imain( int argc, char **argv )
 		return run;
 	};
 
-
-
 	SimpleBackend backend;
 
 	cout << flush;
@@ -475,14 +478,16 @@ int imain( int argc, char **argv )
 	gui.BindEvents(&backend);
 	FreeConsole();
 
+	cout << "Build: " << thebuildstring << '\n';
+
 	gdiskio->get_work_service().post(SignatureChecker(gdiskio->get_io_service(), exefile,
 		boost::bind(&signcheck_handler, _1, &backend)));
 
 	backend.slot_refresh_shares();
+
 	// TODO: resolve 255.255.255.255 to bc addr in backend (win2000 can't do it itself)
 	//backend.do_manual_publish("255.255.255.255");
 
-	cout << "Build: " << thebuildstring << '\n';
 	//cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
 
 	int ret = gui.run();
