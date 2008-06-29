@@ -32,6 +32,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
 		SimpleBackend* backend;
+		QTreeWidgetItem* ctwi;
+		bool ctwiu;
 
 		void StartDownload(FileInfoRef fi, const fs::path& path);
 
@@ -74,6 +76,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue);
 		void on_buttonClearCompletedTasks_clicked();
+
+		void on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column);
 };
 
 class LogHelper: public QObject {

@@ -16,6 +16,7 @@
 #include <QMessageBox>
 #include <QProcess>
 #include <QStringList>
+#include <QItemDelegate>
 
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
@@ -70,6 +71,20 @@ string size_string(double size)
 	//string res(buf);
 	//res += size_suffix[suf];
 	//return res;
+};
+
+class MyItemDelegate : public QItemDelegate
+{
+public:
+    MyItemDelegate(QObject* parent = 0) : QItemDelegate(parent) {}
+ 
+    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+    {
+        // allow only specific column to be edited, second column in this example
+        if (index.column() == 0)
+            return QItemDelegate::createEditor(parent, option, index);
+        return 0;
+    }
 };
 
 void tester(uint64 tfx, std::string sts)
@@ -224,6 +239,31 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+
+
+	listBroadcastHosts->setItemDelegate(new MyItemDelegate (listBroadcastHosts));
+
+	ctwiu = true;
+	ctwi = new QTreeWidgetItem(listBroadcastHosts);
+	ctwi->setText(0, QString("[edit to add new]"));
+	ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
+	ctwiu = false;
+}
+
+void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)
+{
+	if (ctwiu) return;
+	if (item == ctwi) {
+		ctwiu = true;
+		ctwi = new QTreeWidgetItem(listBroadcastHosts);
+		ctwi->setText(0, QString("[edit to add new]"));
+		ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
+		ctwiu = false;
+	}
+	if (item->text(0) == "") {
+		delete item;
+		return;
+	}
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
