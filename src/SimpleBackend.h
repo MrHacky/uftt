@@ -46,8 +46,7 @@ struct filesender {
 		//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 	};
 
-	template <typename Handler>
-	void getbuf(shared_vec buf, const Handler& handler) {
+	bool getbuf(shared_vec buf) {
 		if (!hsent) {
 			hsent = true;
 			buf->resize(16 + name.size());
@@ -57,13 +56,12 @@ struct filesender {
 			hdr.nlen = name.size();
 			memcpy(&(*buf)[0], &hdr, 16);
 			memcpy(&(*buf)[16], name.data(), hdr.nlen);
-			fsize += buf->size();
-			handler(boost::system::error_code(), buf->size());
-			return;
+			//fsize += buf->size();
+			//handler(boost::system::error_code(), buf->size());
+			return true;
 		}
-		buf->resize(1024*1024);
+		return false;
 		//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
-		file.async_read_some(GETBUF(buf), handler);
 	};
 };
 
@@ -135,6 +133,11 @@ class SimpleTCPConnection {
 		bool uldone;
 		uint32 open_files;
 
+		std::deque<shared_vec> sendqueue;
+		bool issending;
+		bool donesend;
+		bool isreading;
+
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
 			: service(service_)
@@ -144,13 +147,16 @@ class SimpleTCPConnection {
 		{
 			dldone = false;
 			uldone = false;
+			issending = false;
+			isreading = false;
+			donesend = false;
 			open_files = 0;
 			transfered_bytes = 0;
 		}
 
 		uint64 transfered_bytes;
 		boost::asio::deadline_timer progress_timer;
-		boost::signal<void(uint64,std::string)> sig_progress;
+		boost::signal<void(uint64,std::string,uint32)> sig_progress;
 
 		void start_update_progress() {
 			progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -163,11 +169,11 @@ class SimpleTCPConnection {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
 				if (dldone && open_files == 0) {
-					sig_progress(transfered_bytes, "Completed");
+					sig_progress(transfered_bytes, "Completed", 0);
 				} else if (uldone) {
-					sig_progress(transfered_bytes, "Completed");
+					sig_progress(transfered_bytes, "Completed", 0);
 				} else {
-					sig_progress(transfered_bytes, "Transfering");
+					sig_progress(transfered_bytes, "Transfering", sendqueue.size()+open_files);
 					start_update_progress();
 				}
 			}
@@ -223,8 +229,9 @@ class SimpleTCPConnection {
 			}
 		}
 
-		void sendfileinfo(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
+		void handle_read_file(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
 			//cout << ">sendfileinfo(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
+			isreading = false;
 			if (e) {
 				if (cursendfile.fsize == 0) {
 					//cout << "closing file\n";
@@ -241,50 +248,79 @@ class SimpleTCPConnection {
 			sbuf->resize(len);
 			cursendfile.fsize -= len;
 			//cout << ">async_write(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
-			boost::asio::async_write(socket, GETBUF(sbuf),
-				boost::bind(&SimpleTCPConnection::handle_sent_filedirinfo, this, _1, sbuf));
+			sendqueue.push_back(sbuf);
+			checkwhattosend();
+		}
+
+		void handle_sent_buffer(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
+			if (e) {
+				std::cout << "error sending buffer: " << e.message() << '\n';
+				return;
+			}
+			issending = false;
+			checkwhattosend(sbuf);
 		}
 
 		void checkwhattosend(shared_vec sbuf = shared_vec()) {
-			if (!sbuf) sbuf = shared_vec(new std::vector<uint8>());
-			if (cursendfile.name != "") {
-				cursendfile.getbuf(sbuf, boost::bind(&SimpleTCPConnection::sendfileinfo, this, _1, _2, sbuf));
-			} else if (!quesenddir.empty()) {
-				boost::filesystem::path newpath;
-				
-				bool dirdone = quesenddir.back().getbuf(sbuf, newpath);
-				if (dirdone) {
-					quesenddir.pop_back();
-				} else {
-					sendpath(newpath);
-				}
-				boost::asio::async_write(socket, GETBUF(sbuf),
-					boost::bind(&SimpleTCPConnection::handle_sent_filedirinfo, this, _1, sbuf));
-			} else {
-				header hdr;
-				hdr.type = 0x04; // ..
-				hdr.size = 0;
-				hdr.nlen = 0;
-				sbuf->resize(16);
-				memcpy(&(*sbuf)[0], &hdr, 16);
+			if (sendqueue.size() < 25) {
+				// add new buffer to queue
+				if (!sbuf) sbuf = shared_vec(new std::vector<uint8>());
+				//shared_vec nbuf = shared_vec(new std::vector<uint8>());
+				if (cursendfile.name != "") {
+					if (!isreading) {
+						bool hasbuf = cursendfile.getbuf(sbuf);
+						if (hasbuf) {
+							sendqueue.push_back(sbuf);
+							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+						} else {
+							uint64 rsize = cursendfile.fsize;
+							if (rsize > 1024*1024*1) rsize = 1024*1024*1;
+							if (rsize == 0)
+								rsize = 1;
+							sbuf->resize((size_t)rsize);
+							isreading = true;
+							cursendfile.file.async_read_some(GETBUF(sbuf), 
+								boost::bind(&SimpleTCPConnection::handle_read_file, this, _1, _2, sbuf));
+						}
+					}
+				} else if (!quesenddir.empty()) {
+					boost::filesystem::path newpath;
+					
+					bool dirdone = quesenddir.back().getbuf(sbuf, newpath);
+					if (dirdone) {
+						quesenddir.pop_back();
+					} else {
+						sendpath(newpath);
+					}
+					sendqueue.push_back(sbuf);
+					service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+				} else if (!donesend) {
+					header hdr;
+					hdr.type = 0x04; // ..
+					hdr.size = 0;
+					hdr.nlen = 0;
+					sbuf->resize(16);
+					memcpy(&(*sbuf)[0], &hdr, 16);
 
-				boost::asio::async_write(socket, GETBUF(sbuf),
-					boost::bind(&SimpleTCPConnection::handle_sent_everything, this, _1, sbuf ));
+					sendqueue.push_back(sbuf);
+					donesend = true;
+				}
 			}
+			if (sendqueue.size() > 0 && !issending) {
+				sbuf = sendqueue.front();
+				sendqueue.pop_front();
+				issending = true;
+				boost::asio::async_write(socket, GETBUF(sbuf),
+					boost::bind(&SimpleTCPConnection::handle_sent_buffer, this, _1, _2, sbuf));
+			}
+			if (sendqueue.size() == 0 && donesend && !issending)
+				handle_sent_everything();
 		}
 
-		void handle_sent_everything(const boost::system::error_code& e, shared_vec sbuf) {
+		void handle_sent_everything() {
 			uldone = true;
 			socket.close();
 		}
-
-		void handle_sent_filedirinfo(const boost::system::error_code& e, shared_vec sbuf) {
-			if (e) {
-				std::cout << "error: " << e.message() << '\n';
-				return;
-			}
-			checkwhattosend(sbuf);
-		};
 
 		void handle_recv_namelen(const boost::system::error_code& e, shared_vec rbuf) {
 			if (e) {
@@ -752,7 +788,7 @@ class SimpleBackend {
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), false);
 		}
 
-		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string)> handler)
+		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
 		{
 			shareurl.erase(0, 7);
 			size_t slashpos = shareurl.find_first_of("\\/");
@@ -836,7 +872,7 @@ class SimpleBackend {
 			service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
 		}
 
-		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string)> handler)
+		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
 		{
 			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath, handler));
 		}

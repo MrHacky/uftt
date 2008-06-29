@@ -48,7 +48,7 @@ string size_suffix[] =
 string size_string(double size)
 {
 	int suf;
-	for (suf = 0; size > 999; ++suf)
+	for (suf = 0; size >= 1000; ++suf)
 		size /= 1024;
 
 	if (suf > 5) suf = 5;
@@ -127,6 +127,7 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<std::string>("std::string");
 	qRegisterMetaType<QTreeWidgetItem*>("QTreeWidgetItem*");
 	qRegisterMetaType<uint64>("uint64");
+	qRegisterMetaType<uint64>("uint32");
 	qRegisterMetaType<SHA1C>("SHA1C");
 	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 	qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
@@ -365,11 +366,11 @@ void MainWindow::StartDownload()
 	//twi->setText(1, QString::fromStdString(STRFORMAT("%d", 0)));
 	//twi->setText(3, QString("Starting..."));
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(uint64, std::string)> handler = boost::bind(
+	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(
 		QTBOOSTER(this, MainWindow::download_progress),
 		//boost::bind(&MainWindow::download_progress, this, _1, _2, _3),
-		twi, _1, _2, starttime);
-	handler(0, "Starting");
+		twi, _1, _2, starttime, _3);
+	handler(0, "Starting", 0);
 //		boost::bind(&MainWindow::download_progress, this&tester, _1, _2);
 	backend->slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()), handler);
 	return;
@@ -388,7 +389,7 @@ void MainWindow::StartDownload()
 	//cout << "Start Download!" <<  << endl;
 }
 
-void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime)
+void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue)
 {
 	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
 	boost::posix_time::time_duration elapsed = curtime-starttime;
@@ -396,6 +397,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	twi->setText(1, QString::fromStdString(size_string(tfx)));
 	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
 	twi->setText(3, QString::fromStdString(sts));
+	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
 }
 
 void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
@@ -569,7 +571,7 @@ void MainWindow::new_autoupdate(std::string url)
 
 	auto_update_url = url;
 	auto_update_path = DownloadEdit->text().toStdString();
-	boost::function<void(uint64, std::string)> handler = boost::bind(&tester, _1, _2);
+	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(&tester, _1, _2);
 	backend->slot_download_share(url, auto_update_path, handler);
 
 	//QDialog::

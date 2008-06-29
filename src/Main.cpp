@@ -475,7 +475,7 @@ int imain( int argc, char **argv )
 	QTMain gui(argc, argv);
 
 	gui.BindEvents(&backend);
-	FreeConsole();
+	//FreeConsole();
 
 	cout << "Build: " << thebuildstring << '\n';
 

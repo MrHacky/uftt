@@ -70,7 +70,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void new_autoupdate(std::string url);
 		void download_done(std::string url);
 
-		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime);
+		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue);
 		void on_buttonClearCompletedTasks_clicked();
 };
 
