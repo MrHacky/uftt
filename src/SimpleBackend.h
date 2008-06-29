@@ -138,10 +138,33 @@ class SimpleTCPConnection {
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
 			: service(service_)
 			, socket(service_)
+			, progress_timer(service_)
 			, backend(backend_)
 		{
 			dldone = false;
 			open_files = 0;
+			transfered_bytes = 0;
+			//start_update_progress();
+		}
+
+		uint64 transfered_bytes;
+		boost::asio::deadline_timer progress_timer;
+		boost::signal<void(uint64,std::string)> sig_progress;
+
+		void start_update_progress() {
+			progress_timer.expires_from_now(boost::posix_time::seconds(1));
+			progress_timer.async_wait(boost::bind(&SimpleTCPConnection::update_progress_handler, this, boost::asio::placeholders::error));
+		}
+
+		void update_progress_handler(const boost::system::error_code& e)
+		{
+			if (e) {
+				std::cout << "update_progress_handler failed: " << e.message() << '\n';
+			} else {
+				//cout << "
+				sig_progress(transfered_bytes, "Transferring");
+				start_update_progress();
+			}
 		}
 
 		void handle_tcp_accept()
