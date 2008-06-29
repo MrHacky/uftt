@@ -35,6 +35,43 @@
 
 using namespace std;
 
+string size_suffix[] =
+{
+	"",
+	"K",
+	"M",
+	"G",
+	"T",
+	"?"
+};
+
+string size_string(double size)
+{
+	int suf;
+	for (suf = 0; size > 999; ++suf)
+		size /= 1024;
+
+	if (suf > 5) suf = 5;
+
+	//char buf[11];
+
+	int decs = 2;
+
+	if (size >= 100) --decs;
+	if (size >= 10)  --decs;
+
+	if (suf == 0) decs = 0;
+
+	float fsize = size;
+	std::string fstr = STRFORMAT("%%.%df %%sB", decs);
+	return STRFORMAT(fstr, fsize, size_suffix[suf]);
+	//snprintf(buf, 10, "%.*f", decs, size);
+
+	//string res(buf);
+	//res += size_suffix[suf];
+	//return res;
+};
+
 void tester(uint64 tfx, std::string sts)
 {
 	cout << "update: " << sts << ": " << tfx << '\n';
@@ -356,7 +393,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
 	boost::posix_time::time_duration elapsed = curtime-starttime;
 
-	twi->setText(1, QString::fromStdString(STRFORMAT("%d", tfx)));
+	twi->setText(1, QString::fromStdString(size_string(tfx)));
 	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
 	twi->setText(3, QString::fromStdString(sts));
 }
