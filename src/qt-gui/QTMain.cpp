@@ -15,7 +15,7 @@ class QTImpl {
 		QApplication app;
 		MainWindow wnd;
 
-		QTImpl( int argc, char **argv, QTMain& owner_)
+		QTImpl( int& argc, char **argv, QTMain& owner_)
 			: app(argc, argv), wnd(owner_)
 		{
 
@@ -25,7 +25,7 @@ class QTImpl {
 		QTImpl(const QTImpl&);
 };
 
-QTMain::QTMain( int argc, char **argv )
+QTMain::QTMain( int& argc, char **argv )
 {
 	impl = new QTImpl(argc, argv, *this);
 }

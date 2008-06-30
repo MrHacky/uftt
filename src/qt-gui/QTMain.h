@@ -12,7 +12,7 @@ class QTMain {
 		class QTImpl* impl;
 
 	public:
-		QTMain( int argc, char **argv );
+		QTMain( int& argc, char **argv );
 		~QTMain();
 		
 		void BindEvents(SimpleBackend* t);
