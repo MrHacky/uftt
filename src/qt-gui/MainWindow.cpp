@@ -660,12 +660,20 @@ void MainWindow::SetBackend(SimpleBackend* be)
 
 void MainWindow::on_buttonManualQuery_clicked()
 {
-	backend->do_manual_query(editManualQuery->text().toStdString());
+	try {
+		backend->do_manual_query(editManualQuery->text().toStdString());
+	} catch (std::exception& e) {
+		cout << "exception: " << e.what() << '\n';
+	}
 }
 
 void MainWindow::on_buttonManualPublish_clicked()
 {
-	backend->do_manual_publish(editManualPublish->text().toStdString());
+	try {
+		backend->do_manual_publish(editManualPublish->text().toStdString());
+	} catch (std::exception& e) {
+		cout << "exception: " << e.what() << '\n';
+	}
 }
 
 void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
