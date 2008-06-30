@@ -6,19 +6,17 @@
 - [partial] make nice application icons
 - [WIP] allow custom broadcast ip's
 - allow custom broadcast dns names
-- fix opening mounted iso's
 - clean up connections when they are done
 - [partial] refactor autoupdate so it can be easily disabled in linux
-- [DONE] make ufft work in linux
-- refactor console for linux
-- [DONE] refactor console, to always show in debug mode, and in release mode when we have something to say
+- implement console detaching/attaching for linux
 - refactor out byte value to string conversion to utulity header
 - process --delete asynchronously
 - read 'exefile' asynchronously
-- [DONE] add buildstring to verification
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
 - implement udp-semi connections, and plug them into the now shiny architecture
+- [DONE] fix opening mounted iso's
+- [DONE] make ufft work in linux
+- [DONE] refactor console, to always show in debug mode, and in release mode when we have something to say
 - [DONE] show task list with download status
 - [DONE] show download tasks in task list
-- [DONE] verify/sign (startup) in diskio work thread
-- [DONE] republish when above is done
+
