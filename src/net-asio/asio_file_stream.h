@@ -239,7 +239,7 @@ namespace services {
 				std::string openmode = "";
 				if (mode&out && mode&create) openmode += "w";
 				else if (mode&in) openmode += "r";
-				if (mode&(in|out)) openmode += "+";
+				if (mode&in && mode&out) openmode += "+";
 				if (!(mode&text)) openmode += "b";
 				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
