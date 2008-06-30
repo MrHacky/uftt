@@ -95,5 +95,21 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>listPaths</sender>
+   <signal>doubleClicked(QModelIndex)</signal>
+   <receiver>DialogDirectoryChooser</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel" >
+     <x>249</x>
+     <y>91</y>
+    </hint>
+    <hint type="destinationlabel" >
+     <x>249</x>
+     <y>97</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
 </ui>
