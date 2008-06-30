@@ -9,7 +9,7 @@
 #include <boost/function.hpp>
 #include <queue>
 
-#include "../types.h"
+#include "../Types.h"
 
 bool is_ack_acceptable(uint32 snduna, uint32 segack, uint32 sndnxt) {
 	//return (0 < (segack-snduna)) && ((segack-snduna) <= (sndnxt-snduna));
