@@ -10,11 +10,22 @@ SUBDIRS(files)
 SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
 
+SET(BUILDVER_FILE
+	"${PROJECT_BINARY_DIR}/BuildVersion.h"
+)
+
+IF(EXISTS "${BUILDVER_FILE}")
+	INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
+	add_definitions("-DBUILDVERSIONFILE=\\\"${BUILDVER_FILE}\\\"")
+ELSE(EXISTS "${BUILDVER_FILE}")
+	SET(BUILDVER_FILE "")
+ENDIF(EXISTS "${BUILDVER_FILE}")
+
 SET(UFTT_SOURCES
 	Main.cpp
 
 	Types.h
-	BuildString.h         BuildVersion.inc
+	BuildString.h         "${BUILDVER_FILE}"
 	SimpleBackend.h       SimpleBackend.cpp
 	
 	qt-gui/Icons/icon.rc
@@ -39,7 +50,7 @@ ADD_EXECUTABLE(uftt ${UFTT_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacr
 ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
 	COMMAND "${CMAKE_COMMAND}"
 	ARGS -E copy "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp" "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
-	COMMENT "VerionTarget"
+	COMMENT "VersionTarget"
 	DEPENDS ${UFTT_SOURCES} ${UFTT_LIBRARIES}
 	)
 
