@@ -53,6 +53,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 		for (int i = 0; i < nNumInterfaces; ++i) {
 			boost::asio::ip::address_v4::bytes_type ifaddr;
 			boost::asio::ip::address_v4::bytes_type nmaddr;
+			boost::asio::ip::address_v4::bytes_type bcaddr;
 
 			sockaddr_in *pAddress;
 			pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
@@ -60,6 +61,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 			memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
 
 			pAddress = (sockaddr_in *) & (InterfaceList[i].iiBroadcastAddress);
+			memcpy(&bcaddr[0], &pAddress->sin_addr, 4);
 			//cout << " has bcast " << inet_ntoa(pAddress->sin_addr);
 
 			pAddress = (sockaddr_in *) & (InterfaceList[i].iiNetmask);
@@ -90,13 +92,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 #endif
 
 	// udp interface probe for linux (untested):
-	#if 0
-
-	#include<sys/types.h>
-	#include<sys/socket.h>
-	#include<sys/ioctl.h>
-	#include <errno.h>
-	#include <net/if.h>
+#ifdef __linux__
 	{
 		struct ifconf ifc;
 		char buff[1024];
@@ -106,19 +102,54 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 		ifc.ifc_buf = buff;
 		if ((skfd = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
 			printf("new socket failed\n");
-			exit(1);
+			return rtype(result.begin(), result.end());
 		}
 		if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
 			printf("SIOCGIFCONF:Failed \n");
-			exit(1);
+			return rtype(result.begin(), result.end());
 		}
 		ifr = ifc.ifc_req;
 		for (i = ifc.ifc_len / sizeof(struct ifreq); --i >= 0; ifr++) {
-			printf("found device %s,\n", ifr->ifr_name,);
+			boost::asio::ip::address_v4::bytes_type ifaddr;
+			boost::asio::ip::address_v4::bytes_type nmaddr;
+
+			if (ioctl(skfd, SIOCGIFFLAGS, ifr) != 0) {
+				printf("SIOCGIFFLAGS:Failed \n");
+				return rtype(result.begin(), result.end());
 			}
-		return 0;
+			short flags = ifr->ifr_flags;
+
+			sockaddr_in * pAddress;
+			pAddress = (sockaddr_in *) &ifr->ifr_addr;
+			memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
+
+
+			if (ioctl(skfd, SIOCGIFNETMASK, ifr) != 0) {
+				printf("SIOCGIFNETMASK:Failed \n");
+				return rtype(result.begin(), result.end());
+			}
+
+			memcpy(&nmaddr[0], &pAddress->sin_addr, 4);
+
+			if (ioctl(skfd, SIOCGIFBRDADDR, ifr) != 0) {
+				printf("SIOCGIFNETMASK:Failed \n");
+				return rtype(result.begin(), result.end());
+			}
+			//cout << " has bcast " << inet_ntoa(pAddress->sin_addr);
+
+			// if true....
+			if (flags&IFF_UP && flags&IFF_BROADCAST && !(flags&IFF_LOOPBACK))
+			{
+				for (int i = 0; i < 4; ++i)
+					ifaddr[i] |= ~nmaddr[i];
+				boost::asio::ip::address_v4 naddr(ifaddr);
+				result.insert(naddr);
+				cout << "broadcast: " << naddr << '\n';
+			}
+		}
+		//return 0;
 	}
-	#endif
+#endif
 
 	// ipx interface probe for windows
 	#if 0

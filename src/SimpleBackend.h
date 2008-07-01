@@ -830,7 +830,7 @@ class SimpleBackend {
 					err
 				);
 				if (err)
-					std::cout << "broadcast failed: " << err.message() << '\n';
+					std::cout << "broadcast to (" << addr << ") failed: " << err.message() << '\n';
 			}
 		}
 		void attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32)> handler)
