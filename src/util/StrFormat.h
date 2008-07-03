@@ -39,6 +39,105 @@ namespace StrFormat {
 				}
 		};
 	}
-}
+
+	std::string bytes(double size)
+	{
+		static std::string size_suffix[] =
+		{
+			"",
+			"K",
+			"M",
+			"G",
+			"T",
+			"?"
+		};
+		int suf;
+		for (suf = 0; size >= 1000; ++suf)
+			size /= 1024;
+
+		if (suf > 5) suf = 5;
+
+		//char buf[11];
+
+		int decs = 2;
+
+		if (size >= 100) --decs;
+		if (size >= 10)  --decs;
+
+		if (suf == 0) decs = 0;
+
+		float fsize = size;
+		std::string fstr = STRFORMAT("%%.%df %%sB", decs);
+		return STRFORMAT(fstr, fsize, size_suffix[suf]);
+	};
+
+#if 0
+	// wip optimised non-float uselessness
+	template<int startsuf>
+	string size_string_impl_32(uint32 size)
+	{
+		// too much time on my hands :O
+		char buf[7];
+		int bufpos = 0;
+		int decpartbits = 0;
+		int suf = startsuf;
+		for (; (size >> decpartbits) >= 1000; ++suf)
+			decpartbits += 10; // 2^10 = 1024
+
+		int intpart = (size >> decpartbits);
+
+		int decs = 2;
+		if (intpart >= 10) {
+			if (intpart >= 100) {
+				int num = intpart / 100;
+				intpart = intpart % 100;
+				buf[bufpos++] = ("0123456789"[num]);
+				--decs;
+			}
+			int num = intpart / 10;
+			intpart = intpart % 10;
+			buf[bufpos++] = ("0123456789"[num]);
+			--decs;
+		}
+		buf[bufpos++] = ("0123456789"[intpart]);
+
+		if (decs != 0 && suf != 0) {
+			buf[bufpos++] = ('.');
+			int decpart = (size >> (decpartbits-7)) & 0x7F;
+			if (decs == 2) {
+				decpart *= 10;
+				int num = decpart / (0x7F);
+				decpart = decpart % (0x7F);
+				buf[bufpos++] = ("0123456789"[num]);
+			}
+			decpart *= 10;
+			int num = decpart / (0x7F);
+			buf[bufpos++] = ("0123456789"[num]);
+		}
+
+		buf[bufpos++] = ' ';
+		if (suf > 5) suf = 5;
+		if (suf > 0) buf[bufpos++] = (" KMGT?"[suf]);
+		buf[bufpos++] = ('B');
+		return std::string(buf, buf+bufpos);
+	};
+
+
+	string size_string(const uint64& size)
+	{
+		if (!(size > 0xffffffff)) {
+			return size_string_impl_32<0>((uint32)size);
+		} else {
+			return size_string_impl_32<3>((uint32)(size>>30));
+		}
+	}
+
+	string size_string(const uint32& size)
+	{
+		return size_string_impl_32<0>(size);
+	}
+#endif
+
+} //namespace strformat
 
 #endif//STR_FORMAT_H
