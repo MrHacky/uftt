@@ -151,6 +151,18 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 	}
 #endif
 
+	// linux interface up/down + ipv4adrr add/delete event socket
+	#if 0
+	{
+		memset (&sa, 0, sizeof(sa));
+		snl.nl_family = AF_NETLINK;
+		snl.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+
+		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+		bind(fd, (struct sockaddr*)&sa, sizeof(sa));
+	}
+	#endif
+
 	// ipx interface probe for windows
 	#if 0
 	{
