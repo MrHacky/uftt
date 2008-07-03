@@ -334,6 +334,11 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 void MainWindow::StartDownload()
 {
+	fs::path dlpath = DownloadEdit->text().toStdString();
+	if (!fs::exists(dlpath)) {
+		QMessageBox::StandardButton res = QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
+		return;
+	}
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
 	if (!rwi)
 		return;
@@ -350,7 +355,7 @@ void MainWindow::StartDownload()
 		twi, _1, _2, starttime, _3);
 	handler(0, "Starting", 0);
 //		boost::bind(&MainWindow::download_progress, this&tester, _1, _2);
-	backend->slot_download_share(name.toStdString(), fs::path(DownloadEdit->text().toStdString()), handler);
+	backend->slot_download_share(name.toStdString(), dlpath, handler);
 	return;
 	SHA1C hash;
 	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
