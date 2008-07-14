@@ -16,6 +16,7 @@
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <fstream>
 
@@ -419,22 +420,20 @@ int imain( int argc, char **argv )
 		cout << flush;
 	}
 
-	{
+	try {
 		exefile = shared_vec(new vector<uint8>());
 		boost::uintmax_t todomax = boost::filesystem::file_size(argv[0]);
 		cout << "file_size: " << todomax << "\n";
-		if (todomax > 0xffffffff) {
-			cout << "executable too large\n";
-		}
-		uint32 todo = (uint32)todomax; //cast safe due to above check
+		uint32 todo = boost::numeric_cast<uint32>(todomax); // throws when out of range
 		exefile->resize(todo);
 		ifstream istr(argv[0], ios_base::in|ios_base::binary);
 		istr.read((char*)&((*exefile)[0]), todo);
 		uint32 read = istr.gcount();
-		if (read != todo) {
-			cout << "failed to read ourself\n";
-			exefile->resize(0);
-		}
+		if (read != todo)
+			throw std::runtime_error("read failed");
+	} catch (std::exception& e) {
+		cout << "failed to read ourself: " << e.what() << '\n';
+		exefile->resize(0);
 	}
 
 	if (argc > 2 && string(argv[1]) == "--replace") {
