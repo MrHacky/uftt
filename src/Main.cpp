@@ -44,7 +44,7 @@ std::vector<uint8*> testbuffers;
 				bool* value;
 				settrue(bool* value_) : value(value_) {};
 				void operator()(const boost::system::error_code& ec, const size_t len = 0)
-				{ 
+				{
 					boost::asio::detail::throw_error(ec);
 					*value = true;
 				}
@@ -83,11 +83,11 @@ int runtest() {
 
 			rsock.open(boost::asio::ip::tcp::v4());
 			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432), settrue(&connected));
-	
+
 			boost::asio::deadline_timer wd(service);
 			wd.expires_from_now(boost::posix_time::seconds(10));
 			wd.async_wait(settrue(&timedout));
-			
+
 			do {
 				service.run_one();
 				if (accepted && !sent) {
@@ -128,13 +128,13 @@ int runtest() {
 			char rstr[] = "1234567890";
 			boost::asio::io_service service;
 			boost::asio::ip::udp::socket udpsocket(service);
-			
+
 			udpsocket.open(boost::asio::ip::udp::v4());
 			//udpsocket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address(), 23432));
 			udpsocket.set_option(boost::asio::ip::udp::socket::broadcast(true));
 
 			udpsocket.send_to(
-				boost::asio::buffer(sstr), 
+				boost::asio::buffer(sstr),
 				boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), 23432)
 				//boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432),
 				,0
@@ -185,7 +185,7 @@ void calcbuildstring() {
 	try {
 		thebuildstring = string(BUILD_STRING);
 		stringstream sstamp;
-		
+
 		int month, day, year;
 		{
 			char* temp = build_string_macro_date;
@@ -266,7 +266,7 @@ int imain( int argc, char **argv )
 	terminating = true;
 
 	// hax...
-	
+
 	exit(ret);
 
 	return ret;

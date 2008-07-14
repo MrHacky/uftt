@@ -14,7 +14,7 @@ class QTMain {
 	public:
 		QTMain( int& argc, char **argv );
 		~QTMain();
-		
+
 		void BindEvents(SimpleBackend* t);
 
 		int run();

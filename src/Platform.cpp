@@ -146,10 +146,10 @@ namespace platform {
 			&pidlist
 		);
 		if (res != S_OK) return retval;
-		
-		LPSTR Path = new TCHAR[MAX_PATH]; 
+
+		LPSTR Path = new TCHAR[MAX_PATH];
 		if (SHGetPathFromIDList(pidlist, Path))
-			retval = Path; 
+			retval = Path;
 
 		delete[] Path;
 		ILFree(pidlist);

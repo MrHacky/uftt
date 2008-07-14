@@ -17,7 +17,7 @@ using namespace std;
 namespace {
 	const int retry_max(30);
 
-	char thepubkey[] = 
+	char thepubkey[] =
 	"-----BEGIN RSA PUBLIC KEY-----\n"
 	"MIICCgKCAgEAprtlIDKFC0jgAL05jc1dyqN3ptxAI3oOBvHwLuDgTPpH9C5kHNaB\n"
 	"MiMO+gZ2AUBZny/aRIlAMrjjKEqbdUk9Xyu+MIBPsUy+wO8xYLMK7mXkwhfgKNDS\n"
@@ -56,11 +56,11 @@ namespace {
 
 		if (sigstr != "UFTT")
 			return false;
-		
+
 		uint32 sigsize = 0;
 		for (int i = 0; i < 4; ++i)
 			sigsize |= file[file.size()-8+i] << (i*8);
-		
+
 		if (file.size() < (sigsize*2)+8)
 			return false;
 
@@ -291,7 +291,7 @@ int AutoUpdater::replace(const boost::filesystem::path& source, const boost::fil
 					cout << "error writing\n";
 					cout << "ostr.bad(): " << ostr.bad() << '\n';
 					cout << "errno: " << errno << '\n';
-				} else 
+				} else
 					written = true;
 				ostr.flush();
 				ostr.close();

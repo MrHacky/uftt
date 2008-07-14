@@ -164,9 +164,9 @@ void NetworkThread::operator()()
 			break;
 		}
 	}
-		
+
 	assert(udpsock != INVALID_SOCKET);
-	
+
 	sockaddr bc_addr;
 	{
 		sockaddr_in* bc_inaddr = ( sockaddr_in * )&bc_addr;
@@ -257,7 +257,7 @@ void NetworkThread::operator()()
 
 							cbAddShare(name, hash);
 						}
-						
+
 						break;
 					}
 					case PT_QUERY_OBJECT_INFO: {
@@ -284,7 +284,7 @@ void NetworkThread::operator()()
 									cursize += 4;                // 4 bytes for string (name) length
 									cursize += cfi->name.size(); // x bytes for string (name) data
 									cursize += 20;               // 20 bytes for hash
-	
+
 									if (cursize > maxsize) {
 										++nchunks;
 										cursize -= lastsize;
@@ -310,7 +310,7 @@ void NetworkThread::operator()()
 					case PT_REPLY_TREE_INFO: {
 						SHA1 hash;
 						rpacket.deserialize(hash);
-						
+
 						JobRequestTreeDataRef job = TreeJobs[hash];
 						if (!job) {
 							LOG("dont care for packet");
@@ -361,7 +361,7 @@ void NetworkThread::operator()()
 									++nchunk;
 									cursize -= lastsize;
 								}
-								
+
 								if (nchunk == chunknum) {
 									spacket.serialize(cfi->name);
 									spacket.serialize(cfi->hash);
@@ -410,7 +410,7 @@ void NetworkThread::operator()()
 								job->childcount = 0;
 								job->mtime = 0;
 								job->gotinfo = true;
-								
+
 								//FileInfoRef fi = findFI(hash);
 								//At the moment the GUI requests trees for *all* children,
 								//whithout knowing whether they are actually trees
@@ -565,7 +565,7 @@ void NetworkThread::operator()()
 						spacket.curpos = 0;
 						if (!job->gotinfo) {
 							spacket.serialize<uint8>(PT_QUERY_OBJECT_INFO);
-	
+
 							spacket.serialize(job->hash);
 						} else {
 							if (job->curchunk < job->chunkcount) {

@@ -32,7 +32,7 @@ class QDragDropSignalEmitter: public QObject {
 		void dragEnterTriggered(QDragEnterEvent*);
 		void dropTriggered(QDropEvent*);
 
-	
+
 };
 
 //template<class BaseWidget = QWidget>

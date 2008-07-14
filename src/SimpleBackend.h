@@ -107,7 +107,7 @@ struct dirsender {
 };
 
 class SimpleTCPConnection {
-	private: 
+	private:
 		friend class SimpleBackend;
 		class SimpleBackend* backend;
 
@@ -274,13 +274,13 @@ class SimpleTCPConnection {
 								rsize = 1;
 							sbuf->resize((size_t)rsize);
 							isreading = true;
-							cursendfile.file.async_read_some(GETBUF(sbuf), 
+							cursendfile.file.async_read_some(GETBUF(sbuf),
 								boost::bind(&SimpleTCPConnection::handle_read_file, this, _1, _2, sbuf));
 						}
 					}
 				} else if (!quesenddir.empty()) {
 					boost::filesystem::path newpath;
-					
+
 					bool dirdone = quesenddir.back().getbuf(sbuf, newpath);
 					if (dirdone) {
 						quesenddir.pop_back();
@@ -518,7 +518,7 @@ class SimpleTCPConnection {
 			start_recv_header(rbuf);
 		}
 
-		/** handle file receiving 
+		/** handle file receiving
 		 *  @param e    an error occured
 		 *  @param done true if file is ready to write (handle_ready_file already fired)
 		 *  @param size amount of bytes left to receive for the file
@@ -616,7 +616,7 @@ class SimpleBackend {
 		SimpleTCPConnectionRef newconn;
 		std::vector<SimpleTCPConnectionRef> conlist;
 		std::map<std::string, boost::filesystem::path> sharelist;
-		
+
 		boost::thread servicerunner;
 
 		void servicerunfunc() {
@@ -653,7 +653,7 @@ class SimpleBackend {
 		void handle_udp_receive(const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
 				if (len >= 4) {
-					uint32 rpver = 
+					uint32 rpver =
 						(udp_recv_buf[0] <<  0) |
 						(udp_recv_buf[1] <<  8) |
 						(udp_recv_buf[2] << 16) |
@@ -721,7 +721,7 @@ class SimpleBackend {
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
 				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, 6+bslen), 
+					boost::asio::buffer(udp_send_buf, 6+bslen),
 					ep,
 					0
 					,err
@@ -744,7 +744,7 @@ class SimpleBackend {
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
 				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, name.size()+6), 
+					boost::asio::buffer(udp_send_buf, name.size()+6),
 					ep,
 					0,
 					err
@@ -802,14 +802,14 @@ class SimpleBackend {
 
 		std::vector<boost::asio::ip::address> get_broadcast_adresses();
 
-		template<typename BUF> 
+		template<typename BUF>
 		void send_udp_broadcast(boost::asio::ip::udp::socket& sock, BUF buf, uint16 port, int flags, boost::system::error_code& err)
 		{
 			std::vector<boost::asio::ip::address> adresses;
 			adresses = this->get_broadcast_adresses();
 			BOOST_FOREACH(boost::asio::ip::address& addr, adresses) {
 				udpsocket.send_to(
-					buf, 
+					buf,
 					boost::asio::ip::udp::endpoint(addr, port),
 					flags,
 					err

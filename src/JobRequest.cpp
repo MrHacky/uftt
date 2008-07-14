@@ -67,11 +67,11 @@ void JobRequestBlobData::handleChunk(uint32 chunknum, uint32 chunksize, uint8* b
 				LOG("AND we already have it!");
 			}
 			mtime = 0;
-		} else { 
+		} else {
 			LOG("AND it is too far into the future!");
 		}
 		return;
-	} else 
+	} else
 		assert(!usebuf[cbi]);
 
 	uint32 len = 1024;
@@ -119,7 +119,7 @@ bool JobRequestBlobData::timeout(uint32& reqchunk, uint8& reqcnt)
 JobRequestBlobData::JobRequestBlobData()
 	: JobRequest(JRT_BLOBDATA), gotinfo(false)
 {
-	for (int i = 0; i < MAX_BUFFER_SIZE; ++i) 
+	for (int i = 0; i < MAX_BUFFER_SIZE; ++i)
 		usebuf[i]=false;
 };
 

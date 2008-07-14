@@ -52,7 +52,7 @@ boost::asio::deadline_timer::duration_type stats_timeout = boost::posix_time::mi
 boost::asio::deadline_timer::duration_type disconn_timeout = boost::posix_time::milliseconds(10*1000*60); // 10min
 boost::asio::deadline_timer::duration_type active_timeout = boost::posix_time::milliseconds(5*1000);      // 5sec
 boost::asio::deadline_timer::duration_type idle_timeout = boost::posix_time::milliseconds(1000*60);       // 1min
-	
+
 class ipx_conn {
 	private:
 		enum state_enum {
@@ -79,7 +79,7 @@ class ipx_conn {
 		uint16 lqid;
 		uint16 rqid;
 
-		
+
 		uint32 snd_una; // oldest unacknowledged sequence number
 		uint32 snd_nxt; // next sequence number to be sent
 		uint32 snd_wnd; // remote receiver window size
@@ -170,7 +170,7 @@ class ipx_conn {
 				--resend; // and subtract all canceled timeouts
 		}
 
-		void handle_read(ipx_packet* pack, size_t len) 
+		void handle_read(ipx_packet* pack, size_t len)
 		{
 			pack->datalen = len - ipx_packet::headersize;
 			snd_wnd = pack->window;

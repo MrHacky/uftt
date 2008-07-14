@@ -54,7 +54,7 @@ BOOST_CLASS_VERSION(UFTTSettings, 3)
 namespace boost { namespace serialization {
 
 	template<class Archive>
-inline void save (Archive & ar, boost::filesystem::path const& p, 
+inline void save (Archive & ar, boost::filesystem::path const& p,
     const unsigned int /* file_version */)
 {
     using namespace boost::serialization;

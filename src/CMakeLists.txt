@@ -30,13 +30,13 @@ SET(UFTT_SOURCES
 	Types.h
 	BuildString.h         "${BUILDVER_FILE}"
 	SimpleBackend.h       SimpleBackend.cpp
-	
+
 	AutoUpdate.h          AutoUpdate.cpp
-	
+
 	qt-gui/Icons/icon.rc
-	
+
 	Platform.h            Platform.cpp
-	
+
 	SharedData.cpp
 	SharedData.h
 	JobRequest.cpp

@@ -2,7 +2,7 @@
 
 Just some thinking about the (distant?) future of UFTT :-p
 
-Some concepts might need to be introduced for extensibility etc: 
+Some concepts might need to be introduced for extensibility etc:
   * link = some particular way to communicate with other clients
     examples: a connected TCP-connection
               an IPX/UDP broadcast interface
@@ -80,7 +80,7 @@ memblobs
 
 Jobs/actions/events:
 - Client discovery request
-- 
+-
 
 1. Network thread receives some data
 2. It notifies the link to which it belongs

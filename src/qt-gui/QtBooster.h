@@ -301,7 +301,7 @@ void generateQtBoosterImplementation(std::string fname) {
 				out << "typename T" << i << ", ";
 			out << "typename T" << na << ">" << '\n';
 		}
-		
+
 		out << TABS(0) << "void operator()(";
 		for (int i = 1; i <= na; ++i) {
 			if (i != 1) out << ", ";

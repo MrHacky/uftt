@@ -40,7 +40,7 @@ class MyItemDelegate : public QItemDelegate
 {
 public:
     MyItemDelegate(QObject* parent = 0) : QItemDelegate(parent) {}
- 
+
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
     {
         // allow only specific column to be edited, second column in this example
@@ -253,7 +253,7 @@ void MainWindow::addSimpleShare(std::string sharename)
 	if (fres.empty()) {
 		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
 		rwi->setText(0, qsharename);
-	}	
+	}
 }
 
 void MainWindow::AddNewShare(std::string str, SHA1C hash)
@@ -431,7 +431,7 @@ void MainWindow::onDropTriggered(QDropEvent* evt)
 			/*
 			FileInfoRef fi(new FileInfo(str));
 			addFileInfo(*fi);
-			
+
 			ShareInfo fs(fi);
 			fs.path = str;
 			{
