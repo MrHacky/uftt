@@ -104,11 +104,54 @@ namespace {
 		boost::function<void(bool)> handler;
 		std::string bstring;
 		bool signifneeded;
+		bool trycompress;
 
-		SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const std::string bstring_, const boost::function<void(bool)>& handler_, bool signifneeded_ = false)
-			: service(service_), file(file_), handler(handler_), bstring(bstring_), signifneeded(signifneeded_)
+		SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const std::string bstring_, const boost::function<void(bool)>& handler_, bool signifneeded_ = false, bool trycompress_ = false)
+			: service(service_), file(file_), handler(handler_), bstring(bstring_), signifneeded(signifneeded_), trycompress(trycompress_)
 		{
 		}
+
+		void try_compress()
+		{
+			boost::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
+			boost::filesystem::path tempexe("C:\\Temp\\ufft-temp.exe");
+
+			if (!boost::filesystem::exists(upxexe))
+				return;
+
+			{
+				ofstream wexe(tempexe.native_file_string().c_str(), ios_base::out|ios_base::binary);
+				wexe.write((char*)&((*file)[0]), file->size());
+				if (wexe.fail()) return;
+				wexe.close();
+			}
+
+			{
+				vector<string> args;
+				args.push_back("--best");
+				args.push_back("--lzma");
+				args.push_back(tempexe.native_file_string());
+
+				int retval = platform::RunCommand(upxexe.native_file_string(), &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
+				if (retval != 0) return;
+			}
+
+			uint32 nsize = boost::numeric_cast<uint32>(boost::filesystem::file_size(tempexe));
+			if (nsize == 0 || nsize >= file->size())
+				return;
+
+			{
+				shared_vec nvec(new vector<uint8>(nsize));
+				ifstream rexe(tempexe.native_file_string().c_str(), ios_base::in|ios_base::binary);
+				rexe.read((char*)&((*nvec)[0]), nvec->size());
+				if (rexe.fail() || rexe.gcount() != nsize) return;
+				rexe.close();
+				file->swap(*nvec);
+			}
+
+			cout << "compressed to " << nsize << " bytes\n";
+
+		};
 
 		void operator()() {
 			bool hassignedbuild = false;
@@ -139,6 +182,8 @@ namespace {
 			} else if (signifneeded && rsapriv && !(bstring.size() > 0xff)) {
 				// it's not signed, but we have access to a private key
 				// so we can sign it ourselves!
+
+				if (trycompress) try_compress();
 
 				// first append buildstring
 				for (uint i = 0; i < bstring.size(); ++i)
@@ -201,24 +246,28 @@ namespace {
 		{
 		}
 
-		static void open_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e)
+		static void open_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e) {
+			helper->open_handler(helper, e, true);
+		}
+
+		static void open_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e, bool trycompress)
 		{
 			if (e) {
 				cout << "Failed to open file\n";
 				return;
 			}
 			boost::asio::async_read(helper->file, GETBUF(helper->filedata),
-				boost::bind(&checkfile_helper::read_handler, helper, _1, _2));
+				boost::bind(&checkfile_helper::read_handler, helper, _1, _2, trycompress));
 		}
 
-		static void read_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e, size_t len)
+		static void read_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e, size_t len, bool trycompress)
 		{
 			if (e) {
 				cout << "Failed to read file\n";
 				return;
 			}
 			helper->disk_service.get_work_service().post(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
-				boost::bind(&checkfile_helper::sign_handler, helper, _1), helper->signifneeded));
+				boost::bind(&checkfile_helper::sign_handler, helper, _1), helper->signifneeded, trycompress));
 		}
 
 		static void sign_handler(boost::shared_ptr<checkfile_helper> helper, bool issigned)
