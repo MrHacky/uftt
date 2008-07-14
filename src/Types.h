@@ -17,4 +17,15 @@ typedef boost::int64_t  int64;
 
 typedef unsigned int uint;
 
+// TODO: put this somewhere else?
+#include <vector>
+#include <boost/shared_ptr.hpp>
+
+typedef boost::shared_ptr<std::vector<uint8> > shared_vec;
+#define GETBUF(x) \
+	(	(x->empty()) \
+	?	(boost::asio::buffer((uint8*)NULL, 0)) \
+	:	(boost::asio::buffer(&((*x)[0]), x->size())) \
+	)
+
 #endif

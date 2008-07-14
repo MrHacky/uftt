@@ -561,7 +561,7 @@ void MainWindow::new_autoupdate(std::string url)
 	//QDialog::
 }
 
-bool checksigniature(const std::vector<uint8>& file, const std::string& bstring_expect);
+bool checksigniaturex(const std::vector<uint8>& file, const std::string& bstring_expect);
 
 void MainWindow::download_done(std::string url)
 {
@@ -584,7 +584,7 @@ void MainWindow::download_done(std::string url)
 				cout << "failed to read the new file\n";
 				return;
 			}
-			if (!checksigniature(newfile, bname)) {
+			if (!checksigniaturex(newfile, bname)) {
 				cout << "failed to verify the new file's signiature\n";
 				return;
 			}

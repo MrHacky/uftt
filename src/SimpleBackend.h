@@ -9,18 +9,12 @@
 
 #include "net-asio/asio_file_stream.h"
 
-typedef boost::shared_ptr<std::vector<uint8> > shared_vec;
-#define GETBUF(x) \
-	(	(x->empty()) \
-	?	(boost::asio::buffer((uint8*)NULL, 0)) \
-	:	(boost::asio::buffer(&((*x)[0]), x->size())) \
-	)
+#include "AutoUpdate.h"
 
 /*** evil globals here, TODO: remove them all! ***/
 extern services::diskio_service* gdiskio;
+extern AutoUpdater updateProvider;
 extern std::string thebuildstring;
-extern shared_vec exefile;
-extern bool hassignedbuild;
 
 /// helper classes, TODO: nest them properly...
 struct header {
@@ -349,19 +343,21 @@ class SimpleTCPConnection {
 			std::cout << "got share name: " << sharename << '\n';
 			getsharepath(sharename);
 			if (sharepath == "") {
-				std::cout << "share not found\n";
-				if (sharename == thebuildstring) {
-					std::string name = thebuildstring + ".exe";
+				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
+				if (buildfile) {
+					std::cout << "is a build share\n";
+					std::string name = sharename + ".exe";
 					rbuf->resize(16 + name.size());
 					header hdr;
 					hdr.type = 0x01; // file
-					hdr.size = exefile->size();
+					hdr.size = buildfile->size();
 					hdr.nlen = name.size();
 					memcpy(&(*rbuf)[0], &hdr, 16);
 					memcpy(&(*rbuf)[16], name.data(), hdr.nlen);
 					boost::asio::async_write(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::sent_autoupdate_header, this, _1, rbuf));
-				}
+						boost::bind(&SimpleTCPConnection::sent_autoupdate_header, this, _1, buildfile, rbuf));
+				} else
+					std::cout << "share does not exist\n";
 				return;
 			}
 			std::cout << "got share path: " << sharepath << '\n';
@@ -369,16 +365,16 @@ class SimpleTCPConnection {
 			checkwhattosend();
 		}
 
-		void sent_autoupdate_header(const boost::system::error_code& e, shared_vec sbuf) {
+		void sent_autoupdate_header(const boost::system::error_code& e, shared_vec buildfile, shared_vec sbuf) {
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
 				return;
 			}
-			boost::asio::async_write(socket, GETBUF(exefile),
-						boost::bind(&SimpleTCPConnection::sent_autoupdate_file, this, _1, sbuf));
+			boost::asio::async_write(socket, GETBUF(buildfile),
+						boost::bind(&SimpleTCPConnection::sent_autoupdate_file, this, _1, buildfile, sbuf));
 		}
 
-		void sent_autoupdate_file(const boost::system::error_code& e, shared_vec sbuf) {
+		void sent_autoupdate_file(const boost::system::error_code& e, shared_vec buildfile, shared_vec sbuf) {
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
 				return;
@@ -737,48 +733,37 @@ class SimpleBackend {
 				std::cout << "query failed: " << err.message() << '\n';
 		}
 
+		void send_publish(const boost::asio::ip::udp::endpoint& ep, const std::string& name, bool isbuild)
+		{
+			uint8 udp_send_buf[1024];
+			memcpy(udp_send_buf, udp_recv_buf, 4);
+			udp_send_buf[4] = isbuild ? 3 : 2;
+			udp_send_buf[5] = name.size();
+			memcpy(&udp_send_buf[6], name.data(), name.size());
+
+			boost::system::error_code err;
+			if (ep.address() != boost::asio::ip::address_v4::broadcast())
+				udpsocket.send_to(
+					boost::asio::buffer(udp_send_buf, name.size()+6), 
+					ep,
+					0,
+					err
+				);
+			else
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, name.size()+6), ep.port(), 0, err);
+			if (err)
+				std::cout << "publish of '" << name << "' to '" << ep << "'failed: " << err.message() << '\n';
+		}
+
 		void send_publish(boost::asio::ip::udp::endpoint ep, bool buildstoo) {
 			typedef std::pair<const std::string, boost::filesystem::path> shareiter;
 			BOOST_FOREACH(shareiter& item, sharelist)
-			if (item.first.size() < 0xff && !item.second.empty()) {
-				uint8 udp_send_buf[1024];
-				memcpy(udp_send_buf, udp_recv_buf, 4);
-				udp_send_buf[4] = 2;
-				udp_send_buf[5] = item.first.size();
-				memcpy(&udp_send_buf[6], item.first.data(), item.first.size());
-				
-				boost::system::error_code err;
-				if (ep.address() != boost::asio::ip::address_v4::broadcast())
-					udpsocket.send_to(
-						boost::asio::buffer(udp_send_buf, item.first.size()+6), 
-						ep,
-						0,
-						err
-					);
-				else
-					this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, item.first.size()+6), ep.port(), 0, err);
-				if (err)
-					std::cout << "publish failed: " << err.message() << '\n';
-			}
-			if (buildstoo && hassignedbuild) {
-				uint8 udp_send_buf[1024];
-				memcpy(udp_send_buf, udp_recv_buf, 4);
-				udp_send_buf[4] = 3;
-				udp_send_buf[5] = thebuildstring.size();
-				memcpy(&udp_send_buf[6], thebuildstring.data(), thebuildstring.size());
-				boost::system::error_code err;
-				if (ep.address() != boost::asio::ip::address_v4::broadcast())
-					udpsocket.send_to(
-						boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), 
-						ep,
-						0,
-						err
-					);
-				else
-					this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, thebuildstring.size()+6), ep.port(), 0, err);
-				if (err)
-					std::cout << "publish failed: " << err.message() << '\n';
-			}
+				if (item.first.size() < 0xff && !item.second.empty())
+					send_publish(ep, item.first, false);
+
+			if (buildstoo)
+				BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
+					send_publish(ep, name, true);
 		}
 
 		void add_local_share(std::string name, boost::filesystem::path path)
@@ -787,7 +772,7 @@ class SimpleBackend {
 				std::cout << "warning: replacing share with identical name\n";
 			sharelist[name] = path;
 
-			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), false);
+			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, false);
 		}
 
 		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
@@ -852,6 +837,11 @@ class SimpleBackend {
 			tcplistener.open(boost::asio::ip::tcp::v4());
 			tcplistener.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address(), UFTT_PORT));
 			tcplistener.listen(16);
+
+			// bind autoupdater
+			updateProvider.newbuild.connect(
+				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, true)
+			);
 
 			start_udp_receive();
 			start_tcp_accept();
