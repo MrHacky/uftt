@@ -266,11 +266,14 @@ namespace {
 				cout << "Failed to read file\n";
 				return;
 			}
-			helper->disk_service.get_work_service().post(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
-				boost::bind(&checkfile_helper::sign_handler, helper, _1), helper->signifneeded, trycompress));
+			boost::shared_ptr<boost::thread> thread(new boost::thread());
+			*thread = boost::thread(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
+				boost::bind(&checkfile_helper::sign_handler, helper, thread, _1), helper->signifneeded, trycompress)).move();
+			//helper->disk_service.get_work_service().post(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
+			//	boost::bind(&checkfile_helper::sign_handler, helper, thread, _1), helper->signifneeded, trycompress));
 		}
 
-		static void sign_handler(boost::shared_ptr<checkfile_helper> helper, bool issigned)
+		static void sign_handler(boost::shared_ptr<checkfile_helper> helper, boost::shared_ptr<boost::thread> thread, bool issigned)
 		{
 			if (issigned) {
 				cout << "Signed: Yes\n";
