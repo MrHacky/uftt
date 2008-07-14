@@ -1,9 +1,9 @@
-#include "Types.h"
+#include "../Types.h"
 
 
-#include "net-asio/asio_ipx.h"
-#include "net-asio/asio_file_stream.h"
-#include "net-asio/ipx_conn.h"
+#include "../net-asio/asio_ipx.h"
+#include "../net-asio/asio_file_stream.h"
+#include "../net-asio/ipx_conn.h"
 
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
