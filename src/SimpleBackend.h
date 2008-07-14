@@ -76,7 +76,6 @@ struct dirsender {
 	bool getbuf(shared_vec buf, boost::filesystem::path& newpath)
 	{
 		if (!hsent) {
-			int x = sizeof(header);
 			hsent = true;
 			buf->resize(16 + name.size());
 			header hdr;
@@ -134,10 +133,10 @@ class SimpleTCPConnection {
 
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
-			: service(service_)
+			: backend(backend_)
+			, service(service_)
 			, socket(service_)
 			, progress_timer(service_)
-			, backend(backend_)
 		{
 			dldone = false;
 			uldone = false;
@@ -825,9 +824,9 @@ class SimpleBackend {
 
 	public:
 		SimpleBackend()
-			: udpsocket(service)
+			: diskio(service)
+			, udpsocket(service)
 			, tcplistener(service)
-			, diskio(service)
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());

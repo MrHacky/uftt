@@ -203,6 +203,7 @@ public:
 
 	std::ostream& operator<<(std::ostream& os)
 	{
+		return os;
 	}
 
 	bool operator==(const endpoint& o) const {

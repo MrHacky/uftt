@@ -128,7 +128,7 @@ int runtest() {
 		cout << "Testing udp broadcast...";
 		{
 			char sstr[] = "sendstring";
-			char rstr[] = "1234567890";
+			//char rstr[] = "1234567890";
 			boost::asio::io_service service;
 			boost::asio::ip::udp::socket udpsocket(service);
 
@@ -192,7 +192,6 @@ void calcbuildstring() {
 		int month, day, year;
 		{
 			char* temp = build_string_macro_date;
-			unsigned char i;
 
 			// ANSI C Standard month names
 			const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
@@ -200,11 +199,10 @@ void calcbuildstring() {
 			*(temp + 6) = 0;
 			day = atoi(temp + 4);
 			*(temp + 3) = 0;
-			for (i = 0; i < 12; i++) {
-				if (!strcmp(temp, months[i])) {
-					month = i + 1;
-				}
-			}
+			for (month = 0; month < 12; ++month)
+				if (!strcmp(temp, months[month]))
+					break;
+			++month;
 		}
 
 		string tstamp(build_string_macro_time);

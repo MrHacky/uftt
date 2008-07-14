@@ -36,4 +36,4 @@ class AutoUpdater {
 		std::map<std::string, boost::shared_ptr<std::vector<uint8> > > filedata;
 };
 
-#endif AUTO_UPDATE_H
+#endif//AUTO_UPDATE_H

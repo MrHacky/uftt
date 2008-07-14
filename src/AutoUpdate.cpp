@@ -6,6 +6,8 @@
 
 #include "Platform.h"
 
+#include <fstream>
+
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
@@ -144,7 +146,7 @@ namespace {
 				shared_vec nvec(new vector<uint8>(nsize));
 				ifstream rexe(tempexe.native_file_string().c_str(), ios_base::in|ios_base::binary);
 				rexe.read((char*)&((*nvec)[0]), nvec->size());
-				if (rexe.fail() || rexe.gcount() != nsize) return;
+				if (rexe.fail() || boost::numeric_cast<uint32>(rexe.gcount()) != nsize) return;
 				rexe.close();
 				file->swap(*nvec);
 			}

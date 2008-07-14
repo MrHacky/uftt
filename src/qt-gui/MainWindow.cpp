@@ -326,7 +326,7 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 		drag->setMimeData(mimeData);
 		//drag->setPixmap(iconPixmap);
 
-		Qt::DropAction dropAction = drag->start();
+		// Qt::DropAction dropAction = drag->start();
 		// TODO: figure this out...
 	}
 
@@ -336,7 +336,7 @@ void MainWindow::StartDownload()
 {
 	fs::path dlpath = DownloadEdit->text().toStdString();
 	if (!fs::exists(dlpath)) {
-		QMessageBox::StandardButton res = QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
+		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
