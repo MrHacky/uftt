@@ -1,19 +1,22 @@
-- [partial] optimise sender with buffer queue
-- optimise receiver with buffer queue
+- fix upload task for autoupdate
+- fix download task for autoupdate
+- optimize receiver with buffer queue
 - allow management of local shares
-- remember local share
-- [partial] show upload tasks in task list
-- [partial] make nice application icons
+- remember local shares
+- show share name for upload tasks
 - [WIP] allow custom broadcast ip's
 - allow custom broadcast dns names
 - clean up connections when they are done
-- [partial] refactor autoupdate so it can be easily disabled in linux
+- allow disabling of autoupdate at compile time (and do so by default in linux?)
 - implement console detaching/attaching for linux
-- refactor out byte value to string conversion to utulity header
-- process --delete asynchronously
-- read 'exefile' asynchronously
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
 - implement udp-semi connections, and plug them into the now shiny architecture
+- [DONE] show upload tasks in task list
+- [DONE] make nice application icons
+- [DONE] process --delete asynchronously
+- [DONE] read 'exefile' asynchronously
+- [DONE] optimise sender with buffer queue
+- [DONE] refactor out byte value to string conversion to utulity header
 - [DONE] fix opening mounted iso's
 - [DONE] make ufft work in linux
 - [DONE] refactor console, to always show in debug mode, and in release mode when we have something to say
