@@ -23,6 +23,7 @@ namespace platform {
 	enum {
 		RF_NEW_CONSOLE   = 1 << 0,
 		RF_WAIT_FOR_EXIT = 1 << 1,
+		RF_NO_WINDOW     = 1 << 2,
 	};
 
 	int RunCommand(const std::string& cmd, const std::vector<std::string>* args, const std::string& workdir, int flags);

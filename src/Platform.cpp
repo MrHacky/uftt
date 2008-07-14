@@ -113,7 +113,8 @@ namespace platform {
 				NULL,
 				NULL,
 				FALSE,
-				(flags & RF_NEW_CONSOLE) ? CREATE_NEW_CONSOLE : 0,
+				(flags & RF_NO_WINDOW)   ? CREATE_NO_WINDOW   : 0 |
+				(flags & RF_NEW_CONSOLE) ? CREATE_NEW_CONSOLE : 0 ,
 				NULL, (workdir=="") ? NULL : TEXT(workdir.c_str()), &si, &pi))
 		{
 			if (flags & RF_WAIT_FOR_EXIT) {
