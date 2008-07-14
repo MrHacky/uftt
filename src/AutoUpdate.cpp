@@ -133,11 +133,13 @@ namespace {
 
 			{
 				vector<string> args;
+				//args.push_back("-1");
 				args.push_back("--best");
 				args.push_back("--lzma");
 				args.push_back(tempexe.native_file_string());
 
-				int retval = platform::RunCommand(upxexe.native_file_string(), &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
+				cout << "Compressing now...\n";
+				int retval = platform::RunCommand(upxexe.native_file_string(), &args, "", platform::RF_NO_WINDOW|platform::RF_WAIT_FOR_EXIT);
 				if (retval != 0) return;
 			}
 
@@ -154,7 +156,7 @@ namespace {
 				file->swap(*nvec);
 			}
 
-			cout << "compressed to " << nsize << " bytes\n";
+			cout << "Compressed to " << nsize << " bytes\n";
 
 		};
 
