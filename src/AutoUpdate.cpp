@@ -1,5 +1,8 @@
 #include "AutoUpdate.h"
 
+// autoupdate only functions when ssl lib is available
+#ifdef USE_OPENSSL
+
 #include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/algorithm/string.hpp>
@@ -489,3 +492,41 @@ void AutoUpdater::addBuild(std::string name, shared_vec data)
 	newbuild(name);
 }
 
+#else//USE_OPENSSL
+
+int AutoUpdater::replace(const boost::filesystem::path& source, const boost::filesystem::path& target)
+{
+	// TODO: we could enable this even without SSL?
+	return -1;
+}
+
+void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target)
+{
+	// TODO: we could enable this even without SSL?
+}
+
+bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& oldstr)
+{
+	return false;
+}
+
+bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath)
+{
+	return false;
+}
+
+void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
+{
+}
+
+boost::shared_ptr<std::vector<uint8> > AutoUpdater::getBuildExecutable(const std::string& buildname) const
+{
+	return boost::shared_ptr<std::vector<uint8> >();
+}
+
+const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
+{
+	return buildstrings;
+}
+
+#endif//USE_OPENSSL(else)
