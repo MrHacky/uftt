@@ -275,14 +275,21 @@ int imain( int argc, char **argv )
 
 int main( int argc, char **argv ) {
 	int ret = -1;
+	string message;
 	try {
 		ret = imain(argc, argv);
 	} catch (std::exception& e) {
-		cout << "exception: " << e.what() << '\n';
+		message = string(e.what());
 	} catch (...) {
-		cout << "unknown exception\n";
+		message = "unknown exception";
 	}
-	if (ret != 0 && platform::hasConsole())
+	if (message != "") {
+		if (!platform::hasConsole()) platform::newConsole();
+		cout << "fatal: " << message << endl;
+	}
+	if (ret != 0 && platform::hasConsole()) {
+		cout << "program aborted, termination in 30 seconds." << endl;
 		platform::msSleep(30*1000);
+	}
 	return ret;
 }
