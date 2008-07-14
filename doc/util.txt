@@ -1,0 +1,8 @@
+# fix all files on whitespace at line end
+sed -i 's:\s\s*$::' `git-ls-files | grep -v "\.png$" | grep -v "/boost_asio_[_0-9]*/"`
+
+# all filename changed in stage
+git-diff-index -p -M --cached HEAD | grep "^diff --git " | sed "s:diff --git a/[^ ]* b/::"
+
+# fix files with staged changes
+sed -i 's:\s\s*$::' `git-diff-index -p -M --cached HEAD | grep "^diff --git " | sed "s:diff --git a/[^ ]* b/::"`
