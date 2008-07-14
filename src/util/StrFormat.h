@@ -38,7 +38,7 @@ namespace StrFormat {
 					return bfmt.str();
 				}
 		};
-	}
+	} // namespace detail
 
 	std::string bytes(double size)
 	{
