@@ -15,6 +15,9 @@ class AutoUpdater {
 
 		static void remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target);
 
+		static bool isBuildBetter(const std::string& newstr, const std::string& oldstr);
+
+		static bool doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath);
 
 	public: // actual object interface for offering builds for autoupdate
 

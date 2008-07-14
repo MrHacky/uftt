@@ -2,6 +2,8 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
+#include <boost/algorithm/string.hpp>
+
 #include "Platform.h"
 
 #include <openssl/rsa.h>
@@ -256,10 +258,6 @@ namespace {
 	}
 }
 
-bool checksigniaturex(const std::vector<uint8>& file, const std::string& bstring_expect) {
-	return checksigniature(file, bstring_expect);
-}
-
 int AutoUpdater::replace(const boost::filesystem::path& source, const boost::filesystem::path& target)
 {
 	boost::uintmax_t todomax = boost::filesystem::file_size(source);
@@ -321,6 +319,84 @@ void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::i
 	boost::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(work_service));
 	removefile_helper(timer, target, retry_max);
 }
+
+bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& oldstr)
+{
+	size_t newpos = newstr.find_last_of("-");
+	size_t oldpos = oldstr.find_last_of("-");
+
+	string newcfg = newstr.substr(0, newpos);
+	string oldcfg = oldstr.substr(0, oldpos);
+
+	if (newcfg != oldcfg) return false;
+
+	string newver = newstr.substr(newpos+1);
+	string oldver = oldstr.substr(oldpos+1);
+
+	vector<string> newvervec;
+	vector<string> oldvervec;
+	boost::split(newvervec, newver, boost::is_any_of("._"));
+	boost::split(oldvervec, oldver, boost::is_any_of("._"));
+
+	for (uint i = 0; i < newvervec.size() && i < oldvervec.size(); ++i) {
+		int newnum = atoi(newvervec[i].c_str());
+		int oldnum = atoi(oldvervec[i].c_str());
+		if (oldnum > newnum) return false;
+		if (oldnum < newnum) return true;
+	}
+
+	if (newvervec.size() != oldvervec.size())
+		return false;
+
+	// they are the same....
+	return false;
+}
+
+bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath)
+{
+	try {
+		if (!boost::filesystem::exists(target))
+			return false;
+
+		{
+			vector<uint8> newfile;
+			uint32 todo = boost::numeric_cast<uint32>(boost::filesystem::file_size(target));
+			newfile.resize(todo);
+			ifstream istr(target.native_file_string().c_str(), ios_base::in|ios_base::binary);
+			if (!istr.is_open()) return false;
+			istr.read((char*)&newfile[0], todo);
+			uint32 read = istr.gcount();
+			if (read != todo) {
+				cout << "failed to read the new file\n";
+				return false;
+			}
+			if (!checksigniature(newfile, buildname)) {
+				cout << "failed to verify the new file's signiature\n";
+				return false;
+			}
+		}
+
+		string program = target.native_file_string();
+		vector<string> args;
+		args.push_back("--runtest");
+		int test = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
+
+		if (test != 0) {
+			cout << "--runtest failed!\n";
+			return false;
+		}
+
+		args.clear();
+		args.push_back("--replace");
+		args.push_back(selfpath.native_file_string());
+		int replace = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE);
+		return (replace == 0);
+	} catch (std::exception& e) {
+		cout << "exceptional failure: " << e.what() << '\n';
+		return false;
+	}
+}
+
 
 void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {

@@ -20,7 +20,6 @@
 #include <QItemDelegate>
 
 #include <boost/foreach.hpp>
-#include <boost/algorithm/string.hpp>
 
 #include "QDebugStream.h"
 
@@ -28,6 +27,7 @@
 #include "../Logger.h"
 #include "../SimpleBackend.h"
 #include "../Platform.h"
+#include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
 //#include "../network/Packet.h"
 
@@ -496,45 +496,13 @@ void MainWindow::on_buttonBrowse_clicked()
 
 extern string thebuildstring;
 
-bool isbetter(std::string newstr, std::string oldstr)
-{
-	size_t newpos = newstr.find_last_of("-");
-	size_t oldpos = oldstr.find_last_of("-");
-
-	string newcfg = newstr.substr(0, newpos);
-	string oldcfg = oldstr.substr(0, oldpos);
-
-	if (newcfg != oldcfg) return false;
-
-	string newver = newstr.substr(newpos+1);
-	string oldver = oldstr.substr(oldpos+1);
-
-	vector<string> newvervec;
-	vector<string> oldvervec;
-	boost::split(newvervec, newver, boost::is_any_of("._"));
-	boost::split(oldvervec, oldver, boost::is_any_of("._"));
-
-	for (uint i = 0; i < newvervec.size() && i < oldvervec.size(); ++i) {
-		int newnum = atoi(newvervec[i].c_str());
-		int oldnum = atoi(oldvervec[i].c_str());
-		if (oldnum > newnum) return false;
-		if (oldnum < newnum) return true;
-	}
-
-	if (newvervec.size() != oldvervec.size())
-		return false;
-
-	// they are the same....
-	return false;
-}
-
 void MainWindow::new_autoupdate(std::string url)
 {
 	if (!settings.autoupdate)
 		return;
 	size_t pos = url.find_last_of("\\/");
 	string bnr = url.substr(pos+1);
-	if (!isbetter(bnr, thebuildstring)) {
+	if (!AutoUpdater::isBuildBetter(bnr, thebuildstring)) {
 		return;
 	}
 	cout << "new autoupdate: " << url << '\n';
@@ -557,11 +525,7 @@ void MainWindow::new_autoupdate(std::string url)
 	auto_update_path = DownloadEdit->text().toStdString();
 	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(&tester, _1, _2);
 	backend->slot_download_share(url, auto_update_path, handler);
-
-	//QDialog::
 }
-
-bool checksigniaturex(const std::vector<uint8>& file, const std::string& bstring_expect);
 
 void MainWindow::download_done(std::string url)
 {
@@ -573,38 +537,8 @@ void MainWindow::download_done(std::string url)
 		auto_update_path /= fname;
 		cout << "autoupdate: " << auto_update_path << "!\n";
 
-		{
-			vector<uint8> newfile;
-			uint32 todo = boost::filesystem::file_size(auto_update_path);
-			newfile.resize(todo);
-			ifstream istr(auto_update_path.native_file_string().c_str(), ios_base::in|ios_base::binary);
-			istr.read((char*)&newfile[0], todo);
-			uint32 read = istr.gcount();
-			if (read != todo) {
-				cout << "failed to read the new file\n";
-				return;
-			}
-			if (!checksigniaturex(newfile, bname)) {
-				cout << "failed to verify the new file's signiature\n";
-				return;
-			}
-		}
-
-		string program = auto_update_path.native_file_string();
-		vector<string> args;
-		args.push_back("--runtest");
-		int test = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE|platform::RF_WAIT_FOR_EXIT);
-
-		if (test != 0) {
-			cout << "--runtest failed!\n";
-			return;
-		}
-
-		args.clear();
-		args.push_back("--replace");
-		args.push_back(boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString()).native_file_string());
-		int replace = platform::RunCommand(program, &args, "", platform::RF_NEW_CONSOLE);
-		this->action_Quit->trigger();
+		if (AutoUpdater::doSelfUpdate(bname, auto_update_path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
+			this->action_Quit->trigger();
 	}
 }
 
