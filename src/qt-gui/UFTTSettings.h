@@ -37,17 +37,18 @@ class UFTTSettings {
 	public:
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
-			ar & NVP("dockinfo", dockinfo);
+			if (version  <  4) ar & NVP("dockinfo", dockinfo);
 			ar & NVP("posx"    , posx);
 			ar & NVP("posy"    , posy);
 			ar & NVP("sizex"   , sizex);
 			ar & NVP("sizey"   , sizey);
 			if (version >=  2) ar & NVP("downloadpath", dl_path);
 			if (version >=  3) ar & NVP("autoupdate"  , autoupdate);
+			if (version >=  4) ar & NVP("dockinfo", dockinfo);
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 3)
+BOOST_CLASS_VERSION(UFTTSettings, 4)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path
