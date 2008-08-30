@@ -5,9 +5,10 @@
 QMarshaller::QMarshaller(QObject* parent)
 : QObject(parent)
 {
-	qRegisterMetaType<QMarshaller::vvfunc>("QMarshaller::vvfunc");
+	// confirmed: Qt detects and ignores duplicate registrations of the same type(name)
+	qRegisterMetaType<QMarshaller::functype>("QMarshaller::functype");
 	QObject::connect(
-		this, SIGNAL(queue_runfunction(QMarshaller::vvfunc)),
-		this, SLOT(execute_runfunction(QMarshaller::vvfunc))
+		this, SIGNAL(signal_runfunction (QMarshaller::functype)),
+		this, SLOT  (execute_runfunction(QMarshaller::functype))
 	);
 }
