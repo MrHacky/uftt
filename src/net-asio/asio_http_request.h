@@ -221,7 +221,7 @@ private:
       boost::asio::async_read(socket_, response_,
           boost::asio::transfer_at_least(1),
           boost::bind(&http_request::handle_read_content, this,
-            boost::asio::placeholders::error));
+            boost::asio::placeholders::error, 0, false));
     }
     else
     {
@@ -229,25 +229,37 @@ private:
     }
   }
 
-  void handle_read_content(const boost::system::error_code& err)
+  void handle_read_content(const boost::system::error_code& err, size_t len, bool usebuf)
   {
     if (!err)
     {
       // Write all of the data that has been read so far.
-		std::stringstream ss;
-		ss << &response_;
+		if (!usebuf) {
+			std::stringstream ss;
+			ss << &response_;
 
-		for (uint i = 0; i < ss.str().size(); ++i)
-			content.push_back(ss.str()[i]);
+			for (uint i = 0; i < ss.str().size(); ++i)
+				bigbuf[i] = ss.str()[i];
+			len = ss.str().size();
+		}
+
+		//std::cout << "len: " << len << '\n';
+
+		content.insert(content.end(), bigbuf, bigbuf + len);
 		//if (!ss.str().empty())
 			//content.insert(content.end(), &ss.str()[0], &ss.str()[0] + ss.str().size());
       //std::cout << &response_;
 
       // Continue reading remaining data until EOF.
-      boost::asio::async_read(socket_, response_,
-          boost::asio::transfer_at_least(1),
-          boost::bind(&http_request::handle_read_content, this,
-            boost::asio::placeholders::error));
+		socket_.async_receive(boost::asio::buffer(bigbuf),
+			boost::bind(&http_request::handle_read_content, this,
+			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, true)
+			);
+
+//      boost::asio::async_read(socket_, response_,
+//          boost::asio::transfer_at_least(1),
+//          boost::bind(&http_request::handle_read_content, this,
+//            boost::asio::placeholders::error, 0, false));
     }
     else if (err != boost::asio::error::eof)
     {
@@ -258,6 +270,7 @@ private:
 	}
   }
 
+  uint8 bigbuf[100*1024];
   boost::asio::ip::tcp::resolver resolver_;
   boost::asio::ip::tcp::socket socket_;
   boost::asio::streambuf request_;
