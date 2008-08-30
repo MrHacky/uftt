@@ -6,6 +6,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
 
 #include "Platform.h"
 
@@ -17,7 +18,27 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 
+#include "../util/Base64.h"
+
 using namespace std;
+
+/*
+	// Generate keys snippet
+	RSA* rsapriv = RSA_generate_key(4096, 65537, NULL, NULL);;
+
+	{
+		FILE* privfile = fopen("c:\\temp\\uftt.private.key.web.dat", "wb");
+		if (privfile) {
+			PEM_write_RSAPrivateKey(privfile, rsapriv, NULL, NULL, 0, NULL, NULL);
+			fclose(privfile);
+		}
+		FILE* pubfile = fopen("c:\\temp\\uftt.private.key.web.pub.dat", "wb");
+		if (pubfile) {
+			PEM_write_RSAPublicKey(pubfile, rsapriv);
+			fclose(pubfile);
+		}
+	}
+*/
 
 namespace {
 	const int retry_max(30);
@@ -35,6 +56,21 @@ namespace {
 	"Ls9CsIK4LN9uFAcdp7syXPuLBwO9Q85uGkS+AJxMt2Ek1GEoHDNlopUmL8fzJ8wW\n"
 	"iVhg6bOjDi0Pv5JvpI19Qw8DcZDdsdAEEwQ5wiq98GG+Nf02f1NGoI4Vm1oKk8QQ\n"
 	"7jbaFEd+p6pVKv2zv16UnoasyZBVmdkAHY4dRhwqz227rJCJMz2TndUCAwEAAQ==\n"
+	"-----END RSA PUBLIC KEY-----\n";
+
+	char thepubwebkey[] =
+	"-----BEGIN RSA PUBLIC KEY-----\n"
+	"MIICCgKCAgEAy2vyvFyVBLEVG2hfEX5dmJivUOETNp717gDyZ3b0FelqjPrVjmW4\n"
+	"9+dQ0j77j45r5/iukYZC6leiRpzMK4LWDQ4yg980Ky5cDsnywMnEpcS1w9PnDsLG\n"
+	"kb5tO6WgtCqLPtiP5kjUOK6s/3ctE41muoQO0D9Fe/h6FSEhE0XVJe70s94xOng3\n"
+	"+9iAZrJ0jB7HTfl0idHEJ1LV7iqUvTEPYTFMVkf6QPCO9j8n9uX1KPqvuF07fQx8\n"
+	"XcGcvxorj7YPUBuN0bkectf8kXdmWkmpO8EgsLHcDbyPtq7SByt5IeVf5IUcbqTj\n"
+	"vWoVH0HhZSYATg7O7zi2CCWrnqNQX5rUDMEsNOVn8FtGPCor2KBWWa6gc7obyDa+\n"
+	"MSB6dCD5OGken/vHpGsWE74JkcSkAp0WmZUNHh5oo1y3rm5wOZEw2IeAn/js1+kZ\n"
+	"vLsMgI9TQS5Q92laUuaSwEG4RYbf4iuC6r9SDXP8NNYWcHXo/tN750ElaH6o5aSV\n"
+	"UVdTxl8aH5jGikrrrWWirDVxSFaPjgIT0CmYIF9AnfLx0KM2FnX38s/CEBllS4iY\n"
+	"6MK+CCkAElMSsBMZaYERhytWi3qxqbUKiI3u28JoqRVkuG4rifietUNHMhf6IhZj\n"
+	"WT6HoksG00Qxv/0SO8+CHAKWlj6BGvLTPlwbfO30btlkvqPyj+zaxiUCAwEAAQ==\n"
 	"-----END RSA PUBLIC KEY-----\n";
 
 	// returns true when signature checks out
@@ -456,6 +492,181 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 	}
 }
 
+
+std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPage(const std::vector<uint8>& webpage)
+{
+	std::vector<std::pair<std::string, std::string> > result;
+	uint8 content_start[] = "-----BEGIN RSA CHECKED CONTENT-----";
+	uint8 content_end[] = "-----END RSA CHECKED CONTENT-----";
+	uint8 signiature_start[] = "-----BEGIN RSA SIGNIATURE-----";
+	uint8 signiature_end[] = "-----END RSA SIGNIATURE-----";
+
+	typedef std::vector<uint8>::const_iterator vpos;
+
+	vpos cspos = std::search(webpage.begin(), webpage.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
+	vpos cepos = std::search(webpage.begin(), webpage.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
+	vpos sspos = std::search(webpage.begin(), webpage.end(), signiature_start, signiature_start + sizeof(signiature_start) - 1);
+	vpos sepos = std::search(webpage.begin(), webpage.end(), signiature_end  , signiature_end   + sizeof(signiature_end  ) - 1);
+
+	if (cspos == webpage.end() || cepos == webpage.end() || sspos == webpage.end() || sepos == webpage.end())
+		return result; // empty result
+
+	cspos += sizeof(content_start) - 1;
+	sspos += sizeof(signiature_start) - 1;
+
+	std::vector<uint8> content(cspos, cepos);
+	std::vector<uint8> sig(sspos, sepos);
+
+	Base64::filter(&sig);
+	sig = Base64::decode(sig);
+
+	if (sig.size() == 0)
+		return result; // empty result
+
+	RSA* rsapub = NULL;
+	RSA* rsapriv = NULL;
+
+	{
+		FILE* privfile = fopen("c:\\temp\\uftt.private.webkey.dat", "rb");
+		if (privfile) {
+			rsapriv = PEM_read_RSAPrivateKey(privfile, NULL, NULL, NULL);
+			fclose(privfile);
+		}
+
+		BIO* pubmem = BIO_new_mem_buf(thepubwebkey, -1);
+		rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
+		BIO_free(pubmem);
+	}
+	EVP_PKEY evppub;
+	EVP_PKEY evppriv;
+
+	EVP_PKEY_assign_RSA(&evppub, rsapub);
+	EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+
+	bool issigned = true;
+
+	{
+		int res;
+		EVP_MD_CTX verifyctx;
+		res = EVP_VerifyInit(&verifyctx, EVP_sha1());
+		if (res != 1) issigned &= false;
+		res = EVP_VerifyUpdate(&verifyctx, &content[0], content.size());
+		if (res != 1) issigned &= false;
+		res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), &evppub);
+		if (res != 1) issigned &= false;
+	}
+
+	if (issigned) {
+		// simple crappy parser
+		int state = 0;
+		int parse = 0;
+		int oparse = 0;
+		string href;
+		string title;
+		BOOST_FOREACH(uint8 chr, content) {
+			if (state == 0 && parse == 0 && chr == '<') ++parse;
+			if (state == 0 && parse == 1 && chr == 'a') ++parse;
+			if (state == 0 && parse == 1 && chr == 'A') ++parse;
+			if (state == 0 && parse == 2 && chr == ' ') ++parse;
+			if (state == 0 && parse == 3) {
+				state = 1;
+				parse = 0;
+				oparse = 0;
+				href.clear();
+				title.clear();
+				continue;
+			}
+			if (state == 1 && parse == 0 && chr == 'h') ++parse;
+			if (state == 1 && parse == 0 && chr == 'H') ++parse;
+			if (state == 1 && parse == 1 && chr == 'r') ++parse;
+			if (state == 1 && parse == 1 && chr == 'R') ++parse;
+			if (state == 1 && parse == 2 && chr == 'e') ++parse;
+			if (state == 1 && parse == 2 && chr == 'E') ++parse;
+			if (state == 1 && parse == 3 && chr == 'f') ++parse;
+			if (state == 1 && parse == 3 && chr == 'F') ++parse;
+			if (state == 1 && parse == 4 && chr == '=') ++parse;
+			if (state == 1 && parse == 5 && chr == '"') ++parse;
+			if (state == 1 && parse == 6) {
+				state = 2;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+			if (state == 1 && chr == '>') {
+				state = 4;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
+			if (state == 2 && chr != '"') href.push_back(chr);
+			if (state == 2 && chr == '"') {
+				state = 3;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
+			if (state == 3 && chr == '>') {
+				state = 4;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
+			if (state == 4 && chr != '<') title.push_back(chr);
+			if (state == 4 && chr == '<') {
+				state = 5;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
+			if (state == 5 && parse == 0 && chr == '/') ++parse;
+			if (state == 5 && parse == 1 && chr == 'a') ++parse;
+			if (state == 5 && parse == 1 && chr == 'A') ++parse;
+			if (state == 5 && parse == 2 && chr == '>') ++parse;
+			if (state == 5 && parse == 3) {
+				if (!href.empty() && !title.empty()) {
+					result.push_back(pair<string, string>(title, href));
+				}
+				state = 0;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
+			if (oparse == parse)
+				parse = 0;
+			oparse = parse;
+		}
+	} else if (rsapriv) {
+		uint sigsize = EVP_PKEY_size(&evppriv);
+		sig.resize(sigsize);
+
+		EVP_MD_CTX signctx;
+		EVP_SignInit(&signctx, EVP_sha1());
+
+		int r1 = EVP_SignUpdate(&signctx, &content[0], content.size());
+		int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+
+		if (r1 == 1 && r2 == 1) {
+			sig = Base64::encode(sig);
+			sig.push_back('\n');
+			sig.push_back('\0');
+			cout << signiature_start << '\n';
+			cout << &sig[0];
+			cout << signiature_end << '\n';
+		}
+	}
+
+
+//				BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
+//				rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
+
+
+	return result;
+}
 
 void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {

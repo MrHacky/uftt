@@ -19,6 +19,8 @@ class AutoUpdater {
 
 		static bool doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath);
 
+		static std::vector<std::pair<std::string, std::string> > parseUpdateWebPage(const std::vector<uint8>& webpage);
+
 	public: // actual object interface for offering builds for autoupdate
 
 		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
