@@ -354,22 +354,35 @@ void MainWindow::on_buttonBrowse_clicked()
 
 extern string thebuildstring;
 
-void MainWindow::new_autoupdate(std::string url)
+void MainWindow::new_autoupdate_peer(std::string url)
 {
-	if (!settings.autoupdate)
+	new_autoupdate_real(url, "", false);
+}
+
+void MainWindow::new_autoupdate_web(std::string build, std::string url)
+{
+	new_autoupdate_real(url, build, true);
+}
+
+void MainWindow::new_autoupdate_real(std::string url, std::string build, bool fromweb)
+{
+	if (!fromweb && !settings.autoupdate)
 		return;
-	size_t pos = url.find_last_of("\\/");
-	string bnr = url.substr(pos+1);
-	if (!AutoUpdater::isBuildBetter(bnr, thebuildstring)) {
+	if (!fromweb) {
+		size_t pos = url.find_last_of("\\/");
+		build = url.substr(pos+1);
+	}
+
+	if (!AutoUpdater::isBuildBetter(build, thebuildstring)) {
 		return;
 	}
-	cout << "new autoupdate: " << url << '\n';
+	cout << "new autoupdate: " << build << " : " << url << '\n';
 	static bool dialogshowing = false;
 	if (dialogshowing) return;
 	dialogshowing = true;
 	QMessageBox::StandardButton res = QMessageBox::question(this,
 		QString("Auto Update"),
-		QString::fromStdString(url),
+		QString::fromStdString("Build: " + build + '\r' + '\n' + "URL: " + url),
 		QMessageBox::Yes|QMessageBox::No|QMessageBox::NoToAll,
 		QMessageBox::No);
 	dialogshowing = false;
@@ -379,10 +392,16 @@ void MainWindow::new_autoupdate(std::string url)
 	if (res != QMessageBox::Yes)
 		return;
 
-	auto_update_url = url;
-	auto_update_path = DownloadEdit->text().toStdString();
-	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(&tester, _1, _2);
-	backend->slot_download_share(url, auto_update_path, handler);
+	if (!fromweb) {
+		auto_update_url = url;
+		auto_update_path = DownloadEdit->text().toStdString();
+		boost::function<void(uint64, std::string, uint32)> handler = boost::bind(&tester, _1, _2);
+		backend->slot_download_share(url, auto_update_path, handler);
+	} else {
+		backend->do_download_web_update(url,
+			marshaller.wrap(boost::bind(&MainWindow::cb_web_download_done, this, _1, build, _2))
+		);
+	}
 }
 
 void MainWindow::download_done(std::string url)
@@ -408,7 +427,7 @@ void MainWindow::SetBackend(SimpleBackend* be)
 		QTBOOSTER(this, MainWindow::addSimpleShare)
 	);
 	backend->sig_new_autoupdate.connect(
-		QTBOOSTER(this, MainWindow::new_autoupdate)
+		QTBOOSTER(this, MainWindow::new_autoupdate_peer)
 	);
 	backend->sig_download_ready.connect(
 		QTBOOSTER(this, MainWindow::download_done)
@@ -463,4 +482,27 @@ void MainWindow::new_upload(std::string name, int num)
 		twi, _1, _2, starttime, _3);
 	backend->slot_attach_progress_handler(num, handler);
 	handler(0, "Starting", 0);
+}
+
+void MainWindow::on_actionCheckForWebUpdates_triggered()
+{
+	backend->do_check_for_web_updates(QTBOOSTER(this, MainWindow::new_autoupdate_web));
+}
+
+void MainWindow::cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req)
+{
+	if (err) {
+		cout << "Web download failed: " << err.message() << '\n';
+	} else {
+		boost::filesystem::path temp_path = DownloadEdit->text().toStdString();
+		temp_path /= (build + ".exe");
+
+		ofstream tfile(temp_path.native_file_string().c_str(), ios_base::out|ios_base::binary);
+		if (!req->getContent().empty())
+			tfile.write((char*)&(req->getContent()[0]), req->getContent().size());
+		tfile.close();
+
+		if (AutoUpdater::doSelfUpdate(build, temp_path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
+			this->action_Quit->trigger();
+	}
 }

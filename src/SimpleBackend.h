@@ -8,6 +8,7 @@
 #include <boost/foreach.hpp>
 
 #include "net-asio/asio_file_stream.h"
+#include "net-asio/asio_http_request.h"
 
 #include "AutoUpdate.h"
 
@@ -822,6 +823,33 @@ class SimpleBackend {
 			conlist[num]->sig_progress.connect(handler);
 		}
 
+		void check_for_web_updates(boost::function<void(std::string, std::string)> handler)
+		{
+			std::string weburl = "http://hackykid.heliohost.org/site/autoupdate.php";
+			//std::string weburl = "http://localhost:8080/site/autoupdate.php";
+
+			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, weburl));
+			request->setHandler(boost::bind(&SimpleBackend::web_update_page_handler, this, boost::asio::placeholders::error, request, handler));
+		}
+
+		void web_update_page_handler(const boost::system::error_code& err, boost::shared_ptr<boost::asio::http_request> req, boost::function<void(std::string, std::string)> handler)
+		{
+			if (err) {
+				std::cout << "Error checking for web updates: " << err.message() << '\n';
+			} else
+			{
+				std::vector<std::pair<std::string, std::string> > builds = AutoUpdater::parseUpdateWebPage(req->getContent());
+				for (uint i = 0; i < builds.size(); ++i)
+					handler(builds[i].first, builds[i].second);
+			}
+		}
+
+		void download_web_update(std::string url, boost::function<void(const boost::system::error_code&, boost::shared_ptr<boost::asio::http_request>) > handler)
+		{
+			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
+			request->setHandler(boost::bind(handler, boost::asio::placeholders::error, request));
+		}
+
 	public:
 		SimpleBackend()
 			: diskio(service)
@@ -889,5 +917,15 @@ class SimpleBackend {
 			service.post(boost::bind(&SimpleBackend::send_publish, this,
 				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
 			, true));
+		}
+
+		void do_check_for_web_updates(boost::function<void(std::string, std::string)> handler)
+		{
+			service.post(boost::bind(&SimpleBackend::check_for_web_updates, this, handler));
+		}
+
+		void do_download_web_update(std::string url, boost::function<void(const boost::system::error_code&, boost::shared_ptr<boost::asio::http_request>) > handler)
+		{
+			service.post(boost::bind(&SimpleBackend::download_web_update, this, url, handler));
 		}
 };

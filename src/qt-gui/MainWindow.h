@@ -10,6 +10,10 @@
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "QMarshaller.h"
+#include "../net-asio/asio_http_request.h"
+
+
 class QTreeWidgetItem;
 class QCloseEvent;
 
@@ -28,6 +32,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		SimpleBackend* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
+		QMarshaller marshaller;
 
 	protected:
 		virtual void closeEvent(QCloseEvent * event);
@@ -43,6 +48,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void SetBackend(SimpleBackend* be);
 		~MainWindow();
 
+		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
+
 	public Q_SLOTS:
 		void RefreshButtonClicked();
 		void addSimpleShare(std::string sharename);
@@ -57,8 +64,12 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonManualPublish_clicked();
 
 		void on_actionEnableAutoupdate_toggled(bool);
+		void on_actionCheckForWebUpdates_triggered();
 
-		void new_autoupdate(std::string url);
+		void new_autoupdate_peer(std::string url);
+		void new_autoupdate_real(std::string url, std::string build, bool fromweb);
+		void new_autoupdate_web(std::string build, std::string url);
+
 		void download_done(std::string url);
 
 		void new_upload(std::string name, int num);
