@@ -5,8 +5,6 @@ INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/boost_asio_1_1_0")
 INCLUDE_DIRECTORIES("${BOOST_INCLUDE_DIR}")
 LINK_DIRECTORIES("${BOOST_LIBRARY_DIR}")
 
-SUBDIRS(sha1)
-SUBDIRS(files)
 SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
 SUBDIRS(bench)
@@ -38,13 +36,6 @@ SET(UFTT_SOURCES
 	qt-gui/Icons/icon.rc
 
 	Platform.h            Platform.cpp
-
-	SharedData.cpp
-	SharedData.h
-	JobRequest.cpp
-	JobRequest.h
-	Logger.cpp
-	Logger.h
 )
 
 SET(UFTT_LIBRARIES

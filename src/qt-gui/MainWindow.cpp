@@ -23,13 +23,10 @@
 
 #include "QDebugStream.h"
 
-#include "../SharedData.h"
-#include "../Logger.h"
 #include "../SimpleBackend.h"
 #include "../Platform.h"
 #include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
-//#include "../network/Packet.h"
 
 #include "QtBooster.h"
 #include "DialogDirectoryChooser.h"
@@ -55,18 +52,6 @@ void tester(uint64 tfx, std::string sts)
 	cout << "update: " << sts << ": " << tfx << '\n';
 }
 
-static LogHelper loghelper;
-
-void LogHelper::append(QString str)
-{
-	logAppend(str);
-}
-
-void qt_log_append(std::string str)
-{
-	loghelper.append(QString(str.c_str()));
-}
-
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
@@ -74,8 +59,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<QTreeWidgetItem*>("QTreeWidgetItem*");
 	qRegisterMetaType<uint64>("uint64");
 	qRegisterMetaType<uint64>("uint32");
-	qRegisterMetaType<SHA1C>("SHA1C");
-	qRegisterMetaType<JobRequestRef>("JobRequestRef");
 	qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
 
 	boost::filesystem::path settings_path;
@@ -130,8 +113,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	buttonAdd2->hide();
 	buttonAdd3->hide();
-
-	connect(&loghelper, SIGNAL(logAppend(QString)), this->debugText, SLOT(append(QString)));
 
 	/* load/set dock layout */
 	if (!settingsloaded && boost::filesystem::exists("uftt.layout")) {
@@ -230,18 +211,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::RefreshButtonClicked()
 {
-	/*
-	JobRequestQueryServersRef job(new JobRequestQueryServers());
-	{
-		boost::mutex::scoped_lock lock(jobs_mutex);
-		JobQueue.push_back(job);
-	}*/
 	backend->slot_refresh_shares();
-}
-
-void MainWindow::AddNewServer()
-{
-	LOG("TODO?: AddNewServer()");
 }
 
 void MainWindow::addSimpleShare(std::string sharename)
@@ -253,66 +223,6 @@ void MainWindow::addSimpleShare(std::string sharename)
 	if (fres.empty()) {
 		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
 		rwi->setText(0, qsharename);
-	}
-}
-
-void MainWindow::AddNewShare(std::string str, SHA1C hash)
-{
-	QTreeWidgetItem* rwi = treedata[hash];
-	if (rwi == NULL) {
-		rwi = new QTreeWidgetItem(SharesTree, 0);
-		rwi->setText(0, str.c_str());
-		treedata[hash] = rwi;
-	}
-	if (rwi->childCount() == 0) {
-		JobRequestTreeDataRef job(new JobRequestTreeData());
-		job->hash = hash;
-		{
-			boost::mutex::scoped_lock lock(jobs_mutex);
-			JobQueue.push_back(job);
-		}
-	}
-}
-
-void MainWindow::NewTreeInfo(JobRequestRef basejob)
-{
-	assert(basejob->type() == JRT_TREEDATA);
-	JobRequestTreeDataRef job = boost::static_pointer_cast<JobRequestTreeData>(basejob);
-
-	FileInfoRef fi = dirdata[job->hash];
-	if (!fi) {
-		fi = FileInfoRef(new FileInfo());
-		fi->hash = job->hash;
-		dirdata[fi->hash] = fi;
-	}
-
-	if (job->chunkcount == 0) {
-		fi->attrs &= ~FATTR_DIR;
-		return; // is a blob, not a tree
-	}
-	fi->attrs |= FATTR_DIR;
-
-	QTreeWidgetItem* rwi = treedata[fi->hash];
-	if (rwi != NULL) {
-		BOOST_FOREACH(const JobRequestTreeData::child_info& ci, job->children) {
-			QTreeWidgetItem* srwi = new QTreeWidgetItem(rwi, 0);
-			srwi->setText(0, ci.name.c_str());
-			treedata[ci.hash] = srwi;
-			JobRequestTreeDataRef newjob(new JobRequestTreeData());
-			newjob->hash = ci.hash;
-			{
-				boost::mutex::scoped_lock lock(jobs_mutex);
-				JobQueue.push_back(newjob);
-			}
-			FileInfoRef nfi = dirdata[ci.hash];
-			if (!nfi) {
-				nfi = FileInfoRef(new FileInfo());
-				nfi->hash = ci.hash;
-				dirdata[nfi->hash] = nfi;
-			}
-			nfi->name = ci.name;
-			fi->files.push_back(nfi);
-		}
 	}
 }
 
@@ -334,8 +244,8 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 void MainWindow::StartDownload()
 {
-	fs::path dlpath = DownloadEdit->text().toStdString();
-	if (!fs::exists(dlpath)) {
+	boost::filesystem::path dlpath = DownloadEdit->text().toStdString();
+	if (!boost::filesystem::exists(dlpath)) {
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
@@ -356,21 +266,8 @@ void MainWindow::StartDownload()
 	handler(0, "Starting", 0);
 //		boost::bind(&MainWindow::download_progress, this&tester, _1, _2);
 	backend->slot_download_share(name.toStdString(), dlpath, handler);
-	return;
-	SHA1C hash;
-	typedef std::pair<SHA1C, QTreeWidgetItem*> pairtype;
-	BOOST_FOREACH(const pairtype & ip, treedata) {
-		if (ip.second == rwi)
-			hash = ip.first;
-	}
-	FileInfoRef fi = dirdata[hash];
-	if (!fi) {
-		LOG("hash not found!");
-		return;
-	}
-	StartDownload(fi, fs::path(DownloadEdit->text().toStdString()) / rwi->text(0).toStdString());
-	//cout << "Start Download!" <<  << endl;
 }
+
 
 void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue)
 {
@@ -383,62 +280,23 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
 }
 
-void MainWindow::StartDownload(FileInfoRef fi, const fs::path& path)
-{
-	LOG("fp:" << path);
-	fi = dirdata[fi->hash];
-	if (!fi) {
-		LOG("hash not found!");
-		return;
-	}
-	LOG("fa:" << fi->attrs);
-	if (fi->attrs & FATTR_DIR) {
-		create_directory(path);
-		BOOST_FOREACH(const FileInfoRef& fir, fi->files) {
-			StartDownload(fir, path / fir->name);
-		}
-	} else {
-		JobRequestBlobDataRef job(new JobRequestBlobData());
-		job->hash = fi->hash;
-		job->fpath = path;
-		{
-			boost::mutex::scoped_lock lock(jobs_mutex);
-			JobQueue.push_back(job);
-		}
-	}
-}
-
 void MainWindow::addLocalShare(std::string url)
 {
 	boost::filesystem::path path = url;
 	if (path.leaf() == ".") path.remove_leaf(); // linux thingy
 	backend->slot_add_local_share(path.leaf(), path);
 }
+
 void MainWindow::onDropTriggered(QDropEvent* evt)
 {
-	LOG("try=" << evt->mimeData()->text().toStdString());
+	//LOG("try=" << evt->mimeData()->text().toStdString());
 	evt->acceptProposedAction();
 
 	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls()) {
-		// weird stuff here, next line gives a weird error popup in release mode,
-		// but the program continues just fine...
 		string str(url.toLocalFile().toStdString());
-		// next one give no popup
-		// string str(url.toLocalFile().toAscii().data());
 
 		if (!str.empty()) {
 			this->addLocalShare(str);
-			/*
-			FileInfoRef fi(new FileInfo(str));
-			addFileInfo(*fi);
-
-			ShareInfo fs(fi);
-			fs.path = str;
-			{
-				boost::mutex::scoped_lock lock(shares_mutex);
-				MyShares.push_back(fs);
-			}
-			*/
 		}
 	}
 }

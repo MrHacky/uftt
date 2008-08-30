@@ -127,5 +127,5 @@ JobRequestBlobData::~JobRequestBlobData()
 {
 	clock_t end_time = clock();
 	uint64 msecs = (end_time - start_time) * (uint64)1000 / CLOCKS_PER_SEC;
-	LOG("duration: " << msecs);
+	//LOG("duration: " << msecs);
 }

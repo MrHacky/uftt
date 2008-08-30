@@ -7,10 +7,6 @@
 
 #include <map>
 
-#include "../sha1/SHA1.h"
-#include "../JobRequest.h"
-#include "../files/FileInfo.h"
-
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -26,16 +22,12 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	private:
 		UFTTSettings settings;
 		QTMain& mainimpl;
-		std::map<SHA1C, QTreeWidgetItem*> treedata;
-		std::map<SHA1C, FileInfoRef> dirdata;
 		bool askonupdates;
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
 		SimpleBackend* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
-
-		void StartDownload(FileInfoRef fi, const fs::path& path);
 
 	protected:
 		virtual void closeEvent(QCloseEvent * event);
@@ -53,9 +45,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	public Q_SLOTS:
 		void RefreshButtonClicked();
-		void AddNewServer();
-		void AddNewShare(std::string str, SHA1C hash);
-		void NewTreeInfo(JobRequestRef);
 		void addSimpleShare(std::string sharename);
 		void addLocalShare(std::string url);
 
@@ -78,16 +67,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonClearCompletedTasks_clicked();
 
 		void on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column);
-};
-
-class LogHelper: public QObject {
-	Q_OBJECT
-
-	Q_SIGNALS:
-		void logAppend(QString);
-
-	public:
-		void append(QString);
 };
 
 #endif

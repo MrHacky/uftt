@@ -43,7 +43,6 @@ ADD_LIBRARY(uftt-qt
 )
 
 TARGET_LINK_LIBRARIES(uftt-qt
-	uftt-lib-files
 	${QT_LIBRARIES}
 	${QT_QTMAIN_LIBRARY}
 )

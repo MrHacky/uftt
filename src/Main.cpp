@@ -264,8 +264,6 @@ int imain( int argc, char **argv )
 
 	int ret = gui.run();
 
-	terminating = true;
-
 	// hax...
 
 	exit(ret);
