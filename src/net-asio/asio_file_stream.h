@@ -70,6 +70,11 @@ namespace services {
 				work_thread.swap(tt);
 			}
 
+			~diskio_service()
+			{
+				cancel();
+			}
+
 			typedef diskio_filetype filetype;
 
 			boost::asio::io_service& get_io_service()
