@@ -66,7 +66,7 @@ namespace StrFormat {
 
 		if (suf == 0) decs = 0;
 
-		float fsize = size;
+		float fsize = (float)size;
 		std::string fstr = STRFORMAT("%%.%df %%sB", decs);
 		return STRFORMAT(fstr, fsize, size_suffix[suf]);
 	};
