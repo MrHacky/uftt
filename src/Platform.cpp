@@ -95,7 +95,9 @@ namespace platform {
 		STARTUPINFO si = { sizeof(si) };
 		PROCESS_INFORMATION pi;
 
-		command = cmd;
+		command += "\"";
+		command += cmd;
+		command += "\"";
 
 		// TODO args
 		if (args) {
