@@ -10,6 +10,7 @@ SUBDIRS(files)
 SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
 SUBDIRS(bench)
+SUBDIRS(util)
 
 SET(BUILDVER_FILE
 	"${PROJECT_BINARY_DIR}/BuildVersion.h"
@@ -49,6 +50,7 @@ SET(UFTT_SOURCES
 SET(UFTT_LIBRARIES
 	uftt-qt
 	lib-net-asio
+	lib-util
 )
 
 ADD_EXECUTABLE(uftt ${UFTT_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
