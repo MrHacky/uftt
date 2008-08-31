@@ -3,13 +3,13 @@
 
 #include "QTMain.h"
 #include "ui_MainWindow.h"
-#include "UFTTSettings.h"
-
-#include <map>
 
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include <map>
+
+#include "UFTTSettings.h"
 #include "QMarshaller.h"
 #include "../net-asio/asio_http_request.h"
 
@@ -35,6 +35,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QMarshaller marshaller;
 
 		void addLocalShare(std::string url);
+		void setUpdateInterval(int i);
 
 	protected:
 		virtual void closeEvent(QCloseEvent * event);
@@ -67,6 +68,13 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonClearCompletedTasks_clicked();
 		void on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column);
 
+		void on_actionUpdateNever_toggled(bool);
+		void on_actionUpdateDaily_toggled(bool);
+		void on_actionUpdateWeekly_toggled(bool);
+		void on_actionUpdateMonthly_toggled(bool);
+
+		void check_autoupdate_interval();
+
 	public: // callbacks
 		void addSimpleShare(std::string sharename);
 
@@ -78,6 +86,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void new_upload(std::string name, int num);
 
+		void onshow();
 };
 
 #endif

@@ -59,9 +59,22 @@
     <property name="title" >
      <string>&amp;Options</string>
     </property>
-    <addaction name="actionEnableAutoupdate" />
-    <addaction name="separator" />
+    <widget class="QMenu" name="menuCheckForUpdatesAutomatically" >
+     <property name="tearOffEnabled" >
+      <bool>false</bool>
+     </property>
+     <property name="title" >
+      <string>Check for Updates Automatically</string>
+     </property>
+     <addaction name="actionUpdateNever" />
+     <addaction name="actionUpdateDaily" />
+     <addaction name="actionUpdateWeekly" />
+     <addaction name="actionUpdateMonthly" />
+    </widget>
     <addaction name="actionCheckForWebUpdates" />
+    <addaction name="menuCheckForUpdatesAutomatically" />
+    <addaction name="separator" />
+    <addaction name="actionEnableAutoupdate" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_View" />
@@ -450,6 +463,38 @@
   <action name="actionCheckForWebUpdates" >
    <property name="text" >
     <string>Check for Web Updates Now</string>
+   </property>
+  </action>
+  <action name="actionUpdateNever" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Never</string>
+   </property>
+  </action>
+  <action name="actionUpdateDaily" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Daily</string>
+   </property>
+  </action>
+  <action name="actionUpdateWeekly" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Weekly</string>
+   </property>
+  </action>
+  <action name="actionUpdateMonthly" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Monthly</string>
    </property>
   </action>
  </widget>

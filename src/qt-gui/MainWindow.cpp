@@ -18,6 +18,7 @@
 #include <QProcess>
 #include <QStringList>
 #include <QItemDelegate>
+#include <QTimer>
 
 #include <boost/foreach.hpp>
 
@@ -54,6 +55,7 @@ void tester(uint64 tfx, std::string sts)
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
+	// TODO: remove after next release
 	qRegisterMetaType<std::string>("std::string");
 	qRegisterMetaType<QTreeWidgetItem*>("QTreeWidgetItem*");
 	qRegisterMetaType<uint64>("uint64");
@@ -145,6 +147,7 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
+	this->setUpdateInterval(settings.webupdateinterval);
 
 	//connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
@@ -468,6 +471,7 @@ void MainWindow::new_upload(std::string name, int num)
 
 void MainWindow::on_actionCheckForWebUpdates_triggered()
 {
+	settings.lastupdate = boost::posix_time::second_clock::universal_time();
 	backend->do_check_for_web_updates(
 		marshaller.wrap(boost::bind(&MainWindow::new_autoupdate, this, _2, _1, true))
 	);
@@ -489,4 +493,62 @@ void MainWindow::cb_web_download_done(const boost::system::error_code& err, cons
 		if (AutoUpdater::doSelfUpdate(build, temp_path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
 			this->action_Quit->trigger();
 	}
+}
+
+void MainWindow::on_actionUpdateNever_toggled(bool on)
+{
+	if (on) setUpdateInterval(0);
+}
+
+void MainWindow::on_actionUpdateDaily_toggled(bool on)
+{
+	if (on) setUpdateInterval(1);
+}
+
+void MainWindow::on_actionUpdateWeekly_toggled(bool on)
+{
+	if (on) setUpdateInterval(2);
+}
+
+void MainWindow::on_actionUpdateMonthly_toggled(bool on)
+{
+	if (on) setUpdateInterval(3);
+}
+
+void MainWindow::setUpdateInterval(int i)
+{
+	actionUpdateNever->setChecked(i == 0);
+	actionUpdateDaily->setChecked(i == 1);
+	actionUpdateWeekly->setChecked(i == 2);
+	actionUpdateMonthly->setChecked(i == 3);
+
+	settings.webupdateinterval = i;
+}
+
+void MainWindow::check_autoupdate_interval()
+{
+	QTimer::singleShot(1000 * 60 * 60, this, SLOT(check_autoupdate_interval()));
+	//QTimer::singleShot(1000 * 3, this, SLOT(check_autoupdate_interval()));
+
+	if (settings.webupdateinterval == 0) return;
+	int minhours = 30 * 24;
+	if (settings.webupdateinterval == 1) minhours = 1 * 24;
+	if (settings.webupdateinterval == 2) minhours = 7 * 24;
+
+	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
+
+	int lasthours = (curtime - settings.lastupdate).hours();
+	//int lasthours = (curtime - settings.lastupdate).total_seconds();
+
+	std::cout << STRFORMAT("last update check: %dh ago (%dh)\n", lasthours, minhours);
+
+	if (lasthours > minhours) {
+		actionCheckForWebUpdates->trigger();
+		//on_actionCheckForWebUpdates_triggered();
+	}
+}
+
+void MainWindow::onshow()
+{
+	check_autoupdate_interval();
 }

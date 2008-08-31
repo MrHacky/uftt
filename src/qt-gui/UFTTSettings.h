@@ -6,6 +6,8 @@
 #include <vector>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/date_time/posix_time/time_serialize.hpp>
 
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
@@ -33,6 +35,8 @@ class UFTTSettings {
 		int sizey;
 		boost::filesystem::path dl_path;
 		bool autoupdate;
+		int webupdateinterval; // 0:never, 1:daily, 2:weekly, 3:monthly
+		boost::posix_time::ptime lastupdate;
 
 	public:
 		template<class Archive>
@@ -44,11 +48,14 @@ class UFTTSettings {
 			ar & NVP("sizey"   , sizey);
 			if (version >=  2) ar & NVP("downloadpath", dl_path);
 			if (version >=  3) ar & NVP("autoupdate"  , autoupdate);
+			if (version >=  5) ar & NVP("updateinterval", webupdateinterval);
+			if (version >=  5) ar & NVP("lastupdate", lastupdate);
+
 			if (version >=  4) ar & NVP("dockinfo", dockinfo);
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 4)
+BOOST_CLASS_VERSION(UFTTSettings, 5)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

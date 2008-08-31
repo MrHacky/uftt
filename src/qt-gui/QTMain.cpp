@@ -5,7 +5,6 @@
 #include <boost/bind.hpp>
 
 #include "MainWindow.h"
-#include "QtBooster.h"
 
 using namespace std;
 
@@ -42,6 +41,7 @@ void QTMain::BindEvents(SimpleBackend* t)
 
 int QTMain::run()
 {
+	impl->wnd.onshow();
 	impl->wnd.show();
 	return impl->app.exec();
 }
