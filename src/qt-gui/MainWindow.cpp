@@ -140,9 +140,13 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	if (settings.dockinfo.size() > 0)
 		this->restoreState(QByteArray((char*)&settings.dockinfo[0],settings.dockinfo.size()));
 	else {
-		this->splitDockWidget (dockShares , dockWidgetDebug   , Qt::Horizontal);
-		this->splitDockWidget (dockShares , dockManualConnect , Qt::Vertical  );
+		this->splitDockWidget (dockShares   , dockTaskList      , Qt::Horizontal);
+		this->splitDockWidget (dockTaskList , dockWidgetDebug   , Qt::Vertical  );
+		this->splitDockWidget (dockShares   , dockManualConnect , Qt::Vertical  );
 		this->dockManualConnect->hide();
+		#ifdef NDEBUG
+			this->dockWidgetDebug->hide();
+		#endif
 	}
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
