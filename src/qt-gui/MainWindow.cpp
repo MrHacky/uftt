@@ -28,7 +28,6 @@
 #include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
 
-#include "QtBooster.h"
 #include "DialogDirectoryChooser.h"
 
 using namespace std;
@@ -40,7 +39,7 @@ public:
 
     QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
     {
-        // allow only specific column to be edited, second column in this example
+        // allow only specific column to be edited, first column in this example
         if (index.column() == 0)
             return QItemDelegate::createEditor(parent, option, index);
         return 0;
@@ -148,11 +147,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
 
-
-	/* connect Qt signals/slots */
-	connect(RefreshButton, SIGNAL(clicked()), this, SLOT(RefreshButtonClicked()));
-	connect(DownloadButton, SIGNAL(clicked()), this, SLOT(StartDownload()));
-
 	//connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
 	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
@@ -209,7 +203,7 @@ MainWindow::~MainWindow()
 {
 }
 
-void MainWindow::RefreshButtonClicked()
+void MainWindow::on_buttonRefresh_clicked()
 {
 	backend->slot_refresh_shares();
 }
@@ -242,7 +236,7 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 }
 
-void MainWindow::StartDownload()
+void MainWindow::on_buttonDownload_clicked()
 {
 	boost::filesystem::path dlpath = DownloadEdit->text().toStdString();
 	if (!boost::filesystem::exists(dlpath)) {
@@ -256,15 +250,12 @@ void MainWindow::StartDownload()
 
 	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
 	twi->setText(0, name);
-	//twi->setText(1, QString::fromStdString(STRFORMAT("%d", 0)));
-	//twi->setText(3, QString("Starting..."));
+
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(
-		QTBOOSTER(this, MainWindow::download_progress),
-		//boost::bind(&MainWindow::download_progress, this, _1, _2, _3),
-		twi, _1, _2, starttime, _3);
+	boost::function<void(uint64, std::string, uint32)> handler =
+		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
 	handler(0, "Starting", 0);
-//		boost::bind(&MainWindow::download_progress, this&tester, _1, _2);
+
 	backend->slot_download_share(name.toStdString(), dlpath, handler);
 }
 
@@ -354,17 +345,7 @@ void MainWindow::on_buttonBrowse_clicked()
 
 extern string thebuildstring;
 
-void MainWindow::new_autoupdate_peer(std::string url)
-{
-	new_autoupdate_real(url, "", false);
-}
-
-void MainWindow::new_autoupdate_web(std::string build, std::string url)
-{
-	new_autoupdate_real(url, build, true);
-}
-
-void MainWindow::new_autoupdate_real(std::string url, std::string build, bool fromweb)
+void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb)
 {
 	if (!fromweb && !settings.autoupdate)
 		return;
@@ -374,6 +355,7 @@ void MainWindow::new_autoupdate_real(std::string url, std::string build, bool fr
 	}
 
 	if (!AutoUpdater::isBuildBetter(build, thebuildstring)) {
+		cout << "ignoring update: " << build << " @ " << url << '\n';
 		return;
 	}
 	cout << "new autoupdate: " << build << " : " << url << '\n';
@@ -382,8 +364,11 @@ void MainWindow::new_autoupdate_real(std::string url, std::string build, bool fr
 	dialogshowing = true;
 	QMessageBox::StandardButton res = QMessageBox::question(this,
 		QString("Auto Update"),
-		QString::fromStdString("Build: " + build + '\r' + '\n' + "URL: " + url),
-		QMessageBox::Yes|QMessageBox::No|QMessageBox::NoToAll,
+		QString::fromStdString(
+			"Build: " + build + '\r' + '\n' +
+			"URL: " + url
+		),
+		QMessageBox::Yes|QMessageBox::No|(fromweb ? QMessageBox::NoButton : QMessageBox::NoToAll),
 		QMessageBox::No);
 	dialogshowing = false;
 
@@ -424,16 +409,16 @@ void MainWindow::SetBackend(SimpleBackend* be)
 	backend = be;
 
 	backend->sig_new_share.connect(
-		QTBOOSTER(this, MainWindow::addSimpleShare)
+		marshaller.wrap(boost::bind(&MainWindow::addSimpleShare, this, _1))
 	);
 	backend->sig_new_autoupdate.connect(
-		QTBOOSTER(this, MainWindow::new_autoupdate_peer)
+		marshaller.wrap(boost::bind(&MainWindow::new_autoupdate, this, _1, "", false))
 	);
 	backend->sig_download_ready.connect(
-		QTBOOSTER(this, MainWindow::download_done)
+		marshaller.wrap(boost::bind(&MainWindow::download_done, this, _1))
 	);
 	backend->sig_new_upload.connect(
-		QTBOOSTER(this, MainWindow::new_upload)
+		marshaller.wrap(boost::bind(&MainWindow::new_upload, this, _1, _2))
 	);
 }
 
@@ -473,20 +458,20 @@ void MainWindow::new_upload(std::string name, int num)
 {
 	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
 	twi->setText(0, QString::fromStdString(name));
-	//twi->setText(1, QString::fromStdString(STRFORMAT("%d", 0)));
-	//twi->setText(3, QString("Starting..."));
+
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(uint64, std::string, uint32)> handler = boost::bind(
-		QTBOOSTER(this, MainWindow::download_progress),
-		//boost::bind(&MainWindow::download_progress, this, _1, _2, _3),
-		twi, _1, _2, starttime, _3);
-	backend->slot_attach_progress_handler(num, handler);
+	boost::function<void(uint64, std::string, uint32)> handler =
+		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
+
 	handler(0, "Starting", 0);
+	backend->slot_attach_progress_handler(num, handler);
 }
 
 void MainWindow::on_actionCheckForWebUpdates_triggered()
 {
-	backend->do_check_for_web_updates(QTBOOSTER(this, MainWindow::new_autoupdate_web));
+	backend->do_check_for_web_updates(
+		marshaller.wrap(boost::bind(&MainWindow::new_autoupdate, this, _2, _1, true))
+	);
 }
 
 void MainWindow::cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req)

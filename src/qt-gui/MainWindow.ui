@@ -107,7 +107,7 @@
      <item>
       <layout class="QHBoxLayout" >
        <item>
-        <widget class="QPushButton" name="RefreshButton" >
+        <widget class="QPushButton" name="buttonRefresh" >
          <property name="text" >
           <string>Refresh</string>
          </property>
@@ -159,7 +159,7 @@
      <item>
       <layout class="QHBoxLayout" >
        <item>
-        <widget class="QPushButton" name="DownloadButton" >
+        <widget class="QPushButton" name="buttonDownload" >
          <property name="text" >
           <string>Download</string>
          </property>
@@ -462,8 +462,8 @@
  </customwidgets>
  <tabstops>
   <tabstop>SharesTree</tabstop>
-  <tabstop>RefreshButton</tabstop>
-  <tabstop>DownloadButton</tabstop>
+  <tabstop>buttonRefresh</tabstop>
+  <tabstop>buttonDownload</tabstop>
   <tabstop>DownloadEdit</tabstop>
  </tabstops>
  <resources/>
