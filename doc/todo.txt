@@ -1,5 +1,5 @@
-- fix upload task for autoupdate
-- fix download task for autoupdate
+- fix upload task for autoupdate (p2p)
+- fix download task for autoupdate (p2p)
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
@@ -11,6 +11,21 @@
 - implement console detaching/attaching for linux
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
 - implement udp-semi connections, and plug them into the now shiny architecture
+- implement udp hole punching via central web server (heliohost)
+- implement udp hole punching through firewall for local link
+- allow autoupdate without openssl (insecure, use at own risk, do we really want this?)
+- use configurable temp dir for compressing & downloading updates
+- make GUI look nice in non win98-classic themes
+- implement partial requests
+- implement hash requests (limited)
+- implement autoresuming
+- implement remote browsing
+- clean up http request class (wait for boost implementation? :-p)
+- implement automatic test suite for stuff
+- check more things in --runcheck
+- show progress for web update tasks
+- [DONE] add option to automatically check for (http) updates every day, week, or month
+- [DONE] implement autoupdate via http (heliohost)
 - [DONE] show upload tasks in task list
 - [DONE] make nice application icons
 - [DONE] process --delete asynchronously
