@@ -60,6 +60,11 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	qRegisterMetaType<uint64>("uint32");
 	qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
 
+	setupUi(this);
+
+	// setup debug stream
+	new QDebugStream(std::cout, debugText);
+
 	boost::filesystem::path settings_path;
 	{
 		spathlist spl = platform::getSettingPathList();
@@ -85,12 +90,6 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	}
 
 	bool settingsloaded = settings.load(settings_path);
-
-	setupUi(this);
-
-//	debugText->setTextFormat(Qt::LogText);
-	new QDebugStream(std::cout, debugText);
-
 
 	{
 		QWidget* cw = new QWidget();
