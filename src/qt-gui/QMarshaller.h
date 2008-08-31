@@ -11,8 +11,8 @@
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 
-#ifndef QMASRHALLER_FUNCTION_MAX_ARITY
-#	define QMASRHALLER_FUNCTION_MAX_ARITY 10
+#ifndef QMARSHALLER_FUNCTION_MAX_ARITY
+#	define QMARSHALLER_FUNCTION_MAX_ARITY 10
 #endif
 
 class QMarshaller: public QObject
@@ -32,7 +32,7 @@ class QMarshaller: public QObject
 					{
 					}
 
-#define BOOST_PP_ITERATION_LIMITS (0, QMASRHALLER_FUNCTION_MAX_ARITY)
+#define BOOST_PP_ITERATION_LIMITS (0, QMARSHALLER_FUNCTION_MAX_ARITY)
 #define BOOST_PP_FILENAME_1 "QMarshaller.h" // this file
 #include BOOST_PP_ITERATE()
 /*
