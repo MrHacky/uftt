@@ -42,27 +42,25 @@ public:
 			throw std::runtime_error("not a valid url");
 
 	string hoststr = url.substr(7);
-	int colonpos = hoststr.find_first_of(':');
-	int slashpos = hoststr.find_first_of('/');
+	string::size_type colonpos = hoststr.find_first_of(':');
+	string::size_type slashpos = hoststr.find_first_of('/');
 	string portstr;
 	string substr;
 	if (slashpos == string::npos) {
-		portstr = hoststr.substr(colonpos+1);
-		substr = "";
+		substr = "/";
 	} else {
-		portstr = hoststr.substr(colonpos+1, slashpos-colonpos-1);
-		substr = hoststr.substr(slashpos+1);
+		substr = hoststr.substr(slashpos);
 		hoststr.erase(slashpos);
 	}
 	uint16 iport;
 	if (colonpos == string::npos)
 		iport = 80;
 	else {
+		portstr = hoststr.substr(colonpos+1);
 		iport = atoi(portstr.c_str());
 		hoststr.erase(colonpos);
 	}
 
-		substr.insert(substr.begin(), '/');
 		doconnect(hoststr, substr, iport);
 	}
 
@@ -307,4 +305,4 @@ int tmain(int argc, char* argv[])
 }
 */
 
-#endif ASIO_HTTP_REQUEST_H
+#endif//ASIO_HTTP_REQUEST_H

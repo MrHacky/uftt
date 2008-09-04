@@ -40,7 +40,7 @@ namespace StrFormat {
 		};
 	} // namespace detail
 
-	std::string bytes(double size)
+	inline std::string bytes(double size)
 	{
 		static std::string size_suffix[] =
 		{
