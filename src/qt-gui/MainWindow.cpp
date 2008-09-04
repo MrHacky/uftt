@@ -55,13 +55,6 @@ void tester(uint64 tfx, std::string sts)
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
-	// TODO: remove after next release
-	qRegisterMetaType<std::string>("std::string");
-	qRegisterMetaType<QTreeWidgetItem*>("QTreeWidgetItem*");
-	qRegisterMetaType<uint64>("uint64");
-	qRegisterMetaType<uint64>("uint32");
-	qRegisterMetaType<boost::posix_time::ptime>("boost::posix_time::ptime");
-
 	setupUi(this);
 
 	// setup debug stream
