@@ -19,7 +19,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
-#include "../types.h"
+#include "../Types.h"
 namespace boost { namespace asio {
 
 class http_request
