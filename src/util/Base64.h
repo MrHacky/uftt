@@ -1,7 +1,7 @@
 #ifndef BASE_64_H
 #define BASE_64_H
 
-#include "../types.h"
+#include "../Types.h"
 #include <vector>
 #include <string>
 
