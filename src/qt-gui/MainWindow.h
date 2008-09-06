@@ -36,6 +36,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void addLocalShare(std::string url);
 		void setUpdateInterval(int i);
+		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
 
 	protected:
 		virtual void closeEvent(QCloseEvent * event);

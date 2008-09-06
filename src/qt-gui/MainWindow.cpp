@@ -19,6 +19,7 @@
 #include <QStringList>
 #include <QItemDelegate>
 #include <QTimer>
+#include <QDesktopServices>
 
 #include <boost/foreach.hpp>
 
@@ -419,16 +420,17 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 
 void MainWindow::download_done(std::string url)
 {
-	cout << "download complete: " << url << '\n';
+	cout << "download complete: " << url << " (" << auto_update_url << ")\n";
 	if (url == auto_update_url) {
 		size_t pos = auto_update_url.find_last_of("\\/");
 		string bname = auto_update_url.substr(pos+1);
-		string fname = bname + ".exe";
+		string fname = bname;
+		if (bname.find("win32") != string::npos) fname += ".exe";
+		if (bname.find("-deb-") != string::npos) fname += ".deb.signed";
 		auto_update_path /= fname;
 		cout << "autoupdate: " << auto_update_path << "!\n";
 
-		if (AutoUpdater::doSelfUpdate(bname, auto_update_path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
-			this->action_Quit->trigger();
+		this->doSelfUpdate(bname, auto_update_path);
 	}
 }
 
@@ -516,8 +518,7 @@ void MainWindow::cb_web_download_done(const boost::system::error_code& err, cons
 			tfile.write((char*)&(req->getContent()[0]), req->getContent().size());
 		tfile.close();
 
-		if (AutoUpdater::doSelfUpdate(build, temp_path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
-			this->action_Quit->trigger();
+		this->doSelfUpdate(build, temp_path);
 	}
 }
 
@@ -577,4 +578,32 @@ void MainWindow::check_autoupdate_interval()
 void MainWindow::onshow()
 {
 	check_autoupdate_interval();
+}
+
+void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem::path& path)
+{
+	if (build.find("win32") != string::npos) {
+		if (AutoUpdater::doSelfUpdate(build, path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
+			this->action_Quit->trigger();
+	} else if (build.find("-deb-") != string::npos) {
+		if (AutoUpdater::doSelfUpdate(build, path, "")) {
+			boost::filesystem::path newtarget = path.branch_path() / (build +".deb");
+			std::string url = "file://";
+			url += newtarget.string();
+			cout << "url: " << url << '\n';
+			QDesktopServices::openUrl(QString::fromStdString(url));
+
+			QMessageBox::StandardButton res = QMessageBox::information(this,
+				QString("Auto Update"),
+				QString::fromStdString(string()
+					+ "Downloading and verifying new uftt package succeeded.\r\n"
+					+ "\r\n"
+					+ "The package should be automatically opened now.\r\n"
+					+ "If not, install it manually (" + newtarget.native_file_string() + ")\r\n"
+					+ "\r\n"
+					+ "After installing the package, restart uftt to use the new version.\r\n"
+				)
+			);
+		}
+	}
 }

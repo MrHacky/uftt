@@ -150,6 +150,8 @@ namespace {
 		SignatureChecker(boost::asio::io_service& service_, shared_vec file_, const std::string bstring_, const boost::function<void(bool)>& handler_, bool signifneeded_ = false, bool trycompress_ = false)
 			: service(service_), file(file_), handler(handler_), bstring(bstring_), signifneeded(signifneeded_), trycompress(trycompress_)
 		{
+			if (bstring.find("-deb-") != std::string::npos)
+				trycompress = false;
 		}
 
 		void try_compress()
@@ -261,7 +263,10 @@ namespace {
 						cout << "yay! we just signed this binary!\n";
 
 						// write signed build to file for debug purposes
-						ofstream sexe("uftt-signed.exe", ios_base::out|ios_base::binary);
+						std::string fname = "uftt-signed";
+						if (bstring.find("win32") != std::string::npos) fname = fname + ".exe";
+						if (bstring.find("-deb-") != std::string::npos) fname = fname + ".deb";
+						ofstream sexe(fname.c_str(), ios_base::out|ios_base::binary);
 						sexe.write((char*)&((*file)[0]), file->size());
 						sexe.close();
 					} else {
@@ -450,6 +455,7 @@ bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& ol
 bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath)
 {
 	try {
+		std::cout << "doSelfUpdate: " << target << '\n';
 		if (!boost::filesystem::exists(target))
 			return false;
 
@@ -468,6 +474,41 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 			if (!checksigniature(newfile, buildname)) {
 				cout << "failed to verify the new file's signiature\n";
 				return false;
+			}
+
+			if (buildname.find("-deb-") != std::string::npos) {
+				std::cout << "Writing .deb package...";
+				// TODO: key size always 512? actually read from file to find out
+				newfile.resize(newfile.size() - 4 - 4 - 512 - 1 - buildname.size());
+
+				boost::filesystem::path newtarget = target.branch_path() / (buildname +".deb");
+				if (newtarget == target) {
+					std::cout << "Huh? need different paths!\n";
+					return false;
+				}
+
+				ofstream ostr(newtarget.native_file_string().c_str(), ios_base::out|ios_base::binary);
+				if (!ostr.is_open()) {
+					cout << "Failed to open\n";
+					return false;
+				}
+
+				ostr.write((char*)&newfile[0], newfile.size());
+				if (ostr.fail()) {
+					cout << "Failed to write\n";
+					return false;
+				}
+				ostr.close();
+
+				if (!boost::filesystem::exists(newtarget)) {
+					cout << "Doublecheck failed\n";
+					return false;
+				}
+
+				boost::filesystem::remove(target);
+
+				std::cout << "write succeeded: " << newtarget << '\n';
+				return true;
 			}
 		}
 

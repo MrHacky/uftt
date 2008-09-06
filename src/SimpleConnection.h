@@ -450,7 +450,9 @@ class SimpleTCPConnection {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
 				if (buildfile) {
 					std::cout << "is a build share\n";
-					std::string name = sharename + ".exe";
+					std::string name = sharename;
+					if (sharename.find("win32") != std::string::npos) name = name + ".exe";
+					if (sharename.find("-deb-") != std::string::npos) name = name + ".deb.signed";
 					rbuf->resize(16 + name.size());
 					cmdinfo hdr;
 					hdr.cmd = 0x01; // file
