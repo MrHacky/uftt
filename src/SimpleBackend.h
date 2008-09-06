@@ -734,24 +734,32 @@ class SimpleBackend {
 			udp_send_buf[ 4] = 0x01;
 			udp_send_buf[ 5] = 0x01;
 			udp_send_buf[ 6] = 0x00;
-			udp_send_buf[ 7] = 0x01;
+			udp_send_buf[ 7] = 0x00;
 
-			uint32 udp_protocol_version = 1;
-			udp_send_buf[ 8] = udp_send_buf[12] = (udp_protocol_version >>  0) & 0xff;
-			udp_send_buf[ 9] = udp_send_buf[13] = (udp_protocol_version >>  8) & 0xff;
-			udp_send_buf[10] = udp_send_buf[14] = (udp_protocol_version >> 16) & 0xff;
-			udp_send_buf[11] = udp_send_buf[15] = (udp_protocol_version >> 24) & 0xff;
+			std::set<uint32> qversions;
+			qversions.insert(1);
+			qversions.insert(2);
+
+			int plen = 8;
+			BOOST_FOREACH(uint32 ver, qversions) {
+				udp_send_buf[plen+0] = udp_send_buf[plen+4] = (ver >>  0) & 0xff;
+				udp_send_buf[plen+1] = udp_send_buf[plen+5] = (ver >>  8) & 0xff;
+				udp_send_buf[plen+2] = udp_send_buf[plen+6] = (ver >> 16) & 0xff;
+				udp_send_buf[plen+3] = udp_send_buf[plen+7] = (ver >> 24) & 0xff;
+				++udp_send_buf[7];
+				plen += 8;
+			}
 
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
 				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, 16),
+					boost::asio::buffer(udp_send_buf, plen),
 					ep,
 					0
 					,err
 				);
 			else
-				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, 16), ep.port(), 0, err);
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, plen), ep.port(), 0, err);
 
 			if (err)
 				std::cout << "query failed: " << err.message() << '\n';
