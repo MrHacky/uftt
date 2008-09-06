@@ -43,7 +43,7 @@ class QtBooster {
 		typedef void result_type;
 
 		QtBooster() {};
-		QtBooster(X* obj, char* mdesc) {
+		QtBooster(X* obj, const char* mdesc) {
 			std::vector<std::string> sig;
 			std::string objectname;
 			std::string methodname;
@@ -272,7 +272,7 @@ class QtBooster {
 };
 
 template <class X, typename Y>
-QtBooster<X, Y> makeQtBooster(X* tgt, Y mtype, char* mdesc)
+QtBooster<X, Y> makeQtBooster(X* tgt, Y mtype, const char* mdesc)
 {
 	return QtBooster<X, Y>(tgt, mdesc);
 }
