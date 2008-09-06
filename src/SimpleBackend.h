@@ -314,7 +314,7 @@ class SimpleBackend {
 
 			// bind autoupdater
 			updateProvider.newbuild.connect(
-				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, 0, true)
+				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, 1, true)
 			);
 
 			start_udp_receive();

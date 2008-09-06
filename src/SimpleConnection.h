@@ -241,7 +241,7 @@ class SimpleTCPConnection {
 					dldone = true;
 					if (dldone && open_files == 0) {
 						this->sig_download_ready(
-							std::string("uftt://")
+							std::string("uftt-v1://")
 							+socket.remote_endpoint().address().to_string()
 							+"/"+sharename
 						);
@@ -670,7 +670,7 @@ class SimpleTCPConnection {
 					// wtf hax!!!
 					if (dldone && open_files == 0) {
 						this->sig_download_ready(
-							std::string("uftt://")
+							std::string("uftt-v1://")
 							+socket.remote_endpoint().address().to_string()
 							+"/"+sharename
 						);
