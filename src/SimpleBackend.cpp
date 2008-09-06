@@ -5,16 +5,6 @@
 
 using namespace std;
 
-void SimpleTCPConnection::getsharepath(std::string sharename)
-{
-	backend->getsharepath(this, sharename);
-}
-
-void SimpleTCPConnection::sig_download_ready(std::string url)
-{
-	backend->sig_download_ready(url);
-}
-
 std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 {
 	typedef std::vector<boost::asio::ip::address> rtype;

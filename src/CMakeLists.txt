@@ -28,8 +28,10 @@ SET(UFTT_SOURCES
 	Main.cpp
 
 	Types.h
+	Globals.h
 	BuildString.h         "${BUILDVER_FILE}"
 	SimpleBackend.h       SimpleBackend.cpp
+	SimpleConnection.h    SimpleConnection.cpp
 
 	AutoUpdate.h          AutoUpdate.cpp
 

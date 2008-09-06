@@ -1,6 +1,7 @@
 #ifndef ASIO_FILE_STREAM
 #define ASIO_FILE_STREAM
 
+#include "../Types.h"
 
 //#define BOOST_ASIO_DISABLE_EPOLL
 //#define BOOST_ASIO_DISABLE_IOCP
