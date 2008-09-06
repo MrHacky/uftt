@@ -28,9 +28,9 @@
 - make bootstrapper universal (detect os, web version)
 - automatically place uftt.dat in user application settings on first startup
 - make uftt.dat location changable after initial startup
-- use future-proof protocols
 - allow sharing non-self autoupdates
 - make autoupdate dialog
+- [DONE] use future-proof protocols (i really hope so!)
 - [DONE] implement debian/ubuntu .deb autoupdate
 - [DONE] add option to automatically check for (http) updates every day, week, or month
 - [DONE] implement autoupdate via http (heliohost)
