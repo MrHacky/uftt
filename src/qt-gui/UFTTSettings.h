@@ -17,6 +17,30 @@
 
 #define NVP(x,y) (boost::serialization::make_nvp(x,y))
 
+struct vector_as_string {
+	std::vector<uint8>& data;
+
+	vector_as_string(std::vector<uint8>& data_)
+		: data(data_) {};
+
+	template<class Archive>
+	void save(Archive & ar, const unsigned int version) const {
+		std::string strdata(data.begin(), data.end());
+		ar & NVP("data", strdata);
+	}
+
+	template<class Archive>
+	void load(Archive & ar, const unsigned int version) const {
+		std::string strdata;
+		ar & NVP("data", strdata);
+		data.swap(std::vector<uint8>(strdata.begin(), strdata.end()));
+	}
+
+	template<class Archive>
+	void serialize(Archive & ar, const unsigned int version) const {
+		boost::serialization::split_member(ar, *this, version);
+	}
+};
 
 class UFTTSettings {
 	public:
@@ -52,6 +76,8 @@ class UFTTSettings {
 			if (version >=  5) ar & NVP("lastupdate", lastupdate);
 
 			if (version >=  4) ar & NVP("dockinfo", dockinfo);
+			//if (version >=  4 && version < 6) ar & NVP("dockinfo", dockinfo);
+			//if (version >=  6) ar & NVP("dockinfo", vector_as_string(dockinfo));
 		}
 };
 
@@ -89,6 +115,6 @@ inline void serialize (Archive & ar, boost::filesystem::path &p,
     boost::serialization::split_free(ar, p, file_version);
 }
 
-} } // namespace boost::serializatio
+} } // namespace boost::serialization
 
 #endif//UFTT_SETTINGS_H
