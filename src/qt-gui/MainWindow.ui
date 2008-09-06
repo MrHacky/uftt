@@ -112,6 +112,21 @@
       <widget class="QDragDropTreeWidget" name="SharesTree" >
        <column>
         <property name="text" >
+         <string>Protocol</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Host</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Share</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
          <string>URL</string>
         </property>
        </column>

@@ -100,7 +100,7 @@ class SimpleBackend {
 							case 2: { // type = reply;
 								if (len >= 6) {
 									uint32 slen = udp_recv_buf[5];
-									if (len >= slen+6) {
+									if (len >= slen+6 && (rpver == 1 || rpver == 2)) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
 										std::string surl = STRFORMAT("uftt-v%d://%s/%s", rpver, udp_recv_addr.address().to_string(), sname);
 										sig_new_share(surl);
@@ -112,15 +112,11 @@ class SimpleBackend {
 								}
 							}; break;
 							case 3: { // type = autoupdate share
-								if (len >= 6) {
+								if (len >= 6 && (rpver == 1)) {
 									uint32 slen = udp_recv_buf[5];
 									if (len >= slen+6) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-										std::string surl;
-										surl += "uftt-v1://";
-										surl += udp_recv_addr.address().to_string();
-										surl += '/';
-										surl += sname;
+										std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, udp_recv_addr.address().to_string(), sname);;
 										sig_new_autoupdate(surl);
 									}
 								}

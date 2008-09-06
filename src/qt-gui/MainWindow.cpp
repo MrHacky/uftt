@@ -209,13 +209,42 @@ void MainWindow::on_buttonRefresh_clicked()
 
 void MainWindow::addSimpleShare(std::string sharename)
 {
-	QString qsharename = QString::fromStdString(sharename);
+	std::string url = sharename;
+	std::string shareurl = url;
+	size_t colonpos = shareurl.find_first_of(":");
+	std::string proto = shareurl.substr(0, colonpos);
+	uint32 version = atoi(proto.substr(6).c_str());
+	shareurl.erase(0, proto.size()+3);
+	size_t slashpos = shareurl.find_first_of("\\/");
+	std::string host = shareurl.substr(0, slashpos);
+	std::string share = shareurl.substr(slashpos+1);
 
-	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qsharename, 0);
+	QString qshare = QString::fromStdString(share);
+	QString qproto = QString::fromStdString(proto);
+	QString qhost  = QString::fromStdString(host);
+	QString qurl   = QString::fromStdString(url);
 
-	if (fres.empty()) {
+	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qshare, 0, 2);
+
+	bool found = false;
+	BOOST_FOREACH(QTreeWidgetItem* twi, fres) {
+		if (twi->text(1) == qhost && twi->text(2) == qshare) {
+			found = true;
+			QString qoprot = twi->text(0);
+			uint32 over = atoi(qoprot.toStdString().substr(6).c_str());
+			if (over < version) {
+				twi->setText(0, qproto);
+				twi->setText(3, qurl);
+			}
+		}
+	}
+
+	if (!found) {
 		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
-		rwi->setText(0, qsharename);
+		rwi->setText(0, qproto);
+		rwi->setText(1, qhost);
+		rwi->setText(2, qshare);
+		rwi->setText(3, qurl);
 	}
 }
 
@@ -245,17 +274,17 @@ void MainWindow::on_buttonDownload_clicked()
 	QTreeWidgetItem* rwi = SharesTree->currentItem();
 	if (!rwi)
 		return;
-	QString name = rwi->text(0);
+	QString url = rwi->text(3);
 
 	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-	twi->setText(0, name);
+	twi->setText(0, url);
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 	boost::function<void(uint64, std::string, uint32)> handler =
 		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
 	handler(0, "Starting", 0);
 
-	backend->slot_download_share(name.toStdString(), dlpath, handler);
+	backend->slot_download_share(url.toStdString(), dlpath, handler);
 }
 
 

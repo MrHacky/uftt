@@ -546,8 +546,6 @@ class SimpleTCPConnection {
 
 			boost::asio::async_write(socket, GETBUF(sbuf),
 				boost::bind(&SimpleTCPConnection::handle_sent_name, this, _1, sbuf));
-			//boost::asio::async_write(socket,
-			//socket.async_write(
 
 			start_update_progress();
 		}
