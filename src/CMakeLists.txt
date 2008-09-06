@@ -78,3 +78,36 @@ TARGET_LINK_LIBRARIES(uftt
 	${BOOST_FILESYSTEM_LIBRARY}
 	${BOOST_SERIALIZATION_LIBRARY}
 )
+
+IF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
+	SET(CPACK_GENERATOR "DEB")
+
+	SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Ultimate File Transfer Tool")
+	SET(CPACK_PACKAGE_VENDOR "uftt")
+	SET(CPACK_PACKAGE_NAME "uftt")
+	SET(CPACK_PACKAGE_CONTACT "simon.sasburg@gmail.com")
+	SET(CPACK_PACKAGE_VERSION_MAJOR "0")
+	SET(CPACK_PACKAGE_VERSION_MINOR "0")
+	SET(CPACK_PACKAGE_VERSION_PATCH "3")
+	#SET(CPACK_PACKAGE_INSTALL_DIRECTORY "uftt ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}")
+	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "uftt-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+	SET(CPACK_PACKAGE_EXECUTABLES "uftt" "UFTT Executable")
+
+	SET(CPACK_DEBIAN_PACKAGE_DEPENDS
+		#"libc6, libfontconfig1, libfreetype6, libgcc1, libice6, libpng12-0, libqt4-core, libqt4-gui, libsm6, libssl0.9.8, libstdc++6, libx11-6, libxcursor1, libxext6, libxi6, libxinerama1, libxrandr2, libxrender1, zlib1g"
+		"libc6, libgcc1, libstdc++6, libqt4-gui, libssl0.9.8"
+		#old:	"libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)"
+	)
+
+	IF(UNIX)
+		SET(CPACK_STRIP_FILES "bin/uftt")
+		SET(CMAKE_INSTALL_PREFIX "/usr/local")
+	ENDIF(UNIX)
+
+	# List executables
+	INCLUDE(CPack)
+ENDIF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
+
+INSTALL(TARGETS uftt
+	RUNTIME DESTINATION bin
+)
