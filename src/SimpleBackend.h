@@ -67,15 +67,11 @@ class SimpleBackend {
 		void handle_udp_receive(const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
 				if (len >= 4) {
-					uint32 rpver =
-						(udp_recv_buf[0] <<  0) |
-						(udp_recv_buf[1] <<  8) |
-						(udp_recv_buf[2] << 16) |
-						(udp_recv_buf[3] << 24);
-					if (rpver == 1 && len > 4) {
+					uint32 rpver = (udp_recv_buf[0] <<  0) | (udp_recv_buf[1] <<  8) | (udp_recv_buf[2] << 16) | (udp_recv_buf[3] << 24);
+					if (len > 4) {
 						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << udp_recv_addr << "\n";
 						switch (udp_recv_buf[4]) {
-							case 1: { // type = broadcast;
+							case 1: if (rpver == 1) { // type = broadcast;
 								std::set<uint32> versions;
 								if (len > 5) {
 									uint32 i = 6 + udp_recv_buf[5];
@@ -91,12 +87,14 @@ class SimpleBackend {
 								}
 								if (versions.empty()) versions.insert(1);
 
-								       if (versions.count(3)) {
-									send_publishes(udp_recv_addr, false, true);
+								       if (versions.count(4)) {
+									send_publishes(udp_recv_addr, 2, true);
+								} else if (versions.count(3)) {
+									send_publishes(udp_recv_addr, 0, true);
 								} else if (versions.count(2)) {
-									send_publishes(udp_recv_addr, true, true);
+									send_publishes(udp_recv_addr, 1, true);
 								} else if (versions.count(1)) {
-									send_publishes(udp_recv_addr, true, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
+									send_publishes(udp_recv_addr, 1, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
 								}
 							}; break;
 							case 2: { // type = reply;
@@ -104,12 +102,12 @@ class SimpleBackend {
 									uint32 slen = udp_recv_buf[5];
 									if (len >= slen+6) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-										std::string surl;
-										surl += "uftt://";
-										surl += udp_recv_addr.address().to_string();
-										surl += '/';
-										surl += sname;
+										std::string surl = STRFORMAT("uftt-v%d://%s/%s", rpver, udp_recv_addr.address().to_string(), sname);
 										sig_new_share(surl);
+									}
+									if (rpver == 1 && len > slen+6) {
+										// a bit wasteful maybe?
+										send_query(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT));
 									}
 								}
 							}; break;
@@ -119,7 +117,7 @@ class SimpleBackend {
 									if (len >= slen+6) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
 										std::string surl;
-										surl += "uftt://";
+										surl += "uftt-v1://";
 										surl += udp_recv_addr.address().to_string();
 										surl += '/';
 										surl += sname;
@@ -151,6 +149,7 @@ class SimpleBackend {
 			std::set<uint32> qversions;
 			qversions.insert(1);
 			qversions.insert(2);
+			qversions.insert(4);
 
 			int plen = 8;
 			BOOST_FOREACH(uint32 ver, qversions) {
@@ -177,16 +176,17 @@ class SimpleBackend {
 				std::cout << "query failed: " << err.message() << '\n';
 		}
 
-		void send_publish(const boost::asio::ip::udp::endpoint& ep, const std::string& name, bool isbuild)
+		void send_publish(const boost::asio::ip::udp::endpoint& ep, const std::string& name, int sharever, bool isbuild = false)
 		{
 			uint8 udp_send_buf[1024];
-			udp_send_buf[0] = 1;
-			udp_send_buf[1] = 0;
-			udp_send_buf[2] = 0;
-			udp_send_buf[3] = 0;
+			udp_send_buf[0] = (sharever >>  0) & 0xff;
+			udp_send_buf[1] = (sharever >>  8) & 0xff;
+			udp_send_buf[2] = (sharever >> 16) & 0xff;
+			udp_send_buf[3] = (sharever >> 24) & 0xff;
 			udp_send_buf[4] = isbuild ? 3 : 2;
 			udp_send_buf[5] = name.size();
 			memcpy(&udp_send_buf[6], name.data(), name.size());
+			udp_send_buf[name.size()+6] = 0;
 
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
@@ -197,21 +197,21 @@ class SimpleBackend {
 					err
 				);
 			else
-				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, name.size()+6), ep.port(), 0, err);
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, name.size()+6+1), ep.port(), 0, err);
 			if (err)
 				std::cout << "publish of '" << name << "' to '" << ep << "'failed: " << err.message() << '\n';
 		}
 
-		void send_publishes(const boost::asio::ip::udp::endpoint& ep, bool sendshares, bool sendbuilds) {
+		void send_publishes(const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds) {
 			typedef std::pair<const std::string, boost::filesystem::path> shareiter;
-			if (sendshares)
+			if (sharever > 0)
 				BOOST_FOREACH(shareiter& item, sharelist)
 					if (item.first.size() < 0xff && !item.second.empty())
-						send_publish(ep, item.first, false);
+						send_publish(ep, item.first, sharever);
 
 			if (sendbuilds)
 				BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
-					send_publish(ep, name, true);
+					send_publish(ep, name, 1, true);
 		}
 
 		void add_local_share(std::string name, boost::filesystem::path path)
@@ -220,12 +220,15 @@ class SimpleBackend {
 				std::cout << "warning: replacing share with identical name\n";
 			sharelist[name] = path;
 
-			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, false);
+			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
 		}
 
 		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
 		{
-			shareurl.erase(0, 7);
+			size_t colonpos = shareurl.find_first_of(":");
+			std::string proto = shareurl.substr(0, colonpos);
+			uint32 version = atoi(proto.substr(6).c_str());
+			shareurl.erase(0, proto.size()+3);
 			size_t slashpos = shareurl.find_first_of("\\/");
 			std::string host = shareurl.substr(0, slashpos);
 			std::string share = shareurl.substr(slashpos+1);
@@ -235,16 +238,16 @@ class SimpleBackend {
 			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), UFTT_PORT);
 			newconn->socket.open(ep.protocol());
 			std::cout << "Connecting...\n";
-			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath));
+			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
 		}
 
-		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath)
+		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
 		{
 			if (e) {
 				std::cout << "connect failed: " << e.message() << '\n';
 			} else {
 				std::cout << "Connected!\n";
-				conn->handle_tcp_connect(name, dlpath);
+				conn->handle_tcp_connect(name, dlpath, version);
 			}
 		}
 
@@ -315,7 +318,7 @@ class SimpleBackend {
 
 			// bind autoupdater
 			updateProvider.newbuild.connect(
-				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, true)
+				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, 0, true)
 			);
 
 			start_udp_receive();

@@ -9,10 +9,10 @@
 #include "Globals.h"
 
 /// helper classes, TODO: nest them properly...
-struct header {
-	uint32 type;
-	uint32 nlen;
-	uint64 size;
+struct cmdinfo {
+	uint32 cmd;
+	uint32 ver;
+	uint64 len;
 };
 
 struct filesender {
@@ -36,12 +36,12 @@ struct filesender {
 		if (!hsent) {
 			hsent = true;
 			buf->resize(16 + name.size());
-			header hdr;
-			hdr.type = 0x01; // file
-			hdr.size = fsize;
-			hdr.nlen = name.size();
+			cmdinfo hdr;
+			hdr.cmd = 0x01; // file
+			hdr.len = fsize;
+			hdr.ver = name.size();
 			memcpy(&(*buf)[0], &hdr, 16);
-			memcpy(&(*buf)[16], name.data(), hdr.nlen);
+			memcpy(&(*buf)[16], name.data(), hdr.ver);
 			//fsize += buf->size();
 			//handler(boost::system::error_code(), buf->size());
 			return true;
@@ -70,20 +70,20 @@ struct dirsender {
 		if (!hsent) {
 			hsent = true;
 			buf->resize(16 + name.size());
-			header hdr;
-			hdr.type = 0x02; // dir
-			hdr.size = 0;
-			hdr.nlen = name.size();
+			cmdinfo hdr;
+			hdr.cmd = 0x02; // dir
+			hdr.len = 0;
+			hdr.ver = name.size();
 			memcpy(&(*buf)[0], &hdr, 16);
-			memcpy(&(*buf)[16], name.data(), hdr.nlen);
+			memcpy(&(*buf)[16], name.data(), hdr.ver);
 		} else
 			buf->clear();
 
 		if (curiter == enditer) {
-			header hdr;
-			hdr.type = 0x03; // ..
-			hdr.size = 0;
-			hdr.nlen = 0;
+			cmdinfo hdr;
+			hdr.cmd = 0x03; // ..
+			hdr.len = 0;
+			hdr.ver = 0;
 			uint32 clen = buf->size();
 			buf->resize(clen+16);
 			memcpy(&(*buf)[clen], &hdr, 16);
@@ -123,6 +123,7 @@ class SimpleTCPConnection {
 		bool donesend;
 		bool isreading;
 
+		cmdinfo rcmd;
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
 			: backend(backend_)
@@ -186,13 +187,120 @@ class SimpleTCPConnection {
 			protver |= (rbuf->at(2) << 16);
 			protver |= (rbuf->at(3) << 24);
 
-			if (protver != 1) {
+			if (protver == 1) {
+				boost::asio::async_read(socket, GETBUF(rbuf),
+				boost::bind(&SimpleTCPConnection::handle_recv_namelen, this, _1, rbuf));
+			} else if (protver == 2) {
+				start_receive_command(rbuf);
+			} else
 				std::cout << "error: unknown tcp protocol version: " << protver << '\n';
+		}
+
+		void start_receive_command(shared_vec rbuf)
+		{
+			rbuf->resize(16);
+			boost::asio::async_read(socket, GETBUF(rbuf),
+				boost::bind(&SimpleTCPConnection::command_header_handler, this, _1, rbuf));
+		}
+
+		void handle_generic_send(const boost::system::error_code& e, shared_vec sbuf)
+		{
+			if (e)
+				std::cout << "error sending: " << e.message() << '\n';
+		}
+
+		void command_header_handler(const boost::system::error_code& e, shared_vec rbuf)
+		{
+			if (e) {
+				std::cout << "error receiving command header: " << e.message() << '\n';
 				return;
 			}
 
-			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_namelen, this, _1, rbuf));
+			cmdinfo hdr;
+			memcpy(&hdr, &((*rbuf)[0]), 16);
+
+			switch (hdr.cmd) {
+				case 1: { // file
+					rbuf->resize(hdr.ver);
+					boost::asio::async_read(socket, GETBUF(rbuf),
+						boost::bind(&SimpleTCPConnection::handle_recv_file_header, this, _1, hdr, rbuf));
+				}; break;
+				case 2: { // dir
+					rbuf->resize(hdr.ver);
+					boost::asio::async_read(socket, GETBUF(rbuf),
+						boost::bind(&SimpleTCPConnection::handle_recv_dir_header, this, _1, hdr, rbuf));
+				}; break;
+				case 3: { // ..
+					//cout << "got '..'\n";
+					sharepath /= "..";
+					sharepath.normalize();
+					start_recv_header(rbuf);
+				}; break;
+				case 4: { // ..
+					std::cout << "download finished!\n";
+					dldone = true;
+					if (dldone && open_files == 0) {
+						this->sig_download_ready(
+							std::string("uftt://")
+							+socket.remote_endpoint().address().to_string()
+							+"/"+sharename
+						);
+						socket.close(); // do this after the sig so the endpoint is still valid
+					}
+				}; break;
+				case 5: { // request old style share dump
+					if (hdr.len < 0xffff) {
+						rbuf->resize((uint32)hdr.len); // cast safe because of check above
+						boost::asio::async_read(socket, GETBUF(rbuf),
+							boost::bind(&SimpleTCPConnection::handle_recv_name, this, _1, rbuf));
+					}
+				}; break;
+				case 6: { // unknown command
+					uint32 command;
+					boost::asio::read(socket, boost::asio::buffer(&command, 4));
+					std::cout << "remote end does not support command: " << command << '\n';
+					// do something depending on state?
+					start_receive_command(rbuf);
+				}; break;
+				case -1:
+				default: {
+					std::cout << "skipping unkown command: " << hdr.cmd << " (" << hdr.len << ")\n";
+					command_skip_handler(boost::system::error_code(), rbuf, 0, hdr.len);
+
+					shared_vec sbufp = shared_vec(new std::vector<uint8>());
+					sbufp->resize(20);
+					std::vector<uint8>& sbuf = *sbufp;
+					sbuf[ 0] = 0x06; sbuf[ 1] = 0x00; sbuf[ 2] = 0x00; sbuf[ 3] = 0x00;
+					sbuf[ 8] = 0x04; sbuf[ 9] = 0x00; sbuf[10] = 0x00; sbuf[11] = 0x00;
+					sbuf[12] = 0x00; sbuf[13] = 0x00; sbuf[14] = 0x00; sbuf[15] = 0x00;
+					sbuf[16] = (hdr.cmd >>  0) & 0xFF;
+					sbuf[17] = (hdr.cmd >>  8) & 0xFF;
+					sbuf[18] = (hdr.cmd >> 16) & 0xFF;
+					sbuf[19] = (hdr.cmd >> 24) & 0xFF;
+					boost::asio::async_write(socket, GETBUF(sbufp),
+						boost::bind(&SimpleTCPConnection::handle_generic_send, this, _1, sbufp));
+				};
+			}
+		}
+
+		void command_skip_handler(const boost::system::error_code& e, shared_vec rbuf, uint32 chunk, uint64 size)
+		{
+			if (e) {
+				std::cout << "error skipping unknown command: " << e.message() << '\n';
+				return;
+			}
+
+			size -= chunk;
+			if (size != 0) {
+				if (size > 1024*1024)
+					chunk = 1024*1024;
+				else
+					chunk = (uint32)size; // cast is ok because of if check 3 lines above
+				rbuf->resize(chunk);
+				boost::asio::async_read(socket, GETBUF(rbuf),
+					boost::bind(&SimpleTCPConnection::command_skip_handler, this, _1, rbuf, chunk, size));
+			} else
+				start_receive_command(rbuf);
 		}
 
 		void sendpath(boost::filesystem::path path, std::string name = "")
@@ -281,10 +389,10 @@ class SimpleTCPConnection {
 					sendqueue.push_back(sbuf);
 					service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
 				} else if (!donesend) {
-					header hdr;
-					hdr.type = 0x04; // ..
-					hdr.size = 0;
-					hdr.nlen = 0;
+					cmdinfo hdr;
+					hdr.cmd = 0x04; // ..
+					hdr.len = 0;
+					hdr.ver = 0;
 					sbuf->resize(16);
 					memcpy(&(*sbuf)[0], &hdr, 16);
 
@@ -331,6 +439,11 @@ class SimpleTCPConnection {
 			sharename.clear();
 			for (uint i = 0; i < rbuf->size(); ++i)
 				sharename.push_back(rbuf->at(i));
+			got_share_name(rbuf);
+		}
+
+		void got_share_name(shared_vec rbuf)
+		{
 			std::cout << "got share name: " << sharename << '\n';
 			getsharepath(sharename);
 			if (sharepath == "") {
@@ -339,12 +452,12 @@ class SimpleTCPConnection {
 					std::cout << "is a build share\n";
 					std::string name = sharename + ".exe";
 					rbuf->resize(16 + name.size());
-					header hdr;
-					hdr.type = 0x01; // file
-					hdr.size = buildfile->size();
-					hdr.nlen = name.size();
+					cmdinfo hdr;
+					hdr.cmd = 0x01; // file
+					hdr.len = buildfile->size();
+					hdr.ver = name.size();
 					memcpy(&(*rbuf)[0], &hdr, 16);
-					memcpy(&(*rbuf)[16], name.data(), hdr.nlen);
+					memcpy(&(*rbuf)[16], name.data(), hdr.ver);
 					boost::asio::async_write(socket, GETBUF(rbuf),
 						boost::bind(&SimpleTCPConnection::sent_autoupdate_header, this, _1, buildfile, rbuf));
 				} else
@@ -370,8 +483,8 @@ class SimpleTCPConnection {
 				std::cout << "error: " << e.message() << '\n';
 				return;
 			}
-			header hdr;
-			hdr.type = 0x04;
+			cmdinfo hdr;
+			hdr.cmd = 0x04;
 			sbuf->resize(16);
 			memcpy(&(*sbuf)[0], &hdr, 16);
 			boost::asio::async_write(socket, GETBUF(sbuf),
@@ -386,26 +499,50 @@ class SimpleTCPConnection {
 			socket.close();
 		}
 
-		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath)
+		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath, uint32 version)
 		{
 			sharename = name;
 			sharepath = dlpath;
 
-			shared_vec sbuf(new std::vector<uint8>(4));
+			shared_vec sbuf(new std::vector<uint8>());
 
-			sbuf->push_back(1); // protocol version
-			sbuf->push_back(0); // protocol version
-			sbuf->push_back(0); // protocol version
-			sbuf->push_back(0); // protocol version
+			sbuf->push_back((version >>  0)&0xff); // protocol version
+			sbuf->push_back((version >>  8)&0xff); // protocol version
+			sbuf->push_back((version >> 16)&0xff); // protocol version
+			sbuf->push_back((version >> 24)&0xff); // protocol version
 
 			uint32 namelen = name.size();
-			sbuf->push_back((namelen >>  0)&0xff);
-			sbuf->push_back((namelen >>  8)&0xff);
-			sbuf->push_back((namelen >> 16)&0xff);
-			sbuf->push_back((namelen >> 24)&0xff);
+			if (version == 1) {
+				sbuf->push_back((namelen >>  0)&0xff);
+				sbuf->push_back((namelen >>  8)&0xff);
+				sbuf->push_back((namelen >> 16)&0xff);
+				sbuf->push_back((namelen >> 24)&0xff);
 
-			for (uint i = 0; i < namelen; ++i)
-				sbuf->push_back(name[i]);
+				for (uint i = 0; i < namelen; ++i)
+					sbuf->push_back(name[i]);
+			} else if (version == 2) {
+				/*
+				sbuf->push_back(0x07); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				sbuf->push_back((namelen >>  0)&0xff);
+				sbuf->push_back((namelen >>  8)&0xff);
+				sbuf->push_back((namelen >> 16)&0xff);
+				sbuf->push_back((namelen >> 24)&0xff);
+				sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				for (uint i = 0; i < namelen; ++i)
+					sbuf->push_back(name[i]);
+					*/
+				sbuf->push_back(0x05); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				sbuf->push_back((namelen >>  0)&0xff);
+				sbuf->push_back((namelen >>  8)&0xff);
+				sbuf->push_back((namelen >> 16)&0xff);
+				sbuf->push_back((namelen >> 24)&0xff);
+				sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00); sbuf->push_back(0x00);
+				for (uint i = 0; i < namelen; ++i)
+					sbuf->push_back(name[i]);
+			} else
+				std::cout << "unknown version connecting: " << version << '\n';
 
 			boost::asio::async_write(socket, GETBUF(sbuf),
 				boost::bind(&SimpleTCPConnection::handle_sent_name, this, _1, sbuf));
@@ -431,46 +568,10 @@ class SimpleTCPConnection {
 		}
 
 		void handle_recv_header(const boost::system::error_code& e, shared_vec rbuf) {
-			if (e) {
-				std::cout << "error: " << e.message() << '\n';
-				return;
-			}
-
-			header hdr;
-			memcpy(&hdr, &((*rbuf)[0]), 16);
-			switch (hdr.type) {
-				case 1: { // file
-					rbuf->resize(hdr.nlen);
-					boost::asio::async_read(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_file_header, this, _1, hdr, rbuf));
-				}; break;
-				case 2: { // dir
-					rbuf->resize(hdr.nlen);
-					boost::asio::async_read(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_dir_header, this, _1, hdr, rbuf));
-				}; break;
-				case 3: { // ..
-					//cout << "got '..'\n";
-					sharepath /= "..";
-					sharepath.normalize();
-					start_recv_header(rbuf);
-				}; break;
-				case 4: { // ..
-					std::cout << "download finished!\n";
-					dldone = true;
-					if (dldone && open_files == 0) {
-						this->sig_download_ready(
-							std::string("uftt://")
-							+socket.remote_endpoint().address().to_string()
-							+"/"+sharename
-						);
-						socket.close(); // do this after the sig so the endpoint is still valid
-					}
-				}; break;
-			}
+			command_header_handler(e, rbuf);
 		}
 
-		void handle_recv_file_header(const boost::system::error_code& e, header hdr, shared_vec rbuf) {
+		void handle_recv_file_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf) {
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
 				return;
@@ -486,16 +587,16 @@ class SimpleTCPConnection {
 			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
 			gdiskio->async_open_file((sharepath / name), services::diskio_filetype::out|services::diskio_filetype::create,
 				*file,
-				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, hdr.size, rbuf, rbuf));
+				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, hdr.len, rbuf, rbuf));
 
 			// kick off async_read for when we received some data (capped by file size)
-			rbuf->resize((hdr.size>1024*1024*10) ? 1024*1024*10 : (uint32)hdr.size); // cast is ok because of ?:
+			rbuf->resize((hdr.len>1024*1024*10) ? 1024*1024*10 : (uint32)hdr.len); // cast is ok because of ?:
 			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, hdr.size, rbuf));
+				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, hdr.len, rbuf));
 
 		}
 
-		void handle_recv_dir_header(const boost::system::error_code& e, header hdr, shared_vec rbuf) {
+		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf) {
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
 				return;
