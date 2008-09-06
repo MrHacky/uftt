@@ -1,0 +1,61 @@
+UFTT udp protocol:
+
+Portnumber: 47189
+	Send any broadcast queries to this port
+	Send only replies from this port
+	Open in reusable mode
+
+query packet (modern):
+
+Header:
+/------------------------------------------------------\
+| 0x01 | 0x00| 0x00 | 0x00 | 0x01 | 0x01 | 0x00 | u8:X |
+\------------------------------------------------------/
+
+Followed by X of :
+
+/------------------------------------------------------\
+| u32: Start               | u32:End                   |
+\------------------------------------------------------/
+
+Where the ranges [Start, End] specify which versions are requested.
+The reply should choose the highest supported and requested version.
+
+
+
+
+query packet (old):
+
+Header:
+/---------------------------------\
+| 0x01 | 0x00| 0x00 | 0x00 | 0x01 |
+\---------------------------------/
+
+Followed by an optional
+/---------------------\
+| u8:X | u8[X]: Build |
+\---------------------/
+
+Followed by optional (only if above optional(X) is present)
+/------\
+| u8:Y |
+\------/
+
+Followed by Y of (only if above optional(Y) is present)
+
+/------------------------------------------------------\
+| u32: Start               | u32:End                   |
+\------------------------------------------------------/
+
+Where the ranges [Start, End] specify which versions are requested.
+The reply should choose the highest supported and requested version.
+
+If any of the optional parts are not present, version 1 should be
+assumed as the only requested version.
+
+
+
+Version 1 query: request v1 shares and v1 builds
+Version 2 query: request v1 shares and v1 builds
+Version 3 query: request v1 builds
+Version 4 query: request v2 shares and v1 builds
