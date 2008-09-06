@@ -64,6 +64,24 @@ class SimpleBackend {
 			);
 		}
 
+		std::set<uint32> parseVersions(uint8* base, uint start, uint len)
+		{
+			std::set<uint32> versions;
+			uint32 i = start;
+			if (i < len) {
+				uint max = base[i++];
+				for (uint num = 0; num < max && i+8 <= len; ++num, i += 8) {
+					uint32 lver = (base[i+0] <<  0) | (base[i+1] <<  8) | (base[i+2] << 16) | (base[i+3] << 24);
+					uint32 hver = (base[i+4] <<  0) | (base[i+5] <<  8) | (base[i+6] << 16) | (base[i+7] << 24);
+					if (lver <= hver && (hver-lver) < 100)
+						for (uint32 j = lver; j <= hver; ++j)
+							versions.insert(j);
+				}
+			}
+			if (versions.empty()) versions.insert(1);
+			return versions;
+		}
+
 		void handle_udp_receive(const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
 				if (len >= 4) {
@@ -72,20 +90,11 @@ class SimpleBackend {
 						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << udp_recv_addr << "\n";
 						switch (udp_recv_buf[4]) {
 							case 1: if (rpver == 1) { // type = broadcast;
-								std::set<uint32> versions;
-								if (len > 5) {
-									uint32 i = 6 + udp_recv_buf[5];
-									if (i < len) {
-										uint max = udp_recv_buf[i++];
-										for (uint num = 0; num < max && i+8 <= len; ++num, i += 8) {
-											uint32 lver = (udp_recv_buf[i+0] <<  0) | (udp_recv_buf[i+1] <<  8) | (udp_recv_buf[i+2] << 16) | (udp_recv_buf[i+3] << 24);
-											uint32 hver = (udp_recv_buf[i+4] <<  0) | (udp_recv_buf[i+5] <<  8) | (udp_recv_buf[i+6] << 16) | (udp_recv_buf[i+7] << 24);
-											for (uint32 j = lver; j <= hver; ++j)
-												versions.insert(j);
-										}
-									}
-								}
-								if (versions.empty()) versions.insert(1);
+								uint32 vstart = 5;
+								if (len > 5)
+									vstart = 6 + udp_recv_buf[5];
+
+								std::set<uint32> versions = parseVersions(udp_recv_buf, vstart, len);
 
 								       if (versions.count(4)) {
 									send_publishes(udp_recv_addr, 2, true);
@@ -100,14 +109,22 @@ class SimpleBackend {
 							case 2: { // type = reply;
 								if (len >= 6) {
 									uint32 slen = udp_recv_buf[5];
-									if (len >= slen+6 && (rpver == 1 || rpver == 2)) {
-										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-										std::string surl = STRFORMAT("uftt-v%d://%s/%s", rpver, udp_recv_addr.address().to_string(), sname);
-										sig_new_share(surl);
-									}
-									if (rpver == 1 && len > slen+6) {
-										// a bit wasteful maybe?
-										send_query(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT));
+									if (len >= slen+6) {
+										std::set<uint32> versions;
+										if (rpver == 1)
+											versions = parseVersions(udp_recv_buf, slen+6, len);
+										versions.insert(rpver);
+										uint32 sver = 0;
+										if (versions.count(2))
+											sver = 2;
+										else if (versions.count(1))
+											sver = 1;
+
+										if (sver > 0) {
+											std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
+											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, udp_recv_addr.address().to_string(), sname);
+											sig_new_share(surl);
+										}
 									}
 								}
 							}; break;
@@ -182,18 +199,35 @@ class SimpleBackend {
 			udp_send_buf[4] = isbuild ? 3 : 2;
 			udp_send_buf[5] = name.size();
 			memcpy(&udp_send_buf[6], name.data(), name.size());
-			udp_send_buf[name.size()+6] = 0;
+
+			uint32 plen = name.size()+6;
+			if (!isbuild && sharever == 1 && ep.address() == boost::asio::ip::address_v4::broadcast()) {
+				std::set<uint32> sversions;
+				sversions.insert(1);
+				sversions.insert(2);
+
+				udp_send_buf[plen++] = sversions.size();
+
+				BOOST_FOREACH(uint32 ver, sversions) {
+					udp_send_buf[plen+0] = udp_send_buf[plen+4] = (ver >>  0) & 0xff;
+					udp_send_buf[plen+1] = udp_send_buf[plen+5] = (ver >>  8) & 0xff;
+					udp_send_buf[plen+2] = udp_send_buf[plen+6] = (ver >> 16) & 0xff;
+					udp_send_buf[plen+3] = udp_send_buf[plen+7] = (ver >> 24) & 0xff;
+					//++udp_send_buf[7];
+					plen += 8;
+				}
+			}
 
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
 				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, name.size()+6),
+					boost::asio::buffer(udp_send_buf, plen),
 					ep,
 					0,
 					err
 				);
 			else
-				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, name.size()+6+1), ep.port(), 0, err);
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, plen), ep.port(), 0, err);
 			if (err)
 				std::cout << "publish of '" << name << "' to '" << ep << "'failed: " << err.message() << '\n';
 		}
