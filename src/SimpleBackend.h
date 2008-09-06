@@ -2,6 +2,8 @@
 
 #define UFTT_PORT (47189)
 
+#include <set>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
@@ -658,11 +660,29 @@ class SimpleBackend {
 						(udp_recv_buf[1] <<  8) |
 						(udp_recv_buf[2] << 16) |
 						(udp_recv_buf[3] << 24);
-					if (rpver == 1 && len >= 5) {
+					if (rpver == 1 && len > 4) {
 						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << udp_recv_addr << "\n";
 						switch (udp_recv_buf[4]) {
 							case 1: { // type = broadcast;
-								send_publish(udp_recv_addr, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
+								std::set<uint32> versions;
+								if (len > 5) {
+									uint32 i = 6 + udp_recv_buf[5];
+									if (i < len) {
+										uint max = udp_recv_buf[i++];
+										for (uint num = 0; num < max && i+8 <= len; ++num, i += 8) {
+											uint32 lver = (udp_recv_buf[i+0] <<  0) | (udp_recv_buf[i+1] <<  8) | (udp_recv_buf[i+2] << 16) | (udp_recv_buf[i+3] << 24);
+											uint32 hver = (udp_recv_buf[i+4] <<  0) | (udp_recv_buf[i+5] <<  8) | (udp_recv_buf[i+6] << 16) | (udp_recv_buf[i+7] << 24);
+											for (uint32 j = lver; j <= hver; ++j)
+												versions.insert(j);
+										}
+									}
+								}
+								if (versions.empty()) versions.insert(1);
+
+								if (versions.count(1)) {
+									// version '1' we support
+									send_publish(udp_recv_addr, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
+								}
 							}; break;
 							case 2: { // type = reply;
 								if (len >= 6) {
