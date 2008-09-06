@@ -263,9 +263,9 @@ namespace {
 						cout << "yay! we just signed this binary!\n";
 
 						// write signed build to file for debug purposes
-						std::string fname = "uftt-signed";
+						std::string fname = "c:\\temp\\uftt-signed";
 						if (bstring.find("win32") != std::string::npos) fname = fname + ".exe";
-						if (bstring.find("-deb-") != std::string::npos) fname = fname + ".deb";
+						if (bstring.find("-deb-") != std::string::npos) fname = fname + ".deb.signed";
 						ofstream sexe(fname.c_str(), ios_base::out|ios_base::binary);
 						sexe.write((char*)&((*file)[0]), file->size());
 						sexe.close();
