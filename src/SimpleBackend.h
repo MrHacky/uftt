@@ -679,9 +679,12 @@ class SimpleBackend {
 								}
 								if (versions.empty()) versions.insert(1);
 
-								if (versions.count(1)) {
-									// version '1' we support
-									send_publish(udp_recv_addr, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
+								       if (versions.count(3)) {
+									send_publishes(udp_recv_addr, false, true);
+								} else if (versions.count(2)) {
+									send_publishes(udp_recv_addr, true, true);
+								} else if (versions.count(1)) {
+									send_publishes(udp_recv_addr, true, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
 								}
 							}; break;
 							case 2: { // type = reply;
@@ -757,7 +760,10 @@ class SimpleBackend {
 		void send_publish(const boost::asio::ip::udp::endpoint& ep, const std::string& name, bool isbuild)
 		{
 			uint8 udp_send_buf[1024];
-			memcpy(udp_send_buf, udp_recv_buf, 4);
+			udp_send_buf[0] = 1;
+			udp_send_buf[1] = 0;
+			udp_send_buf[2] = 0;
+			udp_send_buf[3] = 0;
 			udp_send_buf[4] = isbuild ? 3 : 2;
 			udp_send_buf[5] = name.size();
 			memcpy(&udp_send_buf[6], name.data(), name.size());
@@ -776,13 +782,14 @@ class SimpleBackend {
 				std::cout << "publish of '" << name << "' to '" << ep << "'failed: " << err.message() << '\n';
 		}
 
-		void send_publish(boost::asio::ip::udp::endpoint ep, bool buildstoo) {
+		void send_publishes(const boost::asio::ip::udp::endpoint& ep, bool sendshares, bool sendbuilds) {
 			typedef std::pair<const std::string, boost::filesystem::path> shareiter;
-			BOOST_FOREACH(shareiter& item, sharelist)
-				if (item.first.size() < 0xff && !item.second.empty())
-					send_publish(ep, item.first, false);
+			if (sendshares)
+				BOOST_FOREACH(shareiter& item, sharelist)
+					if (item.first.size() < 0xff && !item.second.empty())
+						send_publish(ep, item.first, false);
 
-			if (buildstoo)
+			if (sendbuilds)
 				BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
 					send_publish(ep, name, true);
 		}
@@ -935,9 +942,9 @@ class SimpleBackend {
 		}
 
 		void do_manual_publish(std::string hostname) {
-			service.post(boost::bind(&SimpleBackend::send_publish, this,
+			service.post(boost::bind(&SimpleBackend::send_publishes, this,
 				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
-			, true));
+			, true, true));
 		}
 
 		void do_check_for_web_updates(boost::function<void(std::string, std::string)> handler)
