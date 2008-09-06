@@ -402,7 +402,7 @@ class SimpleTCPConnection {
 			sharename = name;
 			sharepath = dlpath;
 
-			shared_vec sbuf(new std::vector<uint8>());
+			shared_vec sbuf(new std::vector<uint8>(4));
 
 			sbuf->push_back(1); // protocol version
 			sbuf->push_back(0); // protocol version
@@ -724,30 +724,31 @@ class SimpleBackend {
 
 		void send_query(boost::asio::ip::udp::endpoint ep) {
 			uint8 udp_send_buf[1024];
+			udp_send_buf[ 0] = 0x01;
+			udp_send_buf[ 1] = 0x00;
+			udp_send_buf[ 2] = 0x00;
+			udp_send_buf[ 3] = 0x00;
+			udp_send_buf[ 4] = 0x01;
+			udp_send_buf[ 5] = 0x01;
+			udp_send_buf[ 6] = 0x00;
+			udp_send_buf[ 7] = 0x01;
+
 			uint32 udp_protocol_version = 1;
-			udp_send_buf[0] = (udp_protocol_version >>  0) & 0xff;
-			udp_send_buf[1] = (udp_protocol_version >>  8) & 0xff;
-			udp_send_buf[2] = (udp_protocol_version >> 16) & 0xff;
-			udp_send_buf[3] = (udp_protocol_version >> 24) & 0xff;
-
-			udp_send_buf[4] = 1; // type = broadcast;
-
-			uint32 bslen = thebuildstring.size();
-			if (bslen > 0xff) bslen = 0;
-			udp_send_buf[5] = (uint8)bslen; // type = broadcast;
-			for (uint i = 0; i < bslen; ++i)
-				udp_send_buf[6+i] = thebuildstring[i];
+			udp_send_buf[ 8] = udp_send_buf[12] = (udp_protocol_version >>  0) & 0xff;
+			udp_send_buf[ 9] = udp_send_buf[13] = (udp_protocol_version >>  8) & 0xff;
+			udp_send_buf[10] = udp_send_buf[14] = (udp_protocol_version >> 16) & 0xff;
+			udp_send_buf[11] = udp_send_buf[15] = (udp_protocol_version >> 24) & 0xff;
 
 			boost::system::error_code err;
 			if (ep.address() != boost::asio::ip::address_v4::broadcast())
 				udpsocket.send_to(
-					boost::asio::buffer(udp_send_buf, 6+bslen),
+					boost::asio::buffer(udp_send_buf, 16),
 					ep,
 					0
 					,err
 				);
 			else
-				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, 6+bslen), ep.port(), 0, err);
+				this->send_udp_broadcast(udpsocket, boost::asio::buffer(udp_send_buf, 16), ep.port(), 0, err);
 
 			if (err)
 				std::cout << "query failed: " << err.message() << '\n';
