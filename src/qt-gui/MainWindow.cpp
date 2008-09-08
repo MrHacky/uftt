@@ -597,10 +597,8 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 	} else if (build.find("-deb-") != string::npos) {
 		if (AutoUpdater::doSelfUpdate(build, path, "")) {
 			boost::filesystem::path newtarget = path.branch_path() / (build +".deb");
-			std::string url = "file://";
-			url += newtarget.string();
-			cout << "url: " << url << '\n';
-			QDesktopServices::openUrl(QString::fromStdString(url));
+
+			QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(newtarget.native_file_string())));
 
 			QMessageBox::StandardButton res = QMessageBox::information(this,
 				QString("Auto Update"),
@@ -614,5 +612,26 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 				)
 			);
 		}
+	}
+}
+
+void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
+{
+	string text = twi->text(0).toStdString();
+	if (text.substr(0,4) != "uftt") return;
+	size_t pos = text.find_last_of("\\/");
+	if (pos == string::npos) return;
+	string name = text.substr(pos+1);
+
+	boost::filesystem::path path = DownloadEdit->text().toStdString();
+	path /= name;
+
+	if (boost::filesystem::exists(path)) {
+		string spath;
+		if (boost::filesystem::is_directory(path))
+			spath += path.native_directory_string();
+		else
+			spath += path.native_file_string();
+		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(spath)));
 	}
 }
