@@ -1,5 +1,3 @@
-- fix upload task for autoupdate (p2p)
-- fix download task for autoupdate (p2p)
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
@@ -26,10 +24,14 @@
 - show progress for web update tasks
 - make size-optimized bootstrapper executable (no gui etc)
 - make bootstrapper universal (detect os, web version)
-- automatically place uftt.dat in user application settings on first startup
 - make uftt.dat location changable after initial startup
 - allow sharing non-self autoupdates
 - make autoupdate dialog
+- have doubleclick on share popup download dialog asking where to save
+- [DONE] have doubleclick on completed download task open it in explorer
+- [DONE] automatically place uftt.dat in user application settings on first startup
+- [DONE] fix upload task for autoupdate (p2p)
+- [DONE] fix download task for autoupdate (p2p)
 - [DONE] use future-proof protocols (i really hope so!)
 - [DONE] implement debian/ubuntu .deb autoupdate
 - [DONE] add option to automatically check for (http) updates every day, week, or month
