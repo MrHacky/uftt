@@ -233,21 +233,20 @@ class SimpleTCPConnection {
 				std::cout << "error: unknown tcp protocol version: " << protver << '\n';
 		}
 
-		void start_receive_command(shared_vec rbuf, const boost::system::error_code& e = boost::system::error_code())
+		void start_receive_command(shared_vec rbuf)
+		{
+			rbuf->resize(16);
+			boost::asio::async_read(socket, GETBUF(rbuf),
+				boost::bind(&SimpleTCPConnection::command_header_handler, this, _1, rbuf));
+		}
+
+		void start_receive_command(shared_vec rbuf, const boost::system::error_code& e)
 		{
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
 			} else {
-				rbuf->resize(16);
-				boost::asio::async_read(socket, GETBUF(rbuf),
-					boost::bind(&SimpleTCPConnection::command_header_handler, this, _1, rbuf));
+				start_receive_command(rbuf);
 			}
-		}
-
-		void handle_generic_send(const boost::system::error_code& e, shared_vec sbuf)
-		{
-			if (e)
-				std::cout << "error sending: " << e.message() << '\n';
 		}
 
 		void command_header_handler(const boost::system::error_code& e, shared_vec rbuf)
@@ -276,7 +275,7 @@ class SimpleTCPConnection {
 					//cout << "got '..'\n";
 					sharepath /= "..";
 					sharepath.normalize();
-					start_recv_header(rbuf);
+					start_receive_command(rbuf);
 				}; break;
 				case 4: { // ..
 					std::cout << "download finished!\n";
@@ -623,16 +622,6 @@ class SimpleTCPConnection {
 			start_update_progress();
 		}
 
-		void start_recv_header(shared_vec rbuf) {
-			rbuf->resize(16);
-			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_header, this, _1, rbuf));
-		}
-
-		void handle_recv_header(const boost::system::error_code& e, shared_vec rbuf) {
-			command_header_handler(e, rbuf);
-		}
-
 		void handle_recv_file_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf) {
 			if (e) {
 				std::cout << "error: " << e.message() << '\n';
@@ -669,7 +658,7 @@ class SimpleTCPConnection {
 			//cout << "got dir '" << name << "'\n";
 			sharepath /= name;
 			boost::filesystem::create_directory(sharepath);
-			start_recv_header(rbuf);
+			start_receive_command(rbuf);
 		}
 
 		/** handle file receiving
@@ -691,12 +680,12 @@ class SimpleTCPConnection {
 			if (!*done) {
 				*done = true;
 				if (size == 0)
-					start_recv_header(shared_vec(new std::vector<uint8>()));
+					start_receive_command(shared_vec(new std::vector<uint8>()));
 			} else {
 				shared_vec nrbuf;
 				if (size == 0) {
 					*done = true;
-					start_recv_header(shared_vec(new std::vector<uint8>()));
+					start_receive_command(shared_vec(new std::vector<uint8>()));
 				} else {
 					*done = false;
 					nrbuf = shared_vec(new std::vector<uint8>());
