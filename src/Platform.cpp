@@ -17,6 +17,10 @@
 
 using namespace std;
 
+namespace {
+	boost::filesystem::path ApplicationPath;
+}
+
 namespace platform {
 	bool haveConsole =
 #ifdef NDEBUG
@@ -160,10 +164,17 @@ namespace platform {
 	}
 #endif
 
-	spathlist getSettingPathList() {
+	void setApplicationPath(const boost::filesystem::path& path)
+	{
+		ApplicationPath = path;
+	}
+
+	spathlist getSettingsPathList() {
 		spathlist result;
 		boost::filesystem::path currentdir(boost::filesystem::current_path<boost::filesystem::path>());
 		result.push_back(spathinfo("Current Directory"      , currentdir / "uftt.dat"));
+		if (!ApplicationPath.empty())
+			result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
 #ifdef WIN32
 		result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
 		result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));

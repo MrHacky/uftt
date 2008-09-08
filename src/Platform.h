@@ -28,10 +28,12 @@ namespace platform {
 
 	int RunCommand(const std::string& cmd, const std::vector<std::string>* args, const std::string& workdir, int flags);
 
+	void setApplicationPath(const boost::filesystem::path& path);
+
 	typedef std::pair<std::string, boost::filesystem::path> spathinfo;
 	typedef std::vector<spathinfo> spathlist;
 
-	spathlist getSettingPathList();
+	spathlist getSettingsPathList();
 } // namespace platform
 
 #endif//PLATFORM_H

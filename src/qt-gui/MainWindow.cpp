@@ -56,9 +56,10 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	// setup debug stream
 	new QDebugStream(std::cout, debugText);
 
+	platform::setApplicationPath(boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString()));
 	boost::filesystem::path settings_path;
 	{
-		spathlist spl = platform::getSettingPathList();
+		spathlist spl = platform::getSettingsPathList();
 		BOOST_FOREACH(const spathinfo& spi, spl) {
 			if (!spi.second.empty() && boost::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
 				settings_path = spi.second;
