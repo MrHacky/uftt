@@ -51,7 +51,7 @@ class SimpleBackend {
 				std::cout << "handling tcp accept\n";
 				conlist.push_back(newconn);
 				newconn->handle_tcp_accept();
-				sig_new_upload("upload", conlist.size()-1);
+				sig_new_upload("Upload", conlist.size()-1);
 				start_tcp_accept();
 			}
 		}

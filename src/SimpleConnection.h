@@ -477,6 +477,7 @@ class SimpleTCPConnection {
 				std::cout << "error: " << e.message() << '\n';
 				return;
 			}
+			transfered_bytes += buildfile->size();
 			cmdinfo hdr;
 			hdr.cmd = 0x04;
 			sbuf->resize(16);
