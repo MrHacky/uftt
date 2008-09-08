@@ -23,6 +23,7 @@
 #include <boost/foreach.hpp>
 
 #include "QDebugStream.h"
+#include "QToggleHeaderAction.h"
 
 #include "../SimpleBackend.h"
 #include "../Platform.h"
@@ -150,6 +151,8 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 	//this->SharesTree->header()->moveSection(3+0,3);
 	this->SharesTree->hideColumn(2);
 	this->SharesTree->hideColumn(3);
+	QToggleHeaderAction::addActions(this->SharesTree);
+	QToggleHeaderAction::addActions(this->listTasks);
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
