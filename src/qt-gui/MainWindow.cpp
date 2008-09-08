@@ -48,11 +48,6 @@ public:
     }
 };
 
-void tester(uint64 tfx, std::string sts)
-{
-	cout << "update: " << sts << ": " << tfx << '\n';
-}
-
 MainWindow::MainWindow(QTMain& mainimpl_)
 : mainimpl(mainimpl_)
 {
