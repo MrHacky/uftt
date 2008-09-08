@@ -34,6 +34,7 @@ namespace platform {
 	typedef std::vector<spathinfo> spathlist;
 
 	spathlist getSettingsPathList();
+	spathinfo getSettingsPathDefault();
 } // namespace platform
 
 #endif//PLATFORM_H

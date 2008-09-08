@@ -1,7 +1,7 @@
 #include "UFTTSettings.h"
 
 #include <fstream>
-//#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp>
 
 const int settings_version = 1;
 
@@ -34,6 +34,7 @@ bool UFTTSettings::load(boost::filesystem::path path_)
 bool UFTTSettings::save()
 {
 	try {
+		boost::filesystem::create_directories(path.branch_path());
 		std::ofstream ofs(path.native_file_string().c_str());
 		if (!ofs.is_open()) return false;
 		boost::archive::xml_oarchive oa(ofs);

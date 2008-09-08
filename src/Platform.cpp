@@ -185,6 +185,14 @@ namespace platform {
 		return result;
 	}
 
+	spathinfo getSettingsPathDefault() {
+#ifdef WIN32
+		return spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat");
+#else
+		return spathinfo("Home Directory"         , boost::filesystem::path(getenv("HOME")) / ".uftt" / "uftt.dat");
+#endif
+	}
+
 	void msSleep(int ms)
 	{
 #ifdef WIN32

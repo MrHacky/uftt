@@ -67,18 +67,8 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 			}
 		}
 
-		if (settings_path.empty()) {
-			DialogDirectoryChooser dialog(this);
-			dialog.setPaths(spl);
-			int result;
-			do {
-				result = dialog.exec();
-				if (result == QDialog::Accepted)
-					settings_path = dialog.getPath();
-			} while (settings_path.empty() && result == QDialog::Accepted);
-			boost::filesystem::path dir = settings_path.branch_path();
-			boost::filesystem::create_directories(dir);
-		}
+		if (settings_path.empty())
+			settings_path = platform::getSettingsPathDefault().second;
 	}
 
 	bool settingsloaded = settings.load(settings_path);
