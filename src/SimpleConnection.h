@@ -15,6 +15,31 @@ struct cmdinfo {
 	uint64 len;
 };
 
+inline uint32 pkt_get_uint32(uint8* buf)
+{
+	return (buf[0] << 0) | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
+}
+
+inline void pkt_put_uint32(uint32 val, uint8* buf)
+{
+	buf[0] = (val >>  0) & 0xFF;
+	buf[1] = (val >>  8) & 0xFF;
+	buf[2] = (val >> 16) & 0xFF;
+	buf[3] = (val >> 24) & 0xFF;
+}
+
+inline void pkt_put_uint64(uint64 val, uint8* buf)
+{
+	buf[0] = (val >>  0) & 0xFF;
+	buf[1] = (val >>  8) & 0xFF;
+	buf[2] = (val >> 16) & 0xFF;
+	buf[3] = (val >> 24) & 0xFF;
+	buf[4] = (val >> 32) & 0xFF;
+	buf[5] = (val >> 40) & 0xFF;
+	buf[6] = (val >> 48) & 0xFF;
+	buf[7] = (val >> 56 ) & 0xFF;
+}
+
 struct filesender {
 	std::string name;
 	boost::filesystem::path path;
