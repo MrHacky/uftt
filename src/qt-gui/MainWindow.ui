@@ -112,7 +112,7 @@
       <widget class="QDragDropTreeWidget" name="SharesTree" >
        <column>
         <property name="text" >
-         <string>Protocol</string>
+         <string>Share Name</string>
         </property>
        </column>
        <column>
@@ -122,7 +122,7 @@
        </column>
        <column>
         <property name="text" >
-         <string>Share</string>
+         <string>Protocol</string>
         </property>
        </column>
        <column>

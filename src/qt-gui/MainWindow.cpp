@@ -4,22 +4,21 @@
 #include <iostream>
 #include <fstream>
 
-#include <QTreeWidgetItem>
-#include <QFile>
-#include <QUrl>
-
-#include <QWidget>
+#include <QDesktopServices>
 #include <QDrag>
-#include <QMimeData>
 #include <QDropEvent>
-
+#include <QFile>
 #include <QFileDialog>
+#include <QHeaderView>
+#include <QItemDelegate>
 #include <QMessageBox>
+#include <QMimeData>
 #include <QProcess>
 #include <QStringList>
-#include <QItemDelegate>
 #include <QTimer>
-#include <QDesktopServices>
+#include <QTreeWidgetItem>
+#include <QUrl>
+#include <QWidget>
 
 #include <boost/foreach.hpp>
 
@@ -124,13 +123,14 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 		}
 	}
 
-	/* apply settings */
+	/* apply size settings */
 	if (settings.sizex != 0 && settings.sizey !=0) {
 		this->resize(QSize(settings.sizex, settings.sizey));
 		this->move(QPoint(settings.posx, settings.posy));
 	} else
 		this->resize(750, 550);
 
+	/* apply dock layout */
 	if (settings.dockinfo.size() > 0)
 		this->restoreState(QByteArray((char*)&settings.dockinfo[0],settings.dockinfo.size()));
 	else {
@@ -142,6 +142,14 @@ MainWindow::MainWindow(QTMain& mainimpl_)
 			this->dockWidgetDebug->hide();
 		#endif
 	}
+
+	/* set sharelist layout */
+	//this->SharesTree->header()->moveSection(2+0,0);
+	//this->SharesTree->header()->moveSection(1+1,1);
+	//this->SharesTree->header()->moveSection(0+2,2);
+	//this->SharesTree->header()->moveSection(3+0,3);
+	this->SharesTree->hideColumn(2);
+	this->SharesTree->hideColumn(3);
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
@@ -225,16 +233,16 @@ void MainWindow::addSimpleShare(std::string sharename)
 	QString qhost  = QString::fromStdString(host);
 	QString qurl   = QString::fromStdString(url);
 
-	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qshare, 0, 2);
+	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qshare, 0, 0);
 
 	bool found = false;
 	BOOST_FOREACH(QTreeWidgetItem* twi, fres) {
-		if (twi->text(1) == qhost && twi->text(2) == qshare) {
+		if (twi->text(1) == qhost && twi->text(0) == qshare) {
 			found = true;
-			QString qoprot = twi->text(0);
+			QString qoprot = twi->text(2);
 			uint32 over = atoi(qoprot.toStdString().substr(6).c_str());
 			if (over < version) {
-				twi->setText(0, qproto);
+				twi->setText(2, qproto);
 				twi->setText(3, qurl);
 			}
 		}
@@ -242,9 +250,9 @@ void MainWindow::addSimpleShare(std::string sharename)
 
 	if (!found) {
 		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
-		rwi->setText(0, qproto);
+		rwi->setText(0, qshare);
 		rwi->setText(1, qhost);
-		rwi->setText(2, qshare);
+		rwi->setText(2, qproto);
 		rwi->setText(3, qurl);
 	}
 }
@@ -395,7 +403,7 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 		cout << "ignoring update: " << build << " @ " << url << '\n';
 		return;
 	}
-	cout << "new autoupdate: " << build << " : " << url << '\n';
+	cout << "new autoupdate: " << build << " @ " << url << '\n';
 	static bool dialogshowing = false;
 	if (dialogshowing) return;
 	dialogshowing = true;
