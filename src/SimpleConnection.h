@@ -112,7 +112,6 @@ class SimpleTCPConnection {
 		std::vector<dirsender> quesenddir;
 
 		void getsharepath(std::string sharename);
-		void sig_download_ready(std::string url);
 
 		bool dldone;
 		bool uldone;
@@ -157,8 +156,10 @@ class SimpleTCPConnection {
 			} else {
 				if (dldone && open_files == 0) {
 					sig_progress(transfered_bytes, "Completed", 0);
+					socket.close();
 				} else if (uldone) {
 					sig_progress(transfered_bytes, "Completed", 0);
+					socket.close();
 				} else {
 					sig_progress(transfered_bytes, "Transfering", sendqueue.size()+open_files);
 					start_update_progress();
@@ -239,14 +240,6 @@ class SimpleTCPConnection {
 				case 4: { // ..
 					std::cout << "download finished!\n";
 					dldone = true;
-					if (dldone && open_files == 0) {
-						this->sig_download_ready(
-							std::string("uftt-v1://")
-							+socket.remote_endpoint().address().to_string()
-							+"/"+sharename
-						);
-						socket.close(); // do this after the sig so the endpoint is still valid
-					}
 				}; break;
 				case 5: { // request old style share dump
 					if (hdr.len < 0xffff) {
@@ -413,7 +406,6 @@ class SimpleTCPConnection {
 
 		void handle_sent_everything() {
 			uldone = true;
-			socket.close();
 		}
 
 		void handle_recv_namelen(const boost::system::error_code& e, shared_vec rbuf) {
@@ -498,7 +490,7 @@ class SimpleTCPConnection {
 				std::cout << "error: " << e.message() << '\n';
 				return;
 			}
-			socket.close();
+			uldone = true;
 		}
 
 		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath, uint32 version)
@@ -668,17 +660,6 @@ class SimpleTCPConnection {
 					delete done;
 					file->close();
 					--open_files;
-
-					// wtf hax!!!
-					if (dldone && open_files == 0) {
-						this->sig_download_ready(
-							std::string("uftt-v1://")
-							+socket.remote_endpoint().address().to_string()
-							+"/"+sharename
-						);
-						socket.close(); // do this after the sig so the endpoint is still valid
-					}
-
 					return;
 				}
 				size -= wbuf->size();

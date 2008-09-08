@@ -366,7 +366,6 @@ class SimpleBackend {
 		boost::signal<void(std::string)> sig_new_share;
 		boost::signal<void(std::string,int)> sig_new_upload;
 		boost::signal<void(std::string)> sig_new_autoupdate;
-		boost::signal<void(std::string)> sig_download_ready;
 
 		void slot_refresh_shares()
 		{

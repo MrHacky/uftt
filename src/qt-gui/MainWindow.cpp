@@ -298,6 +298,14 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
 	twi->setText(3, QString::fromStdString(sts));
 	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
+
+	if (sts == "Completed") {
+		string name = twi->text(0).toStdString();
+		if (name.substr(0, 12) == "Autoupdate: ") {
+			name.erase(0, 12);
+			download_done(name);
+		}
+	}
 }
 
 void MainWindow::addLocalShare(std::string url)
@@ -409,7 +417,14 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 	if (!fromweb) {
 		auto_update_url = url;
 		auto_update_path = DownloadEdit->text().toStdString();
-		boost::function<void(uint64, std::string, uint32)> handler = boost::bind(&tester, _1, _2);
+
+		QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
+		twi->setText(0, QString::fromStdString(string() + "Autoupdate: " + url));
+
+		boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
+		boost::function<void(uint64, std::string, uint32)> handler =
+			marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
+		handler(0, "Starting", 0);
 		backend->slot_download_share(url, auto_update_path, handler);
 	} else {
 		backend->do_download_web_update(url,
@@ -443,9 +458,6 @@ void MainWindow::SetBackend(SimpleBackend* be)
 	);
 	backend->sig_new_autoupdate.connect(
 		marshaller.wrap(boost::bind(&MainWindow::new_autoupdate, this, _1, "", false))
-	);
-	backend->sig_download_ready.connect(
-		marshaller.wrap(boost::bind(&MainWindow::download_done, this, _1))
 	);
 	backend->sig_new_upload.connect(
 		marshaller.wrap(boost::bind(&MainWindow::new_upload, this, _1, _2))
