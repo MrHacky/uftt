@@ -206,5 +206,7 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 	}
 	#endif
 
+	result.insert(foundpeers.begin(), foundpeers.end());
+
 	return rtype(result.begin(), result.end());
 }

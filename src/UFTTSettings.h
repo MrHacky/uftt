@@ -4,6 +4,7 @@
 #include "Types.h"
 
 #include <vector>
+#include <set>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -13,6 +14,7 @@
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/set.hpp>
 #include <boost/serialization/version.hpp>
 
 #define NVP(x,y) (boost::serialization::make_nvp(x,y))
@@ -58,10 +60,17 @@ class UFTTSettings {
 		int posy;
 		int sizex;
 		int sizey;
+
 		boost::filesystem::path dl_path;
 		bool autoupdate;
+
 		int webupdateinterval; // 0:never, 1:daily, 2:weekly, 3:monthly
 		boost::posix_time::ptime lastupdate;
+
+		bool enablepeerfinder;
+		boost::posix_time::ptime lastpeerquery;
+		boost::posix_time::ptime prevpeerquery;
+		std::set<std::string> foundpeers;
 
 	public:
 		template<class Archive>
@@ -74,15 +83,19 @@ class UFTTSettings {
 			if (version >=  2) ar & NVP("downloadpath", dl_path);
 			if (version >=  3) ar & NVP("autoupdate"  , autoupdate);
 			if (version >=  5) ar & NVP("updateinterval", webupdateinterval);
-			if (version >=  5) ar & NVP("lastupdate", lastupdate);
+			if (version >=  6) ar & NVP("peerfinder", enablepeerfinder);
 
+			if (version >=  5) ar & NVP("lastupdate", lastupdate);
+			if (version >=  6) ar & NVP("lastpeerquery", lastpeerquery);
+			if (version >=  6) ar & NVP("prevpeerquery", prevpeerquery);
+			if (version >=  6) ar & NVP("foundpeers", foundpeers);
 			if (version >=  4) ar & NVP("dockinfo", dockinfo);
 			//if (version >=  4 && version < 6) ar & NVP("dockinfo", dockinfo);
 			//if (version >=  6) ar & NVP("dockinfo", vector_as_string(dockinfo));
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 5)
+BOOST_CLASS_VERSION(UFTTSettings, 6)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

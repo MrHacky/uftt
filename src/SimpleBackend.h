@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/foreach.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "net-asio/asio_file_stream.h"
 #include "net-asio/asio_http_request.h"
@@ -34,6 +35,92 @@ class SimpleBackend {
 		std::map<std::string, boost::filesystem::path> sharelist;
 
 		boost::thread servicerunner;
+
+		boost::asio::deadline_timer peerfindertimer;
+		std::set<boost::asio::ip::address> foundpeers;
+
+		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
+		{
+			const std::vector<uint8>& page = request->getContent();
+
+			uint8 content_start[] = "*S*T*A*R*T*\r";
+			uint8 content_end[] = "*S*T*O*P*\r";
+
+			typedef std::vector<uint8>::const_iterator vpos;
+
+			vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
+			vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
+
+			spos += sizeof(content_start) - 1;
+
+			std::string content(spos, epos);
+
+			std::vector<std::string> lines;
+			boost::split(lines, content, boost::is_any_of("\r\n"));
+
+			std::set<boost::asio::ip::address> addrs;
+
+			settings.foundpeers.clear();
+			BOOST_FOREACH(const std::string& line, lines) {
+				std::vector<std::string> cols;
+				boost::split(cols, line, boost::is_any_of("\t"));
+				if (cols.size() >= 2) {
+					if (atoi(cols[1].c_str()) == 47189) {
+						settings.foundpeers.insert(cols[0]);
+					}
+				}
+			}
+
+			start_peerfinder();
+		}
+
+		void handle_peerfinder_timer(const boost::system::error_code& e)
+		{
+			if (e) {
+			} else {
+				settings.prevpeerquery = settings.lastpeerquery;
+				settings.lastpeerquery = boost::posix_time::second_clock::universal_time();
+
+				boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, "http://hackykid.heliohost.org/site/bootstrap.php?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd"));
+				request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
+			}
+		}
+
+		void start_peerfinder()
+		{
+			boost::posix_time::ptime dl;
+			if (settings.lastpeerquery - settings.prevpeerquery > boost::posix_time::minutes(55))
+				dl = settings.lastpeerquery + boost::posix_time::seconds(20);
+			else
+				dl = settings.lastpeerquery + boost::posix_time::minutes(50);
+
+			peerfindertimer.expires_at(dl);
+			peerfindertimer.async_wait(boost::bind(&SimpleBackend::handle_peerfinder_timer, this, _1));
+
+			std::cout << "Deadline at: " << dl << '\n';
+
+			uint8 udp_send_buf[5];
+			udp_send_buf[0] = (1 >>  0) & 0xff;
+			udp_send_buf[1] = (1 >>  8) & 0xff;
+			udp_send_buf[2] = (1 >> 16) & 0xff;
+			udp_send_buf[3] = (1 >> 24) & 0xff;
+			udp_send_buf[4] = 4;
+
+			boost::system::error_code err;
+			BOOST_FOREACH(const std::string peer, settings.foundpeers) {
+				try {
+					const boost::asio::ip::udp::endpoint ep(boost::asio::ip::address::from_string(peer), UFTT_PORT);
+					std::cout << "Sending (4) to: " << ep << '\n';
+					udpsocket.send_to(
+						boost::asio::buffer(udp_send_buf),
+						ep,
+						0
+						,err
+					);
+				} catch (...) {
+				}
+			}
+		}
 
 		void servicerunfunc() {
 			boost::asio::io_service::work wobj(service);
@@ -139,6 +226,25 @@ class SimpleBackend {
 										sig_new_autoupdate(surl);
 									}
 								}
+							}; break;
+							case 4: { // peerfinder query
+								boost::system::error_code err;
+								uint8 udp_send_buf[5];
+								udp_send_buf[0] = (1 >>  0) & 0xff;
+								udp_send_buf[1] = (1 >>  8) & 0xff;
+								udp_send_buf[2] = (1 >> 16) & 0xff;
+								udp_send_buf[3] = (1 >> 24) & 0xff;
+								udp_send_buf[4] = 5;
+								udpsocket.send_to(
+									boost::asio::buffer(udp_send_buf),
+									udp_recv_addr,
+									0
+									,err
+								);
+							};// intentional fallthrough break;
+							case 5: { // peerfinder reply
+								foundpeers.insert(udp_recv_addr.address());
+								send_query(udp_recv_addr);
 							}; break;
 						}
 					}
@@ -339,6 +445,7 @@ class SimpleBackend {
 			, udpsocket(service)
 			, tcplistener(service)
 			, settings(settings_)
+			, peerfindertimer(service)
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());
@@ -356,6 +463,8 @@ class SimpleBackend {
 
 			start_udp_receive();
 			start_tcp_accept();
+
+			start_peerfinder();
 
 			boost::thread tt(boost::bind(&SimpleBackend::servicerunfunc, this));
 			servicerunner.swap(tt);
