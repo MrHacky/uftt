@@ -48,30 +48,13 @@ public:
     }
 };
 
-MainWindow::MainWindow()
-//: mainimpl(mainimpl_)
+MainWindow::MainWindow(UFTTSettings& settings_)
+: settings(settings_)
 {
 	setupUi(this);
 
 	// setup debug stream
 	new QDebugStream(std::cout, debugText);
-
-	platform::setApplicationPath(boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString()));
-	boost::filesystem::path settings_path;
-	{
-		spathlist spl = platform::getSettingsPathList();
-		BOOST_FOREACH(const spathinfo& spi, spl) {
-			if (!spi.second.empty() && boost::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
-				settings_path = spi.second;
-				break;
-			}
-		}
-
-		if (settings_path.empty())
-			settings_path = platform::getSettingsPathDefault().second;
-	}
-
-	bool settingsloaded = settings.load(settings_path);
 
 	{
 		QWidget* cw = new QWidget();
@@ -95,7 +78,7 @@ MainWindow::MainWindow()
 	buttonAdd3->hide();
 
 	/* load/set dock layout */
-	if (!settingsloaded && boost::filesystem::exists("uftt.layout")) {
+	if (!settings.loaded && boost::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
 		if (layoutfile.open(QIODevice::ReadOnly)) {
 			QRect rect;
@@ -189,9 +172,6 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
 
 	settings.dl_path = DownloadEdit->text().toStdString();
-
-	/* and save them */
-	settings.save();
 
 	QWidget::closeEvent(evnt);
 }

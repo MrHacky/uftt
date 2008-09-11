@@ -21,7 +21,6 @@ SET(UI_SRCS
 	QDragDropSignalWidget.cpp
 	QToggleHeaderAction.cpp
 	DialogDirectoryChooser.cpp
-	UFTTSettings.cpp
 )
 
 QT4_AUTOMOC(${UI_SRCS})
@@ -31,7 +30,6 @@ QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
 	MainWindow.h
-	UFTTSettings.h
 	QDragDropTreeWidget.h
 	QDragDropSignalWidget.h
 	QToggleHeaderAction.h

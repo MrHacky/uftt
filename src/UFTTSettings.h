@@ -1,7 +1,7 @@
 #ifndef UFTT_SETTINGS_H
 #define UFTT_SETTINGS_H
 
-#include "../Types.h"
+#include "Types.h"
 
 #include <vector>
 
@@ -46,11 +46,12 @@ class UFTTSettings {
 	public:
 		UFTTSettings();
 
-		bool load(boost::filesystem::path path_);
+		bool load(boost::filesystem::path path_ = "");
 		bool save();
 
 	public:
 		boost::filesystem::path path;
+		bool loaded;
 
 		std::vector<uint8> dockinfo;
 		int posx;

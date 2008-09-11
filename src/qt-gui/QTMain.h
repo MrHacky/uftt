@@ -6,13 +6,14 @@
 #include <boost/filesystem.hpp>
 
 class SimpleBackend;
+class UFTTSettings;
 class QTMain {
 	private:
 		// implementation class (PIMPL idiom)
 		class QTImpl* impl;
 
 	public:
-		QTMain( int& argc, char **argv );
+		QTMain( int& argc, char **argv, UFTTSettings* settings);
 		~QTMain();
 
 		void BindEvents(SimpleBackend* t);

@@ -8,7 +8,7 @@
 
 #include <map>
 
-#include "UFTTSettings.h"
+#include "../UFTTSettings.h"
 #include "QMarshaller.h"
 #include "../net-asio/asio_http_request.h"
 
@@ -23,7 +23,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	Q_OBJECT
 
 	private:
-		UFTTSettings settings;
+		UFTTSettings& settings;
 		bool askonupdates;
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
@@ -45,7 +45,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDragMoveTriggered(QDragMoveEvent* evt);
 		void onDropTriggered(QDropEvent* evt);
 	public:
-		MainWindow();
+		MainWindow(UFTTSettings& settings_);
 		void SetBackend(SimpleBackend* be);
 		~MainWindow();
 

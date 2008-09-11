@@ -16,6 +16,7 @@ extern "C" void tss_cleanup_implemented(void){}
 #include "SharedData.h"
 #include "SimpleBackend.h"
 #include "AutoUpdate.h"
+#include "UFTTSettings.h"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -237,8 +238,11 @@ int imain( int argc, char **argv )
 		return AutoUpdater::replace(argv[0], argv[2]);
 
 	// initialize backend & gui
+	UFTTSettings settings;
+	settings.load();
+
 	SimpleBackend backend;
-	QTMain gui(argc, argv);
+	QTMain gui(argc, argv, &settings);
 	gui.BindEvents(&backend);
 
 	if (madeConsole)
@@ -263,6 +267,8 @@ int imain( int argc, char **argv )
 	//cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
 
 	int ret = gui.run();
+
+	settings.save();
 
 	// hax...
 
