@@ -48,8 +48,8 @@ public:
     }
 };
 
-MainWindow::MainWindow(QTMain& mainimpl_)
-: mainimpl(mainimpl_)
+MainWindow::MainWindow()
+//: mainimpl(mainimpl_)
 {
 	setupUi(this);
 

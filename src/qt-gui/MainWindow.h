@@ -1,7 +1,6 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "QTMain.h"
 #include "ui_MainWindow.h"
 
 #include <boost/asio.hpp>
@@ -25,7 +24,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	private:
 		UFTTSettings settings;
-		QTMain& mainimpl;
 		bool askonupdates;
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
@@ -47,7 +45,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDragMoveTriggered(QDragMoveEvent* evt);
 		void onDropTriggered(QDropEvent* evt);
 	public:
-		MainWindow(QTMain& mainimpl_);
+		MainWindow();
 		void SetBackend(SimpleBackend* be);
 		~MainWindow();
 
