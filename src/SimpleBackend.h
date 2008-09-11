@@ -16,6 +16,7 @@
 #include "net-asio/asio_http_request.h"
 
 #include "SimpleConnection.h"
+#include "UFTTSettings.h"
 
 #include "AutoUpdate.h"
 
@@ -23,6 +24,7 @@
 
 class SimpleBackend {
 	private:
+		UFTTSettings& settings;
 		boost::asio::io_service service;
 		services::diskio_service diskio;
 		boost::asio::ip::udp::socket udpsocket;
@@ -332,10 +334,11 @@ class SimpleBackend {
 		}
 
 	public:
-		SimpleBackend()
+		SimpleBackend(UFTTSettings& settings_)
 			: diskio(service)
 			, udpsocket(service)
 			, tcplistener(service)
+			, settings(settings_)
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());
