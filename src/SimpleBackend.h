@@ -33,6 +33,7 @@ class SimpleBackend {
 		SimpleTCPConnectionRef newconn;
 		std::vector<SimpleTCPConnectionRef> conlist;
 		std::map<std::string, boost::filesystem::path> sharelist;
+		int udpretries;
 
 		boost::thread servicerunner;
 
@@ -173,6 +174,7 @@ class SimpleBackend {
 
 		void handle_udp_receive(const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
+				udpretries = 10;
 				if (len >= 4) {
 					uint32 rpver = (udp_recv_buf[0] <<  0) | (udp_recv_buf[1] <<  8) | (udp_recv_buf[2] << 16) | (udp_recv_buf[3] << 24);
 					if (len > 4) {
@@ -250,11 +252,15 @@ class SimpleBackend {
 						}
 					}
 				}
-			} else
+			} else {
 				std::cout << "udp receive failed: " << e.message() << '\n';
+				--udpretries;
+			}
 
-			if (!e)
+			if (!e || udpretries > 0)
 				start_udp_receive();
+			else
+				std::cout << "retry limit reached, giving up on receiving udp packets\n";
 		}
 
 		void send_query(boost::asio::ip::udp::endpoint ep) {
@@ -447,6 +453,7 @@ class SimpleBackend {
 			, tcplistener(service)
 			, settings(settings_)
 			, peerfindertimer(service)
+			, udpretries(10)
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());
