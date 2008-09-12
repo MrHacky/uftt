@@ -464,6 +464,11 @@ void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
 	settings.autoupdate = value;
 }
 
+void MainWindow::on_actionEnableGlobalPeerfinder_toggled(bool enabled)
+{
+	backend->do_set_peerfinder_enabled(enabled);
+}
+
 void MainWindow::on_buttonClearCompletedTasks_clicked()
 {
 	for(int i = this->listTasks->topLevelItemCount(); i > 0; --i) {
@@ -566,6 +571,7 @@ void MainWindow::check_autoupdate_interval()
 
 void MainWindow::onshow()
 {
+	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
 	check_autoupdate_interval();
 }
 

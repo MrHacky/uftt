@@ -42,32 +42,36 @@ class SimpleBackend {
 
 		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
 		{
-			const std::vector<uint8>& page = request->getContent();
+			if (e) {
+				std::cout << "Failed to get simple global peer list: " << e.message() << '\n';
+			} else {
+				const std::vector<uint8>& page = request->getContent();
 
-			uint8 content_start[] = "*S*T*A*R*T*\r";
-			uint8 content_end[] = "*S*T*O*P*\r";
+				uint8 content_start[] = "*S*T*A*R*T*\r";
+				uint8 content_end[] = "*S*T*O*P*\r";
 
-			typedef std::vector<uint8>::const_iterator vpos;
+				typedef std::vector<uint8>::const_iterator vpos;
 
-			vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
-			vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
+				vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
+				vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
 
-			spos += sizeof(content_start) - 1;
+				spos += sizeof(content_start) - 1;
 
-			std::string content(spos, epos);
+				std::string content(spos, epos);
 
-			std::vector<std::string> lines;
-			boost::split(lines, content, boost::is_any_of("\r\n"));
+				std::vector<std::string> lines;
+				boost::split(lines, content, boost::is_any_of("\r\n"));
 
-			std::set<boost::asio::ip::address> addrs;
+				std::set<boost::asio::ip::address> addrs;
 
-			settings.foundpeers.clear();
-			BOOST_FOREACH(const std::string& line, lines) {
-				std::vector<std::string> cols;
-				boost::split(cols, line, boost::is_any_of("\t"));
-				if (cols.size() >= 2) {
-					if (atoi(cols[1].c_str()) == 47189) {
-						settings.foundpeers.insert(cols[0]);
+				settings.foundpeers.clear();
+				BOOST_FOREACH(const std::string& line, lines) {
+					std::vector<std::string> cols;
+					boost::split(cols, line, boost::is_any_of("\t"));
+					if (cols.size() >= 2) {
+						if (atoi(cols[1].c_str()) == 47189) {
+							settings.foundpeers.insert(cols[0]);
+						}
 					}
 				}
 			}
@@ -78,17 +82,30 @@ class SimpleBackend {
 		void handle_peerfinder_timer(const boost::system::error_code& e)
 		{
 			if (e) {
+				std::cout << "handle_peerfinder_timer: " << e.message() << '\n';
 			} else {
-				settings.prevpeerquery = settings.lastpeerquery;
-				settings.lastpeerquery = boost::posix_time::second_clock::universal_time();
+				if (settings.enablepeerfinder) {
+					settings.prevpeerquery = settings.lastpeerquery;
+					settings.lastpeerquery = boost::posix_time::second_clock::universal_time();
 
-				boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, "http://hackykid.heliohost.org/site/bootstrap.php?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd"));
-				request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
+					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, "http://hackykid.heliohost.org/site/bootstrap.php?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd"));
+					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
+				}
+			}
+		}
+
+		void start_peerfinder(bool enabled)
+		{
+			if (settings.enablepeerfinder != enabled) {
+				settings.enablepeerfinder = enabled;
+				start_peerfinder();
 			}
 		}
 
 		void start_peerfinder()
 		{
+			if (!settings.enablepeerfinder) return;
+
 			boost::posix_time::ptime dl;
 			if (settings.lastpeerquery - settings.prevpeerquery > boost::posix_time::minutes(55))
 				dl = settings.lastpeerquery + boost::posix_time::seconds(20);
@@ -527,6 +544,11 @@ class SimpleBackend {
 		void do_download_web_update(std::string url, boost::function<void(const boost::system::error_code&, boost::shared_ptr<boost::asio::http_request>) > handler)
 		{
 			service.post(boost::bind(&SimpleBackend::download_web_update, this, url, handler));
+		}
+
+		void do_set_peerfinder_enabled(bool enabled)
+		{
+			service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
 		}
 };
 

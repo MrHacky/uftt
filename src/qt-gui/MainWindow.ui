@@ -71,10 +71,11 @@
      <addaction name="actionUpdateWeekly" />
      <addaction name="actionUpdateMonthly" />
     </widget>
-    <addaction name="actionCheckForWebUpdates" />
-    <addaction name="menuCheckForUpdatesAutomatically" />
+    <addaction name="actionEnableGlobalPeerfinder" />
     <addaction name="separator" />
     <addaction name="actionEnableAutoupdate" />
+    <addaction name="actionCheckForWebUpdates" />
+    <addaction name="menuCheckForUpdatesAutomatically" />
    </widget>
    <addaction name="menu_File" />
    <addaction name="menu_View" />
@@ -502,6 +503,14 @@
    </property>
    <property name="text" >
     <string>Monthly</string>
+   </property>
+  </action>
+  <action name="actionEnableGlobalPeerfinder" >
+   <property name="checkable" >
+    <bool>true</bool>
+   </property>
+   <property name="text" >
+    <string>Enable &amp;Global Peer Discovery</string>
    </property>
   </action>
  </widget>
