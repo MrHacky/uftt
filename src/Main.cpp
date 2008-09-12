@@ -242,8 +242,8 @@ int imain( int argc, char **argv )
 	UFTTSettings settings;
 	settings.load();
 
-	SimpleBackend backend(settings);
 	QTMain gui(argc, argv, &settings);
+	SimpleBackend backend(settings);
 	gui.BindEvents(&backend);
 
 	if (madeConsole)
