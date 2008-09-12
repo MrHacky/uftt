@@ -244,6 +244,7 @@ class SimpleBackend {
 							};// intentional fallthrough break;
 							case 5: { // peerfinder reply
 								foundpeers.insert(udp_recv_addr.address());
+								settings.foundpeers.insert(STRFORMAT("%s", udp_recv_addr.address()));
 								send_query(udp_recv_addr);
 							}; break;
 						}
