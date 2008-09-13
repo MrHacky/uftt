@@ -2,7 +2,7 @@
 
 #include "SimpleBackend.h"
 
-void SimpleTCPConnection::getsharepath(std::string sharename)
+boost::filesystem::path SimpleTCPConnection::getsharepath(std::string sharename)
 {
-	backend->getsharepath(this, sharename);
+	return backend->getsharepath(sharename);
 }

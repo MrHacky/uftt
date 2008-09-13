@@ -495,8 +495,8 @@ class SimpleBackend {
 			servicerunner.swap(tt);
 		}
 
-		void getsharepath(SimpleTCPConnection* conn, std::string name) {
-			conn->sharepath = sharelist[name];
+		boost::filesystem::path getsharepath(std::string name) {
+			return sharelist[name];
 		}
 
 		// the main public interface starts here...

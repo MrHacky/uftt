@@ -140,7 +140,7 @@ class SimpleTCPConnection {
 		filesender cursendfile;
 		std::vector<dirsender> quesenddir;
 
-		void getsharepath(std::string sharename);
+		boost::filesystem::path getsharepath(std::string sharename);
 
 		std::string error_message;
 		bool dldone;
@@ -568,7 +568,7 @@ class SimpleTCPConnection {
 		void got_share_name(shared_vec rbuf)
 		{
 			std::cout << "got share name: " << sharename << '\n';
-			getsharepath(sharename);
+			sharepath = getsharepath(sharename);
 			if (sharepath == "") {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
 				if (buildfile) {
