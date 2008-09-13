@@ -5,6 +5,7 @@
 #include <fstream>
 
 #include <QDesktopServices>
+#include <QDir>
 #include <QDrag>
 #include <QDropEvent>
 #include <QFile>
@@ -122,6 +123,12 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	this->SharesTree->hideColumn(3);
 	QToggleHeaderAction::addActions(this->SharesTree);
 	QToggleHeaderAction::addActions(this->listTasks);
+
+	if (!boost::filesystem::exists(settings.dl_path)) {
+		boost::filesystem::path npath(QDir::tempPath().toStdString());
+		if (boost::filesystem::exists(npath))
+			settings.dl_path = npath;
+	}
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
