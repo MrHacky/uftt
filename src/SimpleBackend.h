@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/foreach.hpp>
+#include <boost/system/error_code.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "net-asio/asio_file_stream.h"
@@ -270,7 +271,10 @@ class SimpleBackend {
 					}
 				}
 			} else {
-				std::cout << "udp receive failed: " << e.message() << '\n';
+				if (udpretries == 10 && e.category() == boost::system::get_system_category() && e.value() == boost::asio::error::connection_refused) {
+					// ignore 'connection refused' message once silently
+				} else
+					std::cout << "udp receive failed: " << e.message() << '\n';
 				--udpretries;
 			}
 
