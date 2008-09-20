@@ -783,4 +783,10 @@ const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
 	return buildstrings;
 }
 
+std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPage(const std::vector<uint8>& webpage)
+{
+	return std::vector<std::pair<std::string, std::string> >();
+}
+
+
 #endif//USE_OPENSSL(else)
