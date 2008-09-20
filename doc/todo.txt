@@ -28,6 +28,8 @@
 - allow sharing non-self autoupdates
 - make autoupdate dialog
 - have doubleclick on share popup download dialog asking where to save
+- [DONE] show total size, speed, and remaining time estimation
+- [DONE] implement peer discovery via central web server (heliohost)
 - [DONE] have doubleclick on completed download task open it in explorer
 - [DONE] automatically place uftt.dat in user application settings on first startup
 - [DONE] fix upload task for autoupdate (p2p)
