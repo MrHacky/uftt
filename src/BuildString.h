@@ -6,13 +6,19 @@
 
 //#define BUILD_STRING ""
 
-#if defined(WIN32) || defined(__WIN32__)
-//#define BUILD_STRING_PLATFORM "win32"
-#define BUILD_STRING_PLATFORM "win32.nt"
+#if defined(WIN32) || defined(__WIN32__) || defined(_WIN32)
+#  if defined(_WIN32_WINDOWS)
+#    if _MSC_VER >= 1500
+#      error "Visual Studio 2008+ does not support OS < XP"
+#    endif
+#    define BUILD_STRING_PLATFORM "win32.9x"
+#  else
+#    define BUILD_STRING_PLATFORM "win32.nt"
+#  endif
 #elif defined(__linux__)
-#define BUILD_STRING_PLATFORM "linux.i386"
+#  define BUILD_STRING_PLATFORM "linux.i386"
 #else
-#define BUILD_STRING_PLATFORM "unknown"
+#  define BUILD_STRING_PLATFORM "unknown"
 #endif
 
 #if defined(LINK_STATIC_RUNTIME)
