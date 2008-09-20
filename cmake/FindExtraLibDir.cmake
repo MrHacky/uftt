@@ -6,13 +6,13 @@ IF(AUTODETECT_LIB_DIR)
 		NOBASERESULT
 		GLOBS   extralibs
 		BASES
-			${CMAKE_CURRENT_SOURCE_DIR}
-			${CMAKE_CURRENT_SOURCE_DIR}/..
-			${CMAKE_CURRENT_SOURCE_DIR}/../..
-			${CMAKE_CURRENT_SOURCE_DIR}/../../..
-			${CMAKE_CURRENT_SOURCE_DIR}/../../../..
-			${CMAKE_CURRENT_SOURCE_DIR}/../../../../..
-			${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..
+			${PROJECT_BINARY_DIR}
+			${PROJECT_BINARY_DIR}/..
+			${PROJECT_BINARY_DIR}/../..
+			${PROJECT_BINARY_DIR}/../../..
+			${PROJECT_BINARY_DIR}/../../../..
+			${PROJECT_BINARY_DIR}/../../../../..
+			${PROJECT_BINARY_DIR}/../../../../../..
 	)
 	SET(CMAKE_EXTRA_LIBS_PATH "${CMAKE_EXTRA_LIBS_PATH_ROOT}" CACHE PATH "Paths where to look for extra libraries")
 ENDIF(AUTODETECT_LIB_DIR)
