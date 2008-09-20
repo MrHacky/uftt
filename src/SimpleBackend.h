@@ -291,8 +291,8 @@ class SimpleBackend {
 					}
 				}
 			} else {
-				if (udpretries == 10 && e.category() == boost::system::get_system_category() && e.value() == boost::asio::error::connection_refused) {
-					// ignore 'connection refused' message once silently
+				if (udpretries == 10) {
+					// ignore first message
 				} else
 					std::cout << "udp receive failed: " << e.message() << '\n';
 				--udpretries;
