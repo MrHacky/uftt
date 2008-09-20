@@ -575,13 +575,17 @@ class SimpleTCPConnection {
 
 			boost::filesystem::path spath(getsharepath(elems[0]));
 			sharepath = spath.branch_path();
-			if (spath.empty() || !boost::filesystem::exists(spath))
+			if (spath.empty() || !boost::filesystem::exists(spath)) {
+				disconnect("Invalid share requested.", true);
 				return;
+			}
 
 			for (uint i = 1; i < elems.size(); ++i)
 				spath /= elems[i];
-			if (!boost::filesystem::exists(spath))
+			if (!boost::filesystem::exists(spath)) {
+				disconnect("Invalid path Requested.", true);
 				return;
+			}
 
 			boost::filesystem::path curpath(elems.back());
 			if (boost::filesystem::is_directory(spath)) {
