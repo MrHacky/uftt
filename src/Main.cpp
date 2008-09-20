@@ -288,10 +288,10 @@ int main( int argc, char **argv ) {
 	}
 	if (message != "") {
 		if (!platform::hasConsole()) platform::newConsole();
-		cout << "fatal: " << message << endl;
+		printf("fatal: %s\n", message.c_str());
 	}
 	if (ret != 0 && platform::hasConsole()) {
-		cout << "program aborted, termination in 30 seconds." << endl;
+		printf("program aborted, termination in 30 seconds.\n");
 		platform::msSleep(30*1000);
 	}
 	return ret;
