@@ -1,17 +1,27 @@
 #include "Platform.h"
 
 #ifdef WIN32
-#include <windows.h>
-#include <shlobj.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <io.h>
-#include <iostream>
-#include <fstream>
+#  include <windows.h>
+#  include <shlobj.h>
+#  include <stdio.h>
+#  include <fcntl.h>
+#  include <io.h>
+#  include <iostream>
+#  include <fstream>
+
+#  ifndef PIDLIST_ABSOLUTE
+#    define PIDLIST_ABSOLUTE LPITEMIDLIST
+#  endif
+
+#  ifndef CSIDL_MYDOCUMENTS
+#    define CSIDL_MYDOCUMENTS CSIDL_PERSONAL
+#  endif
+
 #else
-#include <unistd.h>
-#include <stdlib.h>
+#  include <unistd.h>
+#  include <stdlib.h>
 #endif
+
 
 #include <boost/filesystem.hpp>
 
