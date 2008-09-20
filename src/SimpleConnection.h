@@ -55,7 +55,7 @@ inline void pkt_put_vuint64(uint64 val, std::vector<uint8>& buf)
 	buf.push_back((uint8) val);
 }
 
-inline uint64 pkt_get_vuint64(std::vector<uint8>& buf, int idx = 0)
+inline uint64 pkt_get_vuint64(std::vector<uint8>& buf, uint &idx)
 {
 	uint64 result = 0;
 	uint8 shift = 0;
@@ -68,6 +68,12 @@ inline uint64 pkt_get_vuint64(std::vector<uint8>& buf, int idx = 0)
 	return result;
 }
 
+inline uint64 pkt_get_vuint64(std::vector<uint8>& buf)
+{
+	uint idx = 0;
+	return pkt_get_vuint64(buf, idx);
+}
+
 inline void pkt_put_vuint32(uint32 val, std::vector<uint8>& buf)
 {
 	while (val & ~0x7F) {
@@ -77,7 +83,7 @@ inline void pkt_put_vuint32(uint32 val, std::vector<uint8>& buf)
 	buf.push_back((uint8) val);
 }
 
-inline uint32 pkt_get_vuint32(std::vector<uint8>& buf, int idx = 0)
+inline uint32 pkt_get_vuint32(std::vector<uint8>& buf, uint &idx)
 {
 	uint32 result = 0;
 	uint8 shift = 0;
@@ -88,6 +94,12 @@ inline uint32 pkt_get_vuint32(std::vector<uint8>& buf, int idx = 0)
 		shift += 7;
 	} while (val & 0x80);
 	return result;
+}
+
+inline uint32 pkt_get_vuint32(std::vector<uint8>& buf)
+{
+	uint idx = 0;
+	return pkt_get_vuint32(buf, idx);
 }
 
 struct filesender {
@@ -209,6 +221,8 @@ class SimpleTCPConnection {
 
 		filesender cursendfile;
 		std::vector<dirsender> quesenddir;
+		bool newstyle;
+		bool qitemsfilled;
 
 		boost::filesystem::path getsharepath(std::string sharename);
 
@@ -246,6 +260,8 @@ class SimpleTCPConnection {
 			issending = false;
 			isreading = false;
 			donesend = false;
+			newstyle = false;
+			qitemsfilled = false;
 			open_files = 0;
 			transfered_bytes = 0;
 			total_bytes = 0;
@@ -333,6 +349,16 @@ class SimpleTCPConnection {
 
 		void start_receive_command(shared_vec rbuf)
 		{
+			if (qitemsfilled && qitems.empty()) {
+				dldone = true;
+				rbuf->resize(16);
+				pkt_put_uint32(CMD_DISCONNECT, &((*rbuf)[0]));
+				pkt_put_uint32(0, &((*rbuf)[4]));
+				pkt_put_uint64(0, &((*rbuf)[8]));
+				boost::asio::write(socket, GETBUF(rbuf));
+				disconnect();
+				return;
+			}
 			rbuf->resize(16);
 			boost::asio::async_read(socket, GETBUF(rbuf),
 				boost::bind(&SimpleTCPConnection::command_header_handler, this, _1, rbuf));
@@ -378,6 +404,11 @@ class SimpleTCPConnection {
 				case CMD_OLD_DONE: { // ..
 					std::cout << "download finished!\n";
 					dldone = true;
+				}; break;
+				case CMD_REPLY_FULL_FILE: {
+					qitem tqi = qitems.front();
+					qitems.pop_front();
+					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false);
 				}; break;
 				default: {
 					if (lcommands.count(hdr.cmd)) {
@@ -456,23 +487,28 @@ class SimpleTCPConnection {
 						got_supported_commands(rbuf);
 					}; break;
 					case CMD_REQUEST_TREE_LIST: { // request file listing
+						newstyle = true;
 						if (hdr.len < 0xffff) {
 							handle_request_listing(rbuf);
 						} else
 							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
 					case CMD_REPLY_TREE_LIST: { // reply file listing
-						uint64 fsize = pkt_get_vuint64(*rbuf);
-						qitems.front().type = 1;
-						qitems.front().fsize = fsize;
-						handle_qitems(rbuf);
+						handle_reply_listing(rbuf);
 					}; break;
-						/*
-					case 11: { // request partial file
+					case CMD_REQUEST_FULL_FILE: {
+						if (hdr.len < 0xffff) {
+							qitem nqi(5, (sharepath / std::string(rbuf->begin(), rbuf->end())).string());
+							qitems.push_back(nqi);
+							checkwhattosend();
+							start_receive_command(rbuf);
+						} else
+							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
-					case 12: { // reply partial file
+					case CMD_DISCONNECT: {
+						uldone = dldone = true;
+						disconnect();
 					}; break;
-						*/
 					default: {
 						handled = false;
 					};
@@ -481,6 +517,15 @@ class SimpleTCPConnection {
 			if (!handled) {
 				// we possibly got partial message
 				switch (hdr.cmd) {
+					case CMD_REPLY_TREE_LIST: { // reply file listing
+						uint64 chunk = hdr.len - rbuf->size();
+						if (chunk > 1024*1024) chunk = 1024*1024;
+
+						size_t osize = rbuf->size();
+						rbuf->resize(rbuf->size() + (size_t)chunk);
+						boost::asio::async_read(socket, boost::asio::buffer(&((*rbuf)[osize]), (size_t)chunk),
+							boost::bind(&SimpleTCPConnection::command_body_handler, this, _1, rbuf, hdr));
+					}; break;
 					case 0:
 					default: {
 						disconnect(STRFORMAT("Message too large (%d, %d)", hdr.cmd, hdr.len));
@@ -519,7 +564,7 @@ class SimpleTCPConnection {
 		void handle_request_listing(shared_vec tbuf)
 		{
 			std::string name(tbuf->begin(), tbuf->end());
-			std::cout << name << '\n';
+			//std::cout << name << '\n';
 			std::vector<std::string> elems;
 			boost::split(elems, name, boost::is_any_of("/"));
 
@@ -529,6 +574,7 @@ class SimpleTCPConnection {
 			}
 
 			boost::filesystem::path spath(getsharepath(elems[0]));
+			sharepath = spath.branch_path();
 			if (spath.empty() || !boost::filesystem::exists(spath))
 				return;
 
@@ -539,7 +585,7 @@ class SimpleTCPConnection {
 
 			boost::filesystem::path curpath(elems.back());
 			if (boost::filesystem::is_directory(spath)) {
-				std::cout << "Single directory!\n";
+				//std::cout << "Single directory!\n";
 
 				tbuf->resize(16);
 				pkt_put_uint32(10, &((*tbuf)[0]) + 0);
@@ -563,14 +609,14 @@ class SimpleTCPConnection {
 						pkt_put_vuint32(curpath.string().size(), *tbuf);
 						for (uint i = 0; i < curpath.string().size(); ++i)
 							tbuf->push_back(curpath.string()[i]);
-						std::cout << "Directory: " << curpath << '\n';
+						//std::cout << "Directory: " << curpath << '\n';
 					} else {
 						tbuf->push_back(1); // file
 						pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
 						pkt_put_vuint32(curpath.string().size(), *tbuf);
 						for (uint i = 0; i < curpath.string().size(); ++i)
 							tbuf->push_back(curpath.string()[i]);
-						std::cout << "File: " << curpath << '\n';
+						//std::cout << "File: " << curpath << '\n';
 					}
 				}
 			} else {
@@ -585,11 +631,43 @@ class SimpleTCPConnection {
 				for (uint i = 0; i < curpath.string().size(); ++i)
 					tbuf->push_back(curpath.string()[i]);
 
-				std::cout << "Single file!\n";
+				//std::cout << "Single file!\n";
 			}
 			tbuf->push_back(4); // end of list
 			pkt_put_uint64(tbuf->size() - 16, &((*tbuf)[0]) + 8);
 			send_receive_packet(tbuf);
+		}
+
+		void handle_reply_listing(shared_vec tbuf)
+		{
+			uint pos = 0;
+			while (pos < tbuf->size()) {
+				int tp = tbuf->at(pos++);
+				switch (tp) {
+					case 1: { // file
+						qitem qi(1, "", pkt_get_vuint64(*tbuf, pos));
+						total_bytes += qi.fsize;
+						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
+						for (uint i = 0; i < nlen; ++i)
+							qi.path.push_back(tbuf->at(pos++));
+						qitems.push_back(qi);
+					}; break;
+					case 2: { // dir
+						qitem qi(2, "");
+						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
+						for (uint i = 0; i < nlen; ++i)
+							qi.path.push_back(tbuf->at(pos++));
+						boost::filesystem::path dp = sharepath / qi.path;
+						boost::filesystem::create_directory(dp);
+						//qitems.push_front(qi);
+					}; break;
+					case 4: { // eol
+						pos = tbuf->size();
+					}; break;
+				}
+			}
+			handle_qitems(tbuf);
+
 		}
 
 		void handle_qitems(shared_vec tbuf) {
@@ -609,16 +687,31 @@ class SimpleTCPConnection {
 					for (uint i = 0; i < nlen; ++i)
 						(*tbuf)[i+16] = item.path[i];
 
-					boost::asio::async_write(socket, GETBUF(tbuf),
-						boost::bind(&SimpleTCPConnection::start_receive_command, this, tbuf, _1));
+					send_receive_packet(tbuf);
+					qitems.pop_front();
 				}; break;
 				case 1: {
-					total_bytes += item.fsize;
-
-
+					tbuf->clear();
+					qitemsfilled = true;
+					for (uint i = 0; i < qitems.size() && qitems[i].type == 1; ++i) {
+						qitem titem = qitems[i];
+						size_t cstart = tbuf->size();
+						tbuf->resize(tbuf->size()+16);
+						if (false && boost::filesystem::exists(sharepath / titem.path) && boost::filesystem::file_size(sharepath / titem.path) > 1024*1024) {
+							item.type = 6; // autoresume it!
+						} else {
+							pkt_put_uint32(CMD_REQUEST_FULL_FILE, &((*tbuf)[cstart+0]));
+							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
+							item.type = 5; // requested file
+							//pkt_put_vuint32(item.path.size(), *tbuf);
+							for (uint j = 0; j < titem.path.size(); ++j)
+								tbuf->push_back(titem.path[j]);
+						}
+						pkt_put_uint64(tbuf->size() - cstart - 16, &((*tbuf)[cstart+8]));
+					}
+					send_receive_packet(tbuf);
 				}; break;
 			}
-
 		}
 
 		void send_receive_packet(shared_vec tbuf)
@@ -702,6 +795,23 @@ class SimpleTCPConnection {
 								boost::bind(&SimpleTCPConnection::handle_read_file, this, _1, _2, sbuf));
 						}
 					}
+				} else if (newstyle) {
+					if (!qitems.empty()) {
+						if (qitems.front().type == 5) {
+							sbuf->resize(16);
+							cursendfile.name = qitems[0].path;
+							cursendfile.path = qitems[0].path;
+							cursendfile.init();
+							cursendfile.hsent = true;
+							qitems.pop_front();
+							pkt_put_uint32(CMD_REPLY_FULL_FILE, &((*sbuf)[0]));
+							pkt_put_uint32(0, &((*sbuf)[4]));
+							pkt_put_uint64(boost::filesystem::file_size(cursendfile.path), &((*sbuf)[8]));
+
+							sendqueue.push_back(sbuf);
+							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+						}
+					}
 				} else if (!quesenddir.empty()) {
 					boost::filesystem::path newpath;
 
@@ -737,7 +847,8 @@ class SimpleTCPConnection {
 		}
 
 		void handle_sent_everything() {
-			uldone = true;
+			if (!newstyle)
+				uldone = true;
 		}
 
 		void handle_recv_namelen(const boost::system::error_code& e, shared_vec rbuf) {
@@ -877,6 +988,14 @@ class SimpleTCPConnection {
 			}
 
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
+			boost::filesystem::path path = sharepath / name;
+
+			kickoff_file_write(path, hdr.len, rbuf, false);
+		}
+
+		void kickoff_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready)
+		{
+			if (rbuf->empty()) dataready = false;
 
 			bool* done = new bool;
 			*done = false;
@@ -884,15 +1003,18 @@ class SimpleTCPConnection {
 			++open_files;
 			// kick off handle_ready_file for when the file is ready to write
 			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
-			gdiskio->async_open_file((sharepath / name), services::diskio_filetype::out|services::diskio_filetype::create,
+			gdiskio->async_open_file(path, services::diskio_filetype::out|services::diskio_filetype::create,
 				*file,
-				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, hdr.len, rbuf, rbuf));
+				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf));
 
-			// kick off async_read for when we received some data (capped by file size)
-			rbuf->resize((hdr.len>1024*1024*10) ? 1024*1024*10 : (uint32)hdr.len); // cast is ok because of ?:
-			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, hdr.len, rbuf));
-
+			if (!dataready) {
+				// kick off async_read for when we received some data (capped by file size)
+				rbuf->resize((fsize>1024*1024*10) ? 1024*1024*10 : (uint32)fsize); // cast is ok because of ?:
+				boost::asio::async_read(socket, GETBUF(rbuf),
+					boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
+			} else {
+				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf);
+			}
 		}
 
 		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf) {
