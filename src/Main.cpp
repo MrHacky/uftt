@@ -263,10 +263,7 @@ int imain( int argc, char **argv )
 
 	backend.slot_refresh_shares();
 
-	// TODO: resolve 255.255.255.255 to bc addr in backend (win2000 can't do it itself)
 	backend.do_manual_publish("255.255.255.255");
-
-	//cout << "Signed: " << (hassignedbuild ? "yes" : "no") << '\n';
 
 	int ret = gui.run();
 
