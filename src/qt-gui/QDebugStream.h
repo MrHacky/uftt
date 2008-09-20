@@ -58,8 +58,8 @@ protected:
    if (pos != std::string::npos)
    {
     std::string tmp(m_string.begin(), m_string.begin() + pos);
-    this->append(tmp.c_str());
     m_string.erase(m_string.begin(), m_string.begin() + pos + 1);
+    this->append(tmp.c_str());
    }
   }
 
