@@ -81,13 +81,13 @@ int runtest() {
 			boost::asio::ip::tcp::socket rsock(service);
 
 			acceptor.open(boost::asio::ip::tcp::v4());
-			acceptor.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432));
+			acceptor.bind(boost::asio::ip::tcp::endpoint(my_addr_from_string("127.0.0.1"), 23432));
 			acceptor.listen(16);
 
 			acceptor.async_accept(ssock, settrue(&accepted));
 
 			rsock.open(boost::asio::ip::tcp::v4());
-			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address::from_string("127.0.0.1"), 23432), settrue(&connected));
+			rsock.async_connect(boost::asio::ip::tcp::endpoint(my_addr_from_string("127.0.0.1"), 23432), settrue(&connected));
 
 			boost::asio::deadline_timer wd(service);
 			wd.expires_from_now(boost::posix_time::seconds(10));

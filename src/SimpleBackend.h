@@ -24,6 +24,26 @@
 
 #include "../util/StrFormat.h"
 
+inline boost::asio::ip::address my_addr_from_string(const std::string& str)
+{
+	if (str == "255.255.255.255")
+		return boost::asio::ip::address_v4::broadcast();
+	else
+		return boost::asio::ip::address::from_string(str);
+}
+
+inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
+{
+	return STRFORMAT("%04d-%02d-%02d %02d:%02d:%02d",
+		td.date().year(),
+		td.date().month(),
+		td.date().day(),
+		td.time_of_day().hours(),
+		td.time_of_day().minutes(),
+		td.time_of_day().seconds()
+	);
+}
+
 class SimpleBackend {
 	private:
 		UFTTSettings& settings;
@@ -116,7 +136,7 @@ class SimpleBackend {
 			peerfindertimer.expires_at(dl);
 			peerfindertimer.async_wait(boost::bind(&SimpleBackend::handle_peerfinder_timer, this, _1));
 
-			std::cout << "Deadline at: " << dl << '\n';
+			std::cout << "Peer check at: " << my_datetime_to_string(dl) << '\n';
 
 			uint8 udp_send_buf[5];
 			udp_send_buf[0] = (1 >>  0) & 0xff;
@@ -128,7 +148,7 @@ class SimpleBackend {
 			boost::system::error_code err;
 			BOOST_FOREACH(const std::string peer, settings.foundpeers) {
 				try {
-					const boost::asio::ip::udp::endpoint ep(boost::asio::ip::address::from_string(peer), UFTT_PORT);
+					const boost::asio::ip::udp::endpoint ep(my_addr_from_string(peer), UFTT_PORT);
 					std::cout << "Sending (4) to: " << ep << '\n';
 					udpsocket.send_to(
 						boost::asio::buffer(udp_send_buf),
@@ -401,7 +421,7 @@ class SimpleBackend {
 			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
 			newconn->sig_progress.connect(handler);
 			conlist.push_back(newconn);
-			boost::asio::ip::tcp::endpoint ep(boost::asio::ip::address::from_string(host), UFTT_PORT);
+			boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
 			newconn->socket.open(ep.protocol());
 			std::cout << "Connecting...\n";
 			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
@@ -530,13 +550,13 @@ class SimpleBackend {
 
 		void do_manual_query(std::string hostname) {
 			service.post(boost::bind(&SimpleBackend::send_query, this,
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
+				boost::asio::ip::udp::endpoint(my_addr_from_string(hostname), UFTT_PORT)
 			));
 		}
 
 		void do_manual_publish(std::string hostname) {
 			service.post(boost::bind(&SimpleBackend::send_publishes, this,
-				boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(hostname), UFTT_PORT)
+				boost::asio::ip::udp::endpoint(my_addr_from_string(hostname), UFTT_PORT)
 			, true, true));
 		}
 
