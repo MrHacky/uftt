@@ -276,7 +276,7 @@ class SimpleTCPConnection {
 		uint64 transfered_bytes;
 		uint64 total_bytes;
 		boost::asio::deadline_timer progress_timer;
-		boost::signal<void(uint64,std::string,uint32)> sig_progress;
+		boost::signal<void(uint64,std::string,uint32,uint64)> sig_progress;
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -290,15 +290,15 @@ class SimpleTCPConnection {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
 				if (error_message != "") {
-					sig_progress(transfered_bytes, std::string() + "Error: " + error_message, 0);
+					sig_progress(transfered_bytes, std::string() + "Error: " + error_message, 0, total_bytes);
 				} else if (dldone && open_files == 0) {
-					sig_progress(transfered_bytes, "Completed", 0);
+					sig_progress(transfered_bytes, "Completed", 0, total_bytes);
 					disconnect();
 				} else if (uldone) {
-					sig_progress(transfered_bytes, "Completed", 0);
+					sig_progress(transfered_bytes, "Completed", 0, total_bytes);
 					disconnect();
 				} else {
-					sig_progress(transfered_bytes, "Transfering", sendqueue.size()+open_files);
+					sig_progress(transfered_bytes, "Transfering", sendqueue.size()+open_files, total_bytes);
 					start_update_progress();
 				}
 			}
@@ -612,6 +612,7 @@ class SimpleTCPConnection {
 						//std::cout << "Directory: " << curpath << '\n';
 					} else {
 						tbuf->push_back(1); // file
+						total_bytes += boost::filesystem::file_size(*curiter);
 						pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
 						pkt_put_vuint32(curpath.string().size(), *tbuf);
 						for (uint i = 0; i < curpath.string().size(); ++i)
@@ -626,6 +627,7 @@ class SimpleTCPConnection {
 				pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
 				tbuf->push_back(1); // file
+				total_bytes += boost::filesystem::file_size(spath);
 				pkt_put_vuint64(boost::filesystem::file_size(spath), *tbuf);
 				pkt_put_vuint32(curpath.string().size(), *tbuf);
 				for (uint i = 0; i < curpath.string().size(); ++i)

@@ -409,7 +409,7 @@ class SimpleBackend {
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
 		}
 
-		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
+		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32,uint64)> handler)
 		{
 			size_t colonpos = shareurl.find_first_of(":");
 			std::string proto = shareurl.substr(0, colonpos);
@@ -455,7 +455,7 @@ class SimpleBackend {
 					std::cout << "broadcast to (" << addr << ") failed: " << err.message() << '\n';
 			}
 		}
-		void attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32)> handler)
+		void attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32,uint64)> handler)
 		{
 			conlist[num]->sig_progress.connect(handler);
 		}
@@ -538,12 +538,12 @@ class SimpleBackend {
 			service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
 		}
 
-		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32)> handler)
+		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32,uint64)> handler)
 		{
 			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath, handler));
 		}
 
-		void slot_attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32)> handler)
+		void slot_attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32,uint64)> handler)
 		{
 			service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, num, handler));
 		}

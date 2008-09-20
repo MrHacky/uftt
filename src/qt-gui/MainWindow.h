@@ -83,7 +83,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void new_autoupdate(std::string url, std::string build, bool fromweb);
 
 		void download_done(std::string url);
-		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue);
+		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue, uint64 total);
 		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
 
 		void new_upload(std::string name, int num);

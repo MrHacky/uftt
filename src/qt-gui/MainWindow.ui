@@ -426,6 +426,21 @@
          <string>Queue</string>
         </property>
        </column>
+       <column>
+        <property name="text" >
+         <string>Size</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Speed</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Remaining</string>
+        </property>
+       </column>
       </widget>
      </item>
      <item>

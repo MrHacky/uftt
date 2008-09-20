@@ -265,15 +265,15 @@ void MainWindow::on_buttonDownload_clicked()
 	twi->setText(0, url);
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(uint64, std::string, uint32)> handler =
-		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
-	handler(0, "Starting", 0);
+	boost::function<void(uint64, std::string, uint32, uint64)> handler =
+		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3, _4));
+	handler(0, "Starting", 0, 0);
 
 	backend->slot_download_share(url.toStdString(), dlpath, handler);
 }
 
 
-void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue)
+void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue, uint64 total)
 {
 	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
 	boost::posix_time::time_duration elapsed = curtime-starttime;
@@ -282,6 +282,20 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
 	twi->setText(3, QString::fromStdString(sts));
 	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
+	twi->setText(5, QString::fromStdString(StrFormat::bytes(total)));
+	if (elapsed.seconds() > 0)
+		twi->setText(6, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.seconds()))));
+	if (total > 0 && total >= tfx && tfx > 0)
+		twi->setText(7, QString::fromStdString(
+		boost::posix_time::to_simple_string(
+			boost::posix_time::time_duration(
+				boost::posix_time::seconds(
+					((total-tfx) * elapsed.seconds() / tfx)
+					)
+				)
+			)
+		));
+
 
 	if (sts == "Completed") {
 		string name = twi->text(0).toStdString();
@@ -406,9 +420,9 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 		twi->setText(0, QString::fromStdString(string() + "Autoupdate: " + url));
 
 		boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-		boost::function<void(uint64, std::string, uint32)> handler =
-			marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
-		handler(0, "Starting", 0);
+		boost::function<void(uint64, std::string, uint32, uint64)> handler =
+			marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3, _4));
+		handler(0, "Starting", 0, 0);
 		backend->slot_download_share(url, auto_update_path, handler);
 	} else {
 		backend->do_download_web_update(url,
@@ -491,10 +505,10 @@ void MainWindow::new_upload(std::string name, int num)
 	twi->setText(0, QString::fromStdString(name));
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(uint64, std::string, uint32)> handler =
-		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3));
+	boost::function<void(uint64, std::string, uint32, uint64)> handler =
+		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, _1, _2, starttime, _3, _4));
 
-	handler(0, "Starting", 0);
+	handler(0, "Starting", 0, 0);
 	backend->slot_attach_progress_handler(num, handler);
 }
 
