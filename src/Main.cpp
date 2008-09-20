@@ -243,13 +243,14 @@ int imain( int argc, char **argv )
 	settings.load();
 
 	QTMain gui(argc, argv, &settings);
+
+	cout << "Build: " << thebuildstring << '\n';
+
 	SimpleBackend backend(settings);
 	gui.BindEvents(&backend);
 
 	if (madeConsole)
 		platform::freeConsole();
-
-	cout << "Build: " << thebuildstring << '\n';
 
 	// get services (gdiskio global evilly initialized by SimpleBackend constructror...)
 	boost::asio::io_service& run_service  = gdiskio->get_io_service();
