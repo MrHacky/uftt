@@ -156,11 +156,16 @@ namespace {
 
 		void try_compress()
 		{
-			boost::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
+			//boost::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
+			boost::filesystem::path upxexe("C:\\Temp\\upx.exe");
 			boost::filesystem::path tempexe("C:\\Temp\\ufft-temp.exe");
 
-			if (!boost::filesystem::exists(upxexe))
+			try {
+				if (!boost::filesystem::exists(upxexe))
+					return;
+			} catch (...) {
 				return;
+			};
 
 			{
 				ofstream wexe(tempexe.native_file_string().c_str(), ios_base::out|ios_base::binary);
