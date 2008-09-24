@@ -609,6 +609,9 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 		int oparse = 0;
 		string href;
 		string title;
+		string sig;
+		string attr;
+		string attrval;
 		BOOST_FOREACH(uint8 chr, content) {
 			if (state == 0 && parse == 0 && chr == '<') ++parse;
 			if (state == 0 && parse == 1 && chr == 'a') ++parse;
@@ -620,40 +623,40 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 				oparse = 0;
 				href.clear();
 				title.clear();
+				sig.clear();
 				continue;
 			}
-			if (state == 1 && parse == 0 && chr == 'h') ++parse;
-			if (state == 1 && parse == 0 && chr == 'H') ++parse;
-			if (state == 1 && parse == 1 && chr == 'r') ++parse;
-			if (state == 1 && parse == 1 && chr == 'R') ++parse;
-			if (state == 1 && parse == 2 && chr == 'e') ++parse;
-			if (state == 1 && parse == 2 && chr == 'E') ++parse;
-			if (state == 1 && parse == 3 && chr == 'f') ++parse;
-			if (state == 1 && parse == 3 && chr == 'F') ++parse;
-			if (state == 1 && parse == 4 && chr == '=') ++parse;
-			if (state == 1 && parse == 5 && chr == '"') ++parse;
-			if (state == 1 && parse == 6) {
-				state = 2;
+			if (state == 1 && parse == 0) {
+				if ((chr >= 'a' && chr <='z') || (chr >= 'A' && chr <= 'Z')) {
+					attr.clear();
+					attrval.clear();
+					state =6;
+				}
+			}
+			if (state == 6 && chr != '=' && chr !='"') attr.push_back(chr);
+			if (state == 6 && chr == '=') {
+				state = 7;
 				parse = 0;
 				oparse = 0;
 				continue;
 			}
+			if (state == 7 && chr == '"') {
+				state = 8;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+			if (state == 8 && chr != '"') attrval.push_back(chr);
+			if (state == 8 && chr == '"') {
+				if (attr == "sig") sig = attrval;
+				if (attr == "href") href = attrval;
+				state = 1;
+				parse = 0;
+				oparse = 0;
+				continue;
+			}
+
 			if (state == 1 && chr == '>') {
-				state = 4;
-				parse = 0;
-				oparse = 0;
-				continue;
-			}
-
-			if (state == 2 && chr != '"') href.push_back(chr);
-			if (state == 2 && chr == '"') {
-				state = 3;
-				parse = 0;
-				oparse = 0;
-				continue;
-			}
-
-			if (state == 3 && chr == '>') {
 				state = 4;
 				parse = 0;
 				oparse = 0;
