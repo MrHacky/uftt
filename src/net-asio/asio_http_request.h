@@ -78,7 +78,7 @@ public:
 
     // Start an asynchronous resolve to translate the server and service names
     // into a list of endpoints.
-    boost::asio::ip::tcp::resolver::query query(server, "http");
+	boost::asio::ip::tcp::resolver::query query(server, "80");
     resolver_.async_resolve(query,
         boost::bind(&http_request::handle_resolve, this,
           boost::asio::placeholders::error,
