@@ -283,19 +283,18 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string
 	twi->setText(3, QString::fromStdString(sts));
 	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
 	twi->setText(5, QString::fromStdString(StrFormat::bytes(total)));
-	if (elapsed.seconds() > 0)
-		twi->setText(6, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.seconds()))));
+	if (elapsed.total_seconds() > 0)
+		twi->setText(6, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
 	if (total > 0 && total >= tfx && tfx > 0)
 		twi->setText(7, QString::fromStdString(
 		boost::posix_time::to_simple_string(
 			boost::posix_time::time_duration(
 				boost::posix_time::seconds(
-					((total-tfx) * elapsed.seconds() / tfx)
+					((total-tfx) * elapsed.total_seconds() / tfx)
 					)
 				)
 			)
 		));
-
 
 	if (sts == "Completed") {
 		string name = twi->text(0).toStdString();
