@@ -999,8 +999,25 @@ class SimpleTCPConnection {
 			kickoff_file_write(path, hdr.len, rbuf, false);
 		}
 
+		boost::function<void()> delayed_open_file;
+
+		void delay_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready)
+		{
+			delayed_open_file = boost::function<void()>();
+			kickoff_file_write(path, fsize, rbuf, dataready);
+		}
+
 		void kickoff_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready)
 		{
+			if (delayed_open_file) {
+				std::cout << "error: multiple file opens\n";
+			}
+
+			if (open_files > 256) {
+				delayed_open_file = boost::bind(&SimpleTCPConnection::delay_file_write, this, path, fsize, rbuf, dataready);
+				return;
+			}
+
 			if (rbuf->empty()) dataready = false;
 
 			bool* done = new bool;
@@ -1095,6 +1112,8 @@ class SimpleTCPConnection {
 					delete done;
 					file->close();
 					--open_files;
+					if (delayed_open_file)
+						delayed_open_file();
 					return;
 				}
 				size -= wbuf->size();
