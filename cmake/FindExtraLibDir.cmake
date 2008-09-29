@@ -15,7 +15,7 @@ IF(AUTODETECT_LIB_DIR)
 			${PROJECT_BINARY_DIR}/../../../../../..
 	)
 	SET(CMAKE_EXTRA_LIBS_PATH "${CMAKE_EXTRA_LIBS_PATH_ROOT}" CACHE PATH "Paths where to look for extra libraries")
-ENDIF(AUTODETECT_LIB_DIR)
+ENDIF()
 
 MACRO(FIND_LIB_IN_EXTRALIBS prefix mainglob includeglob libglob)
 	SET(${prefix}_EXTRALIB_INCLUDE_PATHS)
@@ -38,6 +38,5 @@ MACRO(FIND_LIB_IN_EXTRALIBS prefix mainglob includeglob libglob)
 			GLOBS ${libglob}
 			BASES ${${prefix}_EXTRALIB_BASE_DIRS}
 		)
-	ENDIF(${prefix}_EXTRALIB_BASE_DIRS)
-
-ENDMACRO(FIND_LIB_IN_EXTRALIBS)
+	ENDIF()
+ENDMACRO()

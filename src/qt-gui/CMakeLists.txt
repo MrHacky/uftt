@@ -7,7 +7,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 IF(MINGW AND NOT QT_SHARED)
 	SET(QT_LIBRARIES "${QT_LIBRARIES}" Imm32 Winmm gdi32 comdlg32 oleaut32 winspool Ws2_32 ole32 uuid)
-ENDIF(MINGW AND NOT QT_SHARED)
+ENDIF()
 
 SET(UI_FILES
 	MainWindow.ui
