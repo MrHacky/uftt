@@ -250,8 +250,9 @@ namespace services {
 				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
 					return boost::system::error_code();
-				//std::cout << "error opening file\n";
-				return boost::system::error_code(boost::asio::error::access_denied, boost::asio::error::get_system_category());
+				boost::system::posix_error::posix_errno err = (boost::system::posix_error::posix_errno)errno;
+				std::cout << "error opening file:" << path << "\n";
+				return boost::system::posix_error::make_error_code(err);
 			}
 
 			void close() {
@@ -300,7 +301,7 @@ namespace services {
 					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::error_code(error, boost::asio::error::get_system_category()),
+							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)error),
 							0)
 						);
 						return;
@@ -331,7 +332,7 @@ namespace services {
 
 					if (written == 0) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::error_code(ferror(fd), boost::asio::error::get_system_category()),
+							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)ferror(fd)),
 							0)
 						);
 						return;
@@ -367,7 +368,7 @@ namespace services {
 					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::error_code(error, boost::asio::error::get_system_category()),
+							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)error),
 							0)
 						);
 						return;
@@ -411,7 +412,7 @@ namespace services {
 							);
 						} else {
 							service.dispatch(boost::bind<void>(handler,
-								boost::system::error_code(ferror(fd), boost::asio::error::get_system_category()),
+								boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)ferror(fd)),
 								0)
 							);
 						}
