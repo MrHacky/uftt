@@ -1136,7 +1136,8 @@ class SimpleTCPConnection {
 		{
 			socket.close();
 			if (!errmsg.empty()) {
-				error_message = errmsg;
+				error_message += errmsg;
+				error_message += "; ";
 				std::cout << "Error: " << errmsg << '\n';
 			}
 		}
