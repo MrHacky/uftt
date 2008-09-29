@@ -641,3 +641,11 @@ void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(spath)));
 	}
 }
+
+void MainWindow::on_listShares_itemDoubleClicked(QTreeWidgetItem* twi, int)
+{
+	if (listShares->currentItem() == twi)
+		on_buttonDownload_clicked();
+	else
+		std::cout << "Doubleclicked on non-current share?\n";
+}

@@ -74,6 +74,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_actionUpdateMonthly_toggled(bool);
 
 		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
+		void on_listShares_itemDoubleClicked(QTreeWidgetItem*, int);
 
 		void check_autoupdate_interval();
 
