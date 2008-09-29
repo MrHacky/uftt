@@ -37,7 +37,7 @@ IF(MSVC)
 	SET(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:LIBCMT /NODEFAULTLIB:libcpmt")
 
 	IF(LINK_STATIC_RUNTIME)
-		foreach(cfgtype ${CMAKE_CONFIGURATION_TYPES})
+		foreach(cfgtype ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
 			string(TOUPPER "CMAKE_C_FLAGS_${cfgtype}" flag_var)
 			string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
 			string(TOUPPER "CMAKE_CXX_FLAGS_${cfgtype}" flag_var)
