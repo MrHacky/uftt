@@ -110,7 +110,7 @@
     </property>
     <layout class="QVBoxLayout" >
      <item>
-      <widget class="QDragDropTreeWidget" name="SharesTree" >
+      <widget class="QDragDropTreeWidget" name="listShares" >
        <column>
         <property name="text" >
          <string>Share Name</string>
@@ -537,7 +537,7 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>SharesTree</tabstop>
+  <tabstop>listShares</tabstop>
   <tabstop>buttonRefresh</tabstop>
   <tabstop>buttonDownload</tabstop>
   <tabstop>DownloadEdit</tabstop>
@@ -563,7 +563,7 @@
   <connection>
    <sender>buttonClear</sender>
    <signal>clicked()</signal>
-   <receiver>SharesTree</receiver>
+   <receiver>listShares</receiver>
    <slot>clear()</slot>
    <hints>
     <hint type="sourcelabel" >

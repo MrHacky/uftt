@@ -115,13 +115,13 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	}
 
 	/* set sharelist layout */
-	//this->SharesTree->header()->moveSection(2+0,0);
-	//this->SharesTree->header()->moveSection(1+1,1);
-	//this->SharesTree->header()->moveSection(0+2,2);
-	//this->SharesTree->header()->moveSection(3+0,3);
-	this->SharesTree->hideColumn(2);
-	this->SharesTree->hideColumn(3);
-	QToggleHeaderAction::addActions(this->SharesTree);
+	//this->listShares->header()->moveSection(2+0,0);
+	//this->listShares->header()->moveSection(1+1,1);
+	//this->listShares->header()->moveSection(0+2,2);
+	//this->listShares->header()->moveSection(3+0,3);
+	this->listShares->hideColumn(2);
+	this->listShares->hideColumn(3);
+	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
 	if (!boost::filesystem::exists(settings.dl_path)) {
@@ -134,11 +134,11 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
 	this->setUpdateInterval(settings.webupdateinterval);
 
-	//connect(SharesTree, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
+	//connect(listShares, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
-	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
-	connect(SharesTree->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
-	connect(SharesTree->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
+	connect(listShares->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
+	connect(listShares->getDragDropEmitter(), SIGNAL(dragEnterTriggered(QDragEnterEvent*)), this, SLOT(onDragEnterTriggered(QDragEnterEvent*)));
+	connect(listShares->getDragDropEmitter(), SIGNAL(dropTriggered(QDropEvent*))          , this, SLOT(onDropTriggered(QDropEvent*)));
 
 
 	listBroadcastHosts->setItemDelegate(new MyItemDelegate (listBroadcastHosts));
@@ -209,7 +209,7 @@ void MainWindow::addSimpleShare(std::string sharename)
 	QString qhost  = QString::fromStdString(host);
 	QString qurl   = QString::fromStdString(url);
 
-	QList<QTreeWidgetItem*> fres = SharesTree->findItems(qshare, 0, 0);
+	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, 0, 0);
 
 	bool found = false;
 	BOOST_FOREACH(QTreeWidgetItem* twi, fres) {
@@ -225,7 +225,7 @@ void MainWindow::addSimpleShare(std::string sharename)
 	}
 
 	if (!found) {
-		QTreeWidgetItem* rwi = new QTreeWidgetItem(SharesTree, 0);
+		QTreeWidgetItem* rwi = new QTreeWidgetItem(listShares, 0);
 		rwi->setText(0, qshare);
 		rwi->setText(1, qhost);
 		rwi->setText(2, qproto);
@@ -256,7 +256,7 @@ void MainWindow::on_buttonDownload_clicked()
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
-	QTreeWidgetItem* rwi = SharesTree->currentItem();
+	QTreeWidgetItem* rwi = listShares->currentItem();
 	if (!rwi)
 		return;
 	QString url = rwi->text(3);
