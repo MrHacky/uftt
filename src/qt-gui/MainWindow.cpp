@@ -54,6 +54,22 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 {
 	setupUi(this);
 
+	if (string("QWindowsXPStyle") == this->style()->metaObject()->className()) {
+		// this style has invisible separators sometimes,
+		// that looks horrible, so make them visible
+		const char sepstyle[] =
+			"QMainWindow::Separator:horizontal {"
+			"  border-top: 1px solid palette(light);"
+			"  border-bottom: 2px solid qlineargradient(spread:pad, x1:0, y1:0, x2:0, y2:1, stop:0 palette(dark), stop:0.495 palette(dark), stop:0.505 palette(darker), stop:1 palette(darker));"
+			"}"
+			""
+			"QMainWindow::Separator:vertical {"
+			"  border-left: 1px solid palette(light);"
+			"  border-right: 2px solid qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 palette(dark), stop:0.495 palette(dark), stop:0.505 palette(darker), stop:1 palette(darker));"
+			"}";
+		this->setStyleSheet(QString(sepstyle));
+	}
+
 	// setup debug stream
 	new QDebugStream(std::cout, debugText);
 
