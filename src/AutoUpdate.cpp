@@ -19,6 +19,8 @@
 #include <openssl/evp.h>
 
 #include "../util/Base64.h"
+#include "../util/Filesystem.h"
+
 
 using namespace std;
 
@@ -160,12 +162,8 @@ namespace {
 			boost::filesystem::path upxexe("C:\\Temp\\upx.exe");
 			boost::filesystem::path tempexe("C:\\Temp\\ufft-temp.exe");
 
-			try {
-				if (!boost::filesystem::exists(upxexe))
-					return;
-			} catch (...) {
+			if (!ext::filesystem::exists(upxexe))
 				return;
-			};
 
 			{
 				ofstream wexe(tempexe.native_file_string().c_str(), ios_base::out|ios_base::binary);
@@ -349,7 +347,7 @@ namespace {
 		} catch (...) {
 		}
 
-		if (boost::filesystem::exists(target)) {
+		if (ext::filesystem::exists(target)) {
 			cout << "Failed\n";
 			if (retries > 0) {
 				--retries;
@@ -461,7 +459,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 {
 	try {
 		std::cout << "doSelfUpdate: " << target << '\n';
-		if (!boost::filesystem::exists(target))
+		if (!ext::filesystem::exists(target))
 			return false;
 
 		{
@@ -505,7 +503,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 				}
 				ostr.close();
 
-				if (!boost::filesystem::exists(newtarget)) {
+				if (!ext::filesystem::exists(newtarget)) {
 					cout << "Doublecheck failed\n";
 					return false;
 				}

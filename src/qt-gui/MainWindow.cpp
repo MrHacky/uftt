@@ -95,7 +95,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	buttonAdd3->hide();
 
 	/* load/set dock layout */
-	if (!settings.loaded && boost::filesystem::exists("uftt.layout")) {
+	if (!settings.loaded && ext::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
 		if (layoutfile.open(QIODevice::ReadOnly)) {
 			QRect rect;
@@ -140,9 +140,9 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
-	if (!boost::filesystem::exists(settings.dl_path)) {
+	if (!ext::filesystem::exists(settings.dl_path)) {
 		boost::filesystem::path npath(QDir::tempPath().toStdString());
-		if (boost::filesystem::exists(npath))
+		if (ext::filesystem::exists(npath))
 			settings.dl_path = npath;
 	}
 
@@ -268,7 +268,7 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 void MainWindow::on_buttonDownload_clicked()
 {
 	boost::filesystem::path dlpath = DownloadEdit->text().toStdString();
-	if (!boost::filesystem::exists(dlpath)) {
+	if (!ext::filesystem::exists(dlpath)) {
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
@@ -648,7 +648,7 @@ void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 	boost::filesystem::path path = DownloadEdit->text().toStdString();
 	path /= name;
 
-	if (boost::filesystem::exists(path)) {
+	if (ext::filesystem::exists(path)) {
 		string spath;
 		if (boost::filesystem::is_directory(path))
 			spath += path.native_directory_string();

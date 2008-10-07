@@ -13,6 +13,7 @@
 #include "Globals.h"
 
 #include "../util/StrFormat.h"
+#include "../util/Filesystem.h"
 
 /// helper classes, TODO: nest them properly...
 struct cmdinfo {
@@ -575,14 +576,14 @@ class SimpleTCPConnection {
 
 			boost::filesystem::path spath(getsharepath(elems[0]));
 			sharepath = spath.branch_path();
-			if (spath.empty() || !boost::filesystem::exists(spath)) {
+			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
 				return;
 			}
 
 			for (uint i = 1; i < elems.size(); ++i)
 				spath /= elems[i];
-			if (!boost::filesystem::exists(spath)) {
+			if (!ext::filesystem::exists(spath)) {
 				disconnect("Invalid path Requested.", true);
 				return;
 			}
@@ -730,7 +731,7 @@ class SimpleTCPConnection {
 		{
 			if (name.empty()) name = path.leaf();
 
-			if (!boost::filesystem::exists(path)) {
+			if (!ext::filesystem::exists(path)) {
 				disconnect(STRFORMAT("path does not exist: %s", path));
 			}
 

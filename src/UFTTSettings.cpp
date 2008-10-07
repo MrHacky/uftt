@@ -6,6 +6,8 @@
 
 #include "Platform.h"
 
+#include "../util/Filesystem.h"
+
 const int settings_version = 1;
 
 UFTTSettings::UFTTSettings()
@@ -31,7 +33,7 @@ bool UFTTSettings::load(boost::filesystem::path path_)
 	if (path.empty()) {
 		platform::spathlist spl = platform::getSettingsPathList();
 		BOOST_FOREACH(const platform::spathinfo& spi, spl) {
-			if (!spi.second.empty() && boost::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
+			if (!spi.second.empty() && ext::filesystem::exists(spi.second) && boost::filesystem::is_regular(spi.second)) {
 				path = spi.second;
 				break;
 			}
