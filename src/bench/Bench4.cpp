@@ -97,6 +97,7 @@ int main( int argc, char **argv ) {
 
 		delete [] buffer; // clean up
 	}
+#endif
 
 	boost::asio::io_service svc;
 	boost::asio::ip::udp::socket usock1(svc);
@@ -137,7 +138,6 @@ int main( int argc, char **argv ) {
 */
 		svc.run();
 	}
-#endif
 
 	std::string p;
 	std::cin >> p;
