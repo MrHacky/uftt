@@ -37,7 +37,7 @@ void do_receive(boost::asio::ip::udp::socket& s, const boost::system::error_code
 
 void start_receive(boost::asio::ip::udp::socket& s) {
 	s.async_receive_from(boost::asio::buffer(udp_recv_buf), udp_recv_addr,
-		boost::bind(&do_receive, ref(s), _1, _2)
+		boost::bind(&do_receive, boost::ref(s), _1, _2)
 		);
 }
 
