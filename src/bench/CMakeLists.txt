@@ -1,4 +1,3 @@
-
 ADD_EXECUTABLE(bench1
 	Benchmark.cpp
 	../Types.h

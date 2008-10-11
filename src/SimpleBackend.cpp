@@ -144,9 +144,11 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 	// linux interface up/down + ipv4adrr add/delete event socket
 	#if 0
 	{
+		struct sockaddr_nl sa;
+
 		memset (&sa, 0, sizeof(sa));
-		snl.nl_family = AF_NETLINK;
-		snl.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+		sa.nl_family = AF_NETLINK;
+		sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
 
 		fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 		bind(fd, (struct sockaddr*)&sa, sizeof(sa));
