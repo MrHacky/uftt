@@ -462,7 +462,8 @@ class SimpleBackend {
 
 		void check_for_web_updates(boost::function<void(std::string, std::string)> handler)
 		{
-			std::string weburl = "http://hackykid.heliohost.org/site/autoupdate.php";
+			//std::string weburl = "http://hackykid.heliohost.org/site/autoupdate.php";
+			std::string weburl = "http://uftt.googlecode.com/svn/trunk/site/autoupdate.php";
 			//std::string weburl = "http://localhost:8080/site/autoupdate.php";
 
 			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, weburl));
