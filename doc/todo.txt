@@ -1,19 +1,24 @@
+- uniquely identify (parts of) shares somehow
+- allow downloading parts of the same share from different sources
+- allow simultanious downloading via broadcast link
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
 - show share name for upload tasks
-- [WIP] allow custom broadcast ip's
+- allow custom broadcast ip's
 - allow custom broadcast dns names
 - clean up connections when they are done
 - allow disabling of autoupdate at compile time (and do so by default in linux?)
 - implement console detaching/attaching for linux
+- implement share announcement via reliable transport (tcp), and peer discovery via broadcasts (udp)
+- abstract backend interface, so you can easily add different ones (ipx,ipv6,stun)
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
+- support ipv6 connections/discovery, especially link-local
 - implement udp-semi connections, and plug them into the now shiny architecture
 - implement udp hole punching via central web server (heliohost)
 - implement udp hole punching through firewall for local link
 - allow autoupdate without openssl (insecure, use at own risk, do we really want this?)
 - use configurable temp dir for compressing & downloading updates
-- make GUI look nice in non win98-classic themes
 - implement partial requests
 - implement hash requests (limited)
 - implement autoresuming
@@ -22,12 +27,15 @@
 - implement automatic test suite for stuff
 - check more things in --runcheck
 - show progress for web update tasks
+- monitor available interfaces to react to changes
 - make size-optimized bootstrapper executable (no gui etc)
 - make bootstrapper universal (detect os, web version)
 - make uftt.dat location changable after initial startup
 - allow sharing non-self autoupdates
 - make autoupdate dialog
 - have doubleclick on share popup download dialog asking where to save
+- find uftt.dat in executable directory (again)
+- [DONE] make GUI look nice in non win98-classic themes
 - [DONE] show total size, speed, and remaining time estimation
 - [DONE] implement peer discovery via central web server (heliohost)
 - [DONE] have doubleclick on completed download task open it in explorer

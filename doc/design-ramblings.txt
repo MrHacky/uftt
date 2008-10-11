@@ -1,3 +1,29 @@
+=== need-based-design ===
+
+From a GUI point of view, we start at the highest abstraction possible.
+More abstractions may be handy down the line, but let's start with this
+one and see where we end up.
+
+The GUI needs:
+  * to know all available shares
+  * a way to start (/pause/cancel) downloading of shares
+  * to know the status of a download
+  * (some way to set some settings)
+  * a way to advertise new shares
+  * (a way to remove/edit/manage an advertised share)
+
+To accomplish this, we have the backend:
+  * notify the gui when a new share is available
+  * notify the gui when a share becomes unavailable
+  * give out share id's the gui can use to start downloads
+  * (give out task id's the gui can use to pause/cancel downloads)
+  * notify the gui periodically with download status
+
+When we have multiple backends we'll probably need:
+  * a 'backend id' as part of the 'share id' and 'task id'
+  * a master backend which encapsulates all the other ones,
+  * and (de)multiplexes the gui<->backend interaction to the correct real backend
+
 === ramblings about design ===
 
 Just some thinking about the (distant?) future of UFTT :-p
