@@ -94,6 +94,11 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	buttonAdd2->hide();
 	buttonAdd3->hide();
 
+	listBroadcastHosts->hide();
+	label_3->hide();
+	buttonResolveBroadcast->hide();
+
+
 	/* load/set dock layout */
 	if (!settings.loaded && ext::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
