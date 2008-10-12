@@ -24,6 +24,8 @@
 - implement autoresuming
 - implement remote browsing
 - clean up http request class (wait for boost implementation? :-p)
+- add ability to use mirrors to http request class
+- and use it for web updates, and possibly global peer discovery
 - implement automatic test suite for stuff
 - check more things in --runcheck
 - show progress for web update tasks
