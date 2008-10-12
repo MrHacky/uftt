@@ -133,10 +133,7 @@ private:
     {
       // The connection failed. Try the next endpoint in the list.
       socket_.close();
-      boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
-      socket_.async_connect(endpoint,
-          boost::bind(&http_request::handle_connect, this,
-            boost::asio::placeholders::error, ++endpoint_iterator));
+	  handle_resolve(boost::system::error_code() ,endpoint_iterator);
     }
     else
     {
