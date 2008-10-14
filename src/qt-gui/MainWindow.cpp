@@ -54,9 +54,12 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 {
 	setupUi(this);
 
-	if (string("QWindowsXPStyle") == this->style()->metaObject()->className()) {
-		// this style has invisible separators sometimes,
+	string stylename = this->style()->metaObject()->className();
+	if (stylename == "QWindowsXPStyle" || stylename == "QWindowsVistaStyle") {
+		// these styles have invisible separators sometimes,
 		// that looks horrible, so make them visible
+		// note, not actually tested with all themes of these styles
+		//       hope it doesn't make any of them really ugly or something...
 		const char sepstyle[] =
 			"QMainWindow::Separator:horizontal {"
 			"  border-top: 1px solid palette(light);"
