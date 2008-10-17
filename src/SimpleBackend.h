@@ -109,7 +109,12 @@ class SimpleBackend {
 					settings.prevpeerquery = settings.lastpeerquery;
 					settings.lastpeerquery = boost::posix_time::second_clock::universal_time();
 
-					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, "http://hackykid.heliohost.org/site/bootstrap.php?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd"));
+					std::string url;
+					//url = "http://hackykid.heliohost.org/site/bootstrap.php";
+					url = "http://hackykid.awardspace.com/site/bootstrap.php";
+					url += "?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd";
+
+					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
 					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
 				}
 			}
