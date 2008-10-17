@@ -10,7 +10,7 @@ $class = preg_replace("/[^a-zA-Z0-9]/", "", $_REQUEST['class']);
 if ($port === 0) $port = 47189;
 
 if ($reg) {
-	$query = 'INSERT INTO `hackykid_db`.`peers` (' .
+	$query = 'INSERT INTO `peers` (' .
 	'`id` ,' .
 	'`address` ,' .
 	'`port` ,' .
