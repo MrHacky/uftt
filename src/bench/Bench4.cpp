@@ -25,16 +25,280 @@ int APIENTRY synesisWinMain(HINSTANCE,
 #include <boost/thread.hpp>
 #include <boost/foreach.hpp>
 #include "../util/StrFormat.h"
+#include "../net-asio/ipaddr_watcher.h"
 
 #ifdef __linux__
 #  include <asm/types.h>
 #  include <linux/netlink.h>
 #  include <linux/rtnetlink.h>
 #  include <sys/socket.h>
+#  include <linux/if_addr.h>
+#  include <linux/if_link.h>
+extern "C" {
+#  include <iproute/libnetlink.h>
+}
+#  include <net/if.h>
+#  include <net/if_arp.h>
 #endif
 
 using namespace std;
 #ifdef __linux__
+
+struct nlmsg_list {
+	struct nlmsg_list *next;
+	struct nlmsghdr h;
+};
+
+const char *rt_addr_n2a(int af, int  len,
+		void *addr, char *buf, int buflen)
+{
+	switch (af) {
+	case AF_INET:
+	case AF_INET6:
+		return inet_ntop(af, addr, buf, buflen);
+	default:
+		return "???";
+	}
+}
+
+static int store_nlmsg(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
+{
+	struct nlmsg_list **linfo = (struct nlmsg_list**)arg;
+	struct nlmsg_list *h;
+	struct nlmsg_list **lp;
+
+	//std::cout << "msg: " << n->nlmsg_len << std::endl;
+
+	h = (struct nlmsg_list *)malloc(n->nlmsg_len+sizeof(void*));
+	if (h == NULL)
+		return -1;
+
+	memcpy(&h->h, n, n->nlmsg_len);
+	h->next = NULL;
+
+	for (lp = linfo; *lp; lp = &(*lp)->next) /* NOTHING */;
+	*lp = h;
+
+	//ll_remember_index(who, n, NULL);
+	return 0;
+}
+
+static int print_linkinfo(struct sockaddr_nl  *who,
+		const struct nlmsghdr *n, void  *arg)
+{
+	FILE *fp = (FILE*)arg;
+	struct ifinfomsg *ifi = (struct ifinfomsg *)NLMSG_DATA(n);
+	struct rtattr * tb[IFLA_MAX+1];
+	int len = n->nlmsg_len;
+	unsigned m_flag = 0;
+
+	if (n->nlmsg_type != RTM_NEWLINK && n->nlmsg_type != RTM_DELLINK)
+		return 0;
+
+	len -= NLMSG_LENGTH(sizeof(*ifi));
+	if (len < 0)
+		return -1;
+
+	memset(tb, 0, sizeof(tb));
+	parse_rtattr(tb, IFLA_MAX, IFLA_RTA(ifi), len);
+	if (tb[IFLA_IFNAME] == NULL) {
+		printf("nil ifname");
+		return -1;
+	}
+
+	if (n->nlmsg_type == RTM_DELLINK)
+		printf("Deleted ");
+
+	std::cout << "link = ";
+
+	printf("%d: %s", ifi->ifi_index,
+		tb[IFLA_IFNAME] ? (char*)RTA_DATA(tb[IFLA_IFNAME]) : "<nil>");
+
+	std::cout << std::endl;
+
+	return 0;
+}
+
+static int print_addrinfo(struct sockaddr_nl  *who,
+		const struct nlmsghdr *n, void  *arg)
+{
+	//FILE *fp = (FILE*)arg;
+	struct ifaddrmsg *ifa = (struct ifaddrmsg *)NLMSG_DATA(n);
+	int len = n->nlmsg_len;
+	struct rtattr * rta_tb[IFA_MAX+1];
+	char abuf[256];
+
+	if (n->nlmsg_type != RTM_NEWADDR && n->nlmsg_type != RTM_DELADDR)
+		return 0;
+	len -= NLMSG_LENGTH(sizeof(*ifa));
+	if (len < 0) {
+		printf("wrong nlmsg len %d", len);
+		return -1;
+	}
+
+	std::cout << "print_addrinfo.len = " << len << std::endl;
+
+	memset(rta_tb, 0, sizeof(rta_tb));
+	parse_rtattr(rta_tb, IFA_MAX, IFA_RTA(ifa), n->nlmsg_len - NLMSG_LENGTH(sizeof(*ifa)));
+
+	std::cout << "addr = ";
+
+	printf( " peer %s/%d ",
+	rt_addr_n2a(ifa->ifa_family,
+		    RTA_PAYLOAD(rta_tb[IFA_ADDRESS]),
+		    RTA_DATA(rta_tb[IFA_ADDRESS]),
+		    abuf, sizeof(abuf)),
+	ifa->ifa_prefixlen);
+
+	std::cout << std::endl;
+}
+
+std::string get_address_string(const nlmsghdr *in, const nlmsghdr *an)
+{
+	if (in->nlmsg_type != RTM_NEWLINK)
+		return "";
+	if (an->nlmsg_type != RTM_NEWADDR)
+		return "";
+
+	ifinfomsg* ifi = (ifinfomsg*)NLMSG_DATA(in);
+	ifaddrmsg* ifa = (ifaddrmsg*)NLMSG_DATA(an);
+
+	int ilen = in->nlmsg_len;
+	ilen -= NLMSG_LENGTH(sizeof(*ifi));
+	if (ilen < 0)
+		return "";
+
+	int alen = an->nlmsg_len;
+	if (alen < NLMSG_LENGTH(sizeof(ifa)))
+		 return "";
+
+	if (ifi->ifi_index != ifa->ifa_index)
+		return "";
+
+	if (ifi->ifi_family != AF_INET6 || ifa->ifa_family != AF_INET6)
+		return "";
+
+	rtattr* tbi[IFLA_MAX+1];
+	memset(tbi, 0, sizeof(tbi));
+	parse_rtattr(tbi, IFLA_MAX, IFLA_RTA(ifi), ilen);
+
+	if (tbi[IFLA_IFNAME] == NULL)
+		return "";
+
+	std::string linkname = (char*)RTA_DATA(tbi[IFLA_IFNAME]);
+
+	if (linkname == "lo")
+		return "";
+
+	alen -= NLMSG_LENGTH(sizeof(*ifa));
+	if (alen < 0)
+		return "";
+
+	rtattr* tba[IFA_MAX+1];
+	memset(tba, 0, sizeof(tba));
+	parse_rtattr(tba, IFA_MAX, IFA_RTA(ifa), alen);
+
+	char abuf[256];
+	rt_addr_n2a(ifa->ifa_family,
+		    RTA_PAYLOAD(tba[IFA_ADDRESS]),
+		    RTA_DATA(tba[IFA_ADDRESS]),
+		    abuf, sizeof(abuf));
+	std::string ipaddr = abuf;
+
+	return ipaddr + "%" + linkname;
+}
+
+static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, FILE *fp)
+{
+	std::cout << "saddr" << std::endl;
+	for ( ;ainfo ;  ainfo = ainfo->next) {
+		struct nlmsghdr *n = &ainfo->h;
+		struct ifaddrmsg *ifa = (struct ifaddrmsg*)NLMSG_DATA(n);
+
+		if (n->nlmsg_type != RTM_NEWADDR)
+			continue;
+
+		if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
+			return -1;
+
+		if (ifa->ifa_index != ifindex || ifa->ifa_family != AF_INET6)
+			continue;
+
+		print_addrinfo(NULL, n, fp);
+	}
+	return 0;
+}
+
+// initially ripped from libiproute/ipadress.c (GPL)
+int ipaddr_list_or_flush()
+{
+	static const char *const option[] = { "to", "scope", "up", "label", "dev", 0 };
+
+	struct nlmsg_list *linfo = NULL;
+	struct nlmsg_list *ainfo = NULL;
+	struct rtnl_handle rth;
+	char *filter_dev = NULL;
+	int no_link = 0;
+
+	if (rtnl_open(&rth, 0) < 0)
+		exit(1);
+
+	if (rtnl_wilddump_request(&rth, AF_INET6, RTM_GETLINK) < 0) {
+		printf("cannot send dump request");
+	}
+
+	if (rtnl_dump_filter(&rth, &store_nlmsg, &linfo, NULL, NULL) < 0) {
+		printf("dump terminated");
+	}
+
+	if (rtnl_wilddump_request(&rth, AF_INET6, RTM_GETADDR) < 0) {
+		printf("cannot send dump request");
+	}
+
+	if (rtnl_dump_filter(&rth, &store_nlmsg, &ainfo, NULL, NULL) < 0) {
+		printf("dump terminated");
+	}
+
+	if (true) {
+		struct nlmsg_list **lp;
+		lp=&linfo;
+		nlmsg_list* l;
+		while ((l=*lp)!=NULL) {
+			int ok = 0;
+			struct ifinfomsg *ifi = (struct ifinfomsg *)NLMSG_DATA(&l->h);
+			struct nlmsg_list *a;
+
+			for (a=ainfo; a; a=a->next) {
+				struct nlmsghdr *n = &a->h;
+				struct ifaddrmsg *ifa = (struct ifaddrmsg *)NLMSG_DATA(n);
+
+				if (ifa->ifa_index != ifi->ifi_index)
+					continue;
+				if (ifa->ifa_family != AF_INET6)
+					continue;
+
+				ok = 1;
+				break;
+			}
+			if (!ok)
+				*lp = l->next;
+			else
+				lp = &l->next;
+		}
+	}
+
+	for (nlmsg_list* l=linfo; l; l = l->next) {
+		for (nlmsg_list* a=ainfo; a; a = a->next) {
+			std::string addrstr = get_address_string(&l->h, &a->h);
+			if (!addrstr.empty()) {
+				std::cout << "addr: " << addrstr << '\n';
+			}
+		}
+	}
+
+	exit(0);
+}
+
 	std::set<boost::asio::ip::address> linux_list_ipv4_adresses()
 	{
 		std::set<boost::asio::ip::address> result;
@@ -274,9 +538,39 @@ void addrlister() {
 #endif
 }
 
-int main( int argc, char **argv ) {
+void print_addr(std::string prefix, boost::asio::ip::address a)
+{
+	std::cout << prefix << a << '\n';
+}
 
+int main( int argc, char **argv ) {
 	boost::asio::io_service svc;
+	ipv4_watcher w4(svc);
+	ipv6_watcher w6(svc);
+
+	w4.add_addr.connect(boost::bind(&print_addr, "[IPV4] + ", _1));
+	w4.del_addr.connect(boost::bind(&print_addr, "[IPV4] - ", _1));
+	w6.add_addr.connect(boost::bind(&print_addr, "[IPV6] + ", _1));
+	w6.del_addr.connect(boost::bind(&print_addr, "[IPV6] - ", _1));
+
+	w4.async_wait();
+	w6.async_wait();
+
+	while(1)
+		svc.run();
+
+#ifdef __linux__
+	{
+		std::set<boost::asio::ip::address> addrs;
+		addrs = linux_list_ipv4_adresses();
+		BOOST_FOREACH(const boost::asio::ip::address& a, addrs)
+			cout << "IPV4= " << a << '\n';
+		//addrs = linux_list_ipv6_adresses();
+		//BOOST_FOREACH(const boost::asio::ip::address& a, addrs)
+		//	cout << "IPV6= " << a << '\n';
+	}
+	ipaddr_list_or_flush();
+#endif
 	boost::asio::ip::udp::socket usock1(svc);
 	boost::asio::ip::udp::socket usock0(svc);
 	usock0.open(boost::asio::ip::udp::v6());
@@ -296,15 +590,6 @@ int main( int argc, char **argv ) {
 
 		int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 		bind(fd, (struct sockaddr*)&sa, sizeof(sa));
-	}
-	{
-		std::set<boost::asio::ip::address> addrs;
-		addrs = linux_list_ipv4_adresses();
-		BOOST_FOREACH(const boost::asio::ip::address& a, addrs)
-			cout << "IPV4= " << a << '\n';
-		addrs = linux_list_ipv6_adresses();
-		BOOST_FOREACH(const boost::asio::ip::address& a, addrs)
-			cout << "IPV6= " << a << '\n';
 	}
 #endif
 
