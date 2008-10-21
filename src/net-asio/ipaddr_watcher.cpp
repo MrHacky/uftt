@@ -422,6 +422,18 @@ class ipv4_watcher::implementation {
 		void main() {
 			sock.open(boost::asio::ip::udp::v4());
 			newlist();
+#ifdef __linux__
+			struct sockaddr_nl sa;
+
+			memset (&sa, 0, sizeof(sa));
+			sa.nl_family = AF_NETLINK;
+			sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
+
+			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
+			char buffer[1024];
+
+#endif
 			while(1) {
 #ifdef WIN32
 				int inBuffer = 0;
@@ -432,6 +444,12 @@ class ipv4_watcher::implementation {
 					newlist();
 				else
 					cout << "error: ipv4_watcher: " << err << '\n';
+#endif
+#ifdef __linux__
+				//std::cout << "recv:";
+				size_t r = recv(fd, buffer, sizeof(buffer), 0);
+				//std::cout << r << '\n';
+				newlist();
 #endif
 			}
 		}
@@ -492,6 +510,18 @@ class ipv6_watcher::implementation {
 		void main() {
 			sock.open(boost::asio::ip::udp::v6());
 			newlist();
+#ifdef __linux__
+			struct sockaddr_nl sa;
+
+			memset (&sa, 0, sizeof(sa));
+			sa.nl_family = AF_NETLINK;
+			sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV6_IFADDR;
+
+			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
+			char buffer[1024];
+
+#endif
 			while(1) {
 #ifdef WIN32
 				int inBuffer = 0;
@@ -503,6 +533,13 @@ class ipv6_watcher::implementation {
 				else
 					cout << "error: ipv4_watcher: " << err << '\n';
 #endif
+#ifdef __linux__
+				//std::cout << "recv:";
+				size_t r = recv(fd, buffer, sizeof(buffer), 0);
+				//std::cout << r << '\n';
+				newlist();
+#endif
+
 			}
 		}
 
