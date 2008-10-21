@@ -35,7 +35,7 @@ int APIENTRY synesisWinMain(HINSTANCE,
 #  include <linux/if_addr.h>
 #  include <linux/if_link.h>
 extern "C" {
-#  include <iproute/libnetlink.h>
+#  include "../bench/libnetlink.h"
 }
 #  include <net/if.h>
 #  include <net/if_arp.h>
