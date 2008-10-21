@@ -545,6 +545,7 @@ void print_addr(std::string prefix, boost::asio::ip::address a)
 
 int main( int argc, char **argv ) {
 	boost::asio::io_service svc;
+	boost::asio::io_service::work wrk(svc);
 	ipv4_watcher w4(svc);
 	ipv6_watcher w6(svc);
 
