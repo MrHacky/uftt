@@ -24,64 +24,49 @@ extern "C" {
 
 using namespace std;
 
+#define MAXBUFSIZE (10*1024)
+
 namespace {
 
 #ifdef WIN32
 	set<boost::asio::ip::address> win32_get_ipv4_list()
 	{
 		set<boost::asio::ip::address> result;
-		SOCKET sd = WSASocket(AF_INET, SOCK_DGRAM, 0, 0, 0, 0);
-		if (sd == SOCKET_ERROR) {
-			cerr << "Failed to get a socket. Error " << WSAGetLastError() <<
-				endl;
+		SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+		if (sock == SOCKET_ERROR) {
+			cout << "win32_get_ipv4_list: Failed to get a socket. Error " << WSAGetLastError() << endl;
 			return result;
 		}
 
-		INTERFACE_INFO InterfaceList[20];
-		unsigned long nBytesReturned;
-		if (WSAIoctl(sd, SIO_GET_INTERFACE_LIST, 0, 0, &InterfaceList,
-				sizeof(InterfaceList), &nBytesReturned, 0, 0) == SOCKET_ERROR) {
-			cerr << "Failed calling WSAIoctl: error " << WSAGetLastError() <<
-					endl;
+		DWORD bytes = MAXBUFSIZE;
+		std::vector<char> buffer(bytes);
+		INTERFACE_INFO* InterfaceList = (INTERFACE_INFO*)&buffer[0];
+
+		int status = WSAIoctl(sock,
+			SIO_GET_INTERFACE_LIST,
+			0, 0,
+			InterfaceList,
+			bytes, &bytes,
+			0, 0);
+
+		closesocket(sock);
+		if (status == SOCKET_ERROR) {
+			cout << "win32_get_ipv6_list: WSAIoctl(2) failed: " << WSAGetLastError() << '\n';
 			return result;
 		}
 
-		int nNumInterfaces = nBytesReturned / sizeof(INTERFACE_INFO);
-		//cout << "There are " << nNumInterfaces << " interfaces:" << endl;
+		int nNumInterfaces = bytes / sizeof(INTERFACE_INFO);
 		for (int i = 0; i < nNumInterfaces; ++i) {
-			boost::asio::ip::address_v4::bytes_type ifaddr;
-			boost::asio::ip::address_v4::bytes_type nmaddr;
-			boost::asio::ip::address_v4::bytes_type bcaddr;
-
-			sockaddr_in *pAddress;
-			pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
-			//cout << " " << inet_ntoa(pAddress->sin_addr);
-			memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
-
-			pAddress = (sockaddr_in *) & (InterfaceList[i].iiBroadcastAddress);
-			memcpy(&bcaddr[0], &pAddress->sin_addr, 4);
-			//cout << " has bcast " << inet_ntoa(pAddress->sin_addr);
-
-			pAddress = (sockaddr_in *) & (InterfaceList[i].iiNetmask);
-			//cout << " and netmask " << inet_ntoa(pAddress->sin_addr) << endl;
-			memcpy(&nmaddr[0], &pAddress->sin_addr, 4);
-
-			//cout << " Iface is ";
 			u_long nFlags = InterfaceList[i].iiFlags;
-			//if (nFlags & IFF_UP) cout << "up";
-			//else                 cout << "down";
-			//if (nFlags & IFF_POINTTOPOINT) cout << ", is point-to-point";
-			//if (nFlags & IFF_LOOPBACK)     cout << ", is a loopback iface";
-			//cout << ", and can do: ";
-			//if (nFlags & IFF_BROADCAST) cout << "bcast ";
-			//if (nFlags & IFF_MULTICAST) cout << "multicast ";
-			//cout << endl;
-			if (!(nFlags & IFF_LOOPBACK) && (nFlags & IFF_BROADCAST)) {
-				//for (int i = 0; i < 4; ++i)
-				//	ifaddr[i] |= ~nmaddr[i];
+			if ((nFlags & IFF_UP) && !(nFlags & IFF_LOOPBACK)) {
+				sockaddr_in *pAddress;
+				pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
+
+				boost::asio::ip::address_v4::bytes_type ifaddr;
+				memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
+
 				boost::asio::ip::address_v4 naddr(ifaddr);
 				result.insert(naddr);
-				//cout << "broadcast: " << naddr << '\n';
 			}
 		}
 
@@ -92,49 +77,37 @@ namespace {
 	{
 		set<boost::asio::ip::address> result;
 #if defined(SIO_ADDRESS_LIST_QUERY)
-		int n_v6_interfaces = 0;
-
-		LPSOCKET_ADDRESS_LIST v6info;
-		SOCKET_ADDRESS* addrs;
-		DWORD buflen = sizeof (SOCKET_ADDRESS_LIST) + (63 * sizeof (SOCKET_ADDRESS ));
-		std::vector<char> buffer(buflen);
-
-		v6info = reinterpret_cast<LPSOCKET_ADDRESS_LIST> (&buffer[0]);
-		addrs = reinterpret_cast<SOCKET_ADDRESS *> (&buffer[0] + sizeof (SOCKET_ADDRESS_LIST));
-
-		// Get an (overlapped) DGRAM socket to test with.
-		// If it fails only return IPv4 interfaces.
-		SOCKET sock = socket (AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
-		if (sock == INVALID_SOCKET)
-		 {
-		   return result;
-		 }
-
-		DWORD bytes;
-
-		int status = WSAIoctl(sock,
-						 SIO_ADDRESS_LIST_QUERY,
-						 0,
-						 0,
-						 v6info,
-						 buflen,
-						 &bytes,
-						 0,
-						 0);
-		closesocket (sock);
-		if (status == SOCKET_ERROR)
-		{
+		// Get an DGRAM socket to test with.
+		SOCKET sock = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
+		if (sock == INVALID_SOCKET) {
+			cout << "win32_get_ipv6_list: failed to get socket: " << WSAGetLastError() << '\n';
 			return result;
 		}
 
-		n_v6_interfaces = v6info->iAddressCount;
+		DWORD bytes = MAXBUFSIZE;
+		std::vector<char> buffer(bytes);
+
+		LPSOCKET_ADDRESS_LIST v6info = (LPSOCKET_ADDRESS_LIST)&buffer[0];
+		SOCKET_ADDRESS* addrs = (SOCKET_ADDRESS*)&buffer[sizeof(SOCKET_ADDRESS_LIST)];
+
+		int status = WSAIoctl(sock,
+			SIO_ADDRESS_LIST_QUERY,
+			0, 0,
+			v6info,
+			bytes, &bytes,
+			0, 0);
+
+		closesocket(sock);
+		if (status == SOCKET_ERROR) {
+			cout << "win32_get_ipv6_list: WSAIoctl(2) failed: " << WSAGetLastError() << '\n';
+			return result;
+		}
+
+		int n_v6_interfaces = v6info->iAddressCount;
 
 		for (int i = 0; i < n_v6_interfaces; ++i) {
-			SOCKET_ADDRESS & addr = addrs[i];
+			SOCKET_ADDRESS& addr = addrs[i];
 			if (addr.iSockaddrLength >= 16) {
-				std::vector<unsigned char> cbuf(addr.iSockaddrLength);
-				for (int j = 0; j < addr.iSockaddrLength; ++j)
-					cbuf[j] = ((unsigned char*)addr.lpSockaddr)[j];
 				boost::asio::ip::address_v6::bytes_type bts;
 				for (int j = 0; j < 16; ++j)
 					bts[j] = ((sockaddr_in6*)addr.lpSockaddr)->sin6_addr.u.Byte[j];
@@ -142,7 +115,8 @@ namespace {
 				if (addr.iSockaddrLength >= 28)
 					scopeid =((sockaddr_in6*)addr.lpSockaddr)->sin6_scope_id;
 				boost::asio::ip::address_v6 v6a(bts, scopeid);
-				result.insert(v6a);
+				if (!v6a.is_loopback())
+					result.insert(v6a);
 			}
 		}
 #endif
@@ -175,8 +149,6 @@ namespace {
 		struct nlmsg_list *h;
 		struct nlmsg_list **lp;
 
-		//std::cout << "msg: " << n->nlmsg_len << std::endl;
-
 		h = (struct nlmsg_list *)malloc(n->nlmsg_len+sizeof(void*));
 		if (h == NULL)
 			return -1;
@@ -191,8 +163,7 @@ namespace {
 		return 0;
 	}
 
-	boost::asio::ip::address_v6 get_address_string(const nlmsghdr *in, const nlmsghdr *an)
-	//std::string get_address_string(const nlmsghdr *in, const nlmsghdr *an)
+	boost::asio::ip::address_v6 get_ipv6_address(const nlmsghdr *in, const nlmsghdr *an)
 	{
 		boost::asio::ip::address_v6 unspec;
 		if (in->nlmsg_type != RTM_NEWLINK)
@@ -253,13 +224,9 @@ namespace {
 	{
 		set<boost::asio::ip::address> result;
 
-		static const char *const option[] = { "to", "scope", "up", "label", "dev", 0 };
-
 		struct nlmsg_list *linfo = NULL;
 		struct nlmsg_list *ainfo = NULL;
 		struct rtnl_handle rth;
-		char *filter_dev = NULL;
-		int no_link = 0;
 
 		if (rtnl_open(&rth, 0) < 0) {
 			std::cout << "rtnl_open failed\n";
@@ -268,21 +235,25 @@ namespace {
 
 		if (rtnl_wilddump_request(&rth, AF_INET6, RTM_GETLINK) < 0) {
 			std::cout << "cannot send dump request\n";
+			rtnl_close(&rth);
 			return result;
 		}
 
 		if (rtnl_dump_filter(&rth, &store_nlmsg, &linfo, NULL, NULL) < 0) {
 			std::cout << "dump terminated\n";
+			rtnl_close(&rth);
 			return result;
 		}
 
 		if (rtnl_wilddump_request(&rth, AF_INET6, RTM_GETADDR) < 0) {
 			std::cout << "cannot send dump request\n";
+			rtnl_close(&rth);
 			return result;
 		}
 
 		if (rtnl_dump_filter(&rth, &store_nlmsg, &ainfo, NULL, NULL) < 0) {
 			std::cout << "dump terminated\n";
+			rtnl_close(&rth);
 			return result;
 		}
 
@@ -316,10 +287,24 @@ namespace {
 
 		for (nlmsg_list* l=linfo; l; l = l->next) {
 			for (nlmsg_list* a=ainfo; a; a = a->next) {
-				boost::asio::ip::address_v6 addr = get_address_string(&l->h, &a->h);
+				boost::asio::ip::address_v6 addr = get_ipv6_address(&l->h, &a->h);
 				if (!addr.is_unspecified() && !addr.is_loopback())
 					result.insert(addr);
 			}
+		}
+
+		rtnl_close(&rth);
+
+		for (nlmsg_list* l=linfo; l; ) {
+			nlmsg_list* o = l;
+			l = l->next;
+			free(o);
+		}
+
+		for (nlmsg_list* a=ainfo; a; ) {
+			nlmsg_list* o = a;
+			a = a->next;
+			free(o);
 		}
 
 		return result;
@@ -330,26 +315,27 @@ namespace {
 		set<boost::asio::ip::address> result;
 
 		struct ifconf ifc;
-		char buff[1024];
+		vector<char> buffer(MAXBUFSIZE);
 		struct ifreq *ifr;
-		int i,skfd;
-		ifc.ifc_len = sizeof(buff);
-		ifc.ifc_buf = buff;
+		int skfd;
+		ifc.ifc_len = buffer.size();
+		ifc.ifc_buf = &buffer[0];
 		if ((skfd = socket(AF_INET, SOCK_DGRAM,0)) < 0) {
-			printf("new socket failed\n");
+			cout << "new socket failed\n";
 			return result;
 		}
 		if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
-			printf("SIOCGIFCONF:Failed \n");
+			cout << "SIOCGIFCONF:Failed \n";
+			close(skfd);
 			return result;
 		}
 		ifr = ifc.ifc_req;
-		for (i = ifc.ifc_len / sizeof(struct ifreq); --i >= 0; ifr++) {
+		for (int i = ifc.ifc_len / sizeof(struct ifreq); --i >= 0; ifr++) {
 			boost::asio::ip::address_v4::bytes_type ifaddr;
-			//boost::asio::ip::address_v4::bytes_type nmaddr;
 
 			if (ioctl(skfd, SIOCGIFFLAGS, ifr) != 0) {
 				printf("SIOCGIFFLAGS:Failed \n");
+				close(skfd);
 				return result;
 			}
 			short flags = ifr->ifr_flags;
@@ -358,23 +344,13 @@ namespace {
 			pAddress = (sockaddr_in *) &ifr->ifr_addr;
 			memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
 
-
-			if (ioctl(skfd, SIOCGIFNETMASK, ifr) != 0) {
-				printf("SIOCGIFNETMASK:Failed \n");
-				return result;
-			}
-
-			//memcpy(&nmaddr[0], &pAddress->sin_addr, 4);
-
-			// if true....
-			if (flags&IFF_UP && flags&IFF_BROADCAST && !(flags&IFF_LOOPBACK))
+			if (flags&IFF_UP && !(flags&IFF_LOOPBACK))
 			{
-				//for (int i = 0; i < 4; ++i)
-				//	ifaddr[i] |= ~nmaddr[i];
 				boost::asio::ip::address_v4 naddr(ifaddr);
 				result.insert(naddr);
 			}
 		}
+		close(skfd);
 		return result;
 	}
 #endif
@@ -432,7 +408,6 @@ class ipv4_watcher::implementation {
 			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
 			char buffer[1024];
-
 #endif
 			while(1) {
 #ifdef WIN32
@@ -446,10 +421,11 @@ class ipv4_watcher::implementation {
 					cout << "error: ipv4_watcher: " << err << '\n';
 #endif
 #ifdef __linux__
-				//std::cout << "recv:";
 				size_t r = recv(fd, buffer, sizeof(buffer), 0);
-				//std::cout << r << '\n';
-				newlist();
+				if (r > 0)
+					newlist();
+				else
+					cout << "error: ipv4_watcher: " << errno << '\n';
 #endif
 			}
 		}
@@ -520,7 +496,6 @@ class ipv6_watcher::implementation {
 			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
 			char buffer[1024];
-
 #endif
 			while(1) {
 #ifdef WIN32
@@ -534,12 +509,12 @@ class ipv6_watcher::implementation {
 					cout << "error: ipv4_watcher: " << err << '\n';
 #endif
 #ifdef __linux__
-				//std::cout << "recv:";
 				size_t r = recv(fd, buffer, sizeof(buffer), 0);
-				//std::cout << r << '\n';
-				newlist();
+				if (r > 0)
+					newlist();
+				else
+					cout << "error: ipv6_watcher: " << errno << '\n';
 #endif
-
 			}
 		}
 
