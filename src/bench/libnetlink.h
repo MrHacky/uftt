@@ -1,6 +1,8 @@
 #ifndef __LIBNETLINK_H__
 #define __LIBNETLINK_H__ 1
 
+#ifdef __linux__
+
 #include <asm/types.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
@@ -87,6 +89,8 @@ extern int rtnl_from_file(FILE *, rtnl_filter_t handler,
 #ifndef NDTA_PAYLOAD
 #define NDTA_PAYLOAD(n) NLMSG_PAYLOAD(n,sizeof(struct ndtmsg))
 #endif
+
+#endif /* __linux__ */
 
 #endif /* __LIBNETLINK_H__ */
 
