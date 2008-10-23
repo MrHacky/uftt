@@ -375,29 +375,59 @@ namespace {
 #endif
 	}
 
+	template <class C>
+	class ip_watcher_common {
+		private:
+			C* This() {
+				return (C*)this;
+			}
+		public:
+			boost::thread thread;
+			boost::asio::io_service& service;
+			set<boost::asio::ip::address> addrlist;
+
+			ip_watcher_common(boost::asio::io_service& service_)
+			: service(service_)
+			{
+			}
+
+			void newlist()
+			{
+				set<boost::asio::ip::address> naddrlist = This()->getlist();
+
+				BOOST_FOREACH(const boost::asio::ip::address& naddr, naddrlist)
+					if (!addrlist.count(naddr))
+						service.post(boost::bind(boost::ref(This()->watcher->add_addr), naddr));
+				BOOST_FOREACH(const boost::asio::ip::address& oaddr, addrlist)
+					if (!naddrlist.count(oaddr))
+						service.post(boost::bind(boost::ref(This()->watcher->del_addr), oaddr));
+				addrlist = naddrlist;
+				service.post(boost::bind(boost::ref(This()->watcher->new_list), addrlist));
+			}
+
+			void async_wait()
+			{
+				thread = boost::thread(boost::bind(&C::main, This())).move();
+			}
+	};
+
 } // anon namespace
 
-class ipv4_watcher::implementation {
+class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::implementation> {
 	public:
-		boost::asio::io_service& service;
-		boost::asio::ip::udp::socket sock;
-		boost::thread thread;
 		ipv4_watcher* watcher;
-		set<boost::asio::ip::address> addrlist;
 
-		implementation(boost::asio::io_service& service_, ipv4_watcher* watcher_)
-		: service(service_), watcher(watcher_), sock(service_)
+		implementation(boost::asio::io_service& service_)
+		: ip_watcher_common<ipv4_watcher::implementation>(service_), watcher(NULL)
 		{
-		}
-
-		void async_wait()
-		{
-			thread = boost::thread(boost::bind(&ipv4_watcher::implementation::main, this)).move();
 		}
 
 		void main() {
-			sock.open(boost::asio::ip::udp::v4());
 			newlist();
+#ifdef WIN32
+			boost::asio::ip::udp::socket sock(service);
+			sock.open(boost::asio::ip::udp::v4());
+#endif
 #ifdef __linux__
 			struct sockaddr_nl sa;
 
@@ -430,20 +460,6 @@ class ipv4_watcher::implementation {
 			}
 		}
 
-		void newlist()
-		{
-			set<boost::asio::ip::address> naddrlist = getlist();
-
-			BOOST_FOREACH(const boost::asio::ip::address& naddr, naddrlist)
-				if (!addrlist.count(naddr))
-					service.post(boost::bind(boost::ref(watcher->add_addr), naddr));
-			BOOST_FOREACH(const boost::asio::ip::address& oaddr, addrlist)
-				if (!naddrlist.count(oaddr))
-					service.post(boost::bind(boost::ref(watcher->del_addr), oaddr));
-			addrlist = naddrlist;
-			service.post(boost::bind(boost::ref(watcher->new_list), addrlist));
-		}
-
 		set<boost::asio::ip::address> getlist()
 		{
 			return get_ipv4_list();
@@ -451,8 +467,9 @@ class ipv4_watcher::implementation {
 };
 
 ipv4_watcher::ipv4_watcher(boost::asio::io_service& service)
-: impl(new implementation(service, this))
+: impl(new implementation(service))
 {
+	impl->watcher = const_cast<ipv4_watcher*>(this);
 }
 
 ipv4_watcher::~ipv4_watcher()
@@ -465,27 +482,21 @@ void ipv4_watcher::async_wait()
 }
 
 
-class ipv6_watcher::implementation {
+class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::implementation> {
 	public:
-		boost::asio::io_service& service;
-		boost::asio::ip::udp::socket sock;
-		boost::thread thread;
 		ipv6_watcher* watcher;
-		set<boost::asio::ip::address> addrlist;
 
-		implementation(boost::asio::io_service& service_, ipv6_watcher* watcher_)
-		: service(service_), watcher(watcher_), sock(service_)
+		implementation(boost::asio::io_service& service_)
+		: ip_watcher_common<ipv6_watcher::implementation>(service_), watcher(NULL)
 		{
-		}
-
-		void async_wait()
-		{
-			thread = boost::thread(boost::bind(&ipv6_watcher::implementation::main, this)).move();
 		}
 
 		void main() {
-			sock.open(boost::asio::ip::udp::v6());
 			newlist();
+#ifdef WIN32
+			boost::asio::ip::udp::socket sock(service);
+			sock.open(boost::asio::ip::udp::v6());
+#endif
 #ifdef __linux__
 			struct sockaddr_nl sa;
 
@@ -518,20 +529,6 @@ class ipv6_watcher::implementation {
 			}
 		}
 
-		void newlist()
-		{
-			set<boost::asio::ip::address> naddrlist = getlist();
-
-			BOOST_FOREACH(const boost::asio::ip::address& naddr, naddrlist)
-				if (!addrlist.count(naddr))
-					service.post(boost::bind(boost::ref(watcher->add_addr), naddr));
-			BOOST_FOREACH(const boost::asio::ip::address& oaddr, addrlist)
-				if (!naddrlist.count(oaddr))
-					service.post(boost::bind(boost::ref(watcher->del_addr), oaddr));
-			addrlist = naddrlist;
-			service.post(boost::bind(boost::ref(watcher->new_list), addrlist));
-		}
-
 		set<boost::asio::ip::address> getlist()
 		{
 			return get_ipv6_list();
@@ -539,8 +536,9 @@ class ipv6_watcher::implementation {
 };
 
 ipv6_watcher::ipv6_watcher(boost::asio::io_service& service)
-: impl(new implementation(service, this))
+: impl(new implementation(service))
 {
+	impl->watcher = const_cast<ipv6_watcher*>(this);
 }
 
 ipv6_watcher::~ipv6_watcher()
