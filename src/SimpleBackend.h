@@ -76,6 +76,12 @@ class SimpleBackend {
 				vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
 				vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
 
+				if (spos == page.end() || epos == page.end()) {
+					std::cout << "Error parsing global peer list.";
+					start_peerfinder();
+					return;
+				}
+
 				spos += sizeof(content_start) - 1;
 
 				std::string content(spos, epos);
