@@ -679,6 +679,9 @@ class SimpleTCPConnection {
 
 		void handle_qitems(shared_vec tbuf) {
 			if (qitems.empty()) {
+				qitemsfilled = true;
+				start_receive_command(tbuf);
+				return;
 			}
 
 			qitem& item = qitems.front();
