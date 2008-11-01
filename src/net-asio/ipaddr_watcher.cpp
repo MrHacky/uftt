@@ -385,9 +385,11 @@ namespace {
 			boost::thread thread;
 			boost::asio::io_service& service;
 			set<boost::asio::ip::address> addrlist;
+			boost::asio::ip::udp::socket sock; // win32
+			int fd; // linux
 
 			ip_watcher_common(boost::asio::io_service& service_)
-			: service(service_)
+			: service(service_), sock(service_)
 			{
 			}
 
@@ -409,6 +411,33 @@ namespace {
 			{
 				thread = boost::thread(boost::bind(&C::main, This())).move();
 			}
+
+			void main()
+			{
+				newlist();
+				This()->init();
+				while(1) {
+#ifdef WIN32
+					int inBuffer = 0;
+					int outBuffer = 0;
+					DWORD outSize = 0;
+					int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
+					if (!(err < 0))
+						newlist();
+					else
+						cout << "error: ipv?_watcher: " << err << '\n';
+#endif
+#ifdef __linux__
+					char buffer[1024];
+					size_t r = recv(fd, buffer, sizeof(buffer), 0);
+					if (r > 0)
+						newlist();
+					else
+						cout << "error: ipv?_watcher: " << errno << '\n';
+#endif
+				}
+			}
+
 	};
 
 } // anon namespace
@@ -422,10 +451,8 @@ class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::impl
 		{
 		}
 
-		void main() {
-			newlist();
+		void init() {
 #ifdef WIN32
-			boost::asio::ip::udp::socket sock(service);
 			sock.open(boost::asio::ip::udp::v4());
 #endif
 #ifdef __linux__
@@ -435,29 +462,10 @@ class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::impl
 			sa.nl_family = AF_NETLINK;
 			sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV4_IFADDR;
 
-			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+			fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
 			char buffer[1024];
 #endif
-			while(1) {
-#ifdef WIN32
-				int inBuffer = 0;
-				int outBuffer = 0;
-				DWORD outSize = 0;
-				int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
-				if (!(err < 0))
-					newlist();
-				else
-					cout << "error: ipv4_watcher: " << err << '\n';
-#endif
-#ifdef __linux__
-				size_t r = recv(fd, buffer, sizeof(buffer), 0);
-				if (r > 0)
-					newlist();
-				else
-					cout << "error: ipv4_watcher: " << errno << '\n';
-#endif
-			}
 		}
 
 		set<boost::asio::ip::address> getlist()
@@ -491,10 +499,8 @@ class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::impl
 		{
 		}
 
-		void main() {
-			newlist();
+		void init() {
 #ifdef WIN32
-			boost::asio::ip::udp::socket sock(service);
 			sock.open(boost::asio::ip::udp::v6());
 #endif
 #ifdef __linux__
@@ -504,29 +510,10 @@ class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::impl
 			sa.nl_family = AF_NETLINK;
 			sa.nl_groups = RTMGRP_LINK | RTMGRP_IPV6_IFADDR;
 
-			int fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
+			fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
 			char buffer[1024];
 #endif
-			while(1) {
-#ifdef WIN32
-				int inBuffer = 0;
-				int outBuffer = 0;
-				DWORD outSize = 0;
-				int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
-				if (!(err < 0))
-					newlist();
-				else
-					cout << "error: ipv4_watcher: " << err << '\n';
-#endif
-#ifdef __linux__
-				size_t r = recv(fd, buffer, sizeof(buffer), 0);
-				if (r > 0)
-					newlist();
-				else
-					cout << "error: ipv6_watcher: " << errno << '\n';
-#endif
-			}
 		}
 
 		set<boost::asio::ip::address> getlist()
