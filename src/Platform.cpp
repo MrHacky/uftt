@@ -62,20 +62,29 @@ namespace platform {
 		SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), coninfo.dwSize);
 		// redirect unbuffered STDOUT to the console
 		lStdHandle = (intptr_t)GetStdHandle(STD_OUTPUT_HANDLE);
+		if (!lStdHandle) return false;
 		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+		if (hConHandle == -1) return false;
 		fp = _fdopen( hConHandle, "w" );
+		if (!fp) return false;
 		*stdout = *fp;
 		setvbuf( stdout, NULL, _IONBF, 0 );
 		// redirect unbuffered STDIN to the console
 		lStdHandle = (intptr_t)GetStdHandle(STD_INPUT_HANDLE);
+		if (!lStdHandle) return false;
 		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+		if (hConHandle == -1) return false;
 		fp = _fdopen( hConHandle, "r" );
+		if (!fp) return false;
 		*stdin = *fp;
 		setvbuf( stdin, NULL, _IONBF, 0 );
 		// redirect unbuffered STDERR to the console
 		lStdHandle = (intptr_t)GetStdHandle(STD_ERROR_HANDLE);
+		if (!lStdHandle) return false;
 		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+		if (hConHandle == -1) return false;
 		fp = _fdopen( hConHandle, "w" );
+		if (!fp) return false;
 		*stderr = *fp;
 		setvbuf( stderr, NULL, _IONBF, 0 );
 		// make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog
