@@ -63,6 +63,7 @@ class UFTTSettings {
 
 		boost::filesystem::path dl_path;
 		bool autoupdate;
+		bool experimentalresume;
 
 		int webupdateinterval; // 0:never, 1:daily, 2:weekly, 3:monthly
 		boost::posix_time::ptime lastupdate;
@@ -84,6 +85,7 @@ class UFTTSettings {
 			if (version >=  3) ar & NVP("autoupdate"  , autoupdate);
 			if (version >=  5) ar & NVP("updateinterval", webupdateinterval);
 			if (version >=  6) ar & NVP("peerfinder", enablepeerfinder);
+			if (version >=  7) ar & NVP("experimentalresume", experimentalresume);
 
 			if (version >=  5) ar & NVP("lastupdate", lastupdate);
 			if (version >=  6) ar & NVP("lastpeerquery", lastpeerquery);
@@ -95,7 +97,7 @@ class UFTTSettings {
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 6)
+BOOST_CLASS_VERSION(UFTTSettings, 7)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

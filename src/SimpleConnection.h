@@ -716,7 +716,7 @@ class SimpleTCPConnection {
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
 				qitems.push_back(qitem(0, sharename, 0));
-				rresume = rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
+				rresume = use_expiremental_resume() && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
 			} else if (rcommands.count(5)) {
 				// simple style connection
@@ -1022,6 +1022,8 @@ class SimpleTCPConnection {
 							sm->cb = boost::bind(&SimpleTCPConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
 							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
+						} else if (qtype == QITEM_SIGREQ_BUSY) {
+							// ignore
 						} else {
 							std::cout << "Unknown item type: " << qtype << '\n';
 						}
@@ -1396,6 +1398,8 @@ class SimpleTCPConnection {
 				std::cout << "Error: " << errmsg << '\n';
 			}
 		}
+
+		bool use_expiremental_resume();
 };
 typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
 

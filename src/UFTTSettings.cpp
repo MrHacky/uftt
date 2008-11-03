@@ -25,6 +25,8 @@ UFTTSettings::UFTTSettings()
 	enablepeerfinder = true;
 	lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 	prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
+
+	experimentalresume = false;
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)

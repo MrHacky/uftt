@@ -46,7 +46,6 @@ inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
 
 class SimpleBackend {
 	private:
-		UFTTSettings& settings;
 		boost::asio::io_service service;
 		services::diskio_service diskio;
 		boost::asio::ip::udp::socket udpsocket;
@@ -500,6 +499,8 @@ class SimpleBackend {
 		}
 
 	public:
+		UFTTSettings& settings;
+
 		SimpleBackend(UFTTSettings& settings_)
 			: diskio(service)
 			, udpsocket(service)

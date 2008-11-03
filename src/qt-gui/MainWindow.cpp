@@ -156,6 +156,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 
 	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
+	this->actionEnableDownloadResume->setChecked(settings.experimentalresume);
 	this->setUpdateInterval(settings.webupdateinterval);
 
 	//connect(listShares, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
@@ -511,6 +512,11 @@ void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
 void MainWindow::on_actionEnableGlobalPeerfinder_toggled(bool enabled)
 {
 	backend->do_set_peerfinder_enabled(enabled);
+}
+
+void MainWindow::on_actionEnableDownloadResume_toggled(bool enabled)
+{
+	settings.experimentalresume = enabled;
 }
 
 void MainWindow::on_buttonClearCompletedTasks_clicked()

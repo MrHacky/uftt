@@ -62,6 +62,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonManualPublish_clicked();
 
 		void on_actionEnableGlobalPeerfinder_toggled(bool);
+		void on_actionEnableDownloadResume_toggled(bool);
 		void on_actionEnableAutoupdate_toggled(bool);
 		void on_actionCheckForWebUpdates_triggered();
 
