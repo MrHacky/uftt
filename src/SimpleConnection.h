@@ -240,7 +240,7 @@ class SimpleTCPConnection {
 			uint64 poffset;
 			std::vector<uint64> pos;
 			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_), poffset(0) {};
-			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_) : type(type_), path(path_), fsize(0), pos(pos_), poffset(0) {};
+			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_, uint64 fsize_) : type(type_), path(path_), fsize(fsize_), pos(pos_), poffset(0) {};
 		};
 		std::deque<qitem> qitems;
 
@@ -255,10 +255,12 @@ class SimpleTCPConnection {
 			boost::asio::io_service& service;
 			qitem* item;
 			boost::function<void(shared_vec)> cb;
+			uint64 offset;
 
 			sigmaker(boost::asio::io_service& service_) : service(service_) {};
 
 			void main() {
+				size_t bread;
 				using namespace std;
 				// dostuff
 				shared_vec sbuf(new std::vector<uint8>(16));
@@ -274,26 +276,34 @@ class SimpleTCPConnection {
 				for (uint i = 1; i < item->pos.size(); ++i)
 					pkt_put_vuint64(item->pos[i]-item->pos[i-1], *sbuf);
 
-				ifstream inp(item->path.c_str());
+				FILE* fd = fopen(item->path.c_str(), "rb");
 				size_t dpos = sbuf->size();
 				sbuf->resize(dpos + 2*16*1024);
-				inp.read((char*)&((*sbuf)[dpos]), 16*1024);
+				bread = fread(&((*sbuf)[dpos]), 1, 16*1024, fd);
 				dpos += 16*1024;
-				inp.seekg(-16*1024, ios_base::end);
-				inp.read((char*)&((*sbuf)[dpos]), 16*1024);
+				offset -= 16*1024;
+				fseek(fd, 0, SEEK_SET);
+				while (offset > 0) {
+					int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
+					fseek(fd, diff, SEEK_CUR);
+					offset -= diff;
+				}
+
+				bread = fread(&((*sbuf)[dpos]), 1, 16*1024, fd);
 
 				uint8 buf1;
-				inp.seekg(item->pos[0], ios_base::beg);
-				inp.read((char*)&buf1, 1);
+				fseek(fd, item->pos[0], SEEK_SET);
+				bread = fread(&buf1, 1, 1, fd);
 				sbuf->push_back(buf1);
 				for (uint i = 1; i < item->pos.size(); ++i) {
-					inp.seekg((item->pos[i]+1)-item->pos[i-1], ios_base::cur);
-					inp.read((char*)&buf1, 1);
+					fseek(fd, (item->pos[i]-1)-item->pos[i-1], SEEK_CUR);
+					bread = fread(&buf1, 1, 1, fd);
 					sbuf->push_back(buf1);
 				}
 
 				pkt_put_uint64(sbuf->size()-16, &((*sbuf)[8]));
 				service.post(boost::bind(cb, sbuf));
+				fclose(fd);
 			}
 		};
 
@@ -303,35 +313,42 @@ class SimpleTCPConnection {
 			boost::function<void(uint64)> cb;
 			std::vector<uint8> data;
 			boost::filesystem::path path;
+			uint64 offset;
+			FILE* fd;
 
 			sigchecker(boost::asio::io_service& service_) : service(service_) {};
 
 			uint64 getoffset()
 			{
+				size_t bread;
 				using namespace std;
-				uint64 offset = 0;
 				uint64 fsize = boost::filesystem::file_size(path);
 
 				vector<uint8> start(16*1024);
 				vector<uint8> end(16*1024);
 
-				ifstream inp(path.native_file_string().c_str());
-				inp.read((char*)&start[0], 16*1024);
-				inp.seekg(-16*1024, ios_base::end);
-				inp.read((char*)&end[0], 16*1024);
+				bread = fread(&start[0], 1, 16*1024, fd);
+				offset -= 16*1024;
+				fseek(fd, 0, SEEK_SET);
+				while (offset > 0) {
+					int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
+					fseek(fd, diff, SEEK_CUR);
+					offset -= diff;
+				}
+				bread = fread(&end[0], 1, 16*1024, fd);
 
 				for (uint i = 0; i < 16*1024; ++i)
 					if (data[i] != start[i])
 						return i;
 
 				uint8 buf1;
-				inp.seekg(item->pos[0], ios_base::beg);
-				inp.read((char*)&buf1, 1);
+				fseek(fd, item->pos[0], SEEK_SET);
+				bread = fread(&buf1, 1, 1, fd);
 				if (buf1 != data[2*16*1024 + 0])
 					return 0;
 				for (uint i = 1; i < item->pos.size(); ++i) {
-					inp.seekg((item->pos[i]+1)-item->pos[i-1], ios_base::cur);
-					inp.read((char*)&buf1, 1);
+					fseek(fd, (item->pos[i]-1)-item->pos[i-1], SEEK_CUR);
+					bread = fread(&buf1, 1, 1, fd);
 					if (buf1 != data[2*16*1024 + i])
 						return 0;
 				}
@@ -343,7 +360,9 @@ class SimpleTCPConnection {
 			}
 
 			void main() {
+				fd = fopen(path.native_file_string().c_str(), "rb");
 				service.post(boost::bind(cb, getoffset()));
+				fclose(fd);
 			}
 		};
 
@@ -643,7 +662,8 @@ class SimpleTCPConnection {
 							tcpos += pkt_get_vuint64(*rbuf, idx);
 							pos.push_back(tcpos);
 						}
-						qitems.push_back(qitem(QITEM_SIGREQ, name, pos));
+						uint64 size = pkt_get_vuint64(*rbuf, idx);
+						qitems.push_back(qitem(QITEM_SIGREQ, name, pos, size));
 						checkwhattosend();
 						start_receive_command(rbuf);
 					}; break;
@@ -663,6 +683,7 @@ class SimpleTCPConnection {
 						sc->cb = boost::bind(&SimpleTCPConnection::sigcheck_done , this, sc, _1);
 						sc->item = &qitems.front();
 						sc->data = data;
+						sc->offset = qitems.front().poffset;
 						sc->path = sharepath / qitems.front().path;
 						gdiskio->get_work_service().post(boost::bind(&sigchecker::main, sc));
 					}; break;
@@ -896,12 +917,14 @@ class SimpleTCPConnection {
 							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
 							item.type = QITEM_SIGREQ; // requested signiature
+							item.poffset = fsize;
 							pkt_put_vuint32(titem.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
 							pkt_put_vuint32(pos.size()-1, *tbuf);
 							for (uint i = 1; i < pos.size(); ++i)
 								pkt_put_vuint64(pos[i]-pos[i-1], *tbuf);
+							pkt_put_vuint64(fsize, *tbuf);
 						} else {
 							pkt_put_uint32(CMD_REQUEST_FULL_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
@@ -1021,6 +1044,7 @@ class SimpleTCPConnection {
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
 							sm->cb = boost::bind(&SimpleTCPConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
+							sm->offset = qitems.front().fsize;
 							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
 						} else if (qtype == QITEM_SIGREQ_BUSY) {
 							// ignore
@@ -1078,6 +1102,7 @@ class SimpleTCPConnection {
 
 			if (item.poffset == item.fsize) {
 				// got the whole file, we're done!
+				std::cout << "sigcheck_done: skipping file (" << item.path << ") of size '" << item.fsize << "', already got it\n";
 			} else if (item.poffset < item.fsize) {
 				std::cout << "sigcheck_done: resuming file (" << item.path << ") of size '" << item.fsize << "' at offset '" << item.poffset << "'\n";
 				// still missing part of the file, request it
