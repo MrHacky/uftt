@@ -111,12 +111,19 @@ struct filesender {
 
 	bool hsent;
 	uint64 fsize;
+	uint64 offset;
 
 	filesender() : file(*gdiskio) {};
 
-	void init() {
-		fsize = boost::filesystem::file_size(path);
+	void init(uint64 offset_ = 0) {
+		offset = offset_;
+		fsize = boost::filesystem::file_size(path) - offset;
 		file.open(path, services::diskio_filetype::in);
+		while (offset_ > 0) {
+			int32 diff = (offset_ > 0x7fffffff) ? 0x7fffffff : (int32)offset_;
+			file.fwseek(diff);
+			offset_ -= diff;
+		}
 		hsent = false;
 		//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 	};
@@ -126,7 +133,7 @@ struct filesender {
 			hsent = true;
 			buf->resize(16 + name.size());
 			cmdinfo hdr;
-			hdr.cmd = 0x01; // file
+			hdr.cmd = (offset == 0) ? 0x01 : 0x17;//CMD_REPLY_PARTIAL_FILE; // file
 			hdr.len = fsize;
 			hdr.ver = name.size();
 			memcpy(&(*buf)[0], &hdr, 16);
@@ -232,8 +239,8 @@ class SimpleTCPConnection {
 			uint64 fsize;
 			uint64 poffset;
 			std::vector<uint64> pos;
-			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_) {};
-			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_) : type(type_), path(path_), fsize(0), pos(pos_) {};
+			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_), poffset(0) {};
+			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_) : type(type_), path(path_), fsize(0), pos(pos_), poffset(0) {};
 		};
 		std::deque<qitem> qitems;
 
@@ -518,10 +525,15 @@ class SimpleTCPConnection {
 					std::cout << "download finished!\n";
 					dldone = true;
 				}; break;
+				case CMD_REPLY_PARTIAL_FILE: {
+					qitem tqi = qitems.front();
+					qitems.pop_front();
+					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false, tqi.poffset);
+				}; break;
 				case CMD_REPLY_FULL_FILE: {
 					qitem tqi = qitems.front();
 					qitems.pop_front();
-					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false);
+					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false, 0);
 				}; break;
 				default: {
 					if (lcommands.count(hdr.cmd)) {
@@ -653,6 +665,18 @@ class SimpleTCPConnection {
 						sc->data = data;
 						sc->path = sharepath / qitems.front().path;
 						gdiskio->get_work_service().post(boost::bind(&sigchecker::main, sc));
+					}; break;
+					case CMD_REQUEST_PARTIAL_FILE: {
+						uint idx = 0;
+						uint32 slen = pkt_get_vuint32(*rbuf, idx);
+						std::string name(rbuf->begin()+idx, rbuf->begin()+idx+slen);
+						idx += slen;
+						uint64 poff = pkt_get_vuint64(*rbuf, idx);
+						qitem nqi(5, (sharepath / name).string());
+						nqi.poffset = poff;
+						qitems.push_back(nqi);
+						checkwhattosend();
+						start_receive_command(rbuf);
 					}; break;
 					case CMD_DISCONNECT: {
 						uldone = dldone = true;
@@ -979,14 +1003,15 @@ class SimpleTCPConnection {
 						int qtype = qitems.front().type;
 						if (qtype == 5) {
 							sbuf->resize(16);
+							uint64 off = qitems.front().poffset;
 							cursendfile.name = qitems[0].path;
 							cursendfile.path = qitems[0].path;
-							cursendfile.init();
+							cursendfile.init(off);
 							cursendfile.hsent = true;
 							qitems.pop_front();
-							pkt_put_uint32(CMD_REPLY_FULL_FILE, &((*sbuf)[0]));
+							pkt_put_uint32((off == 0) ? CMD_REPLY_FULL_FILE : CMD_REPLY_PARTIAL_FILE, &((*sbuf)[0]));
 							pkt_put_uint32(0, &((*sbuf)[4]));
-							pkt_put_uint64(boost::filesystem::file_size(cursendfile.path), &((*sbuf)[8]));
+							pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
 
 							sendqueue.push_back(sbuf);
 							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
@@ -1037,7 +1062,7 @@ class SimpleTCPConnection {
 
 		void sigmake_done(boost::shared_ptr<sigmaker> sm, shared_vec sbuf)
 		{
-			//sendqueue.push_back(sbuf);
+			sendqueue.push_back(sbuf);
 			qitems.pop_front();
 			checkwhattosend();
 		}
@@ -1048,6 +1073,29 @@ class SimpleTCPConnection {
 			qitems.pop_front();
 			item.type = QITEM_PARTFILE_REQ;
 			item.poffset = offset;
+
+			if (item.poffset == item.fsize) {
+				// got the whole file, we're done!
+			} else if (item.poffset < item.fsize) {
+				std::cout << "sigcheck_done: resuming file (" << item.path << ") of size '" << item.fsize << "' at offset '" << item.poffset << "'\n";
+				// still missing part of the file, request it
+				shared_vec tbuf(new std::vector<uint8>(16));
+				pkt_put_uint32(CMD_REQUEST_PARTIAL_FILE, &((*tbuf)[0]));
+				pkt_put_uint32(0, &((*tbuf)[4]));
+
+				pkt_put_vuint32(item.path.size(), *tbuf);
+				for (uint j = 0; j < item.path.size(); ++j)
+					tbuf->push_back(item.path[j]);
+
+				pkt_put_vuint64(item.poffset, *tbuf);
+
+				pkt_put_uint64(tbuf->size()-16, &((*tbuf)[8]));
+				qitems.push_back(item);
+				send_receive_packet(tbuf);
+				return; // return to avoid start_receive_command() below
+			} else { // item.poffset > item.fsize
+				std::cout << "Resume: HUH?, got more of the file than is possible (" << item.path << ")\n";
+			}
 
 			start_receive_command();
 		}
@@ -1196,25 +1244,25 @@ class SimpleTCPConnection {
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
 			boost::filesystem::path path = sharepath / name;
 
-			kickoff_file_write(path, hdr.len, rbuf, false);
+			kickoff_file_write(path, hdr.len, rbuf, false, 0);
 		}
 
 		boost::function<void()> delayed_open_file;
 
-		void delay_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready)
+		void delay_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
 		{
 			delayed_open_file = boost::function<void()>();
-			kickoff_file_write(path, fsize, rbuf, dataready);
+			kickoff_file_write(path, fsize, rbuf, dataready, offset);
 		}
 
-		void kickoff_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready)
+		void kickoff_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
 		{
 			if (delayed_open_file) {
 				std::cout << "error: multiple file opens\n";
 			}
 
 			if (open_files > 256) {
-				delayed_open_file = boost::bind(&SimpleTCPConnection::delay_file_write, this, path, fsize, rbuf, dataready);
+				delayed_open_file = boost::bind(&SimpleTCPConnection::delay_file_write, this, path, fsize, rbuf, dataready, offset);
 				return;
 			}
 
@@ -1226,9 +1274,10 @@ class SimpleTCPConnection {
 			++open_files;
 			// kick off handle_ready_file for when the file is ready to write
 			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
-			gdiskio->async_open_file(path, services::diskio_filetype::out|services::diskio_filetype::create,
+			gdiskio->async_open_file(path, services::diskio_filetype::out|
+				((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
 				*file,
-				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf));
+				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset));
 
 			if (!dataready) {
 				// kick off async_read for when we received some data (capped by file size)
@@ -1287,7 +1336,7 @@ class SimpleTCPConnection {
 						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
 				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf));
+					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
 			}
 		}
 
@@ -1298,11 +1347,17 @@ class SimpleTCPConnection {
 		 *  @param wbuf    the buffer from where we will write the data
 		 *  @param curbuf  the buffer containing previous data (unused)
 		 */
-		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf)
+		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf, uint64 offset)
 		{
 			if (e) {
 				disconnect(STRFORMAT("handle_ready_file: %s", e.message()));
 				return;
+			}
+
+			while (offset > 0) {
+				int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
+				file->fwseek(diff);
+				offset -= diff;
 			}
 
 			if (!*done) {
@@ -1328,7 +1383,7 @@ class SimpleTCPConnection {
 						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
 				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf));
+					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
 			}
 		}
 

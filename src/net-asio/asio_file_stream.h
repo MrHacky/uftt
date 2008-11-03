@@ -278,6 +278,10 @@ namespace services {
 				);
 			}
 
+			void fwseek(int32 offset) {
+				fseek(fd, offset, SEEK_CUR);
+			}
+
 		private:
 			template <typename CBS, typename Handler>
 			struct helper_write_some {
