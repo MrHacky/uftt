@@ -9,6 +9,7 @@
 #include <boost/signal.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+#include <fstream>
 
 #include "Globals.h"
 
@@ -229,9 +230,76 @@ class SimpleTCPConnection {
 			int type;
 			std::string path;
 			uint64 fsize;
+			std::vector<uint64> pos;
 			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_) {};
+			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_) : type(type_), path(path_), fsize(0), pos(pos_) {};
 		};
 		std::deque<qitem> qitems;
+
+		enum {
+			QITEM_SIGREQ = 6,
+			QITEM_SIGREQ_BUSY,
+		};
+
+		struct sigmaker {
+			boost::asio::io_service& service;
+			qitem* item;
+			boost::function<void(shared_vec)> cb;
+
+			sigmaker(boost::asio::io_service& service_) : service(service_) {};
+
+			void main() {
+				using namespace std;
+				// dostuff
+				shared_vec sbuf(new std::vector<uint8>(16));
+
+				pkt_put_uint32(CMD_REPLY_SIG_FILE, &((*sbuf)[0]));
+				pkt_put_uint32(0, &((*sbuf)[4]));
+
+				//pkt_put_vuint32(item->path.size(), *sbuf);
+				//for (uint j = 0; j < item->path.size(); ++j)
+				//	sbuf->push_back(item->path[j]);
+				pkt_put_vuint32(item->pos.size(), *sbuf);
+				pkt_put_vuint64(item->pos[0], *sbuf);
+				for (uint i = 1; i < item->pos.size(); ++i)
+					pkt_put_vuint64(item->pos[i]-item->pos[i-1], *sbuf);
+
+				ifstream inp(item->path.c_str());
+				size_t dpos = sbuf->size();
+				sbuf->resize(dpos + 2*16*1024);
+				inp.read((char*)&((*sbuf)[dpos]), 16*1024);
+				dpos += 16*1024;
+				inp.seekg(-16*1024, ios_base::end);
+				inp.read((char*)&((*sbuf)[dpos]), 16*1024);
+
+				uint8 buf1;
+				inp.seekg(item->pos[0], ios_base::beg);
+				inp.read((char*)&buf1, 1);
+				sbuf->push_back(buf1);
+				for (uint i = 1; i < item->pos.size(); ++i) {
+					inp.seekg((item->pos[i]+1)-item->pos[i-1], ios_base::cur);
+					inp.read((char*)&buf1, 1);
+					sbuf->push_back(buf1);
+				}
+
+				pkt_put_uint64(sbuf->size(), &((*sbuf)[8]));
+				service.post(boost::bind(cb, sbuf));
+			}
+		};
+
+		struct sigchecker {
+			boost::asio::io_service& service;
+			std::vector<uint64> pos;
+			std::vector<uint8> data;
+			boost::function<void(shared_vec)> cb;
+
+			sigchecker(boost::asio::io_service& service_) : service(service_) {};
+
+			void main() {
+				using namespace std;
+
+			}
+		};
 
 		std::string error_message;
 		bool dldone;
@@ -508,7 +576,7 @@ class SimpleTCPConnection {
 							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
 					case CMD_REQUEST_SIG_FILE: {
-						uint idx = 16;
+						uint idx = 0;
 						uint32 slen = pkt_get_vuint32(*rbuf, idx);
 						std::string name(rbuf->begin()+idx, rbuf->begin()+idx+slen);
 						idx += slen;
@@ -519,6 +587,22 @@ class SimpleTCPConnection {
 							tcpos += pkt_get_vuint64(*rbuf, idx);
 							pos.push_back(tcpos);
 						}
+						qitems.push_back(qitem(QITEM_SIGREQ, name, pos));
+						checkwhattosend();
+						start_receive_command(rbuf);
+					}; break;
+					case CMD_REPLY_SIG_FILE: {
+						uint idx = 0;
+						uint32 plen = pkt_get_vuint32(*rbuf, idx);
+						std::vector<uint64> pos;
+						uint64 tcpos = 0;
+						for (uint32 i = 0; i < plen; ++i) {
+							tcpos += pkt_get_vuint64(*rbuf, idx);
+							pos.push_back(tcpos);
+						}
+						std::vector<uint8> data(rbuf->begin()+idx, rbuf->end());
+						int diff = data.size()-pos.size();
+						int x = diff;
 					}; break;
 					case CMD_DISCONNECT: {
 						uldone = dldone = true;
@@ -532,6 +616,7 @@ class SimpleTCPConnection {
 			if (!handled) {
 				// we possibly got partial message
 				switch (hdr.cmd) {
+					case CMD_REPLY_SIG_FILE:
 					case CMD_REPLY_TREE_LIST: { // reply file listing
 						uint64 chunk = hdr.len - rbuf->size();
 						if (chunk > 1024*1024) chunk = 1024*1024;
@@ -732,11 +817,12 @@ class SimpleTCPConnection {
 								pos.push_back(0);
 								for (uint64 i = start; i < stop; i += (range / (16*1024)))
 									pos.push_back(i);
+								//std::sort(pos.begin(), pos.end());
 							}
 							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
 							item.type = 6; // requested signiature
-							pkt_put_vuint32(item.path.size(), *tbuf);
+							pkt_put_vuint32(titem.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
 							pkt_put_vuint32(pos.size()-1, *tbuf);
@@ -854,6 +940,13 @@ class SimpleTCPConnection {
 
 							sendqueue.push_back(sbuf);
 							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+						} else if (qtype == QITEM_SIGREQ) {
+							qitems.front().type = QITEM_SIGREQ_BUSY;
+							qitems.front().path = (sharepath / qitems.front().path).native_file_string();
+							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
+							sm->cb = boost::bind(&SimpleTCPConnection::sigmake_done, this, sm, _1);
+							sm->item = &qitems.front();
+							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
 						} else {
 							std::cout << "Unknown item type: " << qtype << '\n';
 						}
@@ -890,6 +983,13 @@ class SimpleTCPConnection {
 			}
 			if (sendqueue.size() == 0 && donesend && !issending)
 				handle_sent_everything();
+		}
+
+		void sigmake_done(boost::shared_ptr<sigmaker> sm, shared_vec sbuf)
+		{
+			sendqueue.push_back(sbuf);
+			qitems.pop_front();
+			checkwhattosend();
 		}
 
 		void handle_sent_everything() {
