@@ -13,7 +13,7 @@ ELSE()
 	PROJECT(UFTT)
 ENDIF()
 
-# Treat warnings as errors cmake option (todo: support this on gcc/other compilers)
+# Treat warnings as errors cmake option
 SET(TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Treat warnings as errors")
 
 IF(MSVC)
