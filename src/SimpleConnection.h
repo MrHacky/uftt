@@ -230,6 +230,7 @@ class SimpleTCPConnection {
 			int type;
 			std::string path;
 			uint64 fsize;
+			uint64 poffset;
 			std::vector<uint64> pos;
 			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_) {};
 			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_) : type(type_), path(path_), fsize(0), pos(pos_) {};
@@ -239,6 +240,8 @@ class SimpleTCPConnection {
 		enum {
 			QITEM_SIGREQ = 6,
 			QITEM_SIGREQ_BUSY,
+			QITEM_PARTFILE_REQ,
+			QITEM_PARTFILE_BUSY,
 		};
 
 		struct sigmaker {
@@ -282,22 +285,58 @@ class SimpleTCPConnection {
 					sbuf->push_back(buf1);
 				}
 
-				pkt_put_uint64(sbuf->size(), &((*sbuf)[8]));
+				pkt_put_uint64(sbuf->size()-16, &((*sbuf)[8]));
 				service.post(boost::bind(cb, sbuf));
 			}
 		};
 
 		struct sigchecker {
 			boost::asio::io_service& service;
-			std::vector<uint64> pos;
+			qitem* item;
+			boost::function<void(uint64)> cb;
 			std::vector<uint8> data;
-			boost::function<void(shared_vec)> cb;
+			boost::filesystem::path path;
 
 			sigchecker(boost::asio::io_service& service_) : service(service_) {};
 
-			void main() {
+			uint64 getoffset()
+			{
 				using namespace std;
+				uint64 offset = 0;
+				uint64 fsize = boost::filesystem::file_size(path);
 
+				vector<uint8> start(16*1024);
+				vector<uint8> end(16*1024);
+
+				ifstream inp(path.native_file_string().c_str());
+				inp.read((char*)&start[0], 16*1024);
+				inp.seekg(-16*1024, ios_base::end);
+				inp.read((char*)&end[0], 16*1024);
+
+				for (uint i = 0; i < 16*1024; ++i)
+					if (data[i] != start[i])
+						return i;
+
+				uint8 buf1;
+				inp.seekg(item->pos[0], ios_base::beg);
+				inp.read((char*)&buf1, 1);
+				if (buf1 != data[2*16*1024 + 0])
+					return 0;
+				for (uint i = 1; i < item->pos.size(); ++i) {
+					inp.seekg((item->pos[i]+1)-item->pos[i-1], ios_base::cur);
+					inp.read((char*)&buf1, 1);
+					if (buf1 != data[2*16*1024 + i])
+						return 0;
+				}
+
+				for (uint i = 0; i < 16*1024; ++i)
+					if (data[1*16*1024 + i] != end[i])
+						return 0;
+				return fsize;
+			}
+
+			void main() {
+				service.post(boost::bind(cb, getoffset()));
 			}
 		};
 
@@ -414,6 +453,11 @@ class SimpleTCPConnection {
 					boost::bind(&SimpleTCPConnection::start_receive_command, this, rbuf, _1));
 			} else
 				std::cout << "error: unknown tcp protocol version: " << protver << '\n';
+		}
+
+		void start_receive_command()
+		{
+			start_receive_command(shared_vec(new std::vector<uint8>));
 		}
 
 		void start_receive_command(shared_vec rbuf)
@@ -601,8 +645,14 @@ class SimpleTCPConnection {
 							pos.push_back(tcpos);
 						}
 						std::vector<uint8> data(rbuf->begin()+idx, rbuf->end());
-						int diff = data.size()-pos.size();
-						int x = diff;
+						qitems.front().pos = pos;
+
+						boost::shared_ptr<sigchecker> sc(new sigchecker(service));
+						sc->cb = boost::bind(&SimpleTCPConnection::sigcheck_done , this, sc, _1);
+						sc->item = &qitems.front();
+						sc->data = data;
+						sc->path = sharepath / qitems.front().path;
+						gdiskio->get_work_service().post(boost::bind(&sigchecker::main, sc));
 					}; break;
 					case CMD_DISCONNECT: {
 						uldone = dldone = true;
@@ -821,7 +871,7 @@ class SimpleTCPConnection {
 							}
 							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
-							item.type = 6; // requested signiature
+							item.type = QITEM_SIGREQ; // requested signiature
 							pkt_put_vuint32(titem.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
@@ -987,9 +1037,19 @@ class SimpleTCPConnection {
 
 		void sigmake_done(boost::shared_ptr<sigmaker> sm, shared_vec sbuf)
 		{
-			sendqueue.push_back(sbuf);
+			//sendqueue.push_back(sbuf);
 			qitems.pop_front();
 			checkwhattosend();
+		}
+
+		void sigcheck_done(boost::shared_ptr<sigchecker> sc, uint64 offset)
+		{
+			qitem item = qitems.front();
+			qitems.pop_front();
+			item.type = QITEM_PARTFILE_REQ;
+			item.poffset = offset;
+
+			start_receive_command();
 		}
 
 		void handle_sent_everything() {
