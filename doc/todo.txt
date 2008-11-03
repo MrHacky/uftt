@@ -1,3 +1,10 @@
+* Major features ordered by priority.
+- resuming of aborted downloads
+- ipv6 connectivity
+- udp connectivity
+- nat hole punching
+
+* Long term, unordered, minor, and subtask features
 - uniquely identify (parts of) shares somehow
 - allow downloading parts of the same share from different sources
 - allow simultanious downloading via broadcast link
@@ -21,7 +28,6 @@
 - use configurable temp dir for compressing & downloading updates
 - implement partial requests
 - implement hash requests (limited)
-- implement autoresuming
 - implement remote browsing
 - clean up http request class (wait for boost implementation? :-p)
 - add ability to use mirrors to http request class
@@ -37,6 +43,8 @@
 - make autoupdate dialog
 - have doubleclick on share popup download dialog asking where to save
 - find uftt.dat in executable directory (again)
+
+* Already completed features.
 - [DONE] make GUI look nice in non win98-classic themes
 - [DONE] show total size, speed, and remaining time estimation
 - [DONE] implement peer discovery via central web server (heliohost)
