@@ -76,7 +76,6 @@ std::vector<boost::asio::ip::address> SimpleBackend::get_broadcast_adresses()
 				cout << "broadcast: " << naddr << '\n';
 			}
 		}
-
 		//return 0;
 	}
 #endif

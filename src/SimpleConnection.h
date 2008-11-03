@@ -205,12 +205,10 @@ class SimpleTCPConnection {
 			CMD_REQUEST_FULL_FILE,
 			CMD_REPLY_FULL_FILE,
 			CMD_DISCONNECT,
-			/*
 			CMD_REQUEST_SIG_FILE,
 			CMD_REPLY_SIG_FILE,
 			CMD_REQUEST_PARTIAL_FILE,
 			CMD_REPLY_PARTIAL_FILE,
-			*/
 			END_OF_COMMANDS
 		};
 
@@ -247,6 +245,7 @@ class SimpleTCPConnection {
 
 		std::set<uint32> lcommands;
 		std::set<uint32> rcommands;
+		bool rresume;
 
 		cmdinfo rcmd;
 	public:
@@ -272,6 +271,7 @@ class SimpleTCPConnection {
 				lcommands.insert(i);
 			for (uint32 i = 1; i <= 6; ++i)
 				rcommands.insert(i);
+			rresume = false;
 		}
 
 		uint64 transfered_bytes;
@@ -436,9 +436,10 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			bool handled = true;
+			bool handled = false;
 			if (hdr.len == rbuf->size()) {
 				// we got entire message
+				handled = true;
 				switch (hdr.cmd) {
 					case CMD_REQUEST_SHARE_DUMP: { // request old style share dump
 						if (hdr.len < 0xffff) {
@@ -506,6 +507,19 @@ class SimpleTCPConnection {
 						} else
 							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
+					case CMD_REQUEST_SIG_FILE: {
+						uint idx = 16;
+						uint32 slen = pkt_get_vuint32(*rbuf, idx);
+						std::string name(rbuf->begin()+idx, rbuf->begin()+idx+slen);
+						idx += slen;
+						uint32 plen = pkt_get_vuint32(*rbuf, idx);
+						std::vector<uint64> pos;
+						uint64 tcpos = 0;
+						for (uint32 i = 0; i < plen; ++i) {
+							tcpos += pkt_get_vuint64(*rbuf, idx);
+							pos.push_back(tcpos);
+						}
+					}; break;
 					case CMD_DISCONNECT: {
 						uldone = dldone = true;
 						disconnect();
@@ -543,6 +557,7 @@ class SimpleTCPConnection {
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
 				qitems.push_back(qitem(0, sharename, 0));
+				rresume = rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
 			} else if (rcommands.count(5)) {
 				// simple style connection
@@ -707,8 +722,26 @@ class SimpleTCPConnection {
 						qitem titem = qitems[i];
 						size_t cstart = tbuf->size();
 						tbuf->resize(tbuf->size()+16);
-						if (false && boost::filesystem::exists(sharepath / titem.path) && boost::filesystem::file_size(sharepath / titem.path) > 1024*1024) {
-							item.type = 6; // autoresume it!
+						if (rresume && ext::filesystem::exists(sharepath / titem.path) && boost::filesystem::file_size(sharepath / titem.path) > 1024*1024) {
+							uint64 fsize = boost::filesystem::file_size(sharepath / titem.path);
+							std::vector<uint64> pos;
+							{
+								uint64 start = 16*1024;
+								uint64 stop = fsize - (16*1024);
+								uint64 range = stop - start;
+								pos.push_back(0);
+								for (uint64 i = start; i < stop; i += (range / (16*1024)))
+									pos.push_back(i);
+							}
+							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
+							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
+							item.type = 6; // requested signiature
+							pkt_put_vuint32(item.path.size(), *tbuf);
+							for (uint j = 0; j < titem.path.size(); ++j)
+								tbuf->push_back(titem.path[j]);
+							pkt_put_vuint32(pos.size()-1, *tbuf);
+							for (uint i = 1; i < pos.size(); ++i)
+								pkt_put_vuint64(pos[i]-pos[i-1], *tbuf);
 						} else {
 							pkt_put_uint32(CMD_REQUEST_FULL_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
@@ -807,7 +840,8 @@ class SimpleTCPConnection {
 					}
 				} else if (newstyle) {
 					if (!qitems.empty()) {
-						if (qitems.front().type == 5) {
+						int qtype = qitems.front().type;
+						if (qtype == 5) {
 							sbuf->resize(16);
 							cursendfile.name = qitems[0].path;
 							cursendfile.path = qitems[0].path;
@@ -820,6 +854,8 @@ class SimpleTCPConnection {
 
 							sendqueue.push_back(sbuf);
 							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+						} else {
+							std::cout << "Unknown item type: " << qtype << '\n';
 						}
 					}
 				} else if (!quesenddir.empty()) {
