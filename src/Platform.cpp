@@ -221,4 +221,12 @@ namespace platform {
 #endif
 	}
 
+	bool fseek64a(FILE* fd, uint64 offset)
+	{
+		// see http://code.google.com/p/pspstacklesspython/source/browse/vendor/stackless-25-maint/Objects/fileobject.c for hints
+		// maybe use their _portable_fseek function?
+		int64 off = offset;
+		return (fsetpos(fd, &off) == 0);
+	}
+
 } // namespace platform

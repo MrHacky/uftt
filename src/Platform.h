@@ -6,6 +6,7 @@
 
 #include <boost/filesystem/path.hpp>
 
+#include "Types.h"
 /* file for platform compatibility wrappers */
 
 namespace platform {
@@ -19,6 +20,8 @@ namespace platform {
 	bool freeConsole();
 
 	void msSleep(int ms);
+
+	bool fseek64a(FILE* fd, uint64 offset);
 
 	enum {
 		RF_NEW_CONSOLE   = 1 << 0,

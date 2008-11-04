@@ -13,6 +13,8 @@
 
 #include "Globals.h"
 
+#include "platform.h"
+
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
 
@@ -119,11 +121,7 @@ struct filesender {
 		offset = offset_;
 		fsize = boost::filesystem::file_size(path) - offset;
 		file.open(path, services::diskio_filetype::in);
-		while (offset_ > 0) {
-			int32 diff = (offset_ > 0x7fffffff) ? 0x7fffffff : (int32)offset_;
-			file.fwseek(diff);
-			offset_ -= diff;
-		}
+		file.fseeka(offset);
 		hsent = false;
 		//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 	};
@@ -282,21 +280,13 @@ class SimpleTCPConnection {
 				bread = fread(&((*sbuf)[dpos]), 1, 16*1024, fd);
 				dpos += 16*1024;
 				offset -= 16*1024;
-				fseek(fd, 0, SEEK_SET);
-				while (offset > 0) {
-					int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
-					fseek(fd, diff, SEEK_CUR);
-					offset -= diff;
-				}
 
+				platform::fseek64a(fd, offset);
 				bread = fread(&((*sbuf)[dpos]), 1, 16*1024, fd);
 
 				uint8 buf1;
-				fseek(fd, item->pos[0], SEEK_SET);
-				bread = fread(&buf1, 1, 1, fd);
-				sbuf->push_back(buf1);
-				for (uint i = 1; i < item->pos.size(); ++i) {
-					fseek(fd, (item->pos[i]-1)-item->pos[i-1], SEEK_CUR);
+				for (uint i = 0; i < item->pos.size(); ++i) {
+					platform::fseek64a(fd, item->pos[i]);
 					bread = fread(&buf1, 1, 1, fd);
 					sbuf->push_back(buf1);
 				}
@@ -329,33 +319,25 @@ class SimpleTCPConnection {
 
 				bread = fread(&start[0], 1, 16*1024, fd);
 				offset -= 16*1024;
-				fseek(fd, 0, SEEK_SET);
-				while (offset > 0) {
-					int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
-					fseek(fd, diff, SEEK_CUR);
-					offset -= diff;
-				}
+				platform::fseek64a(fd, offset);
 				bread = fread(&end[0], 1, 16*1024, fd);
 
 				for (uint i = 0; i < 16*1024; ++i)
 					if (data[i] != start[i])
 						return i;
 
+				for (uint i = 0; i < 16*1024; ++i)
+					if (data[1*16*1024 + i] != end[i])
+						return 0;
+
 				uint8 buf1;
-				fseek(fd, item->pos[0], SEEK_SET);
-				bread = fread(&buf1, 1, 1, fd);
-				if (buf1 != data[2*16*1024 + 0])
-					return 0;
-				for (uint i = 1; i < item->pos.size(); ++i) {
-					fseek(fd, (item->pos[i]-1)-item->pos[i-1], SEEK_CUR);
+				for (uint i = 0; i < item->pos.size(); ++i) {
+					platform::fseek64a(fd, item->pos[i]);
 					bread = fread(&buf1, 1, 1, fd);
 					if (buf1 != data[2*16*1024 + i])
 						return 0;
 				}
 
-				for (uint i = 0; i < 16*1024; ++i)
-					if (data[1*16*1024 + i] != end[i])
-						return 0;
 				return fsize;
 			}
 
@@ -1381,10 +1363,9 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			while (offset > 0) {
-				int32 diff = (offset > 0x7fffffff) ? 0x7fffffff : (int32)offset;
-				file->fwseek(diff);
-				offset -= diff;
+			if (offset > 0) {
+				file->fseeka(offset);
+				offset = 0;
 			}
 
 			if (!*done) {

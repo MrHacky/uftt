@@ -2,6 +2,7 @@
 #define ASIO_FILE_STREAM
 
 #include "../Types.h"
+#include "../Platform.h"
 
 //#define BOOST_ASIO_DISABLE_EPOLL
 //#define BOOST_ASIO_DISABLE_IOCP
@@ -278,8 +279,8 @@ namespace services {
 				);
 			}
 
-			void fwseek(int32 offset) {
-				fseek(fd, offset, SEEK_CUR);
+			void fseeka(uint64 offset) {
+				platform::fseek64a(fd, offset);
 			}
 
 		private:
