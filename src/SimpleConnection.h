@@ -861,10 +861,9 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			qitem& item = qitems.front();
-
-			switch (item.type) {
+			switch (qitems.front().type) {
 				case 0: {
+					qitem& item = qitems.front();
 					uint32 nlen = item.path.size();
 					tbuf->resize(16 + nlen);
 					pkt_put_uint32(9, &((*tbuf)[0]));
@@ -881,7 +880,7 @@ class SimpleTCPConnection {
 					tbuf->clear();
 					qitemsfilled = true;
 					for (uint i = 0; i < qitems.size() && qitems[i].type == 1; ++i) {
-						qitem titem = qitems[i];
+						qitem& titem = qitems[i];
 						size_t cstart = tbuf->size();
 						tbuf->resize(tbuf->size()+16);
 						if (rresume && ext::filesystem::exists(sharepath / titem.path) && boost::filesystem::file_size(sharepath / titem.path) > 1024*1024) {
@@ -898,8 +897,8 @@ class SimpleTCPConnection {
 							}
 							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
-							item.type = QITEM_SIGREQ; // requested signiature
-							item.poffset = fsize;
+							titem.type = QITEM_SIGREQ; // requested signiature
+							titem.poffset = fsize;
 							pkt_put_vuint32(titem.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
@@ -910,7 +909,7 @@ class SimpleTCPConnection {
 						} else {
 							pkt_put_uint32(CMD_REQUEST_FULL_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
-							item.type = 5; // requested file
+							titem.type = 5; // requested file
 							//pkt_put_vuint32(item.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
