@@ -220,6 +220,9 @@ int imain( int argc, char **argv )
 		cout << "new console opened" << endl;
 	}
 
+	if (argc > 5 && string(argv[1]) == "--sign")
+		return AutoUpdater::doSigning(argv[2], argv[3], argv[4], argv[5]) ? 0 : 1;
+
 	calcbuildstring();
 
 	if (argc > 1 && string(argv[1]) == "--runtest")

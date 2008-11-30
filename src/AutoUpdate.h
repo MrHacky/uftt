@@ -21,6 +21,8 @@ class AutoUpdater {
 
 		static std::vector<std::pair<std::string, std::string> > parseUpdateWebPage(const std::vector<uint8>& webpage);
 
+		static bool doSigning(const boost::filesystem::path& keyfile, const std::string& build, const boost::filesystem::path& infile, const boost::filesystem::path& outfile);
+
 	public: // actual object interface for offering builds for autoupdate
 
 		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded = false);

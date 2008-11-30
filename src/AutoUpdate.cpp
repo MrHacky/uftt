@@ -715,6 +715,93 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 	return result;
 }
 
+bool AutoUpdater::doSigning(const boost::filesystem::path& kfpath, const std::string& bstring, const boost::filesystem::path& ifpath, const boost::filesystem::path& ofpath)
+{
+	ifstream ifile(ifpath.native_file_string().c_str(), ios_base::in|ios_base::binary);
+	ofstream ofile(ofpath.native_file_string().c_str(), ios_base::out|ios_base::binary);
+
+	if (!ifile.is_open() || !ofile.is_open())
+		return false;
+
+	boost::uintmax_t todomax = boost::filesystem::file_size(ifpath);
+	uint32 todo = boost::numeric_cast<uint32>(todomax); // throws when out of range
+	if (todo == 0)
+		return false;
+
+	std::vector<uint8> file(todo);
+	{
+		ifile.read((char*)&file[0], todo);
+		uint32 read = ifile.gcount();
+		if (read != todo)
+			return false;
+		if (ifile.fail())
+			return false;
+		ifile.close();
+	}
+
+	RSA* rsapriv = NULL;
+
+	{
+		FILE* privfile = fopen(kfpath.native_file_string().c_str(), "rb");
+		if (!privfile)
+			return false;
+		rsapriv = PEM_read_RSAPrivateKey(privfile, NULL, NULL, NULL);
+		fclose(privfile);
+	}
+
+	EVP_PKEY evppriv;
+
+	EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+
+	// first append buildstring
+	for (uint i = 0; i < bstring.size(); ++i)
+		file.push_back(bstring[i]);
+	file.push_back(bstring.size());
+
+	uint sigsize = EVP_PKEY_size(&evppriv);
+	vector<uint8> sig;
+	sig.resize(sigsize);
+
+	EVP_MD_CTX signctx;
+	EVP_SignInit(&signctx, EVP_sha1());
+
+	int r1 = EVP_SignUpdate(&signctx, &file[0], file.size());
+	int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+
+	if (r1==1 && r2==1) {
+
+		for (uint i = 0; i < sigsize; ++i)
+			file.push_back(sig[i]);
+		file.push_back((sigsize >> 0) & 0xff);
+		file.push_back((sigsize >> 8) & 0xff);
+		file.push_back((sigsize >>16) & 0xff);
+		file.push_back((sigsize >>24) & 0xff);
+		file.push_back('U');
+		file.push_back('F');
+		file.push_back('T');
+		file.push_back('T');
+
+		if (checksigniature(file, bstring)) {
+			cout << "yay! we just signed this binary!\n";
+
+			ofile.write((char*)&file[0], file.size());
+			//if (ofile.gcount() != file.size())
+			//	return false;
+			if (ofile.fail())
+				return false;
+			ofile.close();
+		} else {
+			cout << "bah! signing failed, private/public key mismatch.\n";
+			return false;
+		}
+	} else {
+		cout << "bah! signing failed for some reason.\n";
+		return false;
+	}
+
+	return true;
+}
+
 void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {
 	try {
