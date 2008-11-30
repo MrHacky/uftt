@@ -174,18 +174,6 @@ int runtest() {
 	}
 }
 
-void signcheck_handler(bool issigned, SimpleBackend* backend) {
-	if (issigned) {
-		hassignedbuild = true;
-		cout << "Signed: yes\n";
-	} else {
-		hassignedbuild = false;
-		cout << "Signed: no\n";
-	}
-	// we waited for this!
-	backend->do_manual_publish("255.255.255.255");
-}
-
 void calcbuildstring() {
 	try {
 		thebuildstring = string(BUILD_STRING);
