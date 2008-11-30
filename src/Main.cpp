@@ -14,7 +14,6 @@ extern "C" void tss_cleanup_implemented(void){}
 //#include "network/NetworkThread.h"
 #include "net-asio/asio_ipx.h"
 #include "net-asio/ipx_conn.h"
-#include "SharedData.h"
 #include "SimpleBackend.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"
