@@ -213,9 +213,9 @@ void calcbuildstring() {
 
 		sstamp << year << '_' << month << '_' << day << '_' << tstamp;
 
-		size_t pos = thebuildstring.find("$(TIMESTAMP)");
+		size_t pos = thebuildstring.find("<TIMESTAMP>");
 		if (pos != string::npos) {
-			thebuildstring.erase(pos, strlen("$(TIMESTAMP)"));
+			thebuildstring.erase(pos, strlen("<TIMESTAMP>"));
 			thebuildstring.insert(pos, sstamp.str());
 		}
 	} catch (...) {
