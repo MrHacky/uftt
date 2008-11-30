@@ -210,6 +210,8 @@ void calcbuildstring() {
 	}
 }
 
+bool waitonexit = false;
+
 int imain( int argc, char **argv )
 {
 	bool madeConsole = false;
@@ -230,6 +232,7 @@ int imain( int argc, char **argv )
 	UFTTSettings settings;
 	settings.load();
 
+	waitonexit = true;
 	QTMain gui(argc, argv, &settings);
 
 	cout << "Build: " << thebuildstring << '\n';
@@ -278,7 +281,7 @@ int main( int argc, char **argv ) {
 		if (!platform::hasConsole()) platform::newConsole();
 		printf("fatal: %s\n", message.c_str());
 	}
-	if (ret != 0 && platform::hasConsole()) {
+	if (waitonexit && ret != 0 && platform::hasConsole()) {
 		printf("program aborted, termination in 30 seconds.\n");
 		platform::msSleep(30*1000);
 	}
