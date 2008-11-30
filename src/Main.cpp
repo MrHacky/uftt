@@ -38,6 +38,7 @@ services::diskio_service* gdiskio;
 shared_vec exefile;
 bool hassignedbuild(false);
 AutoUpdater updateProvider;
+boost::rand48 rng;
 
 #define BUFSIZE (1024*1024*16)
 std::vector<uint8*> testbuffers;
