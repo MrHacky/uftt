@@ -1,10 +1,11 @@
 * Major features ordered by priority.
-- resuming of aborted downloads
 - ipv6 connectivity
 - udp connectivity
 - nat hole punching
 
 * Long term, unordered, minor, and subtask features
+- fix progress indicators for resumed downloads
+- automatically resume failed downloads when the connection is restored
 - uniquely identify (parts of) shares somehow
 - allow downloading parts of the same share from different sources
 - allow simultanious downloading via broadcast link
@@ -24,7 +25,6 @@
 - implement udp-semi connections, and plug them into the now shiny architecture
 - implement udp hole punching via central web server (heliohost)
 - implement udp hole punching through firewall for local link
-- allow autoupdate without openssl (insecure, use at own risk, do we really want this?)
 - use configurable temp dir for compressing & downloading updates
 - implement partial requests
 - implement hash requests (limited)
@@ -45,6 +45,7 @@
 - find uftt.dat in executable directory (again)
 
 * Already completed features.
+- [DONE] resuming of aborted downloads
 - [DONE] make GUI look nice in non win98-classic themes
 - [DONE] show total size, speed, and remaining time estimation
 - [DONE] implement peer discovery via central web server (heliohost)
