@@ -16,8 +16,6 @@
 #include <boost/random/uniform_smallint.hpp>
 
 #include "SimpleBackendBase.h"
-// TODO: remove evil global...
-extern boost::rand48 rng;
 
 #include "../Globals.h"
 
