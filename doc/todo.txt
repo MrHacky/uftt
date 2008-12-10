@@ -43,6 +43,7 @@
 - make autoupdate dialog
 - have doubleclick on share popup download dialog asking where to save
 - find uftt.dat in executable directory (again)
+- implement debian/ubuntu .deb autoupdate (again)
 
 * Already completed features.
 - [DONE] resuming of aborted downloads
@@ -54,7 +55,6 @@
 - [DONE] fix upload task for autoupdate (p2p)
 - [DONE] fix download task for autoupdate (p2p)
 - [DONE] use future-proof protocols (i really hope so!)
-- [DONE] implement debian/ubuntu .deb autoupdate
 - [DONE] add option to automatically check for (http) updates every day, week, or month
 - [DONE] implement autoupdate via http (heliohost)
 - [DONE] show upload tasks in task list
