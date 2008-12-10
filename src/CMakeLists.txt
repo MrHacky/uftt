@@ -9,6 +9,7 @@ SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
 SUBDIRS(bench)
 SUBDIRS(util)
+SUBDIRS(network)
 
 SET(BUILDVER_FILE
 	"${PROJECT_BINARY_DIR}/BuildVersion.h"
@@ -32,6 +33,7 @@ SET(UFTT_SOURCES
 	Globals.h
 	IBackend.h
 	BuildString.h
+	UFTTCore.h            UFTTCore.cpp
 	SimpleBackend.h       SimpleBackend.cpp
 	SimpleConnection.h    SimpleConnection.cpp
 	UFTTSettings.h        UFTTSettings.cpp
@@ -43,6 +45,7 @@ SET(UFTT_SOURCES
 
 SET(UFTT_LIBRARIES
 	uftt-qt
+	uftt-network
 	lib-net-asio
 	lib-util
 )

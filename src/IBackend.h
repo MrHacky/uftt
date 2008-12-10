@@ -8,40 +8,7 @@
 #include <boost/function.hpp>
 #include <boost/filesystem.hpp>
 
-struct ShareID {
-	std::string sid; // id as string for first step
-
-	bool operator==(const ShareID& o) const
-	{
-		return (this->sid == o.sid);
-	}
-};
-
-struct TaskID {
-	uint32 mid;
-	uint32 cid;
-};
-
-struct ShareInfo {
-	ShareID id;
-	std::string name;
-	std::string host;
-	std::string proto;
-	bool isupdate;
-	bool islocal;
-	ShareInfo() : isupdate(false), islocal(false) {};
-};
-
-struct TaskInfo {
-	TaskID id;
-	ShareID shareid;
-	ShareInfo shareinfo;
-	bool isupload;
-	std::string status;
-	uint64 transferred;
-	uint64 size;
-	uint32 queue;
-};
+#include "UFTTCore.h"
 
 class IBackend {
 	public:

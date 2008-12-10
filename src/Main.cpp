@@ -22,6 +22,8 @@ extern "C" void tss_cleanup_implemented(void){}
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
 
+#include "UFTTCore.h"
+
 #include <fstream>
 
 #include <string>
@@ -239,6 +241,8 @@ int imain( int argc, char **argv )
 	QTMain gui(argc, argv, &settings);
 
 	cout << "Build: " << thebuildstring << '\n';
+
+	UFTTCore core;
 
 	SimpleBackend backend(settings);
 	gui.BindEvents(&backend); //TODO: make simplebackend implement IBackend to this works
