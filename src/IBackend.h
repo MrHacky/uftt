@@ -10,10 +10,12 @@
 
 struct ShareID {
 	uint64 id;
+	std::string sid; // id as string for first step
 };
 
 struct TaskID {
 	uint64 id;
+	std::string sid;
 };
 
 struct ShareInfo {
@@ -25,7 +27,8 @@ struct ShareInfo {
 
 struct TaskInfo {
 	TaskID id;
-	ShareID share;
+	ShareID shareid;
+	ShareInfo shareinfo;
 	bool isupload;
 	std::string status;
 	uint64 transferred;
@@ -48,6 +51,8 @@ class IBackend {
 		virtual void doManualQuery(const std::string& host) = 0;
 
 		virtual void checkForWebUpdates() = 0;
+
+		virtual void doSetPeerfinderEnabled(bool enabled) = 0;
 };
 
 #endif//IBACKEND_H

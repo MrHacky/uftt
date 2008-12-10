@@ -12,11 +12,10 @@
 #include "QMarshaller.h"
 #include "../net-asio/asio_http_request.h"
 
+#include "../IBackend.h"
 
 class QTreeWidgetItem;
 class QCloseEvent;
-
-class SimpleBackend;
 
 class MainWindow: public QMainWindow, public Ui::MainWindow
 {
@@ -27,7 +26,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		bool askonupdates;
 		std::string auto_update_url;
 		boost::filesystem::path auto_update_path;
-		SimpleBackend* backend;
+		IBackend* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
@@ -46,7 +45,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDropTriggered(QDropEvent* evt);
 	public:
 		MainWindow(UFTTSettings& settings_);
-		void SetBackend(SimpleBackend* be);
+		void SetBackend(IBackend* be);
 		~MainWindow();
 
 	public Q_SLOTS:
@@ -80,15 +79,17 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void check_autoupdate_interval();
 
 	public: // callbacks
-		void addSimpleShare(std::string sharename);
+		void addSimpleShare(const ShareInfo& info);
 
 		void new_autoupdate(std::string url, std::string build, bool fromweb);
 
 		void download_done(std::string url);
-		void download_progress(QTreeWidgetItem* twi, uint64 tfx, std::string sts, boost::posix_time::ptime starttime, uint32 queue, uint64 total);
+		void download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti);
 		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
 
-		void new_upload(std::string name, int num);
+		void new_upload(const TaskInfo& info);
+
+		void new_task(const TaskInfo& info);
 
 		void onshow();
 };

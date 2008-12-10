@@ -241,7 +241,7 @@ int imain( int argc, char **argv )
 	cout << "Build: " << thebuildstring << '\n';
 
 	SimpleBackend backend(settings);
-	gui.BindEvents(&backend);
+	//gui.BindEvents(&backend); TODO: make simplebackend implement IBackend to this works
 
 	if (madeConsole)
 		platform::freeConsole();

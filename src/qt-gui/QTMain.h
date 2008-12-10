@@ -5,7 +5,8 @@
 #include <boost/signal.hpp>
 #include <boost/filesystem.hpp>
 
-class SimpleBackend;
+#include "../IBackend.h"
+
 class UFTTSettings;
 class QTMain {
 	private:
@@ -16,7 +17,7 @@ class QTMain {
 		QTMain( int& argc, char **argv, UFTTSettings* settings);
 		~QTMain();
 
-		void BindEvents(SimpleBackend* t);
+		void BindEvents(IBackend* t);
 
 		int run();
 };
