@@ -435,14 +435,16 @@ class SimpleBackend : public SimpleBackendBase {
 			std::vector<boost::asio::ip::address> adresses;
 			adresses = this->get_broadcast_adresses();
 			BOOST_FOREACH(boost::asio::ip::address& addr, adresses) {
-				udpsocket.send_to(
-					buf,
-					boost::asio::ip::udp::endpoint(addr, port),
-					flags,
-					err
-				);
-				if (err)
-					std::cout << "broadcast to (" << addr << ") failed: " << err.message() << '\n';
+				if (addr.is_v4() == Proto::addr_any().is_v4()) {
+					udpsocket.send_to(
+						buf,
+						boost::asio::ip::udp::endpoint(addr, port),
+						flags,
+						err
+					);
+					if (err)
+						std::cout << "broadcast to (" << addr << ") failed: " << err.message() << '\n';
+				}
 			}
 		}
 		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
