@@ -14,7 +14,7 @@
 #undef LINK_NETMODULE_CLASS
 
 namespace {
-	std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCore*)> > netmodulelist;
+	std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCore*)> >* netmodulelist = NULL;
 }
 
 namespace NetModuleLinker {
@@ -22,10 +22,10 @@ namespace NetModuleLinker {
 	{
 		std::vector<boost::shared_ptr<INetModule> > res;
 
-		for (uint i = 0; i < netmodulelist.size(); ++i) {
+		for (uint i = 0; i < netmodulelist->size(); ++i) {
 			try {
 				boost::shared_ptr<INetModule> nm;
-				nm = netmodulelist[i](core);
+				nm = (*netmodulelist)[i](core);
 				res.push_back(nm);
 			} catch (std::exception& /*e*/) {
 				//std::cout << "E: " << e.what << '\n';
@@ -36,6 +36,8 @@ namespace NetModuleLinker {
 	}
 
 	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCore*)>& fp) {
-		netmodulelist.push_back(fp);
+		if (netmodulelist == NULL)
+			netmodulelist = new std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCore*)> >();
+		netmodulelist->push_back(fp);
 	};
 }
