@@ -223,6 +223,10 @@ void MainWindow::on_buttonRefresh_clicked()
 void MainWindow::addSimpleShare(const ShareInfo& info)
 {
 	if (info.islocal) return;
+	if (info.isupdate) {
+		new_autoupdate(info);
+		return;
+	}
 
 	QString qshare = QString::fromStdString(info.name);
 	QString qproto = QString::fromStdString(info.proto);
@@ -315,13 +319,8 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 			)
 		));
 
-	if (sts == "Completed") {
-		string name = twi->text(0).toStdString();
-		if (name.substr(0, 12) == "Autoupdate: ") {
-			name.erase(0, 12);
-			download_done(name);
-		}
-	}
+	if (sts == "Completed")
+		download_done(ti.shareid);
 }
 
 void MainWindow::addLocalShare(std::string url)
@@ -398,20 +397,19 @@ void MainWindow::on_buttonBrowse_clicked()
 
 extern string thebuildstring;
 
-void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb)
+void MainWindow::new_autoupdate(const ShareInfo& info)
 {
+	std::string build = info.name;
+
+	bool fromweb = (info.proto == "http");
 	if (!fromweb && !settings.autoupdate)
 		return;
-	if (!fromweb) {
-		size_t pos = url.find_last_of("\\/");
-		build = url.substr(pos+1);
-	}
 
 	if (!AutoUpdater::isBuildBetter(build, thebuildstring)) {
-		cout << "ignoring update: " << build << " @ " << url << '\n';
+		cout << "ignoring update: " << build << " @ " << info.host << '\n';
 		return;
 	}
-	cout << "new autoupdate: " << build << " @ " << url << '\n';
+	cout << "new autoupdate: " << build << " @ " << info.host << '\n';
 	static bool dialogshowing = false;
 	if (dialogshowing) return;
 	dialogshowing = true;
@@ -419,7 +417,7 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 		QString("Auto Update"),
 		QString::fromStdString(
 			"Build: " + build + '\r' + '\n' +
-			"URL: " + url
+			"Host: " + info.host + '\r' + '\n'
 		),
 		QMessageBox::Yes|QMessageBox::No|(fromweb ? QMessageBox::NoButton : QMessageBox::NoToAll),
 		QMessageBox::No);
@@ -430,31 +428,18 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 	if (res != QMessageBox::Yes)
 		return;
 
-	if (!fromweb) {
-		auto_update_url = url;
-		auto_update_path = DownloadEdit->text().toStdString();
+	auto_update_share = info.id;
+	auto_update_path = DownloadEdit->text().toStdString();
+	auto_update_build = build;
 
-		ShareID sid;
-		// TODO: fix autoupdate
-		//sid.sid = url;
-		//backend->startDownload(sid, auto_update_path);
-		//backend->connectSigTaskStatus(ti.id, handler);
-	} else {
-		// TODO: fix web autoupdates
-		/*
-		backend->do_download_web_update(url,
-			marshaller.wrap(boost::bind(&MainWindow::cb_web_download_done, this, _1, build, _2))
-		);
-		*/
-	}
+	backend->startDownload(auto_update_share, auto_update_path);
 }
 
-void MainWindow::download_done(std::string url)
+void MainWindow::download_done(const ShareID& sid)
 {
-	cout << "download complete: " << url << " (" << auto_update_url << ")\n";
-	if (url == auto_update_url) {
-		size_t pos = auto_update_url.find_last_of("\\/");
-		string bname = auto_update_url.substr(pos+1);
+	//cout << "download complete: " << sid.name << " (" << sid.host << ")\n";
+	if (sid == auto_update_share) {
+		std::string bname = auto_update_build;
 		string fname = bname;
 		if (bname.find("win32") != string::npos) fname += ".exe";
 		if (bname.find("-deb-") != string::npos) fname += ".deb.signed";

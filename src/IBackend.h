@@ -9,8 +9,12 @@
 #include <boost/filesystem.hpp>
 
 struct ShareID {
-	uint64 id;
 	std::string sid; // id as string for first step
+
+	bool operator==(const ShareID& o) const
+	{
+		return (this->sid == o.sid);
+	}
 };
 
 struct TaskID {
@@ -25,6 +29,7 @@ struct ShareInfo {
 	std::string proto;
 	bool isupdate;
 	bool islocal;
+	ShareInfo() : isupdate(false), islocal(false) {};
 };
 
 struct TaskInfo {

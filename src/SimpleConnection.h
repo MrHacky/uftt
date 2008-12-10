@@ -384,6 +384,7 @@ class SimpleTCPConnection {
 		uint64 total_bytes;
 		boost::asio::deadline_timer progress_timer;
 		boost::signal<void(const TaskInfo&)> sig_progress;
+		ShareID shareid;
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -397,6 +398,7 @@ class SimpleTCPConnection {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
 				TaskInfo tinfo;
+				tinfo.shareid = shareid;
 				tinfo.queue = 0;
 				tinfo.transferred = transfered_bytes;
 				tinfo.size = total_bytes;

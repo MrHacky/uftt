@@ -55,6 +55,8 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	//newconn->sig_progress.connect(handler);
 	conlist.push_back(newconn);
 
+	newconn->shareid = sid;
+
 	boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
 	newconn->socket.open(ep.protocol());
 	std::cout << "Connecting...\n";

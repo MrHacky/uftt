@@ -24,8 +24,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	private:
 		UFTTSettings& settings;
 		bool askonupdates;
-		std::string auto_update_url;
+		ShareID auto_update_share;
 		boost::filesystem::path auto_update_path;
+		std::string auto_update_build;
 		IBackend* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
@@ -78,18 +79,18 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void check_autoupdate_interval();
 
+		void new_autoupdate(const ShareInfo& info);
+		void download_done(const ShareID& sid);
+		void new_upload(const TaskInfo& info);
+
+		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
+
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);
 
-		void new_autoupdate(std::string url, std::string build, bool fromweb);
-
-		void download_done(std::string url);
-		void download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti);
-		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
-
-		void new_upload(const TaskInfo& info);
-
 		void new_task(const TaskInfo& info);
+
+		void download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti);
 
 		void onshow();
 };

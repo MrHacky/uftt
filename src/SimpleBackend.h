@@ -274,7 +274,6 @@ class SimpleBackend : public IBackend {
 											sinfo.proto = STRFORMAT("uftt-v%d", sver);
 											sinfo.host = udp_recv_addr.address().to_string();
 											sinfo.id.sid = surl;
-											sinfo.islocal = false;
 											sig_new_share(sinfo);
 										}
 									}
@@ -286,7 +285,13 @@ class SimpleBackend : public IBackend {
 									if (len >= slen+6) {
 										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
 										std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, udp_recv_addr.address().to_string(), sname);;
-										sig_new_autoupdate(surl);
+										ShareInfo sinfo;
+										sinfo.name = sname;
+										sinfo.proto = STRFORMAT("uftt-v%d", 1);
+										sinfo.host = udp_recv_addr.address().to_string();
+										sinfo.id.sid = surl;
+										sinfo.isupdate = true;
+										sig_new_share(sinfo);
 									}
 								}
 							}; break;
@@ -546,12 +551,6 @@ class SimpleBackend : public IBackend {
 		// old interface now..
 		boost::signal<void(const ShareInfo&)> sig_new_share;
 		boost::signal<void(const TaskInfo&)> sig_new_task;
-		boost::signal<void(std::string)> sig_new_autoupdate; // TODO: remove this signal?
-
-		void slot_add_local_share(std::string name, boost::filesystem::path path)
-		{
-			service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
-		}
 
 	// new interface starts here!
 	public:
