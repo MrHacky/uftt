@@ -41,7 +41,8 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	std::string shareurl = sid.sid;
 
 	ret.shareid = ret.shareinfo.id = sid;
-	ret.id.id = conlist.size();
+	ret.id.mid = mid;
+	ret.id.cid = conlist.size();
 
 	size_t colonpos = shareurl.find_first_of(":");
 	std::string proto = shareurl.substr(0, colonpos);
@@ -59,6 +60,9 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	std::cout << "Connecting...\n";
 	newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
 
+	ret.shareinfo.name = share;
+	ret.shareinfo.host = host;
+	ret.shareinfo.proto = proto;
 	ret.isupload = false;
 	sig_new_task(ret);
 }

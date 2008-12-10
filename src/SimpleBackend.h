@@ -193,7 +193,8 @@ class SimpleBackend : public IBackend {
 				newconn->handle_tcp_accept();
 				TaskInfo tinfo;
 				tinfo.shareinfo.name = "Upload";
-				tinfo.id.id = conlist.size()-1;
+				tinfo.id.mid = mid;
+				tinfo.id.cid = conlist.size()-1;
 				tinfo.isupload = true;
 				sig_new_task(tinfo);
 				start_tcp_accept();
@@ -270,6 +271,8 @@ class SimpleBackend : public IBackend {
 											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, udp_recv_addr.address().to_string(), sname);
 											ShareInfo sinfo;
 											sinfo.name = sname;
+											sinfo.proto = STRFORMAT("uftt-v%d", sver);
+											sinfo.host = udp_recv_addr.address().to_string();
 											sinfo.id.sid = surl;
 											sinfo.islocal = false;
 											sig_new_share(sinfo);
@@ -467,7 +470,7 @@ class SimpleBackend : public IBackend {
 		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 		{
 			// TODO: fix this
-			int num = (int)tid.id;
+			int num = tid.cid;
 			conlist[num]->sig_progress.connect(cb);
 		}
 

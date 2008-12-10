@@ -13,6 +13,7 @@
 #include <QHeaderView>
 #include <QItemDelegate>
 #include <QMessageBox>
+#include <QMetatype>
 #include <QMimeData>
 #include <QProcess>
 #include <QStringList>
@@ -32,6 +33,8 @@
 #include "../util/FileSystem.h"
 
 #include "DialogDirectoryChooser.h"
+
+Q_DECLARE_METATYPE(ShareID);
 
 using namespace std;
 
@@ -220,22 +223,12 @@ void MainWindow::on_buttonRefresh_clicked()
 void MainWindow::addSimpleShare(const ShareInfo& info)
 {
 	if (info.islocal) return;
-	std::string url = info.id.sid;
-	std::string shareurl = url;
-	size_t colonpos = shareurl.find_first_of(":");
-	if (colonpos == std::string::npos)
-		return;
-	std::string proto = shareurl.substr(0, colonpos);
-	uint32 version = atoi(proto.substr(6).c_str());
-	shareurl.erase(0, proto.size()+3);
-	size_t slashpos = shareurl.find_first_of("\\/");
-	std::string host = shareurl.substr(0, slashpos);
-	std::string share = shareurl.substr(slashpos+1);
 
-	QString qshare = QString::fromStdString(share);
-	QString qproto = QString::fromStdString(proto);
-	QString qhost  = QString::fromStdString(host);
-	QString qurl   = QString::fromStdString(url);
+	QString qshare = QString::fromStdString(info.name);
+	QString qproto = QString::fromStdString(info.proto);
+	QString qhost  = QString::fromStdString(info.host);
+	QString qurl   = QString::fromStdString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
+	uint32 version = atoi(info.proto.substr(6).c_str());
 
 	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, 0, 0);
 
@@ -258,6 +251,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		rwi->setText(1, qhost);
 		rwi->setText(2, qproto);
 		rwi->setText(3, qurl);
+		rwi->setData(0, Qt::UserRole, QVariant::fromValue(info.id));
 	}
 }
 
@@ -287,10 +281,8 @@ void MainWindow::on_buttonDownload_clicked()
 	QTreeWidgetItem* rwi = listShares->currentItem();
 	if (!rwi)
 		return;
-	QString url = rwi->text(3);
 
-	ShareID sid;
-	sid.sid = url.toStdString();
+	ShareID sid = rwi->data(0, Qt::UserRole).value<ShareID>();
 	backend->startDownload(sid, dlpath);
 }
 
@@ -443,8 +435,9 @@ void MainWindow::new_autoupdate(std::string url, std::string build, bool fromweb
 		auto_update_path = DownloadEdit->text().toStdString();
 
 		ShareID sid;
-		sid.sid = url;
-		backend->startDownload(sid, auto_update_path);
+		// TODO: fix autoupdate
+		//sid.sid = url;
+		//backend->startDownload(sid, auto_update_path);
 		//backend->connectSigTaskStatus(ti.id, handler);
 	} else {
 		// TODO: fix web autoupdates
@@ -682,7 +675,7 @@ void MainWindow::new_task(const TaskInfo& info)
 	if (info.isupload) {
 		new_upload(info);
 	} else {
-		QString url = QString::fromStdString(info.shareinfo.id.sid);
+		QString url = QString::fromStdString(info.shareinfo.name);
 		QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
 		twi->setText(0, url);
 

@@ -14,13 +14,15 @@ struct ShareID {
 };
 
 struct TaskID {
-	uint64 id;
-	std::string sid;
+	uint32 mid;
+	uint32 cid;
 };
 
 struct ShareInfo {
 	ShareID id;
 	std::string name;
+	std::string host;
+	std::string proto;
 	bool isupdate;
 	bool islocal;
 };
