@@ -96,14 +96,19 @@ void SimpleBackend::doSetPeerfinderEnabled(bool enabled)
 	service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
 }
 
-void SimpleBackend::addLocalShare(const std::string& name, const boost::filesystem::path& path)
-{
-	service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
-}
-
 void SimpleBackend::setModuleID(uint32 mid)
 {
 	this->mid = mid;
+}
+
+void SimpleBackend::notifyAddLocalShare(const LocalShareID& sid)
+{
+	service.post(boost::bind(&SimpleBackend::add_local_share, this, sid.sid));
+}
+
+void SimpleBackend::notifyDelLocalShare(const LocalShareID& sid)
+{
+	// TODO: implement this
 }
 
 // TODO: deprecate following crap

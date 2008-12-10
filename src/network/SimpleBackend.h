@@ -431,15 +431,9 @@ class SimpleBackend : public INetModule {
 					send_publish(ep, name, 1, true);
 		}
 
-		void add_local_share(std::string name, boost::filesystem::path path)
+		void add_local_share(std::string name)
 		{
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
-			ShareInfo sinfo;
-			sinfo.id.sid = path.string();
-			sinfo.id.mid = mid;
-			sinfo.name = name;
-			sinfo.islocal = true;
-			sig_new_share(sinfo);
 		}
 
 		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
@@ -561,12 +555,14 @@ class SimpleBackend : public INetModule {
 		virtual void connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
 		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
-		virtual void addLocalShare(const std::string& name, const boost::filesystem::path& path);
 		virtual void doRefreshShares();
 		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path);
 
 		virtual void doManualPublish(const std::string& host);
 		virtual void doManualQuery(const std::string& host);
+
+		virtual void notifyAddLocalShare(const LocalShareID& sid);
+		virtual void notifyDelLocalShare(const LocalShareID& sid);
 
 		virtual void checkForWebUpdates();
 

@@ -221,7 +221,7 @@ void MainWindow::on_buttonRefresh_clicked()
 
 void MainWindow::addSimpleShare(const ShareInfo& info)
 {
-	if (info.islocal) return;
+	//if (info.islocal) return;
 	if (info.isupdate) {
 		new_autoupdate(info);
 		return;

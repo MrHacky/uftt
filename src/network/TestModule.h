@@ -18,6 +18,9 @@ class TestModule: public INetModule {
 		void doManualPublish(const std::string& host) {};
 		void doManualQuery(const std::string& host) {};
 
+		void notifyAddLocalShare(const LocalShareID& sid) {};
+		void notifyDelLocalShare(const LocalShareID& sid) {};
+
 		void doSetPeerfinderEnabled(bool enabled) {};
 
 		void setModuleID(uint32 mid) {};

@@ -13,6 +13,15 @@
 
 #include "UFTTSettings.h"
 
+struct LocalShareID {
+	std::string sid;
+};
+
+struct LocalShareInfo {
+	LocalShareID id;
+	boost::filesystem::path path;
+
+};
 struct ShareID {
 	uint32 mid;
 	std::string sid; // id as string for first step
@@ -29,8 +38,7 @@ struct ShareInfo {
 	std::string host;
 	std::string proto;
 	bool isupdate;
-	bool islocal;
-	ShareInfo() : isupdate(false), islocal(false) {};
+	ShareInfo() : isupdate(false) {};
 };
 
 struct TaskID {
@@ -59,12 +67,12 @@ class UFTTCore {
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
-		void delLocalShare(const ShareID& id);
+		void delLocalShare(const LocalShareID& id);
 
-		void connectSigAddLocalShare(const ShareInfo& info);
-		void connectSigDelLocalShare(const ShareID& id);
+		void connectSigAddLocalShare(const LocalShareInfo& info);
+		void connectSigDelLocalShare(const LocalShareID& id);
 
-		boost::filesystem::path getLocalSharePath(const ShareID& id);
+		boost::filesystem::path getLocalSharePath(const LocalShareID& id);
 		boost::filesystem::path getLocalSharePath(const std::string& id);
 
 		std::vector<std::string> getLocalShares();

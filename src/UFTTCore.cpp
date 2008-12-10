@@ -20,25 +20,34 @@ void UFTTCore::addLocalShare(const std::string& name, const boost::filesystem::p
 {
 	// TODO: locking
 	localshares[name] = path;
+
+	LocalShareID sid;
+	sid.sid = name;
+
+	BOOST_FOREACH(INetModuleRef nm, netmodules)
+		nm->notifyAddLocalShare(sid);
 }
 
-void UFTTCore::delLocalShare(const ShareID& id)
+void UFTTCore::delLocalShare(const LocalShareID& id)
 {
 	// TODO: locking
 	localshares[id.sid] = "";
+
+	BOOST_FOREACH(INetModuleRef nm, netmodules)
+		nm->notifyDelLocalShare(id);
 }
 
-void UFTTCore::connectSigAddLocalShare(const ShareInfo& info)
+void UFTTCore::connectSigAddLocalShare(const LocalShareInfo& info)
 {
 	// TODO: implement this
 }
 
-void UFTTCore::connectSigDelLocalShare(const ShareID& id)
+void UFTTCore::connectSigDelLocalShare(const LocalShareID& id)
 {
 	// TODO: implement this
 }
 
-boost::filesystem::path UFTTCore::getLocalSharePath(const ShareID& id)
+boost::filesystem::path UFTTCore::getLocalSharePath(const LocalShareID& id)
 {
 	return getLocalSharePath(id.sid);
 }

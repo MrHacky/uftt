@@ -18,6 +18,9 @@ class INetModule {
 
 		virtual void doSetPeerfinderEnabled(bool enabled) = 0;
 
+		virtual void notifyAddLocalShare(const LocalShareID& sid) = 0;
+		virtual void notifyDelLocalShare(const LocalShareID& sid) = 0;
+
 		virtual void setModuleID(uint32 mid) = 0;
 };
 
