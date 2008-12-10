@@ -9,5 +9,5 @@ boost::filesystem::path SimpleTCPConnection::getsharepath(std::string sharename)
 
 bool SimpleTCPConnection::use_expiremental_resume()
 {
-	return backend->settings.experimentalresume;
+	return backend->getSettings().experimentalresume;
 }

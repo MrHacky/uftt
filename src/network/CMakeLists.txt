@@ -1,6 +1,6 @@
 SET(NETMODULES
 	TestModule
-	SimpleBackend
+	SimpleBackendIPv4
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -20,6 +20,8 @@ ENDFOREACH(netmod)
 ADD_LIBRARY(uftt-network
 	INetModule.h
 	Misc.h
+	SimpleBackend.h
+	SimpleBackendBase.h       SimpleBackendBase.cpp
 	NetModuleLinker.h         NetModuleLinker.cpp
 	SimpleConnection.h        SimpleConnection.cpp
 	${NETMODULE_SOURCE_FILES} ${LINK_INC_FILE}

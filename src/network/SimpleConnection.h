@@ -15,7 +15,7 @@
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_smallint.hpp>
 
-
+#include "SimpleBackendBase.h"
 // TODO: remove evil global...
 extern boost::rand48 rng;
 
@@ -123,8 +123,8 @@ struct dirsender {
 
 class SimpleTCPConnection {
 	private:
-		friend class SimpleBackend;
-		class SimpleBackend* backend;
+		friend SimpleBackendBase;
+		SimpleBackendBase* backend;
 
 		enum {
 			CMD_NONE,
@@ -273,7 +273,7 @@ class SimpleTCPConnection {
 
 		cmdinfo rcmd;
 	public:
-		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackend* backend_)
+		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackendBase* backend_)
 			: backend(backend_)
 			, service(service_)
 			, socket(service_)
@@ -299,6 +299,10 @@ class SimpleTCPConnection {
 			lcommands.erase(DEPRECATED_CMD_REPLY_SIG_FILE);
 
 			rresume = false;
+		}
+
+		boost::asio::ip::tcp::socket& getSocket() {
+			return socket;
 		}
 
 		uint64 transfered_bytes;
