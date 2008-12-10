@@ -10,10 +10,11 @@
 #include <boost/signal.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
-
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_smallint.hpp>
+
 
 // TODO: remove evil global...
 extern boost::rand48 rng;
@@ -872,7 +873,7 @@ class SimpleTCPConnection {
 								uint64 pieces = tsize / (1024 * 1024);
 								if (tsize < 48*1024) tsize = 48*1024;
 								if (pieces < 3) pieces = 3;
-								psize = tsize / pieces;
+								psize = boost::numeric_cast<uint32>(tsize / pieces);
 
 								uint64 start = psize;
 								uint64 stop = fsize - psize;
