@@ -196,6 +196,12 @@ class SimpleBackend : public SimpleBackendBase {
 
 		std::set<uint32> parseVersions(uint8* base, uint start, uint len)
 		{
+			uint end;
+			return parseVersions(base, start, len, &end);
+		}
+
+		std::set<uint32> parseVersions(uint8* base, uint start, uint len, uint* end)
+		{
 			std::set<uint32> versions;
 			uint32 i = start;
 			if (i < len) {
@@ -209,6 +215,7 @@ class SimpleBackend : public SimpleBackendBase {
 				}
 			}
 			if (versions.empty()) versions.insert(1);
+			*end = i-start;
 			return versions;
 		}
 
@@ -227,7 +234,9 @@ class SimpleBackend : public SimpleBackendBase {
 
 								std::set<uint32> versions = parseVersions(udp_recv_buf, vstart, len);
 
-								       if (versions.count(4)) {
+								       if (versions.count(5)) {
+									send_publishes(udp_recv_addr, 3, true);
+								} else if (versions.count(4)) {
 									send_publishes(udp_recv_addr, 2, true);
 								} else if (versions.count(3)) {
 									send_publishes(udp_recv_addr, 0, true);
@@ -242,11 +251,12 @@ class SimpleBackend : public SimpleBackendBase {
 									uint32 slen = udp_recv_buf[5];
 									if (len >= slen+6) {
 										std::set<uint32> versions;
+										uint vlen = 0;
 										if (rpver == 1)
-											versions = parseVersions(udp_recv_buf, slen+6, len);
+											versions = parseVersions(udp_recv_buf, slen+6, len, &vlen);
 										versions.insert(rpver);
 										uint32 sver = 0;
-										if (versions.count(2))
+										if (versions.count(2) || versions.count(3)) // Protocol 2 and 3 send shares (sver) in the same way
 											sver = 2;
 										else if (versions.count(1))
 											sver = 1;
@@ -260,6 +270,11 @@ class SimpleBackend : public SimpleBackendBase {
 											sinfo.host = udp_recv_addr.address().to_string();
 											sinfo.id.sid = surl;
 											sinfo.id.mid = mid;
+											if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
+												int nickname_length = udp_recv_buf[slen + 6 + vlen];
+												std::string nickname((char*)udp_recv_buf + 6 + slen + 1 + vlen, (char*)udp_recv_buf + 6 + slen + 1 + vlen + nickname_length);
+												sinfo.user = nickname;
+											}
 											sig_new_share(sinfo);
 										}
 									}
@@ -334,6 +349,7 @@ class SimpleBackend : public SimpleBackendBase {
 			qversions.insert(1);
 			qversions.insert(2);
 			qversions.insert(4);
+			qversions.insert(5);
 
 			int plen = 8;
 			BOOST_FOREACH(uint32 ver, qversions) {
@@ -360,6 +376,14 @@ class SimpleBackend : public SimpleBackendBase {
 				std::cout << "query failed: " << err.message() << '\n';
 		}
 
+		/**
+		 * send_publish announces our list of shares to the network.
+		 * Note, there is a hack implemented here to also support older versions of the protocol.
+		 * The hack is that we reuse the version number 1. This is because in version 1 uftt did
+		 * not include backward/forward version info. So we send the packet as version 1 and add
+		 * the extend info at the end. Old version will ignore the extra data while new versions
+		 * will parse this and everybody was happy :-)
+		 **/
 		void send_publish(const boost::asio::ip::udp::endpoint& ep, const std::string& name, int sharever, bool isbuild = false)
 		{
 			uint8 udp_send_buf[1024];
@@ -372,10 +396,12 @@ class SimpleBackend : public SimpleBackendBase {
 			memcpy(&udp_send_buf[6], name.data(), name.size());
 
 			uint32 plen = name.size()+6;
+			//advertise which versions of the share we support
 			if (!isbuild && sharever == 1 && ep.address() == Proto::addr_broadcast()) {
 				std::set<uint32> sversions;
 				sversions.insert(1);
 				sversions.insert(2);
+				sversions.insert(3);
 
 				udp_send_buf[plen++] = sversions.size();
 
@@ -387,6 +413,14 @@ class SimpleBackend : public SimpleBackendBase {
 					//++udp_send_buf[7];
 					plen += 8;
 				}
+			}
+
+			if(sharever == 1 || sharever >= 3) { // Version 3 added support for usernames (nicknames)
+				#undef min
+				int nickname_length = std::min((size_t)255, settings.nickname.size());
+				udp_send_buf[plen++] = nickname_length;
+				memcpy(&udp_send_buf[plen], settings.nickname.data(), nickname_length);
+				plen += nickname_length;
 			}
 
 			boost::system::error_code err;

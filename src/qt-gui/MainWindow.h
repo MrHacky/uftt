@@ -83,6 +83,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void download_done(const ShareID& sid);
 		void new_upload(const TaskInfo& info);
 
+		void on_editNickName_textChanged(QString text);
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);
 

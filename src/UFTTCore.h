@@ -37,6 +37,7 @@ struct ShareInfo {
 	std::string name;
 	std::string host;
 	std::string proto;
+	std::string user;
 	bool isupdate;
 	ShareInfo() : isupdate(false) {};
 };

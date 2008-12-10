@@ -37,6 +37,15 @@ Q_DECLARE_METATYPE(ShareID);
 
 using namespace std;
 
+enum ShareListColumNames {
+	SLCN_USER = 0,
+	SLCN_SHARE,
+	SLCN_HOST,
+	SLCN_PROTOCOL,
+	SLCN_URL,
+};
+
+
 class MyItemDelegate : public QItemDelegate
 {
 public:
@@ -145,8 +154,8 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	//this->listShares->header()->moveSection(1+1,1);
 	//this->listShares->header()->moveSection(0+2,2);
 	//this->listShares->header()->moveSection(3+0,3);
-	this->listShares->hideColumn(2);
-	this->listShares->hideColumn(3);
+	this->listShares->hideColumn(SLCN_URL);
+	this->listShares->hideColumn(SLCN_PROTOCOL);
 	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
@@ -227,35 +236,45 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		return;
 	}
 
+	QString quser  = QString::fromStdString(info.user);
 	QString qshare = QString::fromStdString(info.name);
 	QString qproto = QString::fromStdString(info.proto);
 	QString qhost  = QString::fromStdString(info.host);
 	QString qurl   = QString::fromStdString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
 	uint32 version = atoi(info.proto.substr(6).c_str());
 
-	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, 0, 0);
+	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, Qt::MatchExactly, SLCN_SHARE);
 
 	bool found = false;
 	BOOST_FOREACH(QTreeWidgetItem* twi, fres) {
-		if (twi->text(1) == qhost && twi->text(0) == qshare) {
+		if (twi->text(SLCN_HOST) == qhost && twi->text(SLCN_SHARE) == qshare) {
 			found = true;
-			QString qoprot = twi->text(2);
+			QString qoprot = twi->text(SLCN_PROTOCOL);
 			uint32 over = atoi(qoprot.toStdString().substr(6).c_str());
-			if (over < version) {
-				twi->setText(2, qproto);
-				twi->setText(3, qurl);
+			if (over <= version) {
+				twi->setText(SLCN_USER, quser);
+				twi->setText(SLCN_PROTOCOL, qproto);
+				twi->setText(SLCN_URL, qurl);
 			}
 		}
 	}
 
 	if (!found) {
 		QTreeWidgetItem* rwi = new QTreeWidgetItem(listShares, 0);
-		rwi->setText(0, qshare);
-		rwi->setText(1, qhost);
-		rwi->setText(2, qproto);
-		rwi->setText(3, qurl);
+		rwi->setText(SLCN_USER, quser);
+		rwi->setText(SLCN_SHARE, qshare);
+		rwi->setText(SLCN_HOST, qhost);
+		rwi->setText(SLCN_PROTOCOL, qproto);
+		rwi->setText(SLCN_URL, qurl);
 		rwi->setData(0, Qt::UserRole, QVariant::fromValue(info.id));
 	}
+}
+
+void MainWindow::on_editNickName_textChanged(QString text) {
+	settings.nickname = text.toStdString();
+	//TODO: Rebroadcast sharelist (needs backend support)
+	//      (re-add every share with new nickname)
+	on_buttonRefresh_clicked();
 }
 
 void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
@@ -264,12 +283,12 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 		QDrag *drag = new QDrag(this);
 		QMimeData *mimeData = new QMimeData;
 
-		mimeData->setText(rwi->text(0));
-		drag->setMimeData(mimeData);
+		// TODO: figure this out...
+		//mimeData->setText(rwi->text(0));
+		//drag->setMimeData(mimeData);
 		//drag->setPixmap(iconPixmap);
 
 		// Qt::DropAction dropAction = drag->start();
-		// TODO: figure this out...
 	}
 
 }
@@ -598,6 +617,7 @@ void MainWindow::check_autoupdate_interval()
 void MainWindow::onshow()
 {
 	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
+	this->editNickName->setText(QString::fromStdString(settings.nickname));
 	check_autoupdate_interval();
 }
 

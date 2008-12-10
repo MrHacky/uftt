@@ -17,7 +17,7 @@
     <rect>
      <x>280</x>
      <y>319</y>
-     <width>357</width>
+     <width>308</width>
      <height>274</height>
     </rect>
    </property>
@@ -114,6 +114,11 @@
       <widget class="QDragDropTreeWidget" name="listShares" >
        <column>
         <property name="text" >
+         <string>User</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
          <string>Share Name</string>
         </property>
        </column>
@@ -170,6 +175,16 @@
           <string>Add Share (file)...</string>
          </property>
         </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblNickName" >
+         <property name="text" >
+          <string>Nickname</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="editNickName" />
        </item>
        <item>
         <spacer>
@@ -378,9 +393,9 @@
   <widget class="QDockWidget" name="dockTaskList" >
    <property name="geometry" >
     <rect>
-     <x>643</x>
+     <x>594</x>
      <y>319</y>
-     <width>274</width>
+     <width>323</width>
      <height>274</height>
     </rect>
    </property>
@@ -395,7 +410,7 @@
      <rect>
       <x>0</x>
       <y>20</y>
-      <width>274</width>
+      <width>323</width>
       <height>254</height>
      </rect>
     </property>

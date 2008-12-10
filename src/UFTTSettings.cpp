@@ -26,6 +26,8 @@ UFTTSettings::UFTTSettings()
 	lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 	prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 
+	nickname = "uftt-user";
+
 	experimentalresume = false;
 }
 
