@@ -11,12 +11,15 @@
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "UFTTSettings.h"
+
 struct ShareID {
+	uint32 mid;
 	std::string sid; // id as string for first step
 
 	bool operator==(const ShareID& o) const
 	{
-		return (this->sid == o.sid);
+		return (this->sid == o.sid) && (this->mid == o.mid);
 	}
 };
 
@@ -50,8 +53,9 @@ class UFTTCore {
 	private:
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
+		UFTTSettings& settings;
 	public:
-		UFTTCore();
+		UFTTCore(UFTTSettings& settings_);
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
@@ -63,12 +67,13 @@ class UFTTCore {
 		boost::filesystem::path getLocalSharePath(const ShareID& id);
 		boost::filesystem::path getLocalSharePath(const std::string& id);
 
+		std::vector<std::string> getLocalShares();
 
 		// Remote Share Listing/Downloading
-		void connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
-		void connectSigDelShare(const boost::function<void(const ShareID&)>&);
-		void connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>&);
-		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
+		void connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb);
+		void connectSigDelShare(const boost::function<void(const ShareID&)>& cb);
+		void connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb);
+		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 
 		void startDownload(const ShareID& sid, const boost::filesystem::path& path);
 
@@ -82,6 +87,7 @@ class UFTTCore {
 		// Deprecated but still in use
 		void checkForWebUpdates();
 		void doSetPeerfinderEnabled(bool enabled);
+		UFTTSettings& getSettingsRef();
 };
 
 #endif//UFTT_CORE_H

@@ -19,10 +19,10 @@
 // TODO: remove evil global...
 extern boost::rand48 rng;
 
-#include "Globals.h"
+#include "../Globals.h"
 
-#include "Platform.h"
-#include "IBackend.h"
+#include "../Platform.h"
+#include "../UFTTCore.h"
 
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"

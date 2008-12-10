@@ -31,11 +31,8 @@ SET(UFTT_SOURCES
 
 	Types.h
 	Globals.h
-	IBackend.h
 	BuildString.h
 	UFTTCore.h            UFTTCore.cpp
-	SimpleBackend.h       SimpleBackend.cpp
-	SimpleConnection.h    SimpleConnection.cpp
 	UFTTSettings.h        UFTTSettings.cpp
 	AutoUpdate.h          AutoUpdate.cpp
 	Platform.h            Platform.cpp

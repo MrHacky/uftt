@@ -1,5 +1,4 @@
 #include "MainWindow.moc"
-#include <boost/asio.hpp>
 
 #include <iostream>
 #include <fstream>
@@ -450,7 +449,7 @@ void MainWindow::download_done(const ShareID& sid)
 	}
 }
 
-void MainWindow::SetBackend(IBackend* be)
+void MainWindow::SetBackend(UFTTCore* be)
 {
 	backend = be;
 
@@ -524,6 +523,7 @@ void MainWindow::on_actionCheckForWebUpdates_triggered()
 	backend->checkForWebUpdates();
 }
 
+/*
 void MainWindow::cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req)
 {
 	if (err) {
@@ -540,6 +540,7 @@ void MainWindow::cb_web_download_done(const boost::system::error_code& err, cons
 		this->doSelfUpdate(build, temp_path);
 	}
 }
+*/
 
 void MainWindow::on_actionUpdateNever_toggled(bool on)
 {

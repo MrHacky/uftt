@@ -1,7 +1,7 @@
 #ifndef SIMPLE_BACKEND_H
 #define SIMPLE_BACKEND_H
 
-#include "Types.h"
+#include "../Types.h"
 
 #define UFTT_PORT (47189)
 
@@ -14,17 +14,18 @@
 #include <boost/system/error_code.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include "net-asio/asio_file_stream.h"
-#include "net-asio/asio_http_request.h"
+#include "../net-asio/asio_file_stream.h"
+#include "../net-asio/asio_http_request.h"
 
 #include "SimpleConnection.h"
-#include "UFTTSettings.h"
+#include "../UFTTSettings.h"
 
-#include "AutoUpdate.h"
+#include "../AutoUpdate.h"
 
 #include "../util/StrFormat.h"
 
-#include "IBackend.h"
+#include "../UFTTCore.h"
+#include "INetModule.h"
 
 inline boost::asio::ip::address my_addr_from_string(const std::string& str)
 {
@@ -46,16 +47,17 @@ inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
 	);
 }
 
-class SimpleBackend : public IBackend {
+class SimpleBackend : public INetModule {
 	private:
 		boost::asio::io_service service;
 		services::diskio_service diskio;
+		UFTTCore* core;
 		boost::asio::ip::udp::socket udpsocket;
 		boost::asio::ip::tcp::acceptor tcplistener;
 		SimpleTCPConnectionRef newconn;
 		std::vector<SimpleTCPConnectionRef> conlist;
-		std::map<std::string, boost::filesystem::path> sharelist;
 		int udpretries;
+		uint32 mid;
 
 		boost::thread servicerunner;
 
@@ -274,6 +276,7 @@ class SimpleBackend : public IBackend {
 											sinfo.proto = STRFORMAT("uftt-v%d", sver);
 											sinfo.host = udp_recv_addr.address().to_string();
 											sinfo.id.sid = surl;
+											sinfo.id.mid = mid;
 											sig_new_share(sinfo);
 										}
 									}
@@ -290,6 +293,7 @@ class SimpleBackend : public IBackend {
 										sinfo.proto = STRFORMAT("uftt-v%d", 1);
 										sinfo.host = udp_recv_addr.address().to_string();
 										sinfo.id.sid = surl;
+										sinfo.id.mid = mid;
 										sinfo.isupdate = true;
 										sig_new_share(sinfo);
 									}
@@ -417,11 +421,10 @@ class SimpleBackend : public IBackend {
 		}
 
 		void send_publishes(const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds) {
-			typedef std::pair<const std::string, boost::filesystem::path> shareiter;
 			if (sharever > 0)
-				BOOST_FOREACH(shareiter& item, sharelist)
-					if (item.first.size() < 0xff && !item.second.empty())
-						send_publish(ep, item.first, sharever);
+				BOOST_FOREACH(const std::string& item, core->getLocalShares())
+					if (item.size() < 0xff)
+						send_publish(ep, item, sharever);
 
 			if (sendbuilds)
 				BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
@@ -430,13 +433,10 @@ class SimpleBackend : public IBackend {
 
 		void add_local_share(std::string name, boost::filesystem::path path)
 		{
-			if (sharelist[name] != "")
-				std::cout << "warning: replacing share with identical name\n";
-			sharelist[name] = path;
-
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
 			ShareInfo sinfo;
 			sinfo.id.sid = path.string();
+			sinfo.id.mid = mid;
 			sinfo.name = name;
 			sinfo.islocal = true;
 			sig_new_share(sinfo);
@@ -512,13 +512,14 @@ class SimpleBackend : public IBackend {
 	public:
 		UFTTSettings& settings; // TODO: remove need for this hack!
 
-		SimpleBackend(UFTTSettings& settings_)
+		SimpleBackend(UFTTCore* core_)
 			: diskio(service)
 			, udpsocket(service)
 			, tcplistener(service)
-			, settings(settings_)
+			, settings(core->getSettingsRef())
 			, peerfindertimer(service)
 			, udpretries(10)
+			, core(core_)
 		{
 			gdiskio = &diskio;
 			udpsocket.open(boost::asio::ip::udp::v4());
@@ -544,7 +545,7 @@ class SimpleBackend : public IBackend {
 		}
 
 		boost::filesystem::path getsharepath(std::string name) {
-			return sharelist[name]; // TODO: remove need for this hack!
+			return core->getLocalSharePath(name); // TODO: remove need for this hack!
 		}
 
 	private:
@@ -570,6 +571,8 @@ class SimpleBackend : public IBackend {
 		virtual void checkForWebUpdates();
 
 		virtual void doSetPeerfinderEnabled(bool enabled);
+
+		virtual void setModuleID(uint32 mid);
 };
 
 #endif//SIMPLE_BACKEND_H

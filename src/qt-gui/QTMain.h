@@ -1,12 +1,12 @@
 #ifndef QT_MAIN_H
 #define QT_MAIN_H
 
-//#include "../network/NetworkThread.h"
+#include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/filesystem.hpp>
 
-#include "../IBackend.h"
-
+#include "../UFTTCore.h"
+class UFTTCore;
 class UFTTSettings;
 class QTMain {
 	private:
@@ -17,7 +17,7 @@ class QTMain {
 		QTMain( int& argc, char **argv, UFTTSettings* settings);
 		~QTMain();
 
-		void BindEvents(IBackend* t);
+		void BindEvents(UFTTCore* t);
 
 		int run();
 };

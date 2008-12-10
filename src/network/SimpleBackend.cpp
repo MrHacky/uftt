@@ -1,5 +1,8 @@
 #include "SimpleBackend.h"
 
+#include "NetModuleLinker.h"
+REGISTER_NETMODULE_CLASS(SimpleBackend);
+
 #include <set>
 //#include "net-asio/asio_ipx.h"
 
@@ -96,6 +99,11 @@ void SimpleBackend::doSetPeerfinderEnabled(bool enabled)
 void SimpleBackend::addLocalShare(const std::string& name, const boost::filesystem::path& path)
 {
 	service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
+}
+
+void SimpleBackend::setModuleID(uint32 mid)
+{
+	this->mid = mid;
 }
 
 // TODO: deprecate following crap

@@ -10,9 +10,9 @@
 
 #include "../UFTTSettings.h"
 #include "QMarshaller.h"
-#include "../net-asio/asio_http_request.h"
+//#include "../net-asio/asio_http_request.h"
 
-#include "../IBackend.h"
+#include "../UFTTCore.h"
 
 class QTreeWidgetItem;
 class QCloseEvent;
@@ -27,7 +27,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		ShareID auto_update_share;
 		boost::filesystem::path auto_update_path;
 		std::string auto_update_build;
-		IBackend* backend;
+		UFTTCore* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
@@ -46,7 +46,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDropTriggered(QDropEvent* evt);
 	public:
 		MainWindow(UFTTSettings& settings_);
-		void SetBackend(IBackend* be);
+		void SetBackend(UFTTCore* be);
 		~MainWindow();
 
 	public Q_SLOTS:
@@ -82,8 +82,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void new_autoupdate(const ShareInfo& info);
 		void download_done(const ShareID& sid);
 		void new_upload(const TaskInfo& info);
-
-		void cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req);
 
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);

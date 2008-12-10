@@ -14,13 +14,14 @@ extern "C" void tss_cleanup_implemented(void){}
 //#include "network/NetworkThread.h"
 #include "net-asio/asio_ipx.h"
 #include "net-asio/ipx_conn.h"
-#include "SimpleBackend.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/thread.hpp>
+
+#include <boost/random/linear_congruential.hpp>
 
 #include "UFTTCore.h"
 
@@ -83,13 +84,13 @@ int runtest() {
 			boost::asio::ip::tcp::socket rsock(service);
 
 			acceptor.open(boost::asio::ip::tcp::v4());
-			acceptor.bind(boost::asio::ip::tcp::endpoint(my_addr_from_string("127.0.0.1"), 23432));
+			acceptor.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::loopback(), 23432));
 			acceptor.listen(16);
 
 			acceptor.async_accept(ssock, settrue(&accepted));
 
 			rsock.open(boost::asio::ip::tcp::v4());
-			rsock.async_connect(boost::asio::ip::tcp::endpoint(my_addr_from_string("127.0.0.1"), 23432), settrue(&connected));
+			rsock.async_connect(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::loopback(), 23432), settrue(&connected));
 
 			boost::asio::deadline_timer wd(service);
 			wd.expires_from_now(boost::posix_time::seconds(10));
@@ -242,10 +243,9 @@ int imain( int argc, char **argv )
 
 	cout << "Build: " << thebuildstring << '\n';
 
-	UFTTCore core;
+	UFTTCore core(settings);
 
-	SimpleBackend backend(settings);
-	gui.BindEvents(&backend); //TODO: make simplebackend implement IBackend to this works
+	gui.BindEvents(&core);
 
 	if (madeConsole)
 		platform::freeConsole();
@@ -259,9 +259,9 @@ int imain( int argc, char **argv )
 	if (argc > 2 && string(argv[1]) == "--delete")
 		AutoUpdater::remove(run_service, work_service, argv[2]);
 
-	backend.doRefreshShares();
+	core.doRefreshShares();
 
-	backend.doManualPublish("255.255.255.255");
+	core.doManualPublish("255.255.255.255");
 
 	int ret = gui.run();
 
