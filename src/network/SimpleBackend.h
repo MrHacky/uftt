@@ -346,7 +346,7 @@ class SimpleBackend : public SimpleBackendBase {
 			}
 
 			boost::system::error_code err;
-			if (ep.address() != boost::asio::ip::address_v4::broadcast())
+			if (ep.address() != Proto::addr_broadcast())
 				udpsocket.send_to(
 					boost::asio::buffer(udp_send_buf, plen),
 					ep,
@@ -372,7 +372,7 @@ class SimpleBackend : public SimpleBackendBase {
 			memcpy(&udp_send_buf[6], name.data(), name.size());
 
 			uint32 plen = name.size()+6;
-			if (!isbuild && sharever == 1 && ep.address() == boost::asio::ip::address_v4::broadcast()) {
+			if (!isbuild && sharever == 1 && ep.address() == Proto::addr_broadcast()) {
 				std::set<uint32> sversions;
 				sversions.insert(1);
 				sversions.insert(2);
@@ -390,7 +390,7 @@ class SimpleBackend : public SimpleBackendBase {
 			}
 
 			boost::system::error_code err;
-			if (ep.address() != boost::asio::ip::address_v4::broadcast())
+			if (ep.address() != Proto::addr_broadcast())
 				udpsocket.send_to(
 					boost::asio::buffer(udp_send_buf, plen),
 					ep,
@@ -416,7 +416,7 @@ class SimpleBackend : public SimpleBackendBase {
 
 		void add_local_share(std::string name)
 		{
-			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
+			send_publish(boost::asio::ip::udp::endpoint(Proto::addr_broadcast(), UFTT_PORT), name, 1);
 		}
 
 		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
@@ -498,17 +498,22 @@ class SimpleBackend : public SimpleBackendBase {
 			, core(core_)
 		{
 			gdiskio = &diskio;
-			udpsocket.open(boost::asio::ip::udp::v4());
-			udpsocket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address(), UFTT_PORT));
-			udpsocket.set_option(boost::asio::ip::udp::socket::broadcast(true));
+			udpsocket.open(Proto::udp());
+			udpsocket.bind(boost::asio::ip::udp::endpoint(Proto::addr_any(), UFTT_PORT));
+			if (Proto::udp() == boost::asio::ip::udp::v4()) {
+				udpsocket.set_option(boost::asio::ip::udp::socket::broadcast(true));
+			} else {
+				udpsocket.set_option(boost::asio::ip::multicast::join_group(Proto::addr_broadcast()));
+				udpsocket.set_option(boost::asio::ip::multicast::enable_loopback(true));
+			}
 
-			tcplistener.open(boost::asio::ip::tcp::v4());
-			tcplistener.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address(), UFTT_PORT));
+			tcplistener.open(Proto::tcp());
+			tcplistener.bind(boost::asio::ip::tcp::endpoint(Proto::addr_any(), UFTT_PORT));
 			tcplistener.listen(16);
 
 			// bind autoupdater
 			updateProvider.newbuild.connect(
-				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), _1, 1, true)
+				boost::bind(&SimpleBackend::send_publish, this, boost::asio::ip::udp::endpoint(Proto::addr_broadcast(), UFTT_PORT), _1, 1, true)
 			);
 
 			start_udp_receive();
@@ -554,7 +559,7 @@ class SimpleBackend : public SimpleBackendBase {
 
 		void doRefreshShares()
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::send_query, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT)));
+			service.post(boost::bind(&SimpleBackend<Proto>::send_query, this, boost::asio::ip::udp::endpoint(Proto::addr_broadcast(), UFTT_PORT)));
 		}
 
 		void startDownload(const ShareID& sid, const boost::filesystem::path& path)
