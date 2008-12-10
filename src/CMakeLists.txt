@@ -30,6 +30,7 @@ SET(UFTT_SOURCES
 
 	Types.h
 	Globals.h
+	IBackend.h
 	BuildString.h
 	SimpleBackend.h       SimpleBackend.cpp
 	SimpleConnection.h    SimpleConnection.cpp
