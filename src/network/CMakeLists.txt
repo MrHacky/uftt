@@ -1,6 +1,7 @@
 SET(NETMODULES
 	TestModule
 	SimpleBackendIPv4
+	SimpleBackendIPv6
 )
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})

@@ -34,4 +34,10 @@ namespace NetModuleLinker {
 	} \
 }
 
+#define DISABLE_NETMODULE_CLASS(cls) namespace NetModuleLinker{ \
+	namespace ns_cls_ ## cls { \
+		int x = 1; \
+	} \
+}
+
 #endif//NETMODULE_LINKER_H

@@ -11,6 +11,7 @@ std::vector<boost::asio::ip::address> SimpleBackendBase::get_broadcast_adresses(
 
 	// for backup...
 	result.insert(boost::asio::ip::address_v4::broadcast());
+	result.insert(boost::asio::ip::address_v6::from_string("ff02::1"));
 
 // TODO: test linux implementation below
 // TODO: unify win+linux implementations
