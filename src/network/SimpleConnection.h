@@ -121,7 +121,6 @@ struct dirsender {
 
 class SimpleTCPConnection {
 	private:
-		friend SimpleBackendBase;
 		SimpleBackendBase* backend;
 
 		enum {

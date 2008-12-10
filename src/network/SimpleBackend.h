@@ -438,11 +438,12 @@ class SimpleBackend : public SimpleBackendBase {
 		}
 
 		void send_publishes(const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds) {
-			if (sharever > 0)
-				BOOST_FOREACH(const std::string& item, core->getLocalShares())
+			if (sharever > 0) {
+				std::vector<std::string> local_shares = core->getLocalShares();
+				BOOST_FOREACH(const std::string& item, local_shares)
 					if (item.size() < 0xff)
 						send_publish(ep, item, sharever);
-
+			}
 			if (sendbuilds)
 				BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
 					send_publish(ep, name, 1, true);

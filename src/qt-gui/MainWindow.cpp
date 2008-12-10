@@ -12,7 +12,7 @@
 #include <QHeaderView>
 #include <QItemDelegate>
 #include <QMessageBox>
-#include <QMetatype>
+#include <QMetaType>
 #include <QMimeData>
 #include <QProcess>
 #include <QStringList>
@@ -29,7 +29,7 @@
 #include "../Platform.h"
 #include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
-#include "../util/FileSystem.h"
+#include "../util/Filesystem.h"
 
 #include "DialogDirectoryChooser.h"
 

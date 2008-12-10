@@ -24,4 +24,4 @@ class INetModule {
 		virtual void setModuleID(uint32 mid) = 0;
 };
 
-#endif INETMODULE_H
+#endif//INETMODULE_H
