@@ -241,7 +241,7 @@ int imain( int argc, char **argv )
 	cout << "Build: " << thebuildstring << '\n';
 
 	SimpleBackend backend(settings);
-	//gui.BindEvents(&backend); TODO: make simplebackend implement IBackend to this works
+	gui.BindEvents(&backend); //TODO: make simplebackend implement IBackend to this works
 
 	if (madeConsole)
 		platform::freeConsole();
@@ -255,9 +255,9 @@ int imain( int argc, char **argv )
 	if (argc > 2 && string(argv[1]) == "--delete")
 		AutoUpdater::remove(run_service, work_service, argv[2]);
 
-	backend.slot_refresh_shares();
+	backend.doRefreshShares();
 
-	backend.do_manual_publish("255.255.255.255");
+	backend.doManualPublish("255.255.255.255");
 
 	int ret = gui.run();
 

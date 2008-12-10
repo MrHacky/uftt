@@ -22,6 +22,7 @@ extern boost::rand48 rng;
 #include "Globals.h"
 
 #include "Platform.h"
+#include "IBackend.h"
 
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
@@ -382,7 +383,7 @@ class SimpleTCPConnection {
 		uint64 transfered_bytes;
 		uint64 total_bytes;
 		boost::asio::deadline_timer progress_timer;
-		boost::signal<void(uint64,std::string,uint32,uint64)> sig_progress;
+		boost::signal<void(const TaskInfo&)> sig_progress;
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -395,18 +396,24 @@ class SimpleTCPConnection {
 			if (e) {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
+				TaskInfo tinfo;
+				tinfo.queue = 0;
+				tinfo.transferred = transfered_bytes;
+				tinfo.size = total_bytes;
+				tinfo.queue = sendqueue.size()+open_files;
 				if (error_message != "") {
-					sig_progress(transfered_bytes, std::string() + "Error: " + error_message, 0, total_bytes);
+					tinfo.status = std::string() + "Error: " + error_message;
 				} else if (dldone && open_files == 0) {
-					sig_progress(transfered_bytes, "Completed", 0, total_bytes);
+					tinfo.status ="Completed";
 					disconnect();
 				} else if (uldone) {
-					sig_progress(transfered_bytes, "Completed", 0, total_bytes);
+					tinfo.status ="Completed";
 					disconnect();
 				} else {
-					sig_progress(transfered_bytes, "Transfering", sendqueue.size()+open_files, total_bytes);
+					tinfo.status ="Transfering";
 					start_update_progress();
 				}
+				sig_progress(tinfo);
 			}
 		}
 

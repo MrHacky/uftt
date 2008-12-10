@@ -24,6 +24,8 @@
 
 #include "../util/StrFormat.h"
 
+#include "IBackend.h"
+
 inline boost::asio::ip::address my_addr_from_string(const std::string& str)
 {
 	if (str == "255.255.255.255")
@@ -44,7 +46,7 @@ inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
 	);
 }
 
-class SimpleBackend {
+class SimpleBackend : public IBackend {
 	private:
 		boost::asio::io_service service;
 		services::diskio_service diskio;
@@ -189,7 +191,11 @@ class SimpleBackend {
 				std::cout << "handling tcp accept\n";
 				conlist.push_back(newconn);
 				newconn->handle_tcp_accept();
-				sig_new_upload("Upload", conlist.size()-1);
+				TaskInfo tinfo;
+				tinfo.shareinfo.name = "Upload";
+				tinfo.id.id = conlist.size()-1;
+				tinfo.isupload = true;
+				sig_new_task(tinfo);
 				start_tcp_accept();
 			}
 		}
@@ -262,7 +268,11 @@ class SimpleBackend {
 										if (sver > 0) {
 											std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
 											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, udp_recv_addr.address().to_string(), sname);
-											sig_new_share(surl);
+											ShareInfo sinfo;
+											sinfo.name = sname;
+											sinfo.id.sid = surl;
+											sinfo.islocal = false;
+											sig_new_share(sinfo);
 										}
 									}
 								}
@@ -417,25 +427,14 @@ class SimpleBackend {
 			sharelist[name] = path;
 
 			send_publish(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT), name, 1);
+			ShareInfo sinfo;
+			sinfo.id.sid = path.string();
+			sinfo.name = name;
+			sinfo.islocal = true;
+			sig_new_share(sinfo);
 		}
 
-		void download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32,uint64)> handler)
-		{
-			size_t colonpos = shareurl.find_first_of(":");
-			std::string proto = shareurl.substr(0, colonpos);
-			uint32 version = atoi(proto.substr(6).c_str());
-			shareurl.erase(0, proto.size()+3);
-			size_t slashpos = shareurl.find_first_of("\\/");
-			std::string host = shareurl.substr(0, slashpos);
-			std::string share = shareurl.substr(slashpos+1);
-			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
-			newconn->sig_progress.connect(handler);
-			conlist.push_back(newconn);
-			boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
-			newconn->socket.open(ep.protocol());
-			std::cout << "Connecting...\n";
-			newconn->socket.async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
-		}
+		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
 
 		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
 		{
@@ -465,30 +464,34 @@ class SimpleBackend {
 					std::cout << "broadcast to (" << addr << ") failed: " << err.message() << '\n';
 			}
 		}
-		void attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32,uint64)> handler)
+		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 		{
-			conlist[num]->sig_progress.connect(handler);
+			// TODO: fix this
+			int num = (int)tid.id;
+			conlist[num]->sig_progress.connect(cb);
 		}
 
-		void check_for_web_updates(boost::function<void(std::string, std::string)> handler)
+		void check_for_web_updates()
 		{
 			//std::string weburl = "http://hackykid.heliohost.org/site/autoupdate.php";
 			std::string weburl = "http://uftt.googlecode.com/svn/trunk/site/autoupdate.php";
 			//std::string weburl = "http://localhost:8080/site/autoupdate.php";
 
 			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, weburl));
-			request->setHandler(boost::bind(&SimpleBackend::web_update_page_handler, this, boost::asio::placeholders::error, request, handler));
+			request->setHandler(boost::bind(&SimpleBackend::web_update_page_handler, this, boost::asio::placeholders::error, request));
 		}
 
-		void web_update_page_handler(const boost::system::error_code& err, boost::shared_ptr<boost::asio::http_request> req, boost::function<void(std::string, std::string)> handler)
+		void web_update_page_handler(const boost::system::error_code& err, boost::shared_ptr<boost::asio::http_request> req)
 		{
 			if (err) {
 				std::cout << "Error checking for web updates: " << err.message() << '\n';
 			} else
 			{
 				std::vector<std::pair<std::string, std::string> > builds = AutoUpdater::parseUpdateWebPage(req->getContent());
-				for (uint i = 0; i < builds.size(); ++i)
-					handler(builds[i].first, builds[i].second);
+				for (uint i = 0; i < builds.size(); ++i) {
+					// TODO: create shares & notify people...
+					//handler(builds[i].first, builds[i].second);
+				}
 			}
 		}
 
@@ -499,7 +502,7 @@ class SimpleBackend {
 		}
 
 	public:
-		UFTTSettings& settings;
+		UFTTSettings& settings; // TODO: remove need for this hack!
 
 		SimpleBackend(UFTTSettings& settings_)
 			: diskio(service)
@@ -533,60 +536,38 @@ class SimpleBackend {
 		}
 
 		boost::filesystem::path getsharepath(std::string name) {
-			return sharelist[name];
+			return sharelist[name]; // TODO: remove need for this hack!
 		}
 
-		// the main public interface starts here...
-		boost::signal<void(std::string)> sig_new_share;
-		boost::signal<void(std::string,int)> sig_new_upload;
-		boost::signal<void(std::string)> sig_new_autoupdate;
-
-		void slot_refresh_shares()
-		{
-			service.post(boost::bind(&SimpleBackend::send_query, this, boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT)));
-		}
+	private:
+		// old interface now..
+		boost::signal<void(const ShareInfo&)> sig_new_share;
+		boost::signal<void(const TaskInfo&)> sig_new_task;
+		boost::signal<void(std::string)> sig_new_autoupdate; // TODO: remove this signal?
 
 		void slot_add_local_share(std::string name, boost::filesystem::path path)
 		{
 			service.post(boost::bind(&SimpleBackend::add_local_share, this, name, path));
 		}
 
-		void slot_download_share(std::string shareurl, boost::filesystem::path dlpath, boost::function<void(uint64,std::string,uint32,uint64)> handler)
-		{
-			service.post(boost::bind(&SimpleBackend::download_share, this, shareurl, dlpath, handler));
-		}
+	// new interface starts here!
+	public:
 
-		void slot_attach_progress_handler(int num, boost::function<void(uint64,std::string,uint32,uint64)> handler)
-		{
-			service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, num, handler));
-		}
+		virtual void connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
+		virtual void connectSigDelShare(const boost::function<void(const ShareID&)>&);
+		virtual void connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
+		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
-		void do_manual_query(std::string hostname) {
-			service.post(boost::bind(&SimpleBackend::send_query, this,
-				boost::asio::ip::udp::endpoint(my_addr_from_string(hostname), UFTT_PORT)
-			));
-		}
+		virtual void addLocalShare(const std::string& name, const boost::filesystem::path& path);
+		virtual void doRefreshShares();
+		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path);
 
-		void do_manual_publish(std::string hostname) {
-			service.post(boost::bind(&SimpleBackend::send_publishes, this,
-				boost::asio::ip::udp::endpoint(my_addr_from_string(hostname), UFTT_PORT)
-			, true, true));
-		}
+		virtual void doManualPublish(const std::string& host);
+		virtual void doManualQuery(const std::string& host);
 
-		void do_check_for_web_updates(boost::function<void(std::string, std::string)> handler)
-		{
-			service.post(boost::bind(&SimpleBackend::check_for_web_updates, this, handler));
-		}
+		virtual void checkForWebUpdates();
 
-		void do_download_web_update(std::string url, boost::function<void(const boost::system::error_code&, boost::shared_ptr<boost::asio::http_request>) > handler)
-		{
-			service.post(boost::bind(&SimpleBackend::download_web_update, this, url, handler));
-		}
-
-		void do_set_peerfinder_enabled(bool enabled)
-		{
-			service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
-		}
+		virtual void doSetPeerfinderEnabled(bool enabled);
 };
 
 #endif//SIMPLE_BACKEND_H
