@@ -234,4 +234,13 @@ namespace platform {
 #endif
 	}
 
+	std::string getUserName()
+	{
+		char* name = NULL;
+		if (!name) name = getenv("USER");
+		if (!name) name = getenv("USERNAME");
+		if (!name) name = "uftt-user";
+		return name;
+	}
+
 } // namespace platform

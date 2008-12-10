@@ -38,6 +38,8 @@ namespace platform {
 
 	spathlist getSettingsPathList();
 	spathinfo getSettingsPathDefault();
+
+	std::string getUserName();
 } // namespace platform
 
 #endif//PLATFORM_H
