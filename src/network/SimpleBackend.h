@@ -27,25 +27,7 @@
 #include "../UFTTCore.h"
 #include "INetModule.h"
 
-inline boost::asio::ip::address my_addr_from_string(const std::string& str)
-{
-	if (str == "255.255.255.255")
-		return boost::asio::ip::address_v4::broadcast();
-	else
-		return boost::asio::ip::address::from_string(str);
-}
-
-inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
-{
-	return STRFORMAT("%04d-%02d-%02d %02d:%02d:%02d",
-		td.date().year(),
-		td.date().month(),
-		td.date().day(),
-		td.time_of_day().hours(),
-		td.time_of_day().minutes(),
-		td.time_of_day().seconds()
-	);
-}
+#include "Misc.h"
 
 class SimpleBackend : public INetModule {
 	private:

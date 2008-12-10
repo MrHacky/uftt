@@ -19,8 +19,8 @@ ENDFOREACH(netmod)
 
 ADD_LIBRARY(uftt-network
 	INetModule.h
+	Misc.h
 	NetModuleLinker.h         NetModuleLinker.cpp
-	#SimpleBackend.h           SimpleBackend.cpp
 	SimpleConnection.h        SimpleConnection.cpp
 	${NETMODULE_SOURCE_FILES} ${LINK_INC_FILE}
 )

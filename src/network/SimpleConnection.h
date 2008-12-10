@@ -27,93 +27,14 @@ extern boost::rand48 rng;
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
 
+#include "Misc.h"
+
 /// helper classes, TODO: nest them properly...
 struct cmdinfo {
 	uint32 cmd;
 	uint32 ver;
 	uint64 len;
 };
-
-inline uint32 pkt_get_uint32(uint8* buf)
-{
-	return (buf[0] << 0) | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
-}
-
-inline void pkt_put_uint32(uint32 val, uint8* buf)
-{
-	buf[0] = (val >>  0) & 0xFF;
-	buf[1] = (val >>  8) & 0xFF;
-	buf[2] = (val >> 16) & 0xFF;
-	buf[3] = (val >> 24) & 0xFF;
-}
-
-inline void pkt_put_uint64(uint64 val, uint8* buf)
-{
-	buf[0] = (val >>  0) & 0xFF;
-	buf[1] = (val >>  8) & 0xFF;
-	buf[2] = (val >> 16) & 0xFF;
-	buf[3] = (val >> 24) & 0xFF;
-	buf[4] = (val >> 32) & 0xFF;
-	buf[5] = (val >> 40) & 0xFF;
-	buf[6] = (val >> 48) & 0xFF;
-	buf[7] = (val >> 56 ) & 0xFF;
-}
-
-inline void pkt_put_vuint64(uint64 val, std::vector<uint8>& buf)
-{
-	while (val & ~0x7F) {
-		buf.push_back((uint8)0x80 | (val & 0x7F));
-		val >>= 7;
-	}
-	buf.push_back((uint8) val);
-}
-
-inline uint64 pkt_get_vuint64(std::vector<uint8>& buf, uint &idx)
-{
-	uint64 result = 0;
-	uint8 shift = 0;
-	uint8 val;
-	do {
-		val = buf[idx++];
-		result |= (uint64(val&0x7F) << shift);
-		shift += 7;
-	} while (val & 0x80);
-	return result;
-}
-
-inline uint64 pkt_get_vuint64(std::vector<uint8>& buf)
-{
-	uint idx = 0;
-	return pkt_get_vuint64(buf, idx);
-}
-
-inline void pkt_put_vuint32(uint32 val, std::vector<uint8>& buf)
-{
-	while (val & ~0x7F) {
-		buf.push_back((uint8)0x80 | (val & 0x7F));
-		val >>= 7;
-	}
-	buf.push_back((uint8) val);
-}
-
-inline uint32 pkt_get_vuint32(std::vector<uint8>& buf, uint &idx)
-{
-	uint32 result = 0;
-	uint8 shift = 0;
-	uint8 val;
-	do {
-		val = buf[idx++];
-		result |= (uint32(val&0x7F) << shift);
-		shift += 7;
-	} while (val & 0x80);
-	return result;
-}
-
-inline uint32 pkt_get_vuint32(std::vector<uint8>& buf)
-{
-	uint idx = 0;
-	return pkt_get_vuint32(buf, idx);
-}
 
 struct filesender {
 	std::string name;
