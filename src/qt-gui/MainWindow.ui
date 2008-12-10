@@ -177,16 +177,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="lblNickName" >
-         <property name="text" >
-          <string>Nickname</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="editNickName" />
-       </item>
-       <item>
         <spacer>
          <property name="orientation" >
           <enum>Qt::Horizontal</enum>
@@ -198,6 +188,16 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QLabel" name="lblNickName" >
+         <property name="text" >
+          <string>Nickname</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="editNickName" />
        </item>
       </layout>
      </item>
