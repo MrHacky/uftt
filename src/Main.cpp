@@ -37,7 +37,6 @@ using boost::asio::ipx;
 
 // evil global variables
 std::string thebuildstring;
-services::diskio_service* gdiskio;
 shared_vec exefile;
 bool hassignedbuild(false);
 AutoUpdater updateProvider;
@@ -251,11 +250,11 @@ int imain( int argc, char **argv )
 		platform::freeConsole();
 
 	// get services (gdiskio global evilly initialized by SimpleBackend constructror...)
-	boost::asio::io_service& run_service  = gdiskio->get_io_service();
-	boost::asio::io_service& work_service = gdiskio->get_work_service();
+	boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
+	boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
 
 	// kick off some async tasks (which hijack the disk io thread)
-	updateProvider.checkfile(*gdiskio, run_service, work_service, argv[0], thebuildstring, true);
+	updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
 	if (argc > 2 && string(argv[1]) == "--delete")
 		AutoUpdater::remove(run_service, work_service, argv[2]);
 

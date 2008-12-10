@@ -9,10 +9,18 @@ typedef boost::shared_ptr<INetModule> INetModuleRef;
 
 UFTTCore::UFTTCore(UFTTSettings& settings_)
 : settings(settings_)
+, disk_service(io_service)
 {
+	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
+
 	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
+}
+
+void UFTTCore::servicerunfunc() {
+	boost::asio::io_service::work wobj(io_service);
+	io_service.run();
 }
 
 // Local Share management
@@ -136,4 +144,15 @@ void UFTTCore::doSetPeerfinderEnabled(bool enabled)
 UFTTSettings& UFTTCore::getSettingsRef()
 {
 	return settings;
+}
+
+// Service getters
+boost::asio::io_service& UFTTCore::get_io_service()
+{
+	return io_service;
+}
+
+services::diskio_service& UFTTCore::get_disk_service()
+{
+	return disk_service;
 }

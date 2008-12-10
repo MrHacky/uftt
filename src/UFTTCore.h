@@ -7,6 +7,10 @@
 #include <map>
 #include <vector>
 
+#include <boost/asio.hpp>
+#include "../net-asio/asio_file_stream.h"
+
+#include <boost/thread.hpp>
 #include <boost/function.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
@@ -63,6 +67,12 @@ class UFTTCore {
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
 		UFTTSettings& settings;
+
+		boost::asio::io_service io_service;
+		services::diskio_service disk_service;
+		boost::thread servicerunner;
+
+		void servicerunfunc();
 	public:
 		UFTTCore(UFTTSettings& settings_);
 
@@ -97,6 +107,10 @@ class UFTTCore {
 		void checkForWebUpdates();
 		void doSetPeerfinderEnabled(bool enabled);
 		UFTTSettings& getSettingsRef();
+
+		// Service getters
+		boost::asio::io_service& get_io_service();
+		services::diskio_service& get_disk_service();
 };
 
 #endif//UFTT_CORE_H

@@ -33,17 +33,14 @@
 template <typename Proto>
 class SimpleBackend : public SimpleBackendBase {
 	private:
-		boost::asio::io_service service;
-		services::diskio_service diskio;
-		UFTTCore* core;
+		boost::asio::io_service& service;
+		services::diskio_service& diskio;
 		boost::asio::ip::udp::socket udpsocket;
 		boost::asio::ip::tcp::acceptor tcplistener;
 		SimpleTCPConnectionRef newconn;
 		std::vector<SimpleTCPConnectionRef> conlist;
 		int udpretries;
 		uint32 mid;
-
-		boost::thread servicerunner;
 
 		boost::asio::deadline_timer peerfindertimer;
 
@@ -156,11 +153,6 @@ class SimpleBackend : public SimpleBackendBase {
 				} catch (...) {
 				}
 			}
-		}
-
-		void servicerunfunc() {
-			boost::asio::io_service::work wobj(service);
-			service.run();
 		}
 
 		void start_tcp_accept() {
@@ -526,15 +518,15 @@ class SimpleBackend : public SimpleBackendBase {
 		UFTTSettings& settings; // TODO: remove need for this hack!
 
 		SimpleBackend(UFTTCore* core_)
-			: diskio(service)
-			, udpsocket(service)
-			, tcplistener(service)
-			, settings(core->getSettingsRef())
-			, peerfindertimer(service)
+			: service(core_->get_io_service())
+			, diskio(core_->get_disk_service())
+			, udpsocket(core_->get_io_service())
+			, tcplistener(core_->get_io_service())
+			, settings(core_->getSettingsRef())
+			, peerfindertimer(core_->get_io_service())
 			, udpretries(10)
-			, core(core_)
 		{
-			gdiskio = &diskio;
+			core = core_;
 			udpsocket.open(Proto::udp());
 			udpsocket.bind(boost::asio::ip::udp::endpoint(Proto::addr_any(), UFTT_PORT));
 			if (Proto::udp() == boost::asio::ip::udp::v4()) {
@@ -557,9 +549,6 @@ class SimpleBackend : public SimpleBackendBase {
 			start_tcp_accept();
 
 			start_peerfinder();
-
-			boost::thread tt(boost::bind(&SimpleBackend::servicerunfunc, this));
-			servicerunner.swap(tt);
 		}
 
 		boost::filesystem::path getsharepath(std::string name) {

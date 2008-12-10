@@ -9,6 +9,7 @@
 #include "INetModule.h"
 #include "../UFTTSettings.h"
 
+class UFTTCore;
 class SimpleBackendBase: public INetModule {
 	public:
 		std::set<boost::asio::ip::address> foundpeers;
@@ -17,6 +18,8 @@ class SimpleBackendBase: public INetModule {
 		virtual UFTTSettings& getSettings() = 0;
 
 		std::vector<boost::asio::ip::address> get_broadcast_adresses();
+
+		UFTTCore* core;
 };
 
 #endif//SIMPLE_BACKEND_BASE_H

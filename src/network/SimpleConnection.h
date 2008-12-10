@@ -43,7 +43,7 @@ struct filesender {
 	uint64 fsize;
 	uint64 offset;
 
-	filesender() : file(*gdiskio) {};
+	filesender(services::diskio_service& diskio) : file(diskio) {};
 
 	void init(uint64 offset_ = 0) {
 		offset = offset_;
@@ -148,6 +148,7 @@ class SimpleTCPConnection {
 		};
 
 		boost::asio::io_service& service;
+		services::diskio_service* gdiskio;
 		boost::asio::ip::tcp::socket socket;
 
 		std::string sharename;
@@ -275,7 +276,9 @@ class SimpleTCPConnection {
 			, service(service_)
 			, socket(service_)
 			, progress_timer(service_)
+			, cursendfile(backend_->core->get_disk_service())
 		{
+			gdiskio = &backend_->core->get_disk_service();
 			dldone = false;
 			uldone = false;
 			issending = false;
