@@ -13,13 +13,7 @@
 
 // TODO: give these a better place?
 
-inline boost::asio::ip::address my_addr_from_string(const std::string& str)
-{
-	if (str == "255.255.255.255")
-		return boost::asio::ip::address_v4::broadcast();
-	else
-		return boost::asio::ip::address::from_string(str);
-}
+boost::asio::ip::address my_addr_from_string(const std::string& str);
 
 inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
 {
