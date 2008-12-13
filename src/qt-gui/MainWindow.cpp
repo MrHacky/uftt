@@ -225,6 +225,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_buttonRefresh_clicked()
 {
+	listShares->clear();
 	backend->doRefreshShares();
 }
 

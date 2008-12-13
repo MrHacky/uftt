@@ -149,13 +149,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonClear" >
-         <property name="text" >
-          <string>Clear</string>
-         </property>
-        </widget>
-       </item>
-       <item>
         <widget class="QPushButton" name="buttonAdd1" >
          <property name="text" >
           <string>Add Share (dir)...</string>
@@ -581,22 +574,6 @@
     <hint type="destinationlabel" >
      <x>394</x>
      <y>286</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>buttonClear</sender>
-   <signal>clicked()</signal>
-   <receiver>listShares</receiver>
-   <slot>clear()</slot>
-   <hints>
-    <hint type="sourcelabel" >
-     <x>128</x>
-     <y>356</y>
-    </hint>
-    <hint type="destinationlabel" >
-     <x>458</x>
-     <y>192</y>
     </hint>
    </hints>
   </connection>
