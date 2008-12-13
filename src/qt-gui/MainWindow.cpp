@@ -242,6 +242,9 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	QString qproto = QString::fromStdString(info.proto);
 	QString qhost  = QString::fromStdString(info.host);
 	QString qurl   = QString::fromStdString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
+	if(quser == "") {
+		quser = "uftt-user";
+	}
 	uint32 version = atoi(info.proto.substr(6).c_str());
 
 	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, Qt::MatchExactly, SLCN_SHARE);
