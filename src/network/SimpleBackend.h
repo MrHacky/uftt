@@ -27,7 +27,6 @@
 
 #include "../UFTTCore.h"
 #include "INetModule.h"
-#include "SimpleBackendBase.h"
 
 #include "Misc.h"
 
@@ -49,9 +48,10 @@ typedef boost::shared_ptr<UDPSockInfo> UDPSockInfoRef;
 const boost::asio::ip::udp::endpoint uftt_bcst_ep;
 const UDPSockInfoRef uftt_bcst_if;
 
-template <typename Proto>
-class SimpleBackend : public SimpleBackendBase {
+class SimpleBackend: public INetModule {
 	private:
+		UFTTCore* core;
+
 		boost::asio::io_service& service;
 		services::diskio_service& diskio;
 		std::map<boost::asio::ip::address, UDPSockInfoRef> udpsocklist;
@@ -64,6 +64,7 @@ class SimpleBackend : public SimpleBackendBase {
 		ipv4_watcher watcher_v4;
 		ipv6_watcher watcher_v6;
 
+		std::set<boost::asio::ip::address> foundpeers;
 		boost::asio::deadline_timer peerfindertimer;
 
 		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
@@ -172,7 +173,7 @@ class SimpleBackend : public SimpleBackendBase {
 		}
 
 		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener) {
-			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
+			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
 			tcplistener->async_accept(newconn->getSocket(),
 				boost::bind(&SimpleBackend::handle_tcp_accept, this, tcplistener, newconn, boost::asio::placeholders::error));
 		}
@@ -586,15 +587,15 @@ class SimpleBackend : public SimpleBackendBase {
 			, watcher_v4(core_->get_io_service())
 			, watcher_v6(core_->get_io_service())
 		{
-			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend<Proto>::print_addr, this, "[IPV4] + ", _1));
-			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend<Proto>::print_addr, this, "[IPV4] - ", _1));
-			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend<Proto>::print_addr, this, "[IPV6] + ", _1));
-			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend<Proto>::print_addr, this, "[IPV6] - ", _1));
+			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] + ", _1));
+			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] - ", _1));
+			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV6] + ", _1));
+			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV6] - ", _1));
 
-			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend<Proto>::add_ip_addr, this, _1));
-			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend<Proto>::del_ip_addr, this, _1));
-			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend<Proto>::add_ip_addr, this, _1));
-			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend<Proto>::del_ip_addr, this, _1));
+			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr, this, _1));
+			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::del_ip_addr, this, _1));
+			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr, this, _1));
+			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend::del_ip_addr, this, _1));
 
 			watcher_v4.async_wait();
 			watcher_v6.async_wait();
@@ -656,17 +657,17 @@ class SimpleBackend : public SimpleBackendBase {
 
 		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::attach_progress_handler, this, tid, cb));
+			service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, tid, cb));
 		}
 
 		void doRefreshShares()
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::send_query, this, uftt_bcst_if, uftt_bcst_ep));
+			service.post(boost::bind(&SimpleBackend::send_query, this, uftt_bcst_if, uftt_bcst_ep));
 		}
 
 		void startDownload(const ShareID& sid, const boost::filesystem::path& path)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::download_share, this, sid, path));
+			service.post(boost::bind(&SimpleBackend::download_share, this, sid, path));
 		}
 
 		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath)
@@ -685,7 +686,7 @@ class SimpleBackend : public SimpleBackendBase {
 			size_t slashpos = shareurl.find_first_of("\\/");
 			std::string host = shareurl.substr(0, slashpos);
 			std::string share = shareurl.substr(slashpos+1);
-			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
+			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
 			//newconn->sig_progress.connect(handler);
 			conlist.push_back(newconn);
 
@@ -694,7 +695,7 @@ class SimpleBackend : public SimpleBackendBase {
 			boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
 			newconn->getSocket().open(ep.protocol());
 			std::cout << "Connecting...\n";
-			newconn->getSocket().async_connect(ep, boost::bind(&SimpleBackend<Proto>::dl_connect_handle, this, _1, newconn, share, dlpath, version));
+			newconn->getSocket().async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
 
 			ret.shareinfo.name = share;
 			ret.shareinfo.host = host;
@@ -705,26 +706,26 @@ class SimpleBackend : public SimpleBackendBase {
 
 		void doManualPublish(const std::string& host)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::send_publishes, this,
+			service.post(boost::bind(&SimpleBackend::send_publishes, this,
 				uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
 			, true, true));
 		}
 
 		void doManualQuery(const std::string& host)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::send_query, this,
+			service.post(boost::bind(&SimpleBackend::send_query, this,
 				uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
 			));
 		}
 
 		void checkForWebUpdates()
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::check_for_web_updates, this));
+			service.post(boost::bind(&SimpleBackend::check_for_web_updates, this));
 		}
 
 		void doSetPeerfinderEnabled(bool enabled)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::start_peerfinder, this, enabled));
+			service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
 		}
 
 		void setModuleID(uint32 mid)
@@ -734,7 +735,7 @@ class SimpleBackend : public SimpleBackendBase {
 
 		void notifyAddLocalShare(const LocalShareID& sid)
 		{
-			service.post(boost::bind(&SimpleBackend<Proto>::add_local_share, this, sid.sid));
+			service.post(boost::bind(&SimpleBackend::add_local_share, this, sid.sid));
 		}
 
 		void notifyDelLocalShare(const LocalShareID& sid)

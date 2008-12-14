@@ -15,8 +15,6 @@
 #include <boost/random/linear_congruential.hpp>
 #include <boost/random/uniform_smallint.hpp>
 
-#include "SimpleBackendBase.h"
-
 #include "../Globals.h"
 
 #include "../Platform.h"
@@ -121,7 +119,7 @@ struct dirsender {
 
 class SimpleTCPConnection {
 	private:
-		SimpleBackendBase* backend;
+		UFTTCore* core;
 
 		enum {
 			CMD_NONE,
@@ -158,8 +156,6 @@ class SimpleTCPConnection {
 		std::vector<dirsender> quesenddir;
 		bool newstyle;
 		bool qitemsfilled;
-
-		boost::filesystem::path getsharepath(std::string sharename);
 
 		struct qitem {
 			int type;
@@ -271,14 +267,14 @@ class SimpleTCPConnection {
 
 		cmdinfo rcmd;
 	public:
-		SimpleTCPConnection(boost::asio::io_service& service_, SimpleBackendBase* backend_)
-			: backend(backend_)
+		SimpleTCPConnection(boost::asio::io_service& service_, UFTTCore* core_)
+			: core(core_)
 			, service(service_)
 			, socket(service_)
 			, progress_timer(service_)
-			, cursendfile(backend_->core->get_disk_service())
+			, cursendfile(core_->get_disk_service())
 		{
-			gdiskio = &backend_->core->get_disk_service();
+			gdiskio = &core->get_disk_service();
 			dldone = false;
 			uldone = false;
 			issending = false;
@@ -633,7 +629,7 @@ class SimpleTCPConnection {
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
 				qitems.push_back(qitem(0, sharename, 0));
-				rresume = use_expiremental_resume() && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
+				rresume = core->getSettingsRef().experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
 			} else if (rcommands.count(5)) {
 				// simple style connection
@@ -665,7 +661,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			boost::filesystem::path spath(getsharepath(elems[0]));
+			boost::filesystem::path spath(core->getLocalSharePath(elems[0]));
 			sharepath = spath.branch_path();
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
@@ -1078,7 +1074,7 @@ class SimpleTCPConnection {
 		void got_share_name(shared_vec rbuf)
 		{
 			std::cout << "got share name: " << sharename << '\n';
-			sharepath = getsharepath(sharename);
+			sharepath = core->getLocalSharePath(sharename);
 			if (sharepath == "") {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
 				if (buildfile) {
@@ -1339,8 +1335,6 @@ class SimpleTCPConnection {
 				std::cout << "Error: " << errmsg << '\n';
 			}
 		}
-
-		bool use_expiremental_resume();
 };
 typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
 
