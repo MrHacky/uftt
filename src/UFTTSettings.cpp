@@ -19,7 +19,7 @@ UFTTSettings::UFTTSettings()
 
 	dl_path = "C:/temp";
 	autoupdate = false;
-	webupdateinterval = 0;
+	webupdateinterval = 2; // default to weekly update checks
 	lastupdate = boost::posix_time::ptime(boost::posix_time::min_date_time);
 
 	enablepeerfinder = true;
