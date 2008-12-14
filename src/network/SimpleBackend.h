@@ -463,7 +463,8 @@ class SimpleBackend : public SimpleBackendBase {
 		template<typename BUF>
 		void send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
-			send_udp_packet_to(si->sock, ep, buf, err, flags);
+			if (si->bind_ep.address().is_v4() == ep.address().is_v4())
+				send_udp_packet_to(si->sock, ep, buf, err, flags);
 		}
 
 		template<typename BUF>
