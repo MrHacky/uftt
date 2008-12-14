@@ -233,7 +233,7 @@ class SimpleBackend : public SimpleBackendBase {
 				if (len >= 4) {
 					uint32 rpver = (udp_recv_buf[0] <<  0) | (udp_recv_buf[1] <<  8) | (udp_recv_buf[2] << 16) | (udp_recv_buf[3] << 24);
 					if (len > 4) {
-						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << si->recv_peer << "\n";
+						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << si->recv_peer << " at " << si->bind_ep << "\n";
 						switch (udp_recv_buf[4]) {
 							case 1: if (rpver == 1) { // type = broadcast;
 								uint32 vstart = 5;
@@ -367,7 +367,7 @@ class SimpleBackend : public SimpleBackendBase {
 			boost::system::error_code err;
 			send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
 			if (err)
-				std::cout << "query failed: " << err.message() << '\n';
+				std::cout << "qeury to '" << ep << "' from '" << (si ? si->bind_ep : uftt_bcst_ep) << "'failed: " << err.message() << '\n';
 		}
 
 		/**
@@ -420,7 +420,7 @@ class SimpleBackend : public SimpleBackendBase {
 			boost::system::error_code err;
 			send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
 			if (err)
-				std::cout << "publish of '" << name << "' to '" << ep << "'failed: " << err.message() << '\n';
+				std::cout << "publish of '" << name << "' to '" << ep << "' from '" << (si ? si->bind_ep : uftt_bcst_ep) <<"'failed: " << err.message() << '\n';
 		}
 
 		void send_publishes(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds) {
