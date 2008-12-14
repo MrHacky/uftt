@@ -441,12 +441,16 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 			"Build: " + build + '\r' + '\n' +
 			"Host: " + info.host + '\r' + '\n'
 		),
-		QMessageBox::Yes|QMessageBox::No|(fromweb ? QMessageBox::NoButton : QMessageBox::NoToAll),
+		QMessageBox::Yes|QMessageBox::No|QMessageBox::NoToAll,
 		QMessageBox::No);
 	dialogshowing = false;
 
-	if (res == QMessageBox::NoToAll)
-		this->actionEnableAutoupdate->setChecked(false);
+	if (res == QMessageBox::NoToAll) {
+		if (!fromweb)
+			this->actionEnableAutoupdate->setChecked(false);
+		else
+			this->on_actionUpdateNever_toggled(true);
+	}
 	if (res != QMessageBox::Yes)
 		return;
 
