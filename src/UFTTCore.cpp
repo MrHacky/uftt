@@ -11,11 +11,13 @@ UFTTCore::UFTTCore(UFTTSettings& settings_)
 : settings(settings_)
 , disk_service(io_service)
 {
-	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
-
 	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
+
+	localshares.clear();
+
+	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 }
 
 void UFTTCore::servicerunfunc() {

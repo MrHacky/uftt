@@ -126,7 +126,7 @@ class QtBooster {
 		}
 
 		~QtBooster() {
-			delete sigstore;
+			delete[] sigstore;
 		}
 
 		void operator()() {
