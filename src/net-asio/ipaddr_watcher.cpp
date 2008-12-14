@@ -16,7 +16,7 @@
 #  include <linux/if_addr.h>
 #  include <linux/if_link.h>
 extern "C" {
-#  include "../bench/libnetlink.h"
+#  include "../linux/libnetlink.h"
 }
 #  include <net/if.h>
 #  include <net/if_arp.h>

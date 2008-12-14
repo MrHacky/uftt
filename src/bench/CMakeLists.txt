@@ -22,7 +22,7 @@ TARGET_LINK_LIBRARIES(bench2
 
 ADD_EXECUTABLE(bench4
 	Bench4.cpp
-	libnetlink.c libnetlink.h
+	../linux/libnetlink.c ../linux/libnetlink.h
 	../net-asio/ipaddr_watcher.h
 	../net-asio/ipaddr_watcher.cpp
 )

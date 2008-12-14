@@ -11,6 +11,10 @@ SUBDIRS(bench)
 SUBDIRS(util)
 SUBDIRS(network)
 
+IF(UNIX)
+	SUBDIRS(linux)
+ENDIF()
+
 SET(BUILDVER_FILE
 	"${PROJECT_BINARY_DIR}/BuildVersion.h"
 )
@@ -46,6 +50,10 @@ SET(UFTT_LIBRARIES
 	lib-net-asio
 	lib-util
 )
+
+IF(UNIX)
+	set(UFTT_LIBRARIES ${UFTT_LIBRARIES} lib-uftt-linux)
+ENDIF()
 
 ADD_EXECUTABLE(uftt ${UFTT_SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
 
