@@ -537,8 +537,14 @@ class SimpleBackend : public SimpleBackendBase {
 				} else if (addr.is_v6()) {
 					newsock->sock.open(boost::asio::ip::udp::v6());
 					newsock->sock.bind(newsock->bind_ep);
-					newsock->bcst_ep = boost::asio::ip::udp::endpoint(my_addr_from_string("ff02::1"), UFTT_PORT);
-					newsock->sock.set_option(boost::asio::ip::multicast::join_group(newsock->bcst_ep.address()));
+					boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
+					bcaddr.scope_id(addr.to_v6().scope_id());
+					newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
+					try {
+						newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
+					} catch (std::exception& e) {
+						std::cout << "Failed to join multicast (" << addr << ") : " << e.what() << '\n';
+					}
 					newsock->sock.set_option(boost::asio::ip::multicast::enable_loopback(true));
 				} else {
 					std::cout << "IP adress not v4 or v6: " << addr << '\n';
