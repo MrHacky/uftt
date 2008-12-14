@@ -55,8 +55,8 @@ class SimpleBackend : public SimpleBackendBase {
 		boost::asio::io_service& service;
 		services::diskio_service& diskio;
 		std::map<boost::asio::ip::address, UDPSockInfoRef> udpsocklist;
-		boost::asio::ip::tcp::acceptor tcplistener;
-		SimpleTCPConnectionRef newconn;
+		boost::asio::ip::tcp::acceptor tcplistener_v4;
+		boost::asio::ip::tcp::acceptor tcplistener_v6;
 		std::vector<SimpleTCPConnectionRef> conlist;
 		int udpretries;
 		uint32 mid;
@@ -171,13 +171,13 @@ class SimpleBackend : public SimpleBackendBase {
 			}
 		}
 
-		void start_tcp_accept() {
-			newconn = SimpleTCPConnectionRef(new SimpleTCPConnection(service, this));
-			tcplistener.async_accept(newconn->getSocket(),
-				boost::bind(&SimpleBackend::handle_tcp_accept, this, boost::asio::placeholders::error));
+		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener) {
+			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, this));
+			tcplistener->async_accept(newconn->getSocket(),
+				boost::bind(&SimpleBackend::handle_tcp_accept, this, tcplistener, newconn, boost::asio::placeholders::error));
 		}
 
-		void handle_tcp_accept(const boost::system::error_code& e) {
+		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e) {
 			if (e) {
 				std::cout << "tcp accept failed: " << e.message() << '\n';
 			} else {
@@ -190,7 +190,7 @@ class SimpleBackend : public SimpleBackendBase {
 				tinfo.id.cid = conlist.size()-1;
 				tinfo.isupload = true;
 				sig_new_task(tinfo);
-				start_tcp_accept();
+				start_tcp_accept(tcplistener);
 			}
 		}
 
@@ -577,7 +577,8 @@ class SimpleBackend : public SimpleBackendBase {
 		SimpleBackend(UFTTCore* core_)
 			: service(core_->get_io_service())
 			, diskio(core_->get_disk_service())
-			, tcplistener(core_->get_io_service())
+			, tcplistener_v4(core_->get_io_service())
+			, tcplistener_v6(core_->get_io_service())
 			, settings(core_->getSettingsRef())
 			, peerfindertimer(core_->get_io_service())
 			, udpretries(10)
@@ -599,16 +600,28 @@ class SimpleBackend : public SimpleBackendBase {
 
 			core = core_;
 
-			tcplistener.open(Proto::tcp());
-			tcplistener.bind(boost::asio::ip::tcp::endpoint(Proto::addr_any(), UFTT_PORT));
-			tcplistener.listen(16);
+			try {
+				tcplistener_v4.open(boost::asio::ip::tcp::v4());
+				tcplistener_v4.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
+				tcplistener_v4.listen(16);
+				start_tcp_accept(&tcplistener_v4);
+			} catch (std::exception& e) {
+				std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
+			}
+
+			try {
+				tcplistener_v6.open(boost::asio::ip::tcp::v6());
+				tcplistener_v6.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
+				tcplistener_v6.listen(16);
+				start_tcp_accept(&tcplistener_v6);
+			} catch (std::exception& e) {
+				std::cout << "Failed to initialize IPv6 TCP listener: " << e.what() << '\n';
+			}
 
 			// bind autoupdater
 			updateProvider.newbuild.connect(
 				boost::bind(&SimpleBackend::send_publish, this, uftt_bcst_if, uftt_bcst_ep, _1, 1, true)
 			);
-
-			start_tcp_accept();
 
 			start_peerfinder();
 		}
