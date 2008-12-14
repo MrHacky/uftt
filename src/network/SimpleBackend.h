@@ -18,7 +18,6 @@
 #include "../net-asio/asio_http_request.h"
 #include "../net-asio/ipaddr_watcher.h"
 
-#include "SimpleConnection.h"
 #include "../UFTTSettings.h"
 
 #include "../AutoUpdate.h"
@@ -27,6 +26,8 @@
 
 #include "../UFTTCore.h"
 #include "INetModule.h"
+
+#include "../Globals.h"
 
 #include "Misc.h"
 
@@ -44,6 +45,9 @@ struct UDPSockInfo {
 	{};
 };
 typedef boost::shared_ptr<UDPSockInfo> UDPSockInfoRef;
+
+class SimpleTCPConnection;
+typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
 
 const boost::asio::ip::udp::endpoint uftt_bcst_ep;
 const UDPSockInfoRef uftt_bcst_if;
@@ -169,29 +173,6 @@ class SimpleBackend: public INetModule {
 					send_udp_packet(uftt_bcst_if, ep, boost::asio::buffer(udp_send_buf), err);
 				} catch (...) {
 				}
-			}
-		}
-
-		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener) {
-			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
-			tcplistener->async_accept(newconn->getSocket(),
-				boost::bind(&SimpleBackend::handle_tcp_accept, this, tcplistener, newconn, boost::asio::placeholders::error));
-		}
-
-		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e) {
-			if (e) {
-				std::cout << "tcp accept failed: " << e.message() << '\n';
-			} else {
-				std::cout << "handling tcp accept\n";
-				conlist.push_back(newconn);
-				newconn->handle_tcp_accept();
-				TaskInfo tinfo;
-				tinfo.shareinfo.name = "Upload";
-				tinfo.id.mid = mid;
-				tinfo.id.cid = conlist.size()-1;
-				tinfo.isupload = true;
-				sig_new_task(tinfo);
-				start_tcp_accept(tcplistener);
 			}
 		}
 
@@ -441,16 +422,6 @@ class SimpleBackend: public INetModule {
 			send_publish(uftt_bcst_if, uftt_bcst_ep, name, 1);
 		}
 
-		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
-		{
-			if (e) {
-				std::cout << "connect failed: " << e.message() << '\n';
-			} else {
-				std::cout << "Connected!\n";
-				conn->handle_tcp_connect(name, dlpath, version);
-			}
-		}
-
 		template<typename BUF>
 		void send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
@@ -484,13 +455,6 @@ class SimpleBackend: public INetModule {
 				else
 					send_udp_packet_to(si, ep, buf, err, flags);
 			}
-		}
-
-		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
-		{
-			// TODO: fix this
-			int num = tid.cid;
-			conlist[num]->sig_progress.connect(cb);
 		}
 
 		void check_for_web_updates()
@@ -632,117 +596,39 @@ class SimpleBackend: public INetModule {
 			return core->getLocalSharePath(name); // TODO: remove need for this hack!
 		}
 
+		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
+		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version);
+		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener);
+		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e);
+		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+
 	private:
 		// old interface now..
 		boost::signal<void(const ShareInfo&)> sig_new_share;
 		boost::signal<void(const TaskInfo&)> sig_new_task;
 
-		// new interface starts here!
 	public:
+		// new interface starts here!
 
-		void connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
-		{
-			sig_new_share.connect(cb);
-		}
+		virtual void connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
+		virtual void connectSigDelShare(const boost::function<void(const ShareID&)>&);
+		virtual void connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
+		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
-		void connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
-		{
-			// TODO: implement this
-		}
+		virtual void doRefreshShares();
+		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path);
 
-		void connectSigNewTask(const boost::function<void(const TaskInfo&)>& cb)
-		{
-			sig_new_task.connect(cb);
-		}
+		virtual void doManualPublish(const std::string& host);
+		virtual void doManualQuery(const std::string& host);
 
-		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
-		{
-			service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, tid, cb));
-		}
+		virtual void notifyAddLocalShare(const LocalShareID& sid);
+		virtual void notifyDelLocalShare(const LocalShareID& sid);
 
-		void doRefreshShares()
-		{
-			service.post(boost::bind(&SimpleBackend::send_query, this, uftt_bcst_if, uftt_bcst_ep));
-		}
+		virtual void checkForWebUpdates();
 
-		void startDownload(const ShareID& sid, const boost::filesystem::path& path)
-		{
-			service.post(boost::bind(&SimpleBackend::download_share, this, sid, path));
-		}
+		virtual void doSetPeerfinderEnabled(bool enabled);
 
-		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath)
-		{
-			TaskInfo ret;
-			std::string shareurl = sid.sid;
-
-			ret.shareid = ret.shareinfo.id = sid;
-			ret.id.mid = mid;
-			ret.id.cid = conlist.size();
-
-			size_t colonpos = shareurl.find_first_of(":");
-			std::string proto = shareurl.substr(0, colonpos);
-			uint32 version = atoi(proto.substr(6).c_str());
-			shareurl.erase(0, proto.size()+3);
-			size_t slashpos = shareurl.find_first_of("\\/");
-			std::string host = shareurl.substr(0, slashpos);
-			std::string share = shareurl.substr(slashpos+1);
-			SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
-			//newconn->sig_progress.connect(handler);
-			conlist.push_back(newconn);
-
-			newconn->shareid = sid;
-
-			boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
-			newconn->getSocket().open(ep.protocol());
-			std::cout << "Connecting...\n";
-			newconn->getSocket().async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
-
-			ret.shareinfo.name = share;
-			ret.shareinfo.host = host;
-			ret.shareinfo.proto = proto;
-			ret.isupload = false;
-			sig_new_task(ret);
-		}
-
-		void doManualPublish(const std::string& host)
-		{
-			service.post(boost::bind(&SimpleBackend::send_publishes, this,
-				uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
-			, true, true));
-		}
-
-		void doManualQuery(const std::string& host)
-		{
-			service.post(boost::bind(&SimpleBackend::send_query, this,
-				uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
-			));
-		}
-
-		void checkForWebUpdates()
-		{
-			service.post(boost::bind(&SimpleBackend::check_for_web_updates, this));
-		}
-
-		void doSetPeerfinderEnabled(bool enabled)
-		{
-			service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
-		}
-
-		void setModuleID(uint32 mid)
-		{
-			this->mid = mid;
-		}
-
-		void notifyAddLocalShare(const LocalShareID& sid)
-		{
-			service.post(boost::bind(&SimpleBackend::add_local_share, this, sid.sid));
-		}
-
-		void notifyDelLocalShare(const LocalShareID& sid)
-		{
-			// TODO: implement this
-		}
-
+		virtual void setModuleID(uint32 mid);
 };
 
 #endif//SIMPLE_BACKEND_H

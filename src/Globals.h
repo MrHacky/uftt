@@ -3,6 +3,8 @@
 
 #include <string>
 #include <boost/asio.hpp>
+#include <boost/random/linear_congruential.hpp>
+
 #include "AutoUpdate.h"
 
 /*** evil globals here, TODO: remove them all! ***/
