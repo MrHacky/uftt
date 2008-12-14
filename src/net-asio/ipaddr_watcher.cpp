@@ -414,27 +414,31 @@ namespace {
 
 			void main()
 			{
-				newlist();
-				This()->init();
-				while(1) {
+				try {
+					newlist();
+					This()->init();
+					while(1) {
 #ifdef WIN32
-					int inBuffer = 0;
-					int outBuffer = 0;
-					DWORD outSize = 0;
-					int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
-					if (!(err < 0))
-						newlist();
-					else
-						cout << "error: ipv?_watcher: " << err << '\n';
+						int inBuffer = 0;
+						int outBuffer = 0;
+						DWORD outSize = 0;
+						int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
+						if (!(err < 0))
+							newlist();
+						else
+							cout << "error: ipv?_watcher: " << err << '\n';
 #endif
 #ifdef __linux__
-					char buffer[1024];
-					size_t r = recv(fd, buffer, sizeof(buffer), 0);
-					if (r > 0)
-						newlist();
-					else
-						cout << "error: ipv?_watcher: " << errno << '\n';
+						char buffer[1024];
+						size_t r = recv(fd, buffer, sizeof(buffer), 0);
+						if (r > 0)
+							newlist();
+						else
+							cout << "error: ipv?_watcher: " << errno << '\n';
 #endif
+					}
+				} catch (std::exception& e) {
+					cout << "fatal: ipv?_watcher: " << e.what() << '\n';
 				}
 			}
 
