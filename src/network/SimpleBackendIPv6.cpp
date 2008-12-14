@@ -14,4 +14,4 @@ struct ProtoIPv6 {
 
 typedef SimpleBackend<ProtoIPv6> SimpleBackendIPv6;
 
-REGISTER_NETMODULE_CLASS(SimpleBackendIPv6);
+DISABLE_NETMODULE_CLASS(SimpleBackendIPv6);
