@@ -28,10 +28,12 @@ using namespace std;
 
 namespace {
 
+typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
+
 #ifdef WIN32
-	set<boost::asio::ip::address> win32_get_ipv4_list()
+	set<addrwbcst> win32_get_ipv4_list()
 	{
-		set<boost::asio::ip::address> result;
+		set<addrwbcst> result;
 		SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 		if (sock == SOCKET_ERROR) {
 			cout << "win32_get_ipv4_list: Failed to get a socket. Error " << WSAGetLastError() << endl;
@@ -60,13 +62,22 @@ namespace {
 			u_long nFlags = InterfaceList[i].iiFlags;
 			if ((nFlags & IFF_UP) && !(nFlags & IFF_LOOPBACK)) {
 				sockaddr_in *pAddress;
-				pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
 
 				boost::asio::ip::address_v4::bytes_type ifaddr;
+				pAddress = (sockaddr_in *) & (InterfaceList[i].iiAddress);
 				memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
 
+				boost::asio::ip::address_v4::bytes_type nmaddr;
+				pAddress = (sockaddr_in *) & (InterfaceList[i].iiNetmask);
+				memcpy(&nmaddr[0], &pAddress->sin_addr, 4);
+
+				boost::asio::ip::address_v4::bytes_type bcaddr;
+				for (int i = 0; i < 4; ++i)
+					bcaddr[i] = ifaddr[i] | ~nmaddr[i];
+
 				boost::asio::ip::address_v4 naddr(ifaddr);
-				result.insert(naddr);
+				boost::asio::ip::address_v4 baddr(bcaddr);
+				result.insert(addrwbcst(naddr, baddr));
 			}
 		}
 
@@ -310,9 +321,9 @@ namespace {
 		return result;
 	}
 
-	set<boost::asio::ip::address> linux_get_ipv4_list()
+	set<addrwbcst> linux_get_ipv4_list()
 	{
-		set<boost::asio::ip::address> result;
+		set<addrwbcst> result;
 
 		struct ifconf ifc;
 		vector<char> buffer(MAXBUFSIZE);
@@ -331,7 +342,7 @@ namespace {
 		}
 		ifr = ifc.ifc_req;
 		for (int i = ifc.ifc_len / sizeof(struct ifreq); --i >= 0; ifr++) {
-			boost::asio::ip::address_v4::bytes_type ifaddr;
+			sockaddr_in * pAddress;
 
 			if (ioctl(skfd, SIOCGIFFLAGS, ifr) != 0) {
 				printf("SIOCGIFFLAGS:Failed \n");
@@ -340,14 +351,28 @@ namespace {
 			}
 			short flags = ifr->ifr_flags;
 
-			sockaddr_in * pAddress;
+			boost::asio::ip::address_v4::bytes_type ifaddr;
 			pAddress = (sockaddr_in *) &ifr->ifr_addr;
 			memcpy(&ifaddr[0], &pAddress->sin_addr, 4);
 
+			if (ioctl(skfd, SIOCGIFNETMASK, ifr) != 0) {
+				printf("SIOCGIFNETMASK:Failed \n");
+				return result;
+			}
+
+			boost::asio::ip::address_v4::bytes_type nmaddr;
+			pAddress = (sockaddr_in *) &ifr->ifr_addr;
+			memcpy(&nmaddr[0], &pAddress->sin_addr, 4);
+
 			if (flags&IFF_UP && !(flags&IFF_LOOPBACK))
 			{
+				boost::asio::ip::address_v4::bytes_type bcaddr;
+				for (int i = 0; i < 4; ++i)
+					bcaddr[i] = ifaddr[i] | ~nmaddr[i];
+
 				boost::asio::ip::address_v4 naddr(ifaddr);
-				result.insert(naddr);
+				boost::asio::ip::address_v4 baddr(bcaddr);
+				result.insert(addrwbcst(naddr, baddr));
 			}
 		}
 		close(skfd);
@@ -355,7 +380,7 @@ namespace {
 	}
 #endif
 
-	set<boost::asio::ip::address> get_ipv4_list()
+	set<addrwbcst> get_ipv4_list()
 	{
 #ifdef WIN32
 		return win32_get_ipv4_list();
@@ -375,7 +400,7 @@ namespace {
 #endif
 	}
 
-	template <class C>
+	template <class C, typename T>
 	class ip_watcher_common {
 		private:
 			C* This() {
@@ -384,7 +409,7 @@ namespace {
 		public:
 			boost::thread thread;
 			boost::asio::io_service& service;
-			set<boost::asio::ip::address> addrlist;
+			set<T> addrlist;
 			boost::asio::ip::udp::socket sock; // win32
 			int fd; // linux
 
@@ -395,12 +420,12 @@ namespace {
 
 			void newlist()
 			{
-				set<boost::asio::ip::address> naddrlist = This()->getlist();
+				set<T> naddrlist = This()->getlist();
 
-				BOOST_FOREACH(const boost::asio::ip::address& naddr, naddrlist)
+				BOOST_FOREACH(const T& naddr, naddrlist)
 					if (!addrlist.count(naddr))
 						service.post(boost::bind(boost::ref(This()->watcher->add_addr), naddr));
-				BOOST_FOREACH(const boost::asio::ip::address& oaddr, addrlist)
+				BOOST_FOREACH(const T& oaddr, addrlist)
 					if (!naddrlist.count(oaddr))
 						service.post(boost::bind(boost::ref(This()->watcher->del_addr), oaddr));
 				addrlist = naddrlist;
@@ -446,12 +471,12 @@ namespace {
 
 } // anon namespace
 
-class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::implementation> {
+class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::implementation, addrwbcst> {
 	public:
 		ipv4_watcher* watcher;
 
 		implementation(boost::asio::io_service& service_)
-		: ip_watcher_common<ipv4_watcher::implementation>(service_), watcher(NULL)
+		: ip_watcher_common<ipv4_watcher::implementation, addrwbcst>(service_), watcher(NULL)
 		{
 		}
 
@@ -472,7 +497,7 @@ class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::impl
 #endif
 		}
 
-		set<boost::asio::ip::address> getlist()
+		set<addrwbcst> getlist()
 		{
 			return get_ipv4_list();
 		}
@@ -494,12 +519,12 @@ void ipv4_watcher::async_wait()
 }
 
 
-class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::implementation> {
+class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::implementation, boost::asio::ip::address> {
 	public:
 		ipv6_watcher* watcher;
 
 		implementation(boost::asio::io_service& service_)
-		: ip_watcher_common<ipv6_watcher::implementation>(service_), watcher(NULL)
+		: ip_watcher_common<ipv6_watcher::implementation, boost::asio::ip::address>(service_), watcher(NULL)
 		{
 		}
 

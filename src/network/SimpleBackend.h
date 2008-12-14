@@ -10,6 +10,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
+#include <boost/function.hpp>
 #include <boost/foreach.hpp>
 #include <boost/system/error_code.hpp>
 #include <boost/algorithm/string.hpp>
@@ -31,17 +32,42 @@
 
 #include "Misc.h"
 
+struct asio_timer_oneshot_helper {
+	boost::function<void()> cb;
+	boost::asio::deadline_timer timer;
+	void doit() {
+		cb();
+	}
+	asio_timer_oneshot_helper(boost::asio::io_service& service) : timer(service) {};
+};
+
+template<typename CB>
+inline void asio_timer_oneshot(boost::asio::io_service& service, const boost::posix_time::time_duration& time, const CB& cb)
+{
+	boost::shared_ptr<asio_timer_oneshot_helper> helper(new asio_timer_oneshot_helper(service));
+	helper->cb = cb;
+	helper->timer.expires_from_now(time);
+	helper->timer.async_wait(boost::bind(&asio_timer_oneshot_helper::doit, helper));
+}
+
+template<typename CB>
+inline void asio_timer_oneshot(boost::asio::io_service& service, int msecs, const CB& cb)
+{
+	asio_timer_oneshot(service, boost::posix_time::millisec(msecs), cb);
+}
+
 struct UDPSockInfo {
-	boost::asio::ip::udp::socket sock;
+	boost::asio::ip::udp::socket& sock;
 	boost::asio::ip::udp::endpoint bcst_ep;
-	boost::asio::ip::udp::endpoint bind_ep;
 
-	uint8 recv_buf[1024];
-	boost::asio::ip::udp::endpoint recv_peer;
+	bool is_v4;
 
-	bool active;
-	UDPSockInfo(boost::asio::io_service& service)
-	: sock(service), active(true)
+	UDPSockInfo(boost::asio::ip::udp::socket& nsock)
+	: sock(nsock)
+	{};
+
+	UDPSockInfo(boost::asio::ip::udp::socket& nsock, bool is_v4_)
+	: sock(nsock), is_v4(is_v4_)
 	{};
 };
 typedef boost::shared_ptr<UDPSockInfo> UDPSockInfoRef;
@@ -67,6 +93,19 @@ class SimpleBackend: public INetModule {
 
 		ipv4_watcher watcher_v4;
 		ipv6_watcher watcher_v6;
+
+		#define UDP_BUF_SIZE (1024)
+		uint8 recv_buf_v4[UDP_BUF_SIZE];
+		uint8 recv_buf_v6[UDP_BUF_SIZE];
+
+		boost::asio::ip::udp::endpoint recv_peer_v4;
+		boost::asio::ip::udp::endpoint recv_peer_v6;
+
+		boost::asio::ip::udp::socket udp_sock_v4;
+		boost::asio::ip::udp::socket udp_sock_v6;
+
+		UDPSockInfoRef udp_info_v4;
+		UDPSockInfoRef udp_info_v6;
 
 		std::set<boost::asio::ip::address> foundpeers;
 		boost::asio::deadline_timer peerfindertimer;
@@ -176,9 +215,10 @@ class SimpleBackend: public INetModule {
 			}
 		}
 
-		void start_udp_receive(UDPSockInfoRef si) {
-			si->sock.async_receive_from(boost::asio::buffer(si->recv_buf), si->recv_peer,
-				boost::bind(&SimpleBackend::handle_udp_receive, this, si, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)
+		void start_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer)
+		{
+			si->sock.async_receive_from(boost::asio::buffer(recv_buf, UDP_BUF_SIZE), *recv_peer,
+				boost::bind(&SimpleBackend::handle_udp_receive, this, si, recv_buf, recv_peer, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)
 			);
 		}
 
@@ -207,43 +247,41 @@ class SimpleBackend: public INetModule {
 			return versions;
 		}
 
-		void handle_udp_receive(UDPSockInfoRef si, const boost::system::error_code& e, std::size_t len) {
-			if (!si->active) return;
+		void handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
-				uint8* udp_recv_buf = si->recv_buf;
 				udpretries = 10;
 				if (len >= 4) {
-					uint32 rpver = (udp_recv_buf[0] <<  0) | (udp_recv_buf[1] <<  8) | (udp_recv_buf[2] << 16) | (udp_recv_buf[3] << 24);
+					uint32 rpver = (recv_buf[0] <<  0) | (recv_buf[1] <<  8) | (recv_buf[2] << 16) | (recv_buf[3] << 24);
 					if (len > 4) {
-						std::cout << "got packet type " << (int)udp_recv_buf[4] << " from " << si->recv_peer << " at " << si->bind_ep << "\n";
-						switch (udp_recv_buf[4]) {
+						std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
+						switch (recv_buf[4]) {
 							case 1: if (rpver == 1) { // type = broadcast;
 								uint32 vstart = 5;
 								if (len > 5)
-									vstart = 6 + udp_recv_buf[5];
+									vstart = 6 + recv_buf[5];
 
-								std::set<uint32> versions = parseVersions(udp_recv_buf, vstart, len);
+								std::set<uint32> versions = parseVersions(recv_buf, vstart, len);
 
 								       if (versions.count(5)) {
-									send_publishes(si, si->recv_peer, 3, true);
+									send_publishes(si, *recv_peer, 3, true);
 								} else if (versions.count(4)) {
-									send_publishes(si, si->recv_peer, 2, true);
+									send_publishes(si, *recv_peer, 2, true);
 								} else if (versions.count(3)) {
-									send_publishes(si, si->recv_peer, 0, true);
+									send_publishes(si, *recv_peer, 0, true);
 								} else if (versions.count(2)) {
-									send_publishes(si, si->recv_peer, 1, true);
+									send_publishes(si, *recv_peer, 1, true);
 								} else if (versions.count(1)) {
-									send_publishes(si, si->recv_peer, 1, len >= 6 && udp_recv_buf[5] > 0 && len-6 >= udp_recv_buf[5]);
+									send_publishes(si, *recv_peer, 1, len >= 6 && recv_buf[5] > 0 && len-6 >= recv_buf[5]);
 								}
 							}; break;
 							case 2: { // type = reply;
 								if (len >= 6) {
-									uint32 slen = udp_recv_buf[5];
+									uint32 slen = recv_buf[5];
 									if (len >= slen+6) {
 										std::set<uint32> versions;
 										uint vlen = 0;
 										if (rpver == 1)
-											versions = parseVersions(udp_recv_buf, slen+6, len, &vlen);
+											versions = parseVersions(recv_buf, slen+6, len, &vlen);
 										versions.insert(rpver);
 										uint32 sver = 0;
 										if (versions.count(2) || versions.count(3)) // Protocol 2 and 3 send shares (sver) in the same way
@@ -252,17 +290,17 @@ class SimpleBackend: public INetModule {
 											sver = 1;
 
 										if (sver > 0) {
-											std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, si->recv_peer.address().to_string(), sname);
+											std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
+											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, recv_peer->address().to_string(), sname);
 											ShareInfo sinfo;
 											sinfo.name = sname;
 											sinfo.proto = STRFORMAT("uftt-v%d", sver);
-											sinfo.host = si->recv_peer.address().to_string();
+											sinfo.host = recv_peer->address().to_string();
 											sinfo.id.sid = surl;
 											sinfo.id.mid = mid;
 											if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
-												int nickname_length = udp_recv_buf[slen + 6 + vlen];
-												std::string nickname((char*)udp_recv_buf + 6 + slen + 1 + vlen, (char*)udp_recv_buf + 6 + slen + 1 + vlen + nickname_length);
+												int nickname_length = recv_buf[slen + 6 + vlen];
+												std::string nickname((char*)recv_buf + 6 + slen + 1 + vlen, (char*)recv_buf + 6 + slen + 1 + vlen + nickname_length);
 												sinfo.user = nickname;
 											}
 											sig_new_share(sinfo);
@@ -272,14 +310,14 @@ class SimpleBackend: public INetModule {
 							}; break;
 							case 3: { // type = autoupdate share
 								if (len >= 6 && (rpver == 1)) {
-									uint32 slen = udp_recv_buf[5];
+									uint32 slen = recv_buf[5];
 									if (len >= slen+6) {
-										std::string sname((char*)udp_recv_buf+6, (char*)udp_recv_buf+6+slen);
-										std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, si->recv_peer.address().to_string(), sname);;
+										std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
+										std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, recv_peer->address().to_string(), sname);;
 										ShareInfo sinfo;
 										sinfo.name = sname;
 										sinfo.proto = STRFORMAT("uftt-v%d", 1);
-										sinfo.host = si->recv_peer.address().to_string();
+										sinfo.host = recv_peer->address().to_string();
 										sinfo.id.sid = surl;
 										sinfo.id.mid = mid;
 										sinfo.isupdate = true;
@@ -295,12 +333,12 @@ class SimpleBackend: public INetModule {
 								udp_send_buf[2] = (1 >> 16) & 0xff;
 								udp_send_buf[3] = (1 >> 24) & 0xff;
 								udp_send_buf[4] = 5;
-								send_udp_packet(si, si->recv_peer, boost::asio::buffer(udp_send_buf), err);
+								send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
 							};// intentional fallthrough break;
 							case 5: { // peerfinder reply
-								foundpeers.insert(si->recv_peer.address());
-								settings.foundpeers.insert(STRFORMAT("%s", si->recv_peer.address()));
-								send_query(si, si->recv_peer);
+								foundpeers.insert(recv_peer->address());
+								settings.foundpeers.insert(STRFORMAT("%s", recv_peer->address()));
+								send_query(si, *recv_peer);
 							}; break;
 						}
 					}
@@ -314,7 +352,7 @@ class SimpleBackend: public INetModule {
 			}
 
 			if (!e || udpretries > 0)
-				start_udp_receive(si);
+				start_udp_receive(si, recv_buf, recv_peer);
 			else
 				std::cout << "retry limit reached, giving up on receiving udp packets\n";
 		}
@@ -349,7 +387,7 @@ class SimpleBackend: public INetModule {
 			boost::system::error_code err;
 			send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
 			if (err)
-				std::cout << "qeury to '" << ep << "' from '" << (si ? si->bind_ep : uftt_bcst_ep) << "'failed: " << err.message() << '\n';
+				std::cout << "qeury to '" << ep << "' failed: " << err.message() << '\n';
 		}
 
 		/**
@@ -402,7 +440,7 @@ class SimpleBackend: public INetModule {
 			boost::system::error_code err;
 			send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
 			if (err)
-				std::cout << "publish of '" << name << "' to '" << ep << "' from '" << (si ? si->bind_ep : uftt_bcst_ep) <<"'failed: " << err.message() << '\n';
+				std::cout << "publish of '" << name << "' failed: " << err.message() << '\n';
 		}
 
 		void send_publishes(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds) {
@@ -435,8 +473,11 @@ class SimpleBackend: public INetModule {
 		template<typename BUF>
 		void send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
-			if (si->bind_ep.address().is_v4() == ep.address().is_v4())
+			std::cout << "Send udp packet to " << ep << "(" << si->is_v4 << ")\n";
+			if (si->is_v4 == ep.address().is_v4())
 				send_udp_packet_to(si->sock, ep, buf, err, flags);
+			else
+				std::cout << "Skipped\n";
 		}
 
 		template<typename BUF>
@@ -444,10 +485,10 @@ class SimpleBackend: public INetModule {
 		{
 			if (!si) { // == uftt_bcst_if
 				typedef std::pair<boost::asio::ip::address, UDPSockInfoRef> sipair;
-				BOOST_FOREACH(sipair sip, udpsocklist) {
+				BOOST_FOREACH(sipair sip, udpsocklist) if (sip.second) {
 					send_udp_packet(sip.second, ep, buf, err, flags);
 					if (err)
-						std::cout << "send on (" << sip.second->bind_ep << ") to (" << ep << ") failed: " << err.message() << '\n';
+						std::cout << "send to (" << ep << ") failed: " << err.message() << '\n';
 				}
 			} else {
 				if (ep == uftt_bcst_ep)
@@ -491,45 +532,49 @@ class SimpleBackend: public INetModule {
 			return settings;
 		}
 
-		void add_ip_addr(boost::asio::ip::address addr) {
+		void new_iface(UDPSockInfoRef si)
+		{
+			send_publishes(si, uftt_bcst_ep, 1, true);
+			send_query    (si, uftt_bcst_ep);
+
+			asio_timer_oneshot(service, (int)1000, boost::bind(&SimpleBackend::send_publishes, this, si, uftt_bcst_ep, 1, true));
+			asio_timer_oneshot(service, (int)1000, boost::bind(&SimpleBackend::send_query    , this, si, uftt_bcst_ep));
+		}
+
+		void add_ip_addr_ipv4(std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst) {
+			boost::asio::ip::address addr = addrwbcst.first;
+			boost::asio::ip::address bcaddr = addrwbcst.second;
 			if (!udpsocklist[addr]) {
-				UDPSockInfoRef newsock(new UDPSockInfo(service));
-				newsock->bind_ep = boost::asio::ip::udp::endpoint(addr, UFTT_PORT);
-				if (addr.is_v4()) {
-					newsock->sock.open(boost::asio::ip::udp::v4());
-					newsock->sock.bind(newsock->bind_ep);
-					newsock->bcst_ep = boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::broadcast(), UFTT_PORT);
-					newsock->sock.set_option(boost::asio::ip::udp::socket::broadcast(true));
-				} else if (addr.is_v6()) {
-					newsock->sock.open(boost::asio::ip::udp::v6());
-					newsock->sock.bind(newsock->bind_ep);
-					boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
-					bcaddr.scope_id(addr.to_v6().scope_id());
-					newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
-					try {
-						newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
-					} catch (std::exception& e) {
-						std::cout << "Failed to join multicast (" << addr << ") : " << e.what() << '\n';
-					}
-					newsock->sock.set_option(boost::asio::ip::multicast::enable_loopback(true));
-				} else {
-					std::cout << "IP adress not v4 or v6: " << addr << '\n';
-					return;
+				UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v4->sock));
+				newsock->is_v4 = true;
+				newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
+				udpsocklist[addr] = newsock;
+				new_iface(newsock);
+			} else
+				std::cout << "Duplicate added adress: " << addr << '\n';
+		}
+
+		void add_ip_addr_ipv6(boost::asio::ip::address addr) {
+			if (!udpsocklist[addr]) {
+				UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v6->sock));
+				newsock->is_v4 = false;
+				boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
+				bcaddr.scope_id(addr.to_v6().scope_id());
+				try {
+					newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
+				} catch (std::exception& e) {
+					std::cout << "Failed to join multicast (" << addr << ") : " << e.what() << '\n';
 				}
+				newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
 
 				udpsocklist[addr] = newsock;
-				start_udp_receive(newsock);
-				send_publishes(newsock, uftt_bcst_ep, 1, true);
+
+				new_iface(newsock);
 			} else
 				std::cout << "Duplicate added adress: " << addr << '\n';
 		}
 
 		void del_ip_addr(boost::asio::ip::address addr) {
-			if (udpsocklist[addr]) {
-				udpsocklist[addr]->active = false;
-				udpsocklist[addr]->sock.close();
-			} else
-				std::cout << "Removing non-existing adress: " << addr << '\n';
 			udpsocklist.erase(addr);
 		}
 	public:
@@ -550,30 +595,55 @@ class SimpleBackend: public INetModule {
 			, udpretries(10)
 			, watcher_v4(core_->get_io_service())
 			, watcher_v6(core_->get_io_service())
+			, udp_sock_v4(core_->get_io_service())
+			, udp_sock_v6(core_->get_io_service())
+			, core(core_)
 		{
-			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] + ", _1));
-			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] - ", _1));
+			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4));
+			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6));
+
+			try {
+				udp_sock_v6.open(boost::asio::ip::udp::v6());
+				udp_sock_v6.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
+				udp_sock_v6.set_option(boost::asio::ip::udp::socket::broadcast(true));
+				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
+
+				UDPSockInfoRef recvinfo(new UDPSockInfo(udp_sock_v6, false));
+				start_udp_receive(recvinfo, recv_buf_v6, &recv_peer_v6);
+
+			} catch (std::exception& e) {
+				std::cout << "Failed to initialise IPv6 UDP scoket: " << e.what() << "\n";
+			}
+
+			try {
+				udp_sock_v4.open(boost::asio::ip::udp::v4());
+				udp_sock_v4.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
+				udp_sock_v4.set_option(boost::asio::ip::udp::socket::broadcast(true));
+				udp_sock_v4.set_option(boost::asio::ip::multicast::enable_loopback(true));
+
+				UDPSockInfoRef recvinfo(new UDPSockInfo(udp_sock_v4, true));
+				start_udp_receive(recvinfo, recv_buf_v4, &recv_peer_v4);
+			} catch (std::exception& e) {
+#ifdef __linux
+				if (udp_sock_v4.is_open())
+					udp_info_v4 = udp_info_v6;
+				else
+#endif
+					std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
+			}
+
+			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] + ", boost::bind(&get_first, _1)));
+			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] - ", boost::bind(&get_first, _1)));
 			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV6] + ", _1));
 			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV6] - ", _1));
 
-			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr, this, _1));
-			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::del_ip_addr, this, _1));
-			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr, this, _1));
+			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr_ipv4, this, _1));
+			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::del_ip_addr, this, boost::bind(&get_first, _1)));
+			watcher_v6.add_addr.connect(boost::bind(&SimpleBackend::add_ip_addr_ipv6, this, _1));
 			watcher_v6.del_addr.connect(boost::bind(&SimpleBackend::del_ip_addr, this, _1));
 
 			watcher_v4.async_wait();
 			watcher_v6.async_wait();
-
-			core = core_;
-
-			try {
-				tcplistener_v4.open(boost::asio::ip::tcp::v4());
-				tcplistener_v4.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
-				tcplistener_v4.listen(16);
-				start_tcp_accept(&tcplistener_v4);
-			} catch (std::exception& e) {
-				std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
-			}
 
 			try {
 				tcplistener_v6.open(boost::asio::ip::tcp::v6());
@@ -582,6 +652,18 @@ class SimpleBackend: public INetModule {
 				start_tcp_accept(&tcplistener_v6);
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialize IPv6 TCP listener: " << e.what() << '\n';
+			}
+
+			try {
+				tcplistener_v4.open(boost::asio::ip::tcp::v4());
+				tcplistener_v4.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
+				tcplistener_v4.listen(16);
+				start_tcp_accept(&tcplistener_v4);
+			} catch (std::exception& e) {
+#ifdef __linux__
+				if (!tcplistener_v6.is_open())
+#endif
+					std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
 			}
 
 			// bind autoupdater

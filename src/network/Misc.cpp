@@ -4,7 +4,9 @@
 #endif
 
 boost::asio::ip::address my_addr_from_string(const std::string& str) {
-	if (str == "255.255.255.255")
+	if (str.empty()) {
+		return boost::asio::ip::address();
+	} else if (str == "255.255.255.255")
 		return boost::asio::ip::address_v4::broadcast();
 #ifndef WIN32 // Linux?
 	else if(str.find_first_of("%") != std::string::npos) {

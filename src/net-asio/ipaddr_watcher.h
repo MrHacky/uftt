@@ -16,10 +16,13 @@ class ipv4_watcher : private boost::noncopyable {
 		ipv4_watcher(boost::asio::io_service& service);
 		~ipv4_watcher();
 
-		boost::signal<void(boost::asio::ip::address)> add_addr;
-		boost::signal<void(boost::asio::ip::address)> del_addr;
-		boost::signal<void(std::set<boost::asio::ip::address>)> new_list;
+		//boost::signal<void(boost::asio::ip::address)> add_addr_nbc;
+		//boost::signal<void(boost::asio::ip::address)> del_addr;
+		//boost::signal<void(std::set<boost::asio::ip::address>)> new_list;
 
+		boost::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> add_addr;
+		boost::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> del_addr;
+		boost::signal<void(std::set<std::pair<boost::asio::ip::address,boost::asio::ip::address> >)> new_list;
 		void async_wait();
 };
 

@@ -549,8 +549,8 @@ int main( int argc, char **argv ) {
 	ipv4_watcher w4(svc);
 	ipv6_watcher w6(svc);
 
-	w4.add_addr.connect(boost::bind(&print_addr, "[IPV4] + ", _1));
-	w4.del_addr.connect(boost::bind(&print_addr, "[IPV4] - ", _1));
+	//w4.add_addr.connect(boost::bind(&print_addr, "[IPV4] + ", _1));
+	//w4.del_addr.connect(boost::bind(&print_addr, "[IPV4] - ", _1));
 	w6.add_addr.connect(boost::bind(&print_addr, "[IPV6] + ", _1));
 	w6.del_addr.connect(boost::bind(&print_addr, "[IPV6] - ", _1));
 

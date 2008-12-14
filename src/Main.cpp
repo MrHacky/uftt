@@ -258,10 +258,6 @@ int imain( int argc, char **argv )
 	if (argc > 2 && string(argv[1]) == "--delete")
 		AutoUpdater::remove(run_service, work_service, argv[2]);
 
-	core.doRefreshShares();
-
-	core.doManualPublish("255.255.255.255");
-
 	int ret = gui.run();
 
 	settings.save();

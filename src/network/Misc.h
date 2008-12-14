@@ -13,6 +13,9 @@
 
 // TODO: give these a better place?
 
+inline boost::asio::ip::address get_first(const std::pair<boost::asio::ip::address, boost::asio::ip::address>& p)
+{ return p.first; }
+
 boost::asio::ip::address my_addr_from_string(const std::string& str);
 
 inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
