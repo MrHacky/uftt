@@ -26,6 +26,7 @@ struct LocalShareInfo {
 	boost::filesystem::path path;
 
 };
+
 struct ShareID {
 	uint32 mid;
 	std::string sid; // id as string for first step
