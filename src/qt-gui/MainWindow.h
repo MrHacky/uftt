@@ -50,6 +50,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		~MainWindow();
 
 	public Q_SLOTS:
+		void on_debugText_textChanged();
 		void do_refresh_shares();
 		void on_buttonRefresh_clicked();
 		void on_buttonDownload_clicked();

@@ -20,6 +20,7 @@
 #include <QTreeWidgetItem>
 #include <QUrl>
 #include <QWidget>
+#include <QScrollBar>
 
 #include <boost/foreach.hpp>
 
@@ -215,6 +216,11 @@ void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int 
 		delete item;
 		return;
 	}
+}
+
+void MainWindow::on_debugText_textChanged() {
+	QScrollBar *scrollBar = debugText->verticalScrollBar();
+	scrollBar->setValue(scrollBar->maximum());
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
