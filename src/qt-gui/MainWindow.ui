@@ -13,14 +13,6 @@
    <string>UFTT</string>
   </property>
   <widget class="QWidget" name="centralwidget" >
-   <property name="geometry" >
-    <rect>
-     <x>280</x>
-     <y>319</y>
-     <width>308</width>
-     <height>274</height>
-    </rect>
-   </property>
    <widget class="QLabel" name="label_2" >
     <property name="geometry" >
      <rect>
@@ -41,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>917</width>
-     <height>19</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File" >
@@ -83,14 +75,6 @@
    <addaction name="menu_Options" />
   </widget>
   <widget class="QDockWidget" name="dockShares" >
-   <property name="geometry" >
-    <rect>
-     <x>0</x>
-     <y>19</y>
-     <width>598</width>
-     <height>294</height>
-    </rect>
-   </property>
    <property name="features" >
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
@@ -101,14 +85,6 @@
     <number>4</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>598</width>
-      <height>274</height>
-     </rect>
-    </property>
     <layout class="QVBoxLayout" >
      <item>
       <widget class="QDragDropTreeWidget" name="listShares" >
@@ -174,7 +150,7 @@
          <property name="orientation" >
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" >
           <size>
            <width>40</width>
            <height>20</height>
@@ -230,14 +206,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockWidgetDebug" >
-   <property name="geometry" >
-    <rect>
-     <x>604</x>
-     <y>19</y>
-     <width>313</width>
-     <height>294</height>
-    </rect>
-   </property>
    <property name="windowTitle" >
     <string>Debug Log</string>
    </property>
@@ -245,14 +213,6 @@
     <number>4</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_3" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>313</width>
-      <height>274</height>
-     </rect>
-    </property>
     <layout class="QHBoxLayout" >
      <item>
       <widget class="QTextEdit" name="debugText" />
@@ -261,14 +221,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockManualConnect" >
-   <property name="geometry" >
-    <rect>
-     <x>0</x>
-     <y>319</y>
-     <width>274</width>
-     <height>274</height>
-    </rect>
-   </property>
    <property name="windowTitle" >
     <string>Manual Connect</string>
    </property>
@@ -276,14 +228,6 @@
     <number>1</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>274</width>
-      <height>254</height>
-     </rect>
-    </property>
     <layout class="QVBoxLayout" >
      <item>
       <layout class="QGridLayout" >
@@ -337,7 +281,7 @@
          <property name="orientation" >
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" >
           <size>
            <width>40</width>
            <height>20</height>
@@ -384,14 +328,6 @@
    </widget>
   </widget>
   <widget class="QDockWidget" name="dockTaskList" >
-   <property name="geometry" >
-    <rect>
-     <x>594</x>
-     <y>319</y>
-     <width>323</width>
-     <height>274</height>
-    </rect>
-   </property>
    <property name="windowTitle" >
     <string>Task List</string>
    </property>
@@ -399,30 +335,12 @@
     <number>2</number>
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_4" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>323</width>
-      <height>254</height>
-     </rect>
-    </property>
     <layout class="QVBoxLayout" >
      <item>
       <widget class="QTreeWidget" name="listTasks" >
        <column>
         <property name="text" >
-         <string>Name</string>
-        </property>
-       </column>
-       <column>
-        <property name="text" >
-         <string>Transferred</string>
-        </property>
-       </column>
-       <column>
-        <property name="text" >
-         <string>Time</string>
+         <string>Share Name</string>
         </property>
        </column>
        <column>
@@ -432,7 +350,27 @@
        </column>
        <column>
         <property name="text" >
-         <string>Queue</string>
+         <string>Host</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>User</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Time</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>ETA</string>
+        </property>
+       </column>
+       <column>
+        <property name="text" >
+         <string>Transferred</string>
         </property>
        </column>
        <column>
@@ -447,7 +385,7 @@
        </column>
        <column>
         <property name="text" >
-         <string>Remaining</string>
+         <string>Queue</string>
         </property>
        </column>
       </widget>
@@ -466,7 +404,7 @@
          <property name="orientation" >
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" >
           <size>
            <width>40</width>
            <height>20</height>

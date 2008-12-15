@@ -45,6 +45,19 @@ enum ShareListColumNames {
 	SLCN_URL,
 };
 
+enum TaskListColumNames {
+	TLCN_SHARE = 0,
+	TLCN_STATUS,
+	TLCN_HOST,
+	TLCN_USER,
+	TLCN_TIME,
+	TLCN_ETA,
+	TLCN_TRANSFERRED,
+	TLCN_SIZE,
+	TLCN_SPEED,
+	TLCN_QUEUE,
+};
+
 
 class MyItemDelegate : public QItemDelegate
 {
@@ -323,15 +336,13 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	uint32 queue = ti.queue;
 	uint64 total = ti.size;
 
-	twi->setText(1, QString::fromStdString(StrFormat::bytes(tfx)));
-	twi->setText(2, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
-	twi->setText(3, QString::fromStdString(sts));
-	twi->setText(4, QString::fromStdString(STRFORMAT("%d", queue)));
-	twi->setText(5, QString::fromStdString(StrFormat::bytes(total)));
-	if (elapsed.total_seconds() > 0)
-		twi->setText(6, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
-	if (total > 0 && total >= tfx && tfx > 0)
-		twi->setText(7, QString::fromStdString(
+	twi->setText(TLCN_SHARE, QString::fromStdString(ti.shareinfo.name));
+	twi->setText(TLCN_STATUS, QString::fromStdString(sts));
+	twi->setText(TLCN_HOST, QString::fromStdString(ti.shareinfo.host));
+	twi->setText(TLCN_USER, QString::fromStdString(ti.shareinfo.user));
+	twi->setText(TLCN_TIME, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
+	if (total > 0 && total >= tfx && tfx > 0) {
+		twi->setText(TLCN_ETA, QString::fromStdString(
 		boost::posix_time::to_simple_string(
 			boost::posix_time::time_duration(
 				boost::posix_time::seconds(
@@ -340,7 +351,13 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 				)
 			)
 		));
-
+	}
+	twi->setText(TLCN_TRANSFERRED, QString::fromStdString(StrFormat::bytes(tfx)));
+	twi->setText(TLCN_SIZE, QString::fromStdString(StrFormat::bytes(total)));
+	if (elapsed.total_seconds() > 0) {
+		twi->setText(TLCN_SPEED, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
+	}
+	twi->setText(TLCN_QUEUE, QString::fromStdString(STRFORMAT("%d", queue)));
 	if (sts == "Completed")
 		download_done(ti.shareid);
 }
@@ -525,7 +542,7 @@ void MainWindow::on_buttonClearCompletedTasks_clicked()
 {
 	for(int i = this->listTasks->topLevelItemCount(); i > 0; --i) {
 		QTreeWidgetItem* twi = this->listTasks->topLevelItem(i-1);
-		if (twi->text(3) == "Completed")
+		if (twi->text(TLCN_STATUS) == "Completed")
 			delete twi;
 	}
 }
@@ -535,7 +552,7 @@ void MainWindow::new_upload(const TaskInfo& info)
 	std::string name = info.shareinfo.name;
 
 	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-	twi->setText(0, QString::fromStdString(name));
+	twi->setText(TLCN_SHARE, QString::fromStdString(name));
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 	boost::function<void(const TaskInfo&)> handler =
@@ -657,7 +674,7 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 
 void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 {
-	string text = twi->text(0).toStdString();
+	string text = twi->text(TLCN_SHARE).toStdString();
 	if (text.substr(0,4) != "uftt") return;
 	size_t pos = text.find_last_of("\\/");
 	if (pos == string::npos) return;
@@ -691,7 +708,7 @@ void MainWindow::new_task(const TaskInfo& info)
 	} else {
 		QString url = QString::fromStdString(info.shareinfo.name);
 		QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-		twi->setText(0, url);
+		twi->setText(TLCN_SHARE, url);
 
 		boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 		boost::function<void(const TaskInfo&)> handler =
