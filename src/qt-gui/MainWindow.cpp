@@ -238,10 +238,18 @@ MainWindow::~MainWindow()
 {
 }
 
+void MainWindow::do_refresh_shares() {
+	backend->doRefreshShares();
+}
+
 void MainWindow::on_buttonRefresh_clicked()
 {
-	listShares->clear();
-	backend->doRefreshShares();
+	if(!((qApp->keyboardModifiers() & Qt::ShiftModifier) != Qt::NoModifier)) {
+		listShares->clear();
+	}
+	for(int i=0; i<8; ++i) {
+		QTimer::singleShot(i*20, this, SLOT(do_refresh_shares()));
+	}
 }
 
 void MainWindow::addSimpleShare(const ShareInfo& info)
