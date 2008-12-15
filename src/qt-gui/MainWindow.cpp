@@ -169,6 +169,8 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	//this->listShares->header()->moveSection(3+0,3);
 	this->listShares->hideColumn(SLCN_URL);
 	this->listShares->hideColumn(SLCN_PROTOCOL);
+	this->listShares->setSortingEnabled(true);
+	this->listTasks->setSortingEnabled(true);
 	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
