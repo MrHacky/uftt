@@ -5,8 +5,10 @@ REGISTER_NETMODULE_CLASS(HTTPBackend);
 
 #include <set>
 
-#include "SimpleConnection.h"
 #include "../net-asio/asio_http_request.h"
+#include "../util/StrFormat.h"
+
+#include "../Globals.h"
 
 using namespace std;
 
