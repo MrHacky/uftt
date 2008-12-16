@@ -115,7 +115,7 @@ private:
     }
     else
     {
-      std::cout << "Error: " << err.message() << "\n";
+      std::cout << "Error handle_resolve: " << err.message() << "\n";
     }
   }
 
@@ -137,7 +137,7 @@ private:
     }
     else
     {
-      std::cout << "Error: " << err.message() << "\n";
+      std::cout << "Error handle_connect: " << err.message() << "\n";
     }
   }
 
@@ -152,7 +152,7 @@ private:
     }
     else
     {
-      std::cout << "Error: " << err.message() << "\n";
+      std::cout << "Error handle_write_request: " << err.message() << "\n";
     }
   }
 
@@ -187,7 +187,7 @@ private:
     }
     else
     {
-      std::cout << "Error: " << err << "\n";
+      std::cout << "Error handle_read_status_line: " << err << "\n";
     }
   }
 
@@ -220,7 +220,7 @@ private:
     }
     else
     {
-      std::cout << "Error: " << err << "\n";
+      std::cout << "Error handle_read_headers: " << err << "\n";
     }
   }
 
@@ -258,7 +258,7 @@ private:
     }
     else if (err != boost::asio::error::eof)
     {
-      std::cout << "Error: " << err << "\n";
+      std::cout << "Error handle_read_content: " << err << "\n";
 	  handler(err);
 	} else {
 		handler(boost::system::error_code());
