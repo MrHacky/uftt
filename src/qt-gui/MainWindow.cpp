@@ -262,11 +262,13 @@ void MainWindow::do_refresh_shares() {
 
 void MainWindow::on_buttonRefresh_clicked()
 {
-	if(!((qApp->keyboardModifiers() & Qt::ShiftModifier) != Qt::NoModifier)) {
+	if (!(qApp->keyboardModifiers() & Qt::ShiftModifier)) {
 		listShares->clear();
 	}
-	for(int i=0; i<8; ++i) {
-		QTimer::singleShot(i*20, this, SLOT(do_refresh_shares()));
+	if (!(qApp->keyboardModifiers() & Qt::ControlModifier)) {
+		for(int i=0; i<8; ++i) {
+			QTimer::singleShot(i*20, this, SLOT(do_refresh_shares()));
+		}
 	}
 }
 
