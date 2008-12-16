@@ -624,12 +624,13 @@ class SimpleBackend: public INetModule {
 				UDPSockInfoRef recvinfo(new UDPSockInfo(udp_sock_v4, true));
 				start_udp_receive(recvinfo, recv_buf_v4, &recv_peer_v4);
 			} catch (std::exception& e) {
+				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
 #ifdef __linux
-				if (udp_sock_v4.is_open())
+				if (udp_sock_v4.is_open()) {
+					std::cout << "Re-using IPv6 UDP socket\n";
 					udp_info_v4 = udp_info_v6;
-				else
+				}
 #endif
-					std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
 			}
 
 			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] + ", boost::bind(&get_first, _1)));
@@ -660,10 +661,7 @@ class SimpleBackend: public INetModule {
 				tcplistener_v4.listen(16);
 				start_tcp_accept(&tcplistener_v4);
 			} catch (std::exception& e) {
-#ifdef __linux__
-				if (!tcplistener_v6.is_open())
-#endif
-					std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
+				std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
 			}
 
 			// bind autoupdater
