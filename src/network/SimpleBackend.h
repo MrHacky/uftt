@@ -498,36 +498,6 @@ class SimpleBackend: public INetModule {
 			}
 		}
 
-		void check_for_web_updates()
-		{
-			//std::string weburl = "http://hackykid.heliohost.org/site/autoupdate.php";
-			std::string weburl = "http://uftt.googlecode.com/svn/trunk/site/autoupdate.php";
-			//std::string weburl = "http://localhost:8080/site/autoupdate.php";
-
-			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, weburl));
-			request->setHandler(boost::bind(&SimpleBackend::web_update_page_handler, this, boost::asio::placeholders::error, request));
-		}
-
-		void web_update_page_handler(const boost::system::error_code& err, boost::shared_ptr<boost::asio::http_request> req)
-		{
-			if (err) {
-				std::cout << "Error checking for web updates: " << err.message() << '\n';
-			} else
-			{
-				std::vector<std::pair<std::string, std::string> > builds = AutoUpdater::parseUpdateWebPage(req->getContent());
-				for (uint i = 0; i < builds.size(); ++i) {
-					// TODO: create shares & notify people...
-					//handler(builds[i].first, builds[i].second);
-				}
-			}
-		}
-
-		void download_web_update(std::string url, boost::function<void(const boost::system::error_code&, boost::shared_ptr<boost::asio::http_request>) > handler)
-		{
-			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
-			request->setHandler(boost::bind(handler, boost::asio::placeholders::error, request));
-		}
-
 		UFTTSettings& getSettings() {
 			return settings;
 		}
@@ -703,8 +673,6 @@ class SimpleBackend: public INetModule {
 
 		virtual void notifyAddLocalShare(const LocalShareID& sid);
 		virtual void notifyDelLocalShare(const LocalShareID& sid);
-
-		virtual void checkForWebUpdates();
 
 		virtual void doSetPeerfinderEnabled(bool enabled);
 

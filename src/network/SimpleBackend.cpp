@@ -41,22 +41,21 @@ void SimpleBackend::startDownload(const ShareID& sid, const boost::filesystem::p
 
 void SimpleBackend::doManualPublish(const std::string& host)
 {
-	service.post(boost::bind(&SimpleBackend::send_publishes, this,
-		uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
-		, true, true
-	));
+	try {
+		service.post(boost::bind(&SimpleBackend::send_publishes, this,
+			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
+			, true, true
+		));
+	} catch (std::exception& e) {}
 }
 
 void SimpleBackend::doManualQuery(const std::string& host)
 {
-	service.post(boost::bind(&SimpleBackend::send_query, this,
-		uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
-	));
-}
-
-void SimpleBackend::checkForWebUpdates()
-{
-	service.post(boost::bind(&SimpleBackend::check_for_web_updates, this));
+	try {
+		service.post(boost::bind(&SimpleBackend::send_query, this,
+			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
+		));
+	} catch (std::exception& e) {}
 }
 
 void SimpleBackend::doSetPeerfinderEnabled(bool enabled)

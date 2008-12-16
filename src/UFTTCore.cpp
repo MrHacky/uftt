@@ -133,10 +133,6 @@ void UFTTCore::doRefreshShares()
 
 
 // Deprecated but still in use
-void UFTTCore::checkForWebUpdates()
-{
-}
-
 void UFTTCore::doSetPeerfinderEnabled(bool enabled)
 {
 	BOOST_FOREACH(INetModuleRef nm, netmodules)

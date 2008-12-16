@@ -580,27 +580,8 @@ void MainWindow::new_upload(const TaskInfo& info)
 void MainWindow::on_actionCheckForWebUpdates_triggered()
 {
 	settings.lastupdate = boost::posix_time::second_clock::universal_time();
-	backend->checkForWebUpdates();
+	backend->doManualQuery("webupdate");
 }
-
-/*
-void MainWindow::cb_web_download_done(const boost::system::error_code& err, const std::string& build, boost::shared_ptr<boost::asio::http_request> req)
-{
-	if (err) {
-		cout << "Web download failed: " << err.message() << '\n';
-	} else {
-		boost::filesystem::path temp_path = DownloadEdit->text().toStdString();
-		temp_path /= (build + ".exe");
-
-		ofstream tfile(temp_path.native_file_string().c_str(), ios_base::out|ios_base::binary);
-		if (!req->getContent().empty())
-			tfile.write((char*)&(req->getContent()[0]), req->getContent().size());
-		tfile.close();
-
-		this->doSelfUpdate(build, temp_path);
-	}
-}
-*/
 
 void MainWindow::on_actionUpdateNever_toggled(bool on)
 {
@@ -616,7 +597,6 @@ void MainWindow::on_actionUpdateWeekly_toggled(bool on)
 {
 	if (on) setUpdateInterval(2);
 }
-
 void MainWindow::on_actionUpdateMonthly_toggled(bool on)
 {
 	if (on) setUpdateInterval(3);

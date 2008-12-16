@@ -35,6 +35,18 @@ struct ShareID {
 	{
 		return (this->sid == o.sid) && (this->mid == o.mid);
 	}
+
+	bool operator!=(const ShareID& o) const
+	{
+		return !(this->operator==(o));
+	}
+
+	bool operator<(const ShareID& o) const
+	{
+		if (mid < o.mid) return true;
+		if (sid < o.sid) return true;
+		return false;
+	}
 };
 
 struct ShareInfo {
@@ -105,7 +117,6 @@ class UFTTCore {
 
 
 		// Deprecated but still in use
-		void checkForWebUpdates();
 		void doSetPeerfinderEnabled(bool enabled);
 		UFTTSettings& getSettingsRef();
 
