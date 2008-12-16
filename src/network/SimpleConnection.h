@@ -283,8 +283,8 @@ class SimpleTCPConnection {
 			newstyle = false;
 			qitemsfilled = false;
 			open_files = 0;
-			transfered_bytes = 0;
-			total_bytes = 0;
+			taskinfo.transferred = 0;
+			taskinfo.size = 0;
 
 			// todo, make this more global?
 			for (uint32 i = 1; i < END_OF_COMMANDS; ++i)
@@ -301,11 +301,9 @@ class SimpleTCPConnection {
 			return socket;
 		}
 
-		uint64 transfered_bytes;
-		uint64 total_bytes;
 		boost::asio::deadline_timer progress_timer;
 		boost::signal<void(const TaskInfo&)> sig_progress;
-		ShareID shareid;
+		TaskInfo taskinfo;
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -318,25 +316,20 @@ class SimpleTCPConnection {
 			if (e) {
 				std::cout << "update_progress_handler failed: " << e.message() << '\n';
 			} else {
-				TaskInfo tinfo;
-				tinfo.shareid = shareid;
-				tinfo.queue = 0;
-				tinfo.transferred = transfered_bytes;
-				tinfo.size = total_bytes;
-				tinfo.queue = sendqueue.size()+open_files;
+				taskinfo.queue = sendqueue.size()+open_files;
 				if (error_message != "") {
-					tinfo.status = std::string() + "Error: " + error_message;
+					taskinfo.status = std::string() + "Error: " + error_message;
 				} else if (dldone && open_files == 0) {
-					tinfo.status ="Completed";
+					taskinfo.status ="Completed";
 					disconnect();
 				} else if (uldone) {
-					tinfo.status ="Completed";
+					taskinfo.status ="Completed";
 					disconnect();
 				} else {
-					tinfo.status ="Transfering";
+					taskinfo.status ="Transfering";
 					start_update_progress();
 				}
-				sig_progress(tinfo);
+				sig_progress(taskinfo);
 			}
 		}
 
@@ -346,6 +339,10 @@ class SimpleTCPConnection {
 			start_update_progress();
 			shared_vec rbuf(new std::vector<uint8>());
 			rbuf->resize(4);
+
+			// not really correct, shareinfo.host is supposed to be the one sharing the share
+			taskinfo.shareinfo.host = STRFORMAT("%s", socket.remote_endpoint().address());
+
 			boost::asio::async_read(socket, GETBUF(rbuf),
 				boost::bind(&SimpleTCPConnection::handle_recv_protver, this, _1, rbuf));
 		}
@@ -661,6 +658,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
+			taskinfo.shareinfo.name = elems[0];
 			boost::filesystem::path spath(core->getLocalSharePath(elems[0]));
 			sharepath = spath.branch_path();
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
@@ -704,7 +702,7 @@ class SimpleTCPConnection {
 						//std::cout << "Directory: " << curpath << '\n';
 					} else {
 						tbuf->push_back(1); // file
-						total_bytes += boost::filesystem::file_size(*curiter);
+						taskinfo.size += boost::filesystem::file_size(*curiter);
 						pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
 						pkt_put_vuint32(curpath.string().size(), *tbuf);
 						for (uint i = 0; i < curpath.string().size(); ++i)
@@ -719,7 +717,7 @@ class SimpleTCPConnection {
 				pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
 				tbuf->push_back(1); // file
-				total_bytes += boost::filesystem::file_size(spath);
+				taskinfo.size += boost::filesystem::file_size(spath);
 				pkt_put_vuint64(boost::filesystem::file_size(spath), *tbuf);
 				pkt_put_vuint32(curpath.string().size(), *tbuf);
 				for (uint i = 0; i < curpath.string().size(); ++i)
@@ -740,7 +738,7 @@ class SimpleTCPConnection {
 				switch (tp) {
 					case 1: { // file
 						qitem qi(1, "", pkt_get_vuint64(*tbuf, pos));
-						total_bytes += qi.fsize;
+						taskinfo.size += qi.fsize;
 						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
 						for (uint i = 0; i < nlen; ++i)
 							qi.path.push_back(tbuf->at(pos++));
@@ -896,7 +894,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			transfered_bytes += len;
+			taskinfo.transferred += len;
 			sbuf->resize(len);
 			cursendfile.fsize -= len;
 			//cout << ">async_write(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
@@ -1074,6 +1072,8 @@ class SimpleTCPConnection {
 		void got_share_name(shared_vec rbuf)
 		{
 			std::cout << "got share name: " << sharename << '\n';
+			taskinfo.shareinfo.name = sharename;
+			taskinfo.isupload = true;
 			sharepath = core->getLocalSharePath(sharename);
 			if (sharepath == "") {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
@@ -1114,7 +1114,7 @@ class SimpleTCPConnection {
 				disconnect(STRFORMAT("sent_autoupdate_file: %s", e.message()));
 				return;
 			}
-			transfered_bytes += buildfile->size();
+			taskinfo.transferred += buildfile->size();
 			cmdinfo hdr;
 			hdr.cmd = 0x04;
 			sbuf->resize(16);
@@ -1256,7 +1256,7 @@ class SimpleTCPConnection {
 				return;
 			}
 
-			transfered_bytes += wbuf->size();
+			taskinfo.transferred += wbuf->size();
 			size -= wbuf->size();
 
 			if (!*done) {

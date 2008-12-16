@@ -364,7 +364,8 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	uint32 queue = ti.queue;
 	uint64 total = ti.size;
 
-	twi->setText(TLCN_SHARE, QString::fromStdString(ti.shareinfo.name));
+	std::string type = (ti.isupload ? "U: " : "D: ");
+	twi->setText(TLCN_SHARE, QString::fromStdString(type + ti.shareinfo.name));
 	twi->setText(TLCN_STATUS, QString::fromStdString(sts));
 	twi->setText(TLCN_HOST, QString::fromStdString(ti.shareinfo.host));
 	twi->setText(TLCN_USER, QString::fromStdString(ti.shareinfo.user));

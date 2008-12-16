@@ -46,7 +46,7 @@ void SimpleBackend::doManualPublish(const std::string& host)
 			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
 			, true, true
 		));
-	} catch (std::exception& e) {}
+	} catch (std::exception& /*e*/) {}
 }
 
 void SimpleBackend::doManualQuery(const std::string& host)
@@ -55,7 +55,7 @@ void SimpleBackend::doManualQuery(const std::string& host)
 		service.post(boost::bind(&SimpleBackend::send_query, this,
 			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
 		));
-	} catch (std::exception& e) {}
+	} catch (std::exception& /*e*/) {}
 }
 
 void SimpleBackend::doSetPeerfinderEnabled(bool enabled)
@@ -102,17 +102,18 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	//newconn->sig_progress.connect(handler);
 	conlist.push_back(newconn);
 
-	newconn->shareid = sid;
+	ret.shareinfo.name = share;
+	ret.shareinfo.host = host;
+	ret.shareinfo.proto = proto;
+	ret.isupload = false;
+
+	newconn->taskinfo = ret;
 
 	boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
 	newconn->getSocket().open(ep.protocol());
 	std::cout << "Connecting...\n";
 	newconn->getSocket().async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
 
-	ret.shareinfo.name = share;
-	ret.shareinfo.host = host;
-	ret.shareinfo.proto = proto;
-	ret.isupload = false;
 	sig_new_task(ret);
 }
 
@@ -140,20 +141,19 @@ void SimpleBackend::handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistene
 	} else {
 		std::cout << "handling tcp accept\n";
 		conlist.push_back(newconn);
+		newconn->taskinfo.shareinfo.name = "Upload";
+		newconn->taskinfo.id.mid = mid;
+		newconn->taskinfo.id.cid = conlist.size()-1;
+		newconn->taskinfo.isupload = true;
 		newconn->handle_tcp_accept();
-		TaskInfo tinfo;
-		tinfo.shareinfo.name = "Upload";
-		tinfo.id.mid = mid;
-		tinfo.id.cid = conlist.size()-1;
-		tinfo.isupload = true;
-		sig_new_task(tinfo);
+		sig_new_task(newconn->taskinfo);
 		start_tcp_accept(tcplistener);
 	}
 }
 
 void SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
-	// TODO: fix this
 	int num = tid.cid;
 	conlist[num]->sig_progress.connect(cb);
+	conlist[num]->sig_progress(conlist[num]->taskinfo);
 }

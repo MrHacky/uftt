@@ -73,6 +73,8 @@ struct TaskInfo {
 	uint64 transferred;
 	uint64 size;
 	uint32 queue;
+
+	TaskInfo(): isupload(true), transferred(0), size(0), queue(0) {};
 };
 
 class UFTTCore {
