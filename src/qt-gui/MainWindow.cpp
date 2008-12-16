@@ -32,6 +32,8 @@
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
 
+#include "../Globals.h"
+
 #include "DialogDirectoryChooser.h"
 
 Q_DECLARE_METATYPE(ShareID);
@@ -101,10 +103,24 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	// setup debug stream
 	new QDebugStream(std::cout, debugText);
 
+	// remove central widget so everything is dockable
 	{
 		QWidget* cw = new QWidget();
 		this->setCentralWidget(cw);
 		delete cw;
+	}
+
+	// fix statusbar so it will look less ugly
+	{
+		QStatusBar* bar = ((QMainWindow*)this)->statusBar();
+		int left, top, right, bottom;
+		bar->getContentsMargins(&left, &top, &right, &bottom);
+		top += this->style()->pixelMetric(QStyle::PM_DockWidgetSeparatorExtent);
+		//bottom -= 5;
+		bar->setContentsMargins( left,  top,  right,  bottom);
+
+		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		bar->addWidget(new QLabel("Status bar"));
 	}
 
 	this->setDockOptions(QMainWindow::DockOptions(QMainWindow::AllowNestedDocks|QMainWindow::AllowTabbedDocks|QMainWindow::AnimatedDocks|QMainWindow::VerticalTabs));
