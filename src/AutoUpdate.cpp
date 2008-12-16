@@ -565,7 +565,7 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 	sig = Base64::decode(sig);
 
 	if (sig.size() == 0)
-		return result; // empty result
+		sig.push_back(0); //dummy
 
 	RSA* rsapub = NULL;
 	RSA* rsapriv = NULL;
