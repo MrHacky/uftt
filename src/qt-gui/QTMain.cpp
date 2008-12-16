@@ -41,7 +41,8 @@ void QTMain::BindEvents(UFTTCore* t)
 
 int QTMain::run()
 {
-	impl->wnd.onshow();
+	impl->wnd.pre_show();
 	impl->wnd.show();
+	impl->wnd.post_show();
 	return impl->app.exec();
 }

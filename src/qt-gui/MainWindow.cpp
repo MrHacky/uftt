@@ -218,11 +218,6 @@ void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int 
 	}
 }
 
-void MainWindow::on_debugText_textChanged() {
-	QScrollBar *scrollBar = debugText->verticalScrollBar();
-	scrollBar->setValue(scrollBar->maximum());
-}
-
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
 	/* put stuff back into settings */
@@ -635,11 +630,26 @@ void MainWindow::check_autoupdate_interval()
 	}
 }
 
-void MainWindow::onshow()
-{
+#ifdef __linux__
+void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux only?)
+	QString tmp = qedit->toPlainText();
+	qedit->clear();
+	qedit->append(tmp);
+}
+#endif
+
+void MainWindow::pre_show() {
 	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
 	this->editNickName->setText(QString::fromStdString(settings.nickname));
 	check_autoupdate_interval();
+}
+
+void MainWindow::post_show() {
+#ifdef __linux__
+	boost::thread thread(
+		marshaller.wrap(boost::bind(&linuxQTextEditScrollFix, debugText))
+	);
+#endif
 }
 
 void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem::path& path)

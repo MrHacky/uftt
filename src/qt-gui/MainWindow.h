@@ -50,7 +50,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		~MainWindow();
 
 	public Q_SLOTS:
-		void on_debugText_textChanged();
 		void do_refresh_shares();
 		void on_buttonRefresh_clicked();
 		void on_buttonDownload_clicked();
@@ -93,7 +92,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti);
 
-		void onshow();
+		void pre_show();
+		void post_show();
 };
 
 #endif
