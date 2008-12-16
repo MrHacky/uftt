@@ -36,6 +36,7 @@
 
 #include "DialogDirectoryChooser.h"
 
+// Register ShareID to allow using it inside a QVariant so it can be attached to a tree widget item
 Q_DECLARE_METATYPE(ShareID);
 
 using namespace std;
@@ -460,8 +461,6 @@ void MainWindow::on_buttonBrowse_clicked()
 	if (!directory.isEmpty())
 		this->DownloadEdit->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
 }
-
-extern string thebuildstring;
 
 void MainWindow::new_autoupdate(const ShareInfo& info)
 {

@@ -32,8 +32,8 @@ class HTTPBackend: public INetModule {
 
 		void do_start_download(const ShareID& sid, const boost::filesystem::path& path);
 		void handle_download_done(const boost::system::error_code& err, HTTPTaskRef task);
-		void handle_file_open_done(const boost::system::error_code& err,HTTPTaskRef task);
-		void handle_file_write_done(const boost::system::error_code& err,HTTPTaskRef task);
+		void handle_file_open_done(const boost::system::error_code& err, HTTPTaskRef task);
+		void handle_file_write_done(const boost::system::error_code& err, HTTPTaskRef task);
 
 		void do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 	public:

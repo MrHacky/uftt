@@ -68,7 +68,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_actionCheckForWebUpdates_triggered();
 
 		void on_buttonClearCompletedTasks_clicked();
-		void on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column);
+		void on_listBroadcastHosts_itemChanged(QTreeWidgetItem* item, int column);
 
 		void on_actionUpdateNever_toggled(bool);
 		void on_actionUpdateDaily_toggled(bool);
