@@ -27,8 +27,11 @@ QT4_AUTOMOC(${UI_SRCS})
 
 QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
 
+QT4_ADD_RESOURCES(QRC_SRCS Icons/icons.qrc)
+
 ADD_LIBRARY(uftt-qt
 	${UI_SRCS}
+	${QRC_SRCS}
 	MainWindow.h
 	QDragDropTreeWidget.h
 	QDragDropSignalWidget.h

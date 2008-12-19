@@ -146,12 +146,20 @@
          <property name="text" >
           <string>Refresh</string>
          </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-refresh.png</normaloff>:/button/button-refresh.png</iconset>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QPushButton" name="buttonAdd1" >
          <property name="text" >
           <string>Add Share (dir)...</string>
+         </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-addsharedir.png</normaloff>:/button/button-addsharedir.png</iconset>
          </property>
         </widget>
        </item>
@@ -166,6 +174,10 @@
         <widget class="QPushButton" name="buttonAdd3" >
          <property name="text" >
           <string>Add Share (file)...</string>
+         </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
          </property>
         </widget>
        </item>
@@ -201,6 +213,10 @@
          <property name="text" >
           <string>Download</string>
          </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-download.png</normaloff>:/button/button-download.png</iconset>
+         </property>
         </widget>
        </item>
        <item>
@@ -221,6 +237,10 @@
         <widget class="QPushButton" name="buttonBrowse" >
          <property name="text" >
           <string>Browse...</string>
+         </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-browsedir.png</normaloff>:/button/button-browsedir.png</iconset>
          </property>
         </widget>
        </item>
@@ -469,6 +489,10 @@
          <property name="text" >
           <string>Clear Completed</string>
          </property>
+         <property name="icon" >
+          <iconset resource="Icons/icons.qrc" >
+           <normaloff>:/button/button-clearcompleted.png</normaloff>:/button/button-clearcompleted.png</iconset>
+         </property>
         </widget>
        </item>
        <item>
@@ -579,7 +603,9 @@
   <tabstop>buttonDownload</tabstop>
   <tabstop>DownloadEdit</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="Icons/icons.qrc" />
+ </resources>
  <connections>
   <connection>
    <sender>action_Quit</sender>

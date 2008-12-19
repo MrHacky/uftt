@@ -45,7 +45,13 @@ boost::rand48 rng;
 #define BUFSIZE (1024*1024*16)
 std::vector<uint8*> testbuffers;
 
+#define LINK_QT_RESOURCE(name) \
+		extern int qInitResources_ ## name (); \
+		namespace { namespace name ## addr { \
+			void* name ## addr = & qInitResources_ ## name ; \
+		}	}
 
+LINK_QT_RESOURCE(icons);
 
 			struct settrue {
 				bool* value;

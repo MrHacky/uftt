@@ -1,0 +1,15 @@
+<RCC>
+  <qresource prefix="status" >
+    <file>status-ok.png</file>
+    <file>status-warn.png</file>
+    <file>status-error.png</file>
+  </qresource>
+  <qresource prefix="button" >
+    <file>button-clearcompleted.png</file>
+    <file>button-browsedir.png</file>
+    <file>button-addsharefile.png</file>
+    <file>button-addsharedir.png</file>
+    <file>button-download.png</file>
+    <file>button-refresh.png</file>
+  </qresource>
+</RCC>

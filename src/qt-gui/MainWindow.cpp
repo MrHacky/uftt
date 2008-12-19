@@ -137,7 +137,6 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	}
 
 	buttonAdd2->hide();
-	buttonAdd3->hide();
 
 	listBroadcastHosts->hide();
 	label_3->hide();
