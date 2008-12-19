@@ -48,7 +48,7 @@ std::vector<uint8*> testbuffers;
 #define LINK_QT_RESOURCE(name) \
 		extern int qInitResources_ ## name (); \
 		namespace { namespace name ## addr { \
-			void* name ## addr = & qInitResources_ ## name ; \
+			void* name ## addr = (void*)& qInitResources_ ## name ; \
 		}	}
 
 LINK_QT_RESOURCE(icons);
