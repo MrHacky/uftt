@@ -36,6 +36,12 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void setUpdateInterval(int i);
 		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
 
+		void check_autoupdate_interval();
+
+		void new_autoupdate(const ShareInfo& info);
+		void download_done(const ShareID& sid);
+		void new_upload(const TaskInfo& info);
+
 	protected:
 		virtual void closeEvent(QCloseEvent * event);
 
@@ -51,6 +57,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	public Q_SLOTS:
 		void do_refresh_shares();
+
 		void on_buttonRefresh_clicked();
 		void on_buttonDownload_clicked();
 
@@ -77,12 +84,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
 		void on_listShares_itemDoubleClicked(QTreeWidgetItem*, int);
-
-		void check_autoupdate_interval();
-
-		void new_autoupdate(const ShareInfo& info);
-		void download_done(const ShareID& sid);
-		void new_upload(const TaskInfo& info);
 
 		void on_editNickName_textChanged(QString text);
 	public: // callbacks

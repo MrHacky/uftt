@@ -131,7 +131,8 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 			QDockWidget* dock = (QDockWidget*)obj;
 			menu_View->addAction(dock->toggleViewAction());
 			dock->setAllowedAreas(Qt::TopDockWidgetArea);
-			dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+			dock->setFeatures(QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable/* | QDockWidget::DockWidgetFloatable*/);
+			connect(dock, SIGNAL(dockLocationChanged(Qt::DockWidgetArea)), this, SLOT(update()));
 			this->addDockWidget(Qt::TopDockWidgetArea, dock);
 		}
 	}
@@ -458,7 +459,7 @@ void MainWindow::on_buttonBrowse_clicked()
 {
 	QString directory;
 	directory = QFileDialog::getExistingDirectory(this,
-		tr("Choose directory to share"),
+		tr("Choose download directory"),
 		DownloadEdit->text());
 	if (!directory.isEmpty())
 		this->DownloadEdit->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));

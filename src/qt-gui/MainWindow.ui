@@ -197,7 +197,7 @@
        <item>
         <widget class="QLabel" name="lblNickName" >
          <property name="text" >
-          <string>Nickname</string>
+          <string>Nickname:</string>
          </property>
         </widget>
        </item>
