@@ -595,7 +595,7 @@ class SimpleBackend: public INetModule {
 				start_udp_receive(recvinfo, recv_buf_v4, &recv_peer_v4);
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
-#ifdef __linux
+#ifdef __linux__
 				if (udp_sock_v4.is_open()) {
 					std::cout << "Re-using IPv6 UDP socket\n";
 					udp_info_v4 = udp_info_v6;
