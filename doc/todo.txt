@@ -1,5 +1,4 @@
 * Major features ordered by priority.
-- ipv6 connectivity
 - udp connectivity
 - nat hole punching
 
@@ -19,15 +18,12 @@
 - allow disabling of autoupdate at compile time (and do so by default in linux?)
 - implement console detaching/attaching for linux
 - implement share announcement via reliable transport (tcp), and peer discovery via broadcasts (udp)
-- abstract backend interface, so you can easily add different ones (ipx,ipv6,stun)
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
 - support ipv6 connections/discovery, especially link-local
 - implement udp-semi connections, and plug them into the now shiny architecture
 - implement udp hole punching via central web server (heliohost)
 - implement udp hole punching through firewall for local link
 - use configurable temp dir for compressing & downloading updates
-- implement partial requests
-- implement hash requests (limited)
 - implement remote browsing
 - clean up http request class (wait for boost implementation? :-p)
 - add ability to use mirrors to http request class
@@ -35,7 +31,6 @@
 - implement automatic test suite for stuff
 - check more things in --runcheck
 - show progress for web update tasks
-- monitor available interfaces to react to changes
 - make size-optimized bootstrapper executable (no gui etc)
 - make bootstrapper universal (detect os, web version)
 - make uftt.dat location changable after initial startup
@@ -46,7 +41,13 @@
 - implement debian/ubuntu .deb autoupdate (again)
 
 * Already completed features.
+- [DONE] monitor available interfaces to react to changes
+- [DONE] abstract backend interface, so you can easily add different ones (ipx,ipvx)
+- [DONE] make http web update backend
+- [DONE] ipv6 connectivity
 - [DONE] resuming of aborted downloads
+- [DONE] implement partial requests
+- [DONE] implement hash requests (limited)
 - [DONE] make GUI look nice in non win98-classic themes
 - [DONE] show total size, speed, and remaining time estimation
 - [DONE] implement peer discovery via central web server (heliohost)
