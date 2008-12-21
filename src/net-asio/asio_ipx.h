@@ -90,8 +90,8 @@ class address {
 
 		bool operator<(const address&o) {
 			if (network < o.network) return true;
-			if (network > o.network) return false;
-			return node < o.node;
+			if (node    < o.node   ) return true;
+			return false;
 		}
 
 	//static public:
