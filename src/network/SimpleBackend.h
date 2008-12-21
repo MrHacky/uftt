@@ -39,10 +39,6 @@ struct UDPSockInfo {
 
 	bool is_v4;
 
-	UDPSockInfo(boost::asio::ip::udp::socket& nsock)
-	: sock(nsock)
-	{};
-
 	UDPSockInfo(boost::asio::ip::udp::socket& nsock, bool is_v4_)
 	: sock(nsock), is_v4(is_v4_)
 	{};
@@ -499,8 +495,7 @@ class SimpleBackend: public INetModule {
 			boost::asio::ip::address addr = addrwbcst.first;
 			boost::asio::ip::address bcaddr = addrwbcst.second;
 			if (!udpsocklist[addr]) {
-				UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v4->sock));
-				newsock->is_v4 = true;
+				UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v4->sock, true));
 				newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
 				udpsocklist[addr] = newsock;
 				new_iface(newsock);
@@ -510,20 +505,19 @@ class SimpleBackend: public INetModule {
 
 		void add_ip_addr_ipv6(boost::asio::ip::address addr) {
 			if (!udpsocklist[addr]) {
-				UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v6->sock));
-				newsock->is_v4 = false;
-				boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
-				bcaddr.scope_id(addr.to_v6().scope_id());
 				try {
+					UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v6->sock, false));
+					boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
+					bcaddr.scope_id(addr.to_v6().scope_id());
 					newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
+					newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
+
+					udpsocklist[addr] = newsock;
+
+					new_iface(newsock);
 				} catch (std::exception& e) {
-					std::cout << "Failed to join multicast (" << addr << ") : " << e.what() << '\n';
+					std::cout << "Failed to initialise IPv6 address (" << addr << ") : " << e.what() << '\n';
 				}
-				newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
-
-				udpsocklist[addr] = newsock;
-
-				new_iface(newsock);
 			} else
 				std::cout << "Duplicate added adress: " << addr << '\n';
 		}
@@ -553,8 +547,8 @@ class SimpleBackend: public INetModule {
 			, udp_sock_v6(core_->get_io_service())
 			, core(core_)
 		{
-			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4));
-			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6));
+			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4, true));
+			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
 
 			try {
 				udp_sock_v6.open(boost::asio::ip::udp::v6());
