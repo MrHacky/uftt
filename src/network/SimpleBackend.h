@@ -84,7 +84,7 @@ class SimpleBackend: public INetModule {
 		UDPSockInfoRef udp_info_v4;
 		UDPSockInfoRef udp_info_v6;
 
-		std::set<boost::asio::ip::address> foundpeers;
+		std::set<boost::asio::ip::udp::endpoint> foundpeers;
 		boost::asio::deadline_timer peerfindertimer;
 
 		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
@@ -122,9 +122,7 @@ class SimpleBackend: public INetModule {
 					std::vector<std::string> cols;
 					boost::split(cols, line, boost::is_any_of("\t"));
 					if (cols.size() >= 2) {
-						if (atoi(cols[1].c_str()) == 47189) {
-							settings.foundpeers.insert(cols[0]);
-						}
+						settings.foundpeers.insert(cols[0] + "\t" + cols[1]);
 					}
 				}
 			}
@@ -185,7 +183,15 @@ class SimpleBackend: public INetModule {
 			boost::system::error_code err;
 			BOOST_FOREACH(const std::string peer, settings.foundpeers) {
 				try {
-					const boost::asio::ip::udp::endpoint ep(my_addr_from_string(peer), UFTT_PORT);
+					boost::asio::ip::udp::endpoint ep;
+					size_t colonpos = peer.find_first_of("\t");
+					if (colonpos == std::string::npos) {
+						ep.address(my_addr_from_string(peer));
+						ep.port(UFTT_PORT);
+					} else {
+						ep.address(my_addr_from_string(peer.substr(0, colonpos)));
+						ep.port(atoi(peer.substr(colonpos+1).c_str()));
+					}
 					send_udp_packet(uftt_bcst_if, ep, boost::asio::buffer(udp_send_buf), err);
 				} catch (...) {
 				}
@@ -313,8 +319,8 @@ class SimpleBackend: public INetModule {
 								send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
 							};// intentional fallthrough break;
 							case 5: { // peerfinder reply
-								foundpeers.insert(recv_peer->address());
-								settings.foundpeers.insert(STRFORMAT("%s", recv_peer->address()));
+								foundpeers.insert(*recv_peer);
+								settings.foundpeers.insert(STRFORMAT("%s\t%d", recv_peer->address(), recv_peer->port()));
 								send_query(si, *recv_peer);
 							}; break;
 						}
