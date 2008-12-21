@@ -561,8 +561,7 @@ class SimpleBackend: public INetModule {
 				udp_sock_v6.set_option(boost::asio::ip::udp::socket::broadcast(true));
 				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
-				UDPSockInfoRef recvinfo(new UDPSockInfo(udp_sock_v6, false));
-				start_udp_receive(recvinfo, recv_buf_v6, &recv_peer_v6);
+				start_udp_receive(udp_info_v6, recv_buf_v6, &recv_peer_v6);
 
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv6 UDP scoket: " << e.what() << "\n";
@@ -574,14 +573,13 @@ class SimpleBackend: public INetModule {
 				udp_sock_v4.set_option(boost::asio::ip::udp::socket::broadcast(true));
 				udp_sock_v4.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
-				UDPSockInfoRef recvinfo(new UDPSockInfo(udp_sock_v4, true));
-				start_udp_receive(recvinfo, recv_buf_v4, &recv_peer_v4);
+				start_udp_receive(udp_info_v4, recv_buf_v4, &recv_peer_v4);
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
 #ifdef __linux__
-				if (udp_sock_v4.is_open()) {
+				if (udp_sock_v6.is_open()) {
 					std::cout << "Re-using IPv6 UDP socket\n";
-					udp_info_v4 = udp_info_v6;
+					udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, true));
 				}
 #endif
 			}
