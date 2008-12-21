@@ -446,6 +446,7 @@ class SimpleBackend: public INetModule {
 		template<typename BUF>
 		void send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
+			++udpretries;
 			sock.send_to(
 				buf,
 				ep,
