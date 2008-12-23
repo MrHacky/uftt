@@ -74,6 +74,9 @@ class UFTTSettings {
 		std::set<std::string> foundpeers;
 		std::string nickname;
 
+		boost::posix_time::ptime laststuncheck;
+		std::string stunpublicip;
+
 	public:
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {

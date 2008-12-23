@@ -17,6 +17,7 @@
 
 #include "../net-asio/asio_file_stream.h"
 #include "../net-asio/asio_http_request.h"
+#include "../net-asio/asio_dgram_conn.h"
 #include "../net-asio/ipaddr_watcher.h"
 
 #include "../UFTTSettings.h"
@@ -82,6 +83,11 @@ class SimpleBackend: public INetModule {
 
 		std::set<boost::asio::ip::udp::endpoint> foundpeers;
 		boost::asio::deadline_timer peerfindertimer;
+		boost::asio::deadline_timer stun_timer;
+		boost::asio::deadline_timer stun_timer2;
+		boost::asio::ip::udp::endpoint stun_server;
+		boost::asio::ip::udp::endpoint stun_endpoint;
+		bool stun_server_found;
 
 		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
 		{
@@ -139,6 +145,8 @@ class SimpleBackend: public INetModule {
 					//url = "http://hackykid.heliohost.org/site/bootstrap.php";
 					url = "http://hackykid.awardspace.com/site/bootstrap.php";
 					url += "?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd";
+					url += STRFORMAT("&ip=%s", stun_endpoint.address());
+					url += STRFORMAT("&port=%d", stun_endpoint.port());
 
 					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
 					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
@@ -318,12 +326,7 @@ class SimpleBackend: public INetModule {
 			}
 		}
 
-		void handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
-		{
-			uint16 type = (recv_buf[0] << 8) | (recv_buf[1] << 0);
-			uint16 slen = (recv_buf[2] << 8) | (recv_buf[3] << 0);
-			std::cout << "Got STUN packet\n";
-		}
+		void handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len);
 
 		void handle_rudp_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
 		{
@@ -505,6 +508,10 @@ class SimpleBackend: public INetModule {
 			return settings;
 		}
 
+		void stun_new_addr();
+		void stun_do_check(const boost::system::error_code& e, int retry = 0);
+		void stun_send_bind(const boost::system::error_code& e);
+
 		void new_iface(UDPSockInfoRef si)
 		{
 			send_publishes(si, uftt_bcst_ep, 1, true);
@@ -522,6 +529,7 @@ class SimpleBackend: public INetModule {
 				newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
 				udpsocklist[addr] = newsock;
 				new_iface(newsock);
+				stun_new_addr();
 			} else
 				std::cout << "Duplicate added adress: " << addr << '\n';
 		}
@@ -569,6 +577,8 @@ class SimpleBackend: public INetModule {
 			, udp_sock_v4(core_->get_io_service())
 			, udp_sock_v6(core_->get_io_service())
 			, core(core_)
+			, stun_timer(core_->get_io_service())
+			, stun_timer2(core_->get_io_service())
 		{
 			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4, true));
 			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
