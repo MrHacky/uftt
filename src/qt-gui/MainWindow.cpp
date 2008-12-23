@@ -352,6 +352,10 @@ void MainWindow::on_buttonDownload_clicked()
 		return;
 
 	ShareID sid = rwi->data(0, Qt::UserRole).value<ShareID>();
+	if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
+		// evil hax!!!
+		sid.sid[0] = 'x';
+	}
 	backend->startDownload(sid, dlpath);
 }
 
