@@ -46,8 +46,11 @@ struct UDPSockInfo {
 };
 typedef boost::shared_ptr<UDPSockInfo> UDPSockInfoRef;
 
-class SimpleTCPConnection;
-typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
+class ConnectionBase;
+typedef boost::shared_ptr<ConnectionBase> ConnectionBaseRef;
+
+//class SimpleTCPConnection;
+typedef boost::shared_ptr<class SimpleTCPConnection> SimpleTCPConnectionRef;
 
 const boost::asio::ip::udp::endpoint uftt_bcst_ep;
 const UDPSockInfoRef uftt_bcst_if;
@@ -61,7 +64,7 @@ class SimpleBackend: public INetModule {
 		std::map<boost::asio::ip::address, UDPSockInfoRef> udpsocklist;
 		boost::asio::ip::tcp::acceptor tcplistener_v4;
 		boost::asio::ip::tcp::acceptor tcplistener_v6;
-		std::vector<SimpleTCPConnectionRef> conlist;
+		std::vector<ConnectionBaseRef> conlist;
 		int udpretries;
 		uint32 mid;
 

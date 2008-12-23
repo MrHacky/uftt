@@ -5,7 +5,7 @@ REGISTER_NETMODULE_CLASS(SimpleBackend);
 
 #include <set>
 
-#include "SimpleConnection.h"
+#include "SimpleTCPConnection.h"
 
 using namespace std;
 

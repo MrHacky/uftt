@@ -119,7 +119,8 @@ struct dirsender {
 	};
 };
 
-class SimpleTCPConnection: public ConnectionBase {
+template <typename SockType, typename SockInit>
+class SimpleConnection: public ConnectionBase {
 	private:
 		enum {
 			CMD_NONE,
@@ -146,7 +147,7 @@ class SimpleTCPConnection: public ConnectionBase {
 		};
 
 		services::diskio_service* gdiskio;
-		boost::asio::ip::tcp::socket socket;
+		SockType socket;
 
 		std::string sharename;
 		boost::filesystem::path sharepath;
@@ -266,9 +267,9 @@ class SimpleTCPConnection: public ConnectionBase {
 
 		cmdinfo rcmd;
 	public:
-		SimpleTCPConnection(boost::asio::io_service& service_, UFTTCore* core_)
+		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
 			: ConnectionBase(service_, core_)
-			, socket(service_)
+			, socket(sockinit_)
 			, progress_timer(service_)
 			, cursendfile(core_->get_disk_service())
 		{
@@ -295,18 +296,16 @@ class SimpleTCPConnection: public ConnectionBase {
 			rresume = false;
 		}
 
-		boost::asio::ip::tcp::socket& getSocket() {
+		SockType& getSocket() {
 			return socket;
 		}
 
 		boost::asio::deadline_timer progress_timer;
-		boost::signal<void(const TaskInfo&)> sig_progress;
-		TaskInfo taskinfo;
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
 			progress_timer.expires_from_now(boost::posix_time::milliseconds(250));
-			progress_timer.async_wait(boost::bind(&SimpleTCPConnection::update_progress_handler, this, boost::asio::placeholders::error));
+			progress_timer.async_wait(boost::bind(&SimpleConnection::update_progress_handler, this, boost::asio::placeholders::error));
 		}
 
 		void update_progress_handler(const boost::system::error_code& e)
@@ -342,7 +341,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			taskinfo.shareinfo.host = STRFORMAT("%s", socket.remote_endpoint().address());
 
 			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_protver, this, _1, rbuf));
+				boost::bind(&SimpleConnection::handle_recv_protver, this, _1, rbuf));
 		}
 
 		void handle_recv_protver(const boost::system::error_code& e, shared_vec rbuf) {
@@ -358,7 +357,7 @@ class SimpleTCPConnection: public ConnectionBase {
 
 			if (protver == 1) {
 				boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_namelen, this, _1, rbuf));
+				boost::bind(&SimpleConnection::handle_recv_namelen, this, _1, rbuf));
 			} else if (protver == 2) {
 				rbuf->resize(16 + 8*lcommands.size());
 				pkt_put_uint32(7, &((*rbuf)[0]));
@@ -373,7 +372,7 @@ class SimpleTCPConnection: public ConnectionBase {
 				}
 
 				boost::asio::async_write(socket, GETBUF(rbuf),
-					boost::bind(&SimpleTCPConnection::start_receive_command, this, rbuf, _1));
+					boost::bind(&SimpleConnection::start_receive_command, this, rbuf, _1));
 			} else
 				std::cout << "error: unknown tcp protocol version: " << protver << '\n';
 		}
@@ -397,7 +396,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			}
 			rbuf->resize(16);
 			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::command_header_handler, this, _1, rbuf));
+				boost::bind(&SimpleConnection::command_header_handler, this, _1, rbuf));
 		}
 
 		void start_receive_command(shared_vec rbuf, const boost::system::error_code& e)
@@ -424,12 +423,12 @@ class SimpleTCPConnection: public ConnectionBase {
 				case CMD_OLD_FILE: { // file
 					rbuf->resize(hdr.ver);
 					boost::asio::async_read(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_file_header, this, _1, hdr, rbuf));
+						boost::bind(&SimpleConnection::handle_recv_file_header, this, _1, hdr, rbuf));
 				}; break;
 				case CMD_OLD_DIR: { // dir
 					rbuf->resize(hdr.ver);
 					boost::asio::async_read(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_dir_header, this, _1, hdr, rbuf));
+						boost::bind(&SimpleConnection::handle_recv_dir_header, this, _1, hdr, rbuf));
 				}; break;
 				case CMD_OLD_CDUP: { // ..
 					//cout << "got '..'\n";
@@ -461,7 +460,7 @@ class SimpleTCPConnection: public ConnectionBase {
 
 						rbuf->resize(chunk);
 						boost::asio::async_read(socket, GETBUF(rbuf),
-							boost::bind(&SimpleTCPConnection::command_body_handler, this, _1, rbuf, hdr));
+							boost::bind(&SimpleConnection::command_body_handler, this, _1, rbuf, hdr));
 					} else {
 						disconnect(STRFORMAT("Unsupported command: %d", hdr.cmd));
 					}
@@ -516,7 +515,7 @@ class SimpleTCPConnection: public ConnectionBase {
 							pkt_put_uint32(val, &((*rbuf)[i])); i += 4;
 						}
 						boost::asio::async_write(socket, GETBUF(rbuf),
-							boost::bind(&SimpleTCPConnection::start_receive_command, this, rbuf, _1));
+							boost::bind(&SimpleConnection::start_receive_command, this, rbuf, _1));
 					}; break;
 					case CMD_REPLY_COMMAND_LIST: { // supported command list
 						for (uint32 i = 0; i+8 <= rbuf->size(); i += 8) {
@@ -568,7 +567,7 @@ class SimpleTCPConnection: public ConnectionBase {
 					}; break;
 					case CMD_REPLY_SIG_FILE: {
 						boost::shared_ptr<sigchecker> sc(new sigchecker(service));
-						sc->cb = boost::bind(&SimpleTCPConnection::sigcheck_done , this, sc, _1);
+						sc->cb = boost::bind(&SimpleConnection::sigcheck_done , this, sc, _1);
 						sc->item = &qitems.front();
 						sc->data = *rbuf;
 						sc->path = sharepath / qitems.front().path;
@@ -606,7 +605,7 @@ class SimpleTCPConnection: public ConnectionBase {
 						size_t osize = rbuf->size();
 						rbuf->resize(rbuf->size() + (size_t)chunk);
 						boost::asio::async_read(socket, boost::asio::buffer(&((*rbuf)[osize]), (size_t)chunk),
-							boost::bind(&SimpleTCPConnection::command_body_handler, this, _1, rbuf, hdr));
+							boost::bind(&SimpleConnection::command_body_handler, this, _1, rbuf, hdr));
 					}; break;
 					case 0:
 					default: {
@@ -638,7 +637,7 @@ class SimpleTCPConnection: public ConnectionBase {
 					(*tbuf)[i+16] = sharename[i];
 
 				boost::asio::async_write(socket, GETBUF(tbuf),
-					boost::bind(&SimpleTCPConnection::start_receive_command, this, tbuf, _1));
+					boost::bind(&SimpleConnection::start_receive_command, this, tbuf, _1));
 			} else {
 				disconnect("Remote doesn't support any useful methods");
 			}
@@ -853,7 +852,7 @@ class SimpleTCPConnection: public ConnectionBase {
 		void send_receive_packet(shared_vec tbuf)
 		{
 			boost::asio::async_write(socket, GETBUF(tbuf),
-				boost::bind(&SimpleTCPConnection::start_receive_command, this, tbuf, _1));
+				boost::bind(&SimpleConnection::start_receive_command, this, tbuf, _1));
 		}
 
 		void sendpath(boost::filesystem::path path, std::string name = "")
@@ -919,7 +918,7 @@ class SimpleTCPConnection: public ConnectionBase {
 						bool hasbuf = cursendfile.getbuf(sbuf);
 						if (hasbuf) {
 							sendqueue.push_back(sbuf);
-							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+							service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 						} else {
 							uint64 rsize = cursendfile.fsize;
 							if (rsize > 1024*1024*1) rsize = 1024*1024*1;
@@ -928,7 +927,7 @@ class SimpleTCPConnection: public ConnectionBase {
 							sbuf->resize((size_t)rsize);
 							isreading = true;
 							cursendfile.file.async_read_some(GETBUF(sbuf),
-								boost::bind(&SimpleTCPConnection::handle_read_file, this, _1, _2, sbuf));
+								boost::bind(&SimpleConnection::handle_read_file, this, _1, _2, sbuf));
 						}
 					}
 				} else if (newstyle) {
@@ -947,12 +946,12 @@ class SimpleTCPConnection: public ConnectionBase {
 							pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
 
 							sendqueue.push_back(sbuf);
-							service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+							service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 						} else if (qtype == QITEM_SIGREQ) {
 							qitems.front().type = QITEM_SIGREQ_BUSY;
 							qitems.front().path = (sharepath / qitems.front().path).native_file_string();
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
-							sm->cb = boost::bind(&SimpleTCPConnection::sigmake_done, this, sm, _1);
+							sm->cb = boost::bind(&SimpleConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
 							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
 						} else if (qtype == QITEM_SIGREQ_BUSY) {
@@ -971,7 +970,7 @@ class SimpleTCPConnection: public ConnectionBase {
 						sendpath(newpath);
 					}
 					sendqueue.push_back(sbuf);
-					service.post(boost::bind(&SimpleTCPConnection::checkwhattosend, this, shared_vec()));
+					service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 				} else if (!donesend) {
 					cmdinfo hdr;
 					hdr.cmd = 0x04; // ..
@@ -989,7 +988,7 @@ class SimpleTCPConnection: public ConnectionBase {
 				sendqueue.pop_front();
 				issending = true;
 				boost::asio::async_write(socket, GETBUF(sbuf),
-					boost::bind(&SimpleTCPConnection::handle_sent_buffer, this, _1, _2, sbuf));
+					boost::bind(&SimpleConnection::handle_sent_buffer, this, _1, _2, sbuf));
 			}
 			if (sendqueue.size() == 0 && donesend && !issending)
 				handle_sent_everything();
@@ -1053,7 +1052,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			namelen |= (rbuf->at(3) << 24);
 			rbuf->resize(namelen);
 			boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleTCPConnection::handle_recv_name, this, _1, rbuf));
+				boost::bind(&SimpleConnection::handle_recv_name, this, _1, rbuf));
 		}
 
 		void handle_recv_name(const boost::system::error_code& e, shared_vec rbuf) {
@@ -1088,7 +1087,7 @@ class SimpleTCPConnection: public ConnectionBase {
 					memcpy(&(*rbuf)[0], &hdr, 16);
 					memcpy(&(*rbuf)[16], name.data(), hdr.ver);
 					boost::asio::async_write(socket, GETBUF(rbuf),
-						boost::bind(&SimpleTCPConnection::sent_autoupdate_header, this, _1, buildfile, rbuf));
+						boost::bind(&SimpleConnection::sent_autoupdate_header, this, _1, buildfile, rbuf));
 				} else
 					disconnect(STRFORMAT("share does not exist: %s(%s)", sharepath, sharename));
 				return;
@@ -1104,7 +1103,7 @@ class SimpleTCPConnection: public ConnectionBase {
 				return;
 			}
 			boost::asio::async_write(socket, GETBUF(buildfile),
-						boost::bind(&SimpleTCPConnection::sent_autoupdate_file, this, _1, buildfile, sbuf));
+						boost::bind(&SimpleConnection::sent_autoupdate_file, this, _1, buildfile, sbuf));
 		}
 
 		void sent_autoupdate_file(const boost::system::error_code& e, shared_vec buildfile, shared_vec sbuf) {
@@ -1118,7 +1117,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			sbuf->resize(16);
 			memcpy(&(*sbuf)[0], &hdr, 16);
 			boost::asio::async_write(socket, GETBUF(sbuf),
-				boost::bind(&SimpleTCPConnection::sent_autoupdate_finish, this, _1, sbuf));
+				boost::bind(&SimpleConnection::sent_autoupdate_finish, this, _1, sbuf));
 		}
 
 		void sent_autoupdate_finish(const boost::system::error_code& e, shared_vec sbuf) {
@@ -1168,7 +1167,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			}
 
 			boost::asio::async_write(socket, GETBUF(sbuf),
-				boost::bind(&SimpleTCPConnection::start_receive_command, this, sbuf, _1));
+				boost::bind(&SimpleConnection::start_receive_command, this, sbuf, _1));
 
 			start_update_progress();
 		}
@@ -1200,7 +1199,7 @@ class SimpleTCPConnection: public ConnectionBase {
 			}
 
 			if (open_files > 256) {
-				delayed_open_file = boost::bind(&SimpleTCPConnection::delay_file_write, this, path, fsize, rbuf, dataready, offset);
+				delayed_open_file = boost::bind(&SimpleConnection::delay_file_write, this, path, fsize, rbuf, dataready, offset);
 				return;
 			}
 
@@ -1215,13 +1214,13 @@ class SimpleTCPConnection: public ConnectionBase {
 			gdiskio->async_open_file(path, services::diskio_filetype::out|
 				((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
 				*file,
-				boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset));
+				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset));
 
 			if (!dataready) {
 				// kick off async_read for when we received some data (capped by file size)
 				rbuf->resize((fsize>1024*1024*10) ? 1024*1024*10 : (uint32)fsize); // cast is ok because of ?:
 				boost::asio::async_read(socket, GETBUF(rbuf),
-					boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
+					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
 			} else {
 				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf);
 			}
@@ -1271,10 +1270,10 @@ class SimpleTCPConnection: public ConnectionBase {
 					nrbuf = shared_vec(new std::vector<uint8>());
 					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
 					boost::asio::async_read(socket, GETBUF(nrbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
+						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
 				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
+					boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
 			}
 		}
 
@@ -1317,10 +1316,10 @@ class SimpleTCPConnection: public ConnectionBase {
 					nrbuf = shared_vec(new std::vector<uint8>());
 					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
 					boost::asio::async_read(socket, GETBUF(nrbuf),
-						boost::bind(&SimpleTCPConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
+						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
 				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleTCPConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
+					boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
 			}
 		}
 
@@ -1334,7 +1333,5 @@ class SimpleTCPConnection: public ConnectionBase {
 			}
 		}
 };
-typedef boost::shared_ptr<SimpleTCPConnection> SimpleTCPConnectionRef;
 
 #endif//SIMPLE_CONNECTION_H
-
