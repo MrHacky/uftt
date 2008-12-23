@@ -226,100 +226,123 @@ class SimpleBackend: public INetModule {
 			return versions;
 		}
 
+		void handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len, uint32 version)
+		{
+			std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
+			switch (recv_buf[4]) {
+				case 1: if (version == 1) { // type = broadcast;
+					uint32 vstart = 5;
+					if (len > 5)
+						vstart = 6 + recv_buf[5];
+
+					std::set<uint32> versions = parseVersions(recv_buf, vstart, len);
+
+					       if (versions.count(5)) {
+						send_publishes(si, *recv_peer, 3, true);
+					} else if (versions.count(4)) {
+						send_publishes(si, *recv_peer, 2, true);
+					} else if (versions.count(3)) {
+						send_publishes(si, *recv_peer, 0, true);
+					} else if (versions.count(2)) {
+						send_publishes(si, *recv_peer, 1, true);
+					} else if (versions.count(1)) {
+						send_publishes(si, *recv_peer, 1, len >= 6 && recv_buf[5] > 0 && len-6 >= recv_buf[5]);
+					}
+				}; break;
+				case 2: { // type = reply;
+					if (len >= 6) {
+						uint32 slen = recv_buf[5];
+						if (len >= slen+6) {
+							std::set<uint32> versions;
+							uint vlen = 0;
+							if (version == 1)
+								versions = parseVersions(recv_buf, slen+6, len, &vlen);
+							versions.insert(version);
+							uint32 sver = 0;
+							if (versions.count(2) || versions.count(3)) // Protocol 2 and 3 send shares (sver) in the same way
+								sver = 2;
+							else if (versions.count(1))
+								sver = 1;
+
+							if (sver > 0) {
+								std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
+								std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, recv_peer->address().to_string(), sname);
+								ShareInfo sinfo;
+								sinfo.name = sname;
+								sinfo.proto = STRFORMAT("uftt-v%d", sver);
+								sinfo.host = recv_peer->address().to_string();
+								sinfo.id.sid = surl;
+								sinfo.id.mid = mid;
+								if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
+									int nickname_length = recv_buf[slen + 6 + vlen];
+									std::string nickname((char*)recv_buf + 6 + slen + 1 + vlen, (char*)recv_buf + 6 + slen + 1 + vlen + nickname_length);
+									sinfo.user = nickname;
+								}
+								sig_new_share(sinfo);
+							}
+						}
+					}
+				}; break;
+				case 3: { // type = autoupdate share
+					if (len >= 6 && (version == 1)) {
+						uint32 slen = recv_buf[5];
+						if (len >= slen+6) {
+							std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
+							std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, recv_peer->address().to_string(), sname);;
+							ShareInfo sinfo;
+							sinfo.name = sname;
+							sinfo.proto = STRFORMAT("uftt-v%d", 1);
+							sinfo.host = recv_peer->address().to_string();
+							sinfo.id.sid = surl;
+							sinfo.id.mid = mid;
+							sinfo.isupdate = true;
+							sig_new_share(sinfo);
+						}
+					}
+				}; break;
+				case 4: { // peerfinder query
+					boost::system::error_code err;
+					uint8 udp_send_buf[5];
+					udp_send_buf[0] = (1 >>  0) & 0xff;
+					udp_send_buf[1] = (1 >>  8) & 0xff;
+					udp_send_buf[2] = (1 >> 16) & 0xff;
+					udp_send_buf[3] = (1 >> 24) & 0xff;
+					udp_send_buf[4] = 5;
+					send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
+				};// intentional fallthrough break;
+				case 5: { // peerfinder reply
+					foundpeers.insert(*recv_peer);
+					settings.foundpeers.insert(STRFORMAT("%s\t%d", recv_peer->address(), recv_peer->port()));
+					send_query(si, *recv_peer);
+				}; break;
+			}
+		}
+
+		void handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
+		{
+			uint16 type = (recv_buf[0] << 8) | (recv_buf[1] << 0);
+			uint16 slen = (recv_buf[2] << 8) | (recv_buf[3] << 0);
+			std::cout << "Got STUN packet\n";
+		}
+
+		void handle_rudp_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
+		{
+		}
+
 		void handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
 				udpretries = 10;
 				if (len >= 4) {
 					uint32 rpver = (recv_buf[0] <<  0) | (recv_buf[1] <<  8) | (recv_buf[2] << 16) | (recv_buf[3] << 24);
-					if (len > 4) {
-						std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
-						switch (recv_buf[4]) {
-							case 1: if (rpver == 1) { // type = broadcast;
-								uint32 vstart = 5;
-								if (len > 5)
-									vstart = 6 + recv_buf[5];
-
-								std::set<uint32> versions = parseVersions(recv_buf, vstart, len);
-
-								       if (versions.count(5)) {
-									send_publishes(si, *recv_peer, 3, true);
-								} else if (versions.count(4)) {
-									send_publishes(si, *recv_peer, 2, true);
-								} else if (versions.count(3)) {
-									send_publishes(si, *recv_peer, 0, true);
-								} else if (versions.count(2)) {
-									send_publishes(si, *recv_peer, 1, true);
-								} else if (versions.count(1)) {
-									send_publishes(si, *recv_peer, 1, len >= 6 && recv_buf[5] > 0 && len-6 >= recv_buf[5]);
-								}
-							}; break;
-							case 2: { // type = reply;
-								if (len >= 6) {
-									uint32 slen = recv_buf[5];
-									if (len >= slen+6) {
-										std::set<uint32> versions;
-										uint vlen = 0;
-										if (rpver == 1)
-											versions = parseVersions(recv_buf, slen+6, len, &vlen);
-										versions.insert(rpver);
-										uint32 sver = 0;
-										if (versions.count(2) || versions.count(3)) // Protocol 2 and 3 send shares (sver) in the same way
-											sver = 2;
-										else if (versions.count(1))
-											sver = 1;
-
-										if (sver > 0) {
-											std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
-											std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, recv_peer->address().to_string(), sname);
-											ShareInfo sinfo;
-											sinfo.name = sname;
-											sinfo.proto = STRFORMAT("uftt-v%d", sver);
-											sinfo.host = recv_peer->address().to_string();
-											sinfo.id.sid = surl;
-											sinfo.id.mid = mid;
-											if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
-												int nickname_length = recv_buf[slen + 6 + vlen];
-												std::string nickname((char*)recv_buf + 6 + slen + 1 + vlen, (char*)recv_buf + 6 + slen + 1 + vlen + nickname_length);
-												sinfo.user = nickname;
-											}
-											sig_new_share(sinfo);
-										}
-									}
-								}
-							}; break;
-							case 3: { // type = autoupdate share
-								if (len >= 6 && (rpver == 1)) {
-									uint32 slen = recv_buf[5];
-									if (len >= slen+6) {
-										std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
-										std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, recv_peer->address().to_string(), sname);;
-										ShareInfo sinfo;
-										sinfo.name = sname;
-										sinfo.proto = STRFORMAT("uftt-v%d", 1);
-										sinfo.host = recv_peer->address().to_string();
-										sinfo.id.sid = surl;
-										sinfo.id.mid = mid;
-										sinfo.isupdate = true;
-										sig_new_share(sinfo);
-									}
-								}
-							}; break;
-							case 4: { // peerfinder query
-								boost::system::error_code err;
-								uint8 udp_send_buf[5];
-								udp_send_buf[0] = (1 >>  0) & 0xff;
-								udp_send_buf[1] = (1 >>  8) & 0xff;
-								udp_send_buf[2] = (1 >> 16) & 0xff;
-								udp_send_buf[3] = (1 >> 24) & 0xff;
-								udp_send_buf[4] = 5;
-								send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
-							};// intentional fallthrough break;
-							case 5: { // peerfinder reply
-								foundpeers.insert(*recv_peer);
-								settings.foundpeers.insert(STRFORMAT("%s\t%d", recv_peer->address(), recv_peer->port()));
-								send_query(si, *recv_peer);
-							}; break;
-						}
+					if ((rpver&0xfffffffc) == 0) {
+						handle_discovery_packet(si, recv_buf, recv_peer, len, rpver);
+					} else if (len >= 20 && (rpver&0x030000c0) == 0) {
+						handle_stun_packet(si, recv_buf, recv_peer, len);
+					} else if ((rpver&0xff000000) == 0x01000000) {
+						rpver = (recv_buf[0] <<  0) | (recv_buf[1] <<  8);
+						handle_discovery_packet(si, recv_buf, recv_peer, len, rpver);
+					} else if ((rpver&0xff000000) == 0x02000000) {
+						handle_rudp_packet(si, recv_buf, recv_peer, len);
 					}
 				}
 			} else {
