@@ -6,6 +6,7 @@ REGISTER_NETMODULE_CLASS(SimpleBackend);
 #include <set>
 
 #include "SimpleTCPConnection.h"
+#include "UDPSemiConnection.h"
 
 using namespace std;
 
@@ -98,26 +99,39 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	size_t slashpos = shareurl.find_first_of("\\/");
 	std::string host = shareurl.substr(0, slashpos);
 	std::string share = shareurl.substr(slashpos+1);
-	SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
-	//newconn->sig_progress.connect(handler);
-	conlist.push_back(newconn);
 
 	ret.shareinfo.name = share;
 	ret.shareinfo.host = host;
 	ret.shareinfo.proto = proto;
 	ret.isupload = false;
 
-	newconn->taskinfo = ret;
+	bool use_udp = proto.substr(0,4) != "uftt";
+	boost::asio::ip::tcp::endpoint tcpep;
+	my_endpoint_from_string(host, tcpep);
+	if (tcpep.port() != UFTT_PORT) use_udp = true;
+	if (!tcpep.address().is_v4() && !tcpep.address().to_v6().is_v4_mapped()) use_udp = false;
+	if (!use_udp) {
+		std::cout << "Connecting(TCP)...\n";
+		SimpleTCPConnectionRef newconn(new SimpleTCPConnection(service, core));
+		conlist.push_back(newconn);
+		newconn->taskinfo = ret;
 
-	boost::asio::ip::tcp::endpoint ep(my_addr_from_string(host), UFTT_PORT);
-	newconn->getSocket().open(ep.protocol());
-	std::cout << "Connecting...\n";
-	newconn->getSocket().async_connect(ep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
+		newconn->getSocket().open(tcpep.protocol());
+		newconn->getSocket().async_connect(tcpep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
+	} else {
+		std::cout << "Connecting(UDP)...\n";
+		UDPSemiConnectionRef newconn(new UDPSemiConnection(service, core, *udp_conn_service));
+		conlist.push_back(newconn);
+		newconn->taskinfo = ret;
+
+		boost::asio::ip::udp::endpoint udpep(tcpep.address(), tcpep.port());
+		newconn->getSocket().async_connect(udpep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
+	}
 
 	sig_new_task(ret);
 }
 
-void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
+void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
 {
 	if (e) {
 		std::cout << "connect failed: " << e.message() << '\n';
@@ -263,4 +277,29 @@ void SimpleBackend::stun_send_bind(const boost::system::error_code& e)
 
 	stun_timer2.expires_at(boost::posix_time::second_clock::universal_time() + boost::posix_time::minutes(1));
 	stun_timer2.async_wait(boost::bind(&SimpleBackend::stun_send_bind, this, _1));
+}
+
+void SimpleBackend::start_udp_accept(UDPConnService* cservice)
+{
+	UDPSemiConnectionRef newconn(new UDPSemiConnection(service, core, *cservice));
+	newconn->getSocket().async_accept(
+		boost::bind(&SimpleBackend::handle_udp_accept, this, cservice, newconn, boost::asio::placeholders::error)
+	);
+}
+
+void SimpleBackend::handle_udp_accept(UDPConnService* cservice, UDPSemiConnectionRef newconn, const boost::system::error_code& e)
+{
+	if (e) {
+		std::cout << "udp accept failed: " << e.message() << '\n';
+	} else {
+		std::cout << "handling udp accept\n";
+		conlist.push_back(newconn);
+		newconn->taskinfo.shareinfo.name = "< N/A >";
+		newconn->taskinfo.id.mid = mid;
+		newconn->taskinfo.id.cid = conlist.size()-1;
+		newconn->taskinfo.isupload = true;
+		newconn->handle_tcp_accept();
+		sig_new_task(newconn->taskinfo);
+	}
+	start_udp_accept(cservice);
 }

@@ -34,6 +34,9 @@
 
 #include "Misc.h"
 
+typedef dgram::conn_service<boost::asio::ip::udp> UDPConnService;
+typedef dgram::conn<boost::asio::ip::udp> UDPConn;
+
 struct UDPSockInfo {
 	boost::asio::ip::udp::socket& sock;
 	boost::asio::ip::udp::endpoint bcst_ep;
@@ -51,6 +54,7 @@ typedef boost::shared_ptr<ConnectionBase> ConnectionBaseRef;
 
 //class SimpleTCPConnection;
 typedef boost::shared_ptr<class SimpleTCPConnection> SimpleTCPConnectionRef;
+typedef boost::shared_ptr<class UDPSemiConnection> UDPSemiConnectionRef;
 
 const boost::asio::ip::udp::endpoint uftt_bcst_ep;
 const UDPSockInfoRef uftt_bcst_if;
@@ -71,7 +75,9 @@ class SimpleBackend: public INetModule {
 		ipv4_watcher watcher_v4;
 		ipv6_watcher watcher_v6;
 
-		#define UDP_BUF_SIZE (1024)
+		boost::scoped_ptr<UDPConnService> udp_conn_service;
+
+		#define UDP_BUF_SIZE (2048)
 		uint8 recv_buf_v4[UDP_BUF_SIZE];
 		uint8 recv_buf_v6[UDP_BUF_SIZE];
 
@@ -277,11 +283,11 @@ class SimpleBackend: public INetModule {
 
 							if (sver > 0) {
 								std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
-								std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, recv_peer->address().to_string(), sname);
+								std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, *recv_peer, sname);
 								ShareInfo sinfo;
 								sinfo.name = sname;
 								sinfo.proto = STRFORMAT("uftt-v%d", sver);
-								sinfo.host = recv_peer->address().to_string();
+								sinfo.host = STRFORMAT("%s", *recv_peer);
 								sinfo.id.sid = surl;
 								sinfo.id.mid = mid;
 								if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
@@ -299,11 +305,11 @@ class SimpleBackend: public INetModule {
 						uint32 slen = recv_buf[5];
 						if (len >= slen+6) {
 							std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
-							std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, recv_peer->address().to_string(), sname);;
+							std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, *recv_peer, sname);;
 							ShareInfo sinfo;
 							sinfo.name = sname;
 							sinfo.proto = STRFORMAT("uftt-v%d", 1);
-							sinfo.host = recv_peer->address().to_string();
+							sinfo.host = STRFORMAT("%s", *recv_peer);
 							sinfo.id.sid = surl;
 							sinfo.id.mid = mid;
 							sinfo.isupdate = true;
@@ -333,6 +339,8 @@ class SimpleBackend: public INetModule {
 
 		void handle_rudp_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
 		{
+			if (recv_peer->address().is_v4() || recv_peer->address().to_v6().is_v4_mapped())
+				udp_conn_service->handle_read(recv_buf, len, recv_peer);
 		}
 
 		void handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, const boost::system::error_code& e, std::size_t len) {
@@ -614,6 +622,9 @@ class SimpleBackend: public INetModule {
 				}
 #endif
 			}
+			udp_conn_service.reset(new UDPConnService(service, udp_info_v4->sock));
+
+			start_udp_accept(udp_conn_service.get());
 
 			watcher_v4.add_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] + ", boost::bind(&get_first, _1)));
 			watcher_v4.del_addr.connect(boost::bind(&SimpleBackend::print_addr, this, "[IPV4] - ", boost::bind(&get_first, _1)));
@@ -659,10 +670,13 @@ class SimpleBackend: public INetModule {
 		}
 
 		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
-		void dl_connect_handle(const boost::system::error_code& e, SimpleTCPConnectionRef conn, std::string name, boost::filesystem::path dlpath, uint32 version);
+		void dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, boost::filesystem::path dlpath, uint32 version);
 		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener);
 		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e);
 		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+
+		void start_udp_accept(UDPConnService* cservice);
+		void handle_udp_accept(UDPConnService* cservice, UDPSemiConnectionRef newconn, const boost::system::error_code& e);
 
 	private:
 		// old interface now..

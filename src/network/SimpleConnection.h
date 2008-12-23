@@ -338,7 +338,7 @@ class SimpleConnection: public ConnectionBase {
 			rbuf->resize(4);
 
 			// not really correct, shareinfo.host is supposed to be the one sharing the share
-			taskinfo.shareinfo.host = STRFORMAT("%s", socket.remote_endpoint().address());
+			taskinfo.shareinfo.host = STRFORMAT("%s", socket.remote_endpoint());
 
 			boost::asio::async_read(socket, GETBUF(rbuf),
 				boost::bind(&SimpleConnection::handle_recv_protver, this, _1, rbuf));
