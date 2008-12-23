@@ -592,7 +592,6 @@ void MainWindow::new_upload(const TaskInfo& info)
 
 void MainWindow::on_actionCheckForWebUpdates_triggered()
 {
-	settings.lastupdate = boost::posix_time::second_clock::universal_time();
 	backend->doManualQuery("webupdate");
 }
 
@@ -625,29 +624,6 @@ void MainWindow::setUpdateInterval(int i)
 	settings.webupdateinterval = i;
 }
 
-void MainWindow::check_autoupdate_interval()
-{
-	QTimer::singleShot(1000 * 60 * 60, this, SLOT(check_autoupdate_interval()));
-	//QTimer::singleShot(1000 * 3, this, SLOT(check_autoupdate_interval()));
-
-	if (settings.webupdateinterval == 0) return;
-	int minhours = 30 * 24;
-	if (settings.webupdateinterval == 1) minhours = 1 * 24;
-	if (settings.webupdateinterval == 2) minhours = 7 * 24;
-
-	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
-
-	int lasthours = (curtime - settings.lastupdate).hours();
-	//int lasthours = (curtime - settings.lastupdate).total_seconds();
-
-	std::cout << STRFORMAT("last update check: %dh ago (%dh)\n", lasthours, minhours);
-
-	if (lasthours > minhours) {
-		actionCheckForWebUpdates->trigger();
-		//on_actionCheckForWebUpdates_triggered();
-	}
-}
-
 #ifdef __linux__
 void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux only?)
 	QString tmp = qedit->toPlainText();
@@ -659,7 +635,6 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 void MainWindow::pre_show() {
 	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
 	this->editNickName->setText(QString::fromStdString(settings.nickname));
-	check_autoupdate_interval();
 }
 
 void MainWindow::post_show() {

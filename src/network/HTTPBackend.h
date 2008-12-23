@@ -27,6 +27,7 @@ class HTTPBackend: public INetModule {
 
 		std::map<ShareID, ShareInfo> shareinfo;
 
+		void check_update_interval();
 		void check_for_web_updates();
 		void web_update_page_handler(const boost::system::error_code& err, HTTPTaskRef task);
 

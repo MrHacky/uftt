@@ -7,6 +7,7 @@ REGISTER_NETMODULE_CLASS(HTTPBackend);
 
 #include "../net-asio/asio_http_request.h"
 #include "../util/StrFormat.h"
+#include "../util/asio_timer_oneshot.h"
 
 #include "../Globals.h"
 
@@ -29,6 +30,7 @@ HTTPBackend::HTTPBackend(UFTTCore* core_)
 : core(core_)
 , service(core_->get_io_service())
 {
+	check_update_interval();
 }
 
 void HTTPBackend::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
@@ -105,6 +107,8 @@ void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, 
 	if (err) {
 		std::cout << "Error checking for web updates: " << err.message() << '\n';
 	} else {
+		core->getSettingsRef().lastupdate = boost::posix_time::second_clock::universal_time();
+
 		std::vector<std::pair<std::string, std::string> > builds = AutoUpdater::parseUpdateWebPage(task->req.getContent());
 		for (uint i = 0; i < builds.size(); ++i) {
 			ShareInfo si;
@@ -119,6 +123,28 @@ void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, 
 			sig_new_share(si);
 		}
 	}
+}
+
+void HTTPBackend::check_update_interval()
+{
+	asio_timer_oneshot(service, boost::posix_time::hours(1), boost::bind(&HTTPBackend::check_update_interval, this));
+	//asio_timer_oneshot(service, boost::posix_time::seconds(3), boost::bind(&HTTPBackend::check_update_interval, this));
+
+	UFTTSettings& settings = core->getSettingsRef();
+
+	if (settings.webupdateinterval == 0) return;
+	int minhours = 30 * 24;
+	if (settings.webupdateinterval == 1) minhours = 1 * 24;
+	if (settings.webupdateinterval == 2) minhours = 7 * 24;
+
+	boost::posix_time::ptime curtime = boost::posix_time::second_clock::universal_time();
+
+	int lasthours = (curtime - settings.lastupdate).hours();
+
+	std::cout << STRFORMAT("last update check: %dh ago (%dh)\n", lasthours, minhours);
+
+	if (lasthours > minhours)
+		check_for_web_updates();
 }
 
 void HTTPBackend::do_start_download(const ShareID& sid, const boost::filesystem::path& path)

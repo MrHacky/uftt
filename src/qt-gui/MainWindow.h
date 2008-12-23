@@ -55,7 +55,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	public Q_SLOTS:
 		void do_refresh_shares();
-		void check_autoupdate_interval();
 
 		void on_buttonRefresh_clicked();
 		void on_buttonDownload_clicked();
