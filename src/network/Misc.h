@@ -18,6 +18,18 @@ inline boost::asio::ip::address get_first(const std::pair<boost::asio::ip::addre
 
 boost::asio::ip::address my_addr_from_string(const std::string& str);
 
+template<typename EP>
+void my_endpoint_from_string(const std::string& str, EP& ep)
+{
+	size_t colpos = str.find_last_of(":");
+	std::string addr = str.substr(0, colpos);
+	std::string port = str.substr(colpos+1);
+
+	if (addr[0] == '[') addr = addr.substr(1);
+	if (addr[addr.size()-1] == ']') addr = addr.substr(0, addr.size()-1);
+	ep = EP(my_addr_from_string(addr), atoi(port.c_str()));
+}
+
 inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
 {
 	return STRFORMAT("%04d-%02d-%02d %02d:%02d:%02d",
