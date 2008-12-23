@@ -25,6 +25,8 @@
 
 #include "Misc.h"
 
+#include "ConnectionBase.h"
+
 /// helper classes, TODO: nest them properly...
 struct cmdinfo {
 	uint32 cmd;
@@ -117,10 +119,8 @@ struct dirsender {
 	};
 };
 
-class SimpleTCPConnection {
+class SimpleTCPConnection: public ConnectionBase {
 	private:
-		UFTTCore* core;
-
 		enum {
 			CMD_NONE,
 			CMD_OLD_FILE,
@@ -145,7 +145,6 @@ class SimpleTCPConnection {
 			END_OF_COMMANDS
 		};
 
-		boost::asio::io_service& service;
 		services::diskio_service* gdiskio;
 		boost::asio::ip::tcp::socket socket;
 
@@ -268,8 +267,7 @@ class SimpleTCPConnection {
 		cmdinfo rcmd;
 	public:
 		SimpleTCPConnection(boost::asio::io_service& service_, UFTTCore* core_)
-			: core(core_)
-			, service(service_)
+			: ConnectionBase(service_, core_)
 			, socket(service_)
 			, progress_timer(service_)
 			, cursendfile(core_->get_disk_service())

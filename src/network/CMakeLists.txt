@@ -21,6 +21,7 @@ ADD_LIBRARY(uftt-network
 	INetModule.h
 	NetModuleLinker.h         NetModuleLinker.cpp
 	SimpleConnection.h        SimpleConnection.cpp
+	ConnectionBase.h          ConnectionBase.cpp
 	Misc.h                    Misc.cpp
 	${NETMODULE_SOURCE_FILES} ${LINK_INC_FILE}
 )
