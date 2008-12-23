@@ -1,5 +1,4 @@
 SET(NETMODULES
-	TestModule
 	SimpleBackend
 	HTTPBackend
 )
