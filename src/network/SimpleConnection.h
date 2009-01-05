@@ -223,6 +223,9 @@ class SimpleConnection: public ConnectionBase {
 
 			uint64 getoffset()
 			{
+				if(!ext::filesystem::exists(path)) {
+					return 0;
+				}
 				size_t bread;
 				using namespace std;
 				uint64 fsize = boost::filesystem::file_size(path);
@@ -671,56 +674,60 @@ class SimpleConnection: public ConnectionBase {
 			}
 
 			boost::filesystem::path curpath(elems.back());
-			if (boost::filesystem::is_directory(spath)) {
-				//std::cout << "Single directory!\n";
+			if(ext::filesystem::exists(spath)) {
+				if (boost::filesystem::is_directory(spath)) {
+					//std::cout << "Single directory!\n";
 
-				tbuf->resize(16);
-				pkt_put_uint32(10, &((*tbuf)[0]) + 0);
-				pkt_put_uint32(0, &((*tbuf)[0]) + 4);
+					tbuf->resize(16);
+					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
+					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
-				tbuf->push_back(2); // dir
-				pkt_put_vuint32(curpath.string().size(), *tbuf);
-				for (uint i = 0; i < curpath.string().size(); ++i)
-					tbuf->push_back(curpath.string()[i]);
+					tbuf->push_back(2); // dir
+					pkt_put_vuint32(curpath.string().size(), *tbuf);
+					for (uint i = 0; i < curpath.string().size(); ++i)
+						tbuf->push_back(curpath.string()[i]);
 
-				int curlevel = 0;
-				boost::filesystem::recursive_directory_iterator curiter(spath);
-				boost::filesystem::recursive_directory_iterator enditer;
-				for (; curiter != enditer; ++curiter) {
-					for (; curlevel > curiter.level(); --curlevel)
-						curpath = curpath.branch_path();
-					curpath /= curiter->leaf();
-					++curlevel;
-					if (boost::filesystem::is_directory(*curiter)) {
-						tbuf->push_back(2); // dir
-						pkt_put_vuint32(curpath.string().size(), *tbuf);
-						for (uint i = 0; i < curpath.string().size(); ++i)
-							tbuf->push_back(curpath.string()[i]);
-						//std::cout << "Directory: " << curpath << '\n';
-					} else {
-						tbuf->push_back(1); // file
-						taskinfo.size += boost::filesystem::file_size(*curiter);
-						pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
-						pkt_put_vuint32(curpath.string().size(), *tbuf);
-						for (uint i = 0; i < curpath.string().size(); ++i)
-							tbuf->push_back(curpath.string()[i]);
-						//std::cout << "File: " << curpath << '\n';
+					int curlevel = 0;
+					boost::filesystem::recursive_directory_iterator curiter(spath);
+					boost::filesystem::recursive_directory_iterator enditer;
+					for (; curiter != enditer; ++curiter) {
+						for (; curlevel > curiter.level(); --curlevel)
+							curpath = curpath.branch_path();
+						curpath /= curiter->leaf();
+						++curlevel;
+						if(ext::filesystem::exists(*curiter)) {
+							if (boost::filesystem::is_directory(*curiter)) {
+								tbuf->push_back(2); // dir
+								pkt_put_vuint32(curpath.string().size(), *tbuf);
+								for (uint i = 0; i < curpath.string().size(); ++i)
+									tbuf->push_back(curpath.string()[i]);
+								//std::cout << "Directory: " << curpath << '\n';
+							} else {
+								tbuf->push_back(1); // file
+								taskinfo.size += boost::filesystem::file_size(*curiter);
+								pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
+								pkt_put_vuint32(curpath.string().size(), *tbuf);
+								for (uint i = 0; i < curpath.string().size(); ++i)
+									tbuf->push_back(curpath.string()[i]);
+								//std::cout << "File: " << curpath << '\n';
+							}
+						}
 					}
+				} else {
+	//				tbuf->clear();
+					tbuf->resize(16);
+					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
+					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
+
+					tbuf->push_back(1); // file
+					taskinfo.size += boost::filesystem::file_size(spath);
+					pkt_put_vuint64(boost::filesystem::file_size(spath), *tbuf);
+					pkt_put_vuint32(curpath.string().size(), *tbuf);
+					for (uint i = 0; i < curpath.string().size(); ++i)
+						tbuf->push_back(curpath.string()[i]);
+
+					//std::cout << "Single file!\n";
 				}
-			} else {
-//				tbuf->clear();
-				tbuf->resize(16);
-				pkt_put_uint32(10, &((*tbuf)[0]) + 0);
-				pkt_put_uint32(0, &((*tbuf)[0]) + 4);
-
-				tbuf->push_back(1); // file
-				taskinfo.size += boost::filesystem::file_size(spath);
-				pkt_put_vuint64(boost::filesystem::file_size(spath), *tbuf);
-				pkt_put_vuint32(curpath.string().size(), *tbuf);
-				for (uint i = 0; i < curpath.string().size(); ++i)
-					tbuf->push_back(curpath.string()[i]);
-
-				//std::cout << "Single file!\n";
 			}
 			tbuf->push_back(4); // end of list
 			pkt_put_uint64(tbuf->size() - 16, &((*tbuf)[0]) + 8);
@@ -943,8 +950,12 @@ class SimpleConnection: public ConnectionBase {
 							qitems.pop_front();
 							pkt_put_uint32((off == 0) ? CMD_REPLY_FULL_FILE : CMD_REPLY_PARTIAL_FILE, &((*sbuf)[0]));
 							pkt_put_uint32(0, &((*sbuf)[4]));
-							pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
-
+							if(ext::filesystem::exists(cursendfile.path)) {
+								pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
+							}
+							else {
+								pkt_put_uint64(0, &((*sbuf)[8]));
+							}
 							sendqueue.push_back(sbuf);
 							service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 						} else if (qtype == QITEM_SIGREQ) {
