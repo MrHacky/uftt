@@ -202,7 +202,7 @@ void SimpleBackend::stun_do_check(const boost::system::error_code& e, int retry)
 
 void SimpleBackend::handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len)
 {
-	if (!recv_peer->address().is_v4()) return;
+	if (!recv_peer->address().is_v4() && !recv_peer->address().to_v6().is_v4_mapped()) return;
 
 	uint16 type = (recv_buf[0] << 8) | (recv_buf[1] << 0);
 	uint16 slen = (recv_buf[2] << 8) | (recv_buf[3] << 0);
