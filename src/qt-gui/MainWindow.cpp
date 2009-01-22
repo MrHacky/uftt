@@ -678,10 +678,8 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 {
 	string text = twi->text(TLCN_SHARE).toStdString();
-	if (text.substr(0,4) != "uftt") return;
-	size_t pos = text.find_last_of("\\/");
-	if (pos == string::npos) return;
-	string name = text.substr(pos+1);
+	if (text.substr(0,3) != "D: ") return;
+	string name = text.substr(3);
 
 	boost::filesystem::path path = DownloadEdit->text().toStdString();
 	path /= name;
