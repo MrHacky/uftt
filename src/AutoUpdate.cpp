@@ -881,5 +881,11 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 	return std::vector<std::pair<std::string, std::string> >();
 }
 
+bool AutoUpdater::doSigning(const boost::filesystem::path& keyfile, const std::string& build, const boost::filesystem::path& infile, const boost::filesystem::path& outfile)
+{
+	return false;
+}
+
+
 
 #endif//USE_OPENSSL(else)
