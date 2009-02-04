@@ -12,8 +12,8 @@
 
 namespace dgram {
 	namespace timeout {
-		const boost::asio::deadline_timer::duration_type small = boost::posix_time::milliseconds(750);          // 250ms
-		const boost::asio::deadline_timer::duration_type stats = boost::posix_time::milliseconds(100);          // 100ms
+		const boost::posix_time::time_duration resend = boost::posix_time::milliseconds(500);          // 500ms
+		const boost::posix_time::time_duration giveup = boost::posix_time::minutes(1);                 // 1min
 
 		const boost::asio::deadline_timer::duration_type disconn = boost::posix_time::milliseconds(10*1000*60); // 10min
 		const boost::asio::deadline_timer::duration_type active = boost::posix_time::milliseconds(5*1000);      // 5sec
@@ -42,6 +42,7 @@ namespace dgram {
 			flag_oob  = 1 << 6, // packet wants no acknowledgement
 		};
 
+		// actual binary data in packet
 		uint8 header[4]; // includes flags, recvqid, and magic header signiature
 		uint16 sendqid;  // senders qid
 		uint16 window;
@@ -49,11 +50,13 @@ namespace dgram {
 		uint32 acknum;
 		uint8 data[datasize];
 
+		// calculated fields
 		uint16 datalen;
 		uint16 recvqid;  // recvers qid
 		uint8 flags;
 	};
 
+	// item waiting to be sent
 	struct snditem {
 		const void* data;
 		size_t len;
@@ -63,6 +66,7 @@ namespace dgram {
 			: data(data_), len(len_), handler(handler_) {};
 	};
 
+	// item waiting for receiving data
 	struct rcvitem {
 		void* data;
 		size_t len;
@@ -95,15 +99,17 @@ namespace dgram {
 				finwait1,
 				finwait2,
 				timewait,
+				closing,
 				lastack,
 			};
 
 			boost::asio::io_service& service;
 			conn_service<Proto>* cservice;
 
+			// small receive buffer
 			uint8 rdata[packet::maxmtu];
-			size_t rdsize;
-			size_t rdoff;
+			size_t rdsize; // size of data in buffer
+			size_t rdoff;  // offset of unused data in buffer
 
 			typename Proto::endpoint endpoint;
 
@@ -111,6 +117,10 @@ namespace dgram {
 			packet sendpackonce;
 
 			int32 state;
+			bool fin_rcv;
+			bool fin_snd;
+			bool fin_ack;
+
 			uint16 lqid;
 			uint16 rqid;
 
@@ -131,6 +141,26 @@ namespace dgram {
 			// stats
 			uint32 resend;
 			uint32 send_undelivered;
+
+			bool cansend()
+			{
+				return (state == listening)
+				    || (state == synsent)
+				    || (state == synreceived)
+				    || (state == established);
+			}
+
+			bool canreceive()
+			{
+				if (fin_rcv)
+					return false;
+
+				return (state == listening)
+				    || (state == synsent)
+				    || (state == synreceived)
+				    || (state == established)
+				    || (state == closing);
+			}
 	public:
 			// functions
 			void initsendpack(packet& pack, uint16 datalen = 0, uint8 flags = packet::flag_ack) {
@@ -146,12 +176,18 @@ namespace dgram {
 				pack.header[1] = (pack.recvqid >> 0) & 0xff;
 				pack.header[2] = pack.flags;
 				pack.header[3] = packet::signiature;
+
+				if (fin_snd) pack.flags |= packet::flag_fin;
 			}
 
 			void check_queues()
 			{
 				check_recv_queues();
 				check_send_queues();
+
+				if (fin_rcv && fin_snd && fin_ack) {
+					setstate(closed);
+				}
 			}
 
 			void check_send_queues()
@@ -176,11 +212,24 @@ namespace dgram {
 						send_queue.pop_front();
 					}
 				}
+				if (snd_una == snd_nxt && send_queue.empty() && state == closing && !fin_snd) {
+					fin_snd = true;
+					initsendpack(sendpack);
+					sendpack.seqnum = snd_nxt++;
+					send_packet();
+				}
 			}
 
 			void check_recv_queues()
 			{
-				if (rdsize == 0) return;
+				if (rdsize == 0) {
+					while (fin_rcv && !recv_queue.empty()) {
+						rcvitem ritem = recv_queue.front();
+						recv_queue.pop_front();
+						cservice->service.dispatch(boost::bind(ritem.handler, boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()), 0));
+					};
+					return;
+				}
 
 				if (!recv_queue.empty()) {
 					#undef min
@@ -220,7 +269,7 @@ namespace dgram {
 				if (!error && resending) {
 					send_packet_once(sendpack);
 
-					short_timer.expires_from_now(timeout::small);
+					short_timer.expires_from_now(timeout::resend);
 					short_timer.async_wait(boost::bind(&conn<Proto>::send_packet, this, boost::asio::placeholders::error, false));
 					++resend; // count all packets we send while using a timeout
 				} else
@@ -256,27 +305,40 @@ namespace dgram {
 							check_queues();
 						}
 					}; break;
-					case established: {
-						if (pack->datalen > 0 && pack->seqnum == rcv_nxt) {
-							if (!recv_queue.empty() && rdsize == 0) {
-								if (recv_queue.front().len < pack->datalen) {
-									memcpy(rdata, pack->data, pack->datalen);
-									rdsize = pack->datalen;
-									rdoff = 0;
-								} else {
-									memcpy(recv_queue.front().data, pack->data, pack->datalen);
-									++rcv_nxt;
-									cservice->service.dispatch(boost::bind(recv_queue.front().handler, boost::system::error_code(), pack->datalen));
-									recv_queue.pop_front();
+					case established:
+					case closing: {
+						if (pack->seqnum == rcv_nxt) {
+							if (pack->datalen > 0 && !fin_rcv) {
+								// there is new data in the packet
+								if (!recv_queue.empty() && rdsize == 0) {
+									// we have a receiver waiting and no more data buffered
+									if (recv_queue.front().len < pack->datalen) {
+										// the packet contains more data than the receiver requested, so we buffer it
+										memcpy(rdata, pack->data, pack->datalen);
+										rdsize = pack->datalen;
+										rdoff = 0;
+									} else {
+										// the receiver requested more data than the packet contains, so pass it directly
+										memcpy(recv_queue.front().data, pack->data, pack->datalen);
+										++rcv_nxt;
+										cservice->service.dispatch(boost::bind(recv_queue.front().handler, boost::system::error_code(), pack->datalen));
+										recv_queue.pop_front();
+									}
 								}
+							}
+							if (pack->flags & packet::flag_fin) {
+								fin_rcv = true;
 							}
 						}
 						if (pack->flags & packet::flag_ack && pack->acknum == snd_una+1) {
+							// the packed acks previously unacked data
 							++snd_una;
-							setstate(established);
+							if (fin_snd) fin_ack = true;
+							setstate(state); // clears send timeouts
 						}
 						check_queues();
 						if (pack->seqnum != rcv_nxt) {
+							// sender could use new ack packet
 							initsendpack(sendpackonce);
 							send_packet_once();
 						}
@@ -296,7 +358,21 @@ namespace dgram {
 				state = newstate;
 				short_timer.cancel();
 				long_timer.cancel();
+				long_timer.expires_from_now(timeout::giveup);
+				long_timer.async_wait(boost::bind(&conn<Proto>::giveup, this, boost::asio::placeholders::error));
+
 				resending = false;
+			}
+
+			void giveup(const boost::system::error_code& e)
+			{
+				if (!e) {
+					if (resending) {
+						setstate(closed);
+					} else {
+						setstate(state);
+					}
+				}
 			}
 
 		public:
@@ -305,6 +381,7 @@ namespace dgram {
 			{
 				rcv_wnd = 1;
 				rdoff = rdsize = 0;
+				fin_rcv = fin_snd = fin_ack = false;
 				cservice->addconn(this);
 			}
 
@@ -313,6 +390,7 @@ namespace dgram {
 			{
 				rcv_wnd = 1;
 				rdoff = rdsize = 0;
+				fin_rcv = fin_snd = fin_ack = false;
 				cservice->addconn(this);
 			}
 
@@ -328,6 +406,14 @@ namespace dgram {
 			template <typename MBS, typename Handler>
 			void async_read_some(MBS& mbs, const Handler& handler)
 			{
+				if (!canreceive()) {
+					service.dispatch(boost::bind<void>(handler,
+						boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()),
+						0
+					));
+					return;
+				};
+
 				void* buf;
 				size_t buflen = 0;
 				typename MBS::const_iterator iter = mbs.begin();
@@ -357,6 +443,14 @@ namespace dgram {
 			template <typename CBS, typename Handler>
 			void async_write_some(CBS& cbs, const Handler& handler)
 			{
+				if (!cansend()) {
+					service.dispatch(boost::bind<void>(handler,
+						boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()),
+						0
+					));
+					return;
+				};
+
 				typename CBS::const_iterator iter = cbs.begin();
 				typename CBS::const_iterator end = cbs.end();
 				size_t tlen = 0;
@@ -387,6 +481,11 @@ namespace dgram {
 			template <typename CBS>
 			size_t write_some(CBS& cbs, boost::system::error_code& ec)
 			{
+				if (!cansend()) {
+					ec = boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category());
+					return 0;
+				};
+
 				typename CBS::const_iterator iter = cbs.begin();
 				typename CBS::const_iterator end = cbs.end();
 				size_t tlen = 0;
@@ -418,7 +517,7 @@ namespace dgram {
 			template <typename ConnectHandler>
 			void async_connect(const typename Proto::endpoint& endpoint_, const ConnectHandler& handler_)
 			{
-				snd_una = 111;
+				snd_una = cservice->get_isn();
 				handler = handler_;
 				endpoint = endpoint_;
 				state = synsent;
@@ -431,7 +530,7 @@ namespace dgram {
 			template <typename AcceptHandler>
 			void async_accept(const AcceptHandler& handler_)
 			{
-				snd_una = 222;
+				snd_una = cservice->get_isn();
 				cservice->acceptlog.push_back(lqid);
 				handler = handler_;
 				state = listening;
@@ -446,8 +545,8 @@ namespace dgram {
 
 			void close()
 			{
-				// TODO: actually disconnect the socket
-				setstate(closed);
+				setstate(closing);
+				check_queues();
 			}
 	};
 
@@ -460,6 +559,8 @@ namespace dgram {
 
 			std::vector<conn<Proto>*> conninfo;
 			std::deque<size_t> acceptlog;
+
+			uint64 isn_ofs;
 
 			void addconn(conn<Proto>* tconn)
 			{
@@ -501,6 +602,21 @@ namespace dgram {
 					return false;
 
 				return true;
+			}
+
+			// calculate initial sequence number
+			uint32 get_isn()
+			{
+				uint32 tps = boost::posix_time::microsec_clock::resolution_traits_type::ticks_per_second;
+				boost::posix_time::ptime ut(boost::posix_time::microsec_clock::universal_time());
+				boost::posix_time::time_duration ud = ut - boost::posix_time::ptime(boost::posix_time::min_date_time);
+				if (tps > 250000)
+					tps = 250000;
+
+				uint64 ret = ud.total_microseconds();
+				ret *= tps;
+				ret /= 1000000;
+				return ret & 0xffffffff;
 			}
 
 		public:
