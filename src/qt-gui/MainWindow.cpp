@@ -445,7 +445,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 		twi->setText(TLCN_SPEED, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
 	}
 	twi->setText(TLCN_QUEUE, QString::fromStdString(STRFORMAT("%d", queue)));
-	if (sts == "Completed")
+	if (!ti.isupload && sts == "Completed")
 		download_done(ti.shareid);
 }
 
