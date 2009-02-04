@@ -16,6 +16,7 @@
 #include <QMimeData>
 #include <QProcess>
 #include <QStringList>
+#include <QSystemTrayIcon>
 #include <QTimer>
 #include <QTreeWidgetItem>
 #include <QUrl>
@@ -121,6 +122,12 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 			bar->setContentsMargins( left,  top,  right,  bottom);
 		}
 		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		QLabel* imagelabel = new QLabel();
+		QImage image1(":/status/status-ok.png");
+		QImage image2("D:/Stuff/Projects/UFTT/trunk/src/qt-gui/Icons/status-ok.png");
+		imagelabel->setPixmap(QPixmap::fromImage(image1));
+		bar->addPermanentWidget(imagelabel);
+		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
 		bar->addWidget(new QLabel("Status bar"));
 	}
 
@@ -217,22 +224,36 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	ctwi->setText(0, QString("[edit to add new]"));
 	ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
 	ctwiu = false;
+
+	{
+		QIcon* uftticon = new QIcon();
+		uftticon->addFile(":/icon/uftt-16x16.png");
+		uftticon->addFile(":/icon/uftt-32x32.png");
+		uftticon->addFile(":/icon/uftt-48x48.png");
+		// TODO: add 22x22 icon as that apparently is preferred for trayicons on linux
+		trayicon = new QSystemTrayIcon(*uftticon, this);
+		trayicon->show();
+
+		connect(trayicon, SIGNAL(activated(QSystemTrayIcon::ActivationReason))  , this, SLOT(handle_trayicon_activated(QSystemTrayIcon::ActivationReason)));
+	}
 }
 
-void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)
+void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
 {
-	if (ctwiu) return;
-	if (item == ctwi) {
-		ctwiu = true;
-		ctwi = new QTreeWidgetItem(listBroadcastHosts);
-		ctwi->setText(0, QString("[edit to add new]"));
-		ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
-		ctwiu = false;
+	switch (reason) {
+		case QSystemTrayIcon::DoubleClick: {
+			if (this->isVisible()) {
+				this->setVisible(false);
+			} else {
+				if (this->isMinimized()) this->showNormal();
+				this->setVisible(true);
+				this->activateWindow();
+				this->raise();
+			}
+		}; break;
+		default: /* nothing */ ;
 	}
-	if (item->text(0) == "") {
-		delete item;
-		return;
-	}
+
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
@@ -249,11 +270,42 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 
 	settings.dl_path = DownloadEdit->text().toStdString();
 
-	QWidget::closeEvent(evnt);
+	trayicon->hide();
+
+	// propagate to parent
+	QMainWindow::closeEvent(evnt);
+}
+
+void MainWindow::hideEvent(QHideEvent * evnt)
+{
+	// propagate to parent
+	QMainWindow::hideEvent(evnt);
+
+	if (evnt->type() == QEvent::Hide && this->isMinimized() && trayicon->isVisible()) {
+		// minimize to tray
+		QTimer::singleShot(0, this, SLOT(hide()));
+	}
 }
 
 MainWindow::~MainWindow()
 {
+}
+
+
+void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)
+{
+	if (ctwiu) return;
+	if (item == ctwi) {
+		ctwiu = true;
+		ctwi = new QTreeWidgetItem(listBroadcastHosts);
+		ctwi->setText(0, QString("[edit to add new]"));
+		ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
+		ctwiu = false;
+	}
+	if (item->text(0) == "") {
+		delete item;
+		return;
+	}
 }
 
 void MainWindow::do_refresh_shares() {

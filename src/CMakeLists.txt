@@ -38,6 +38,7 @@ SET(UFTT_SOURCES
 	BuildString.h
 	UFTTCore.h            UFTTCore.cpp
 	UFTTSettings.h        UFTTSettings.cpp
+	UFTTStatus.h          #UFTTStatus.cpp
 	AutoUpdate.h          AutoUpdate.cpp
 	Platform.h            Platform.cpp
 

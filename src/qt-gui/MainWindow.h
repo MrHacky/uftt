@@ -3,6 +3,8 @@
 
 #include "ui_MainWindow.h"
 
+#include <QSystemTrayIcon>
+
 #include <boost/asio.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -31,6 +33,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
+		QSystemTrayIcon* trayicon;
 
 		void addLocalShare(std::string url);
 		void setUpdateInterval(int i);
@@ -41,13 +44,16 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void new_upload(const TaskInfo& info);
 
 	protected:
-		virtual void closeEvent(QCloseEvent * event);
+		// overridden events
+		virtual void closeEvent(QCloseEvent * evnt);
+		virtual void hideEvent(QHideEvent * evnt);
 
 	private Q_SLOTS:
 		void DragStart(QTreeWidgetItem*, int);
 		void onDragEnterTriggered(QDragEnterEvent* evt);
 		void onDragMoveTriggered(QDragMoveEvent* evt);
 		void onDropTriggered(QDropEvent* evt);
+
 	public:
 		MainWindow(UFTTSettings& settings_);
 		void SetBackend(UFTTCore* be);
@@ -84,6 +90,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_listShares_itemDoubleClicked(QTreeWidgetItem*, int);
 
 		void on_editNickName_textChanged(QString text);
+
+		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);
 

@@ -4,6 +4,11 @@
     <file>status-warn.png</file>
     <file>status-error.png</file>
   </qresource>
+  <qresource prefix="icon" >
+    <file>uftt-32x32.png</file>
+    <file>uftt-48x48.png</file>
+    <file>uftt-16x16.png</file>
+  </qresource>
   <qresource prefix="button" >
     <file>button-clearcompleted.png</file>
     <file>button-browsedir.png</file>
