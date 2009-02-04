@@ -44,7 +44,7 @@ void SimpleBackend::doManualPublish(const std::string& host)
 {
 	try {
 		service.post(boost::bind(&SimpleBackend::send_publishes, this,
-			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
+			uftt_bcst_if, my_endpoint_from_string<boost::asio::ip::udp::endpoint>(host, UFTT_PORT)
 			, true, true
 		));
 	} catch (std::exception& /*e*/) {}
@@ -54,7 +54,7 @@ void SimpleBackend::doManualQuery(const std::string& host)
 {
 	try {
 		service.post(boost::bind(&SimpleBackend::send_query, this,
-			uftt_bcst_if, boost::asio::ip::udp::endpoint(my_addr_from_string(host), UFTT_PORT)
+			uftt_bcst_if, my_endpoint_from_string<boost::asio::ip::udp::endpoint>(host, UFTT_PORT)
 		));
 	} catch (std::exception& /*e*/) {}
 }

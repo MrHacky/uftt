@@ -19,15 +19,41 @@ inline boost::asio::ip::address get_first(const std::pair<boost::asio::ip::addre
 boost::asio::ip::address my_addr_from_string(const std::string& str);
 
 template<typename EP>
-void my_endpoint_from_string(const std::string& str, EP& ep)
+EP my_endpoint_from_string(const std::string& str, uint16 defaultport = 0)
 {
-	size_t colpos = str.find_last_of(":");
-	std::string addr = str.substr(0, colpos);
-	std::string port = str.substr(colpos+1);
+	if (str.empty()) return EP();
 
-	if (addr[0] == '[') addr = addr.substr(1);
-	if (addr[addr.size()-1] == ']') addr = addr.substr(0, addr.size()-1);
-	ep = EP(my_addr_from_string(addr), atoi(port.c_str()));
+	std::string addr;
+	std::string port;
+	if (str[0] == '[') {
+		size_t cbpos = str.find_last_of("]");
+		if (cbpos != std::string::npos) {
+			addr = str.substr(1, cbpos - 1);
+			port = str.substr(cbpos + 1);
+		} else
+			return EP();
+	} else {
+		size_t colpos = str.find_last_of(":");
+		if (colpos != std::string::npos && colpos == str.find_first_of(":")) {
+			addr = str.substr(0, colpos);
+			port = str.substr(colpos);
+		} else
+			addr = str;
+	}
+
+	uint16 portnum;
+	if (port.empty() || port == ":" || port[0] != ':')
+		portnum = defaultport;
+	else
+		portnum = atoi(port.c_str()+1);
+
+	return EP(my_addr_from_string(addr), portnum);
+}
+
+template<typename EP>
+void my_endpoint_from_string(const std::string& str, EP& ep, uint16 defaultport = 0)
+{
+	ep = my_endpoint_from_string<EP>(str, defaultport);
 }
 
 inline std::string my_datetime_to_string(const boost::posix_time::ptime& td)
