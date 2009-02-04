@@ -133,7 +133,7 @@ namespace dgram {
 			uint32 send_undelivered;
 	public:
 			// functions
-			void initsendpack(packet& pack, uint16 datalen = 0, uint16 flags = packet::flag_ack) {
+			void initsendpack(packet& pack, uint16 datalen = 0, uint8 flags = packet::flag_ack) {
 				pack.recvqid = rqid;
 				pack.sendqid = lqid;
 				pack.flags = flags;
