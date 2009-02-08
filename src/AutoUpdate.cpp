@@ -18,8 +18,8 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 
-#include "../util/Base64.h"
-#include "../util/Filesystem.h"
+#include "util/Base64.h"
+#include "util/Filesystem.h"
 
 
 using namespace std;

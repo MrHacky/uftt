@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <boost/asio.hpp>
-#include "../net-asio/asio_file_stream.h"
+#include "net-asio/asio_file_stream.h"
 
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
