@@ -3,7 +3,7 @@
 
 #include "../net-asio/asio_ipx.h"
 #include "../net-asio/asio_file_stream.h"
-#include "../net-asio/ipx_conn.h"
+//#include "../net-asio/ipx_conn.h"
 
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -16,7 +16,7 @@ ptime stoptime;
 
 using namespace std;
 
-using boost::asio::ipx;
+//using boost::asio::ipx;
 
 uint32 TESTBUFSIZE = (1024*1024*16);
 std::vector<uint8*> testbuffers;
@@ -132,6 +132,7 @@ int imain( int argc, char **argv )
 	service.run();
 	cout << "exiting" << endl;
 */
+/*
 	ipx_acceptor acceptor(service);
 	ipx_conn ipxconn(service);
 	try {
@@ -149,6 +150,7 @@ int imain( int argc, char **argv )
 			boost::bind(&connection_ready<ipx_conn>, _1, &ipxconn, false));
 		cout << "connect started" << endl;
 	}
+	*/
 
 	cout << "starting service" << endl;
 	service.run();

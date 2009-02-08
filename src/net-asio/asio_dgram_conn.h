@@ -161,7 +161,11 @@ namespace dgram {
 				    || (state == established)
 				    || (state == closing);
 			}
-	public:
+		public:
+			boost::asio::io_service& get_io_service() {
+				return service;
+			}
+
 			// functions
 			void initsendpack(packet& pack, uint16 datalen = 0, uint8 flags = packet::flag_ack) {
 				pack.recvqid = rqid;
@@ -226,7 +230,10 @@ namespace dgram {
 					while (fin_rcv && !recv_queue.empty()) {
 						rcvitem ritem = recv_queue.front();
 						recv_queue.pop_front();
-						cservice->service.dispatch(boost::bind(ritem.handler, boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()), 0));
+						boost::system::error_code errc = boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted);
+						cservice->service.dispatch(
+							boost::bind<void>(ritem.handler, errc, 0)
+						);
 					};
 					return;
 				}
@@ -408,7 +415,7 @@ namespace dgram {
 			{
 				if (!canreceive()) {
 					service.dispatch(boost::bind<void>(handler,
-						boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()),
+						boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted),
 						0
 					));
 					return;
@@ -445,7 +452,7 @@ namespace dgram {
 			{
 				if (!cansend()) {
 					service.dispatch(boost::bind<void>(handler,
-						boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category()),
+						boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted),
 						0
 					));
 					return;
@@ -482,7 +489,7 @@ namespace dgram {
 			size_t write_some(CBS& cbs, boost::system::error_code& ec)
 			{
 				if (!cansend()) {
-					ec = boost::system::error_code(boost::system::posix_error::connection_aborted, boost::system::get_posix_category());
+					ec = boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted);
 					return 0;
 				};
 

@@ -5,6 +5,7 @@
 #include <queue>
 #include <fstream>
 
+#include <boost/version.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
@@ -693,7 +694,11 @@ class SimpleConnection: public ConnectionBase {
 					for (; curiter != enditer; ++curiter) {
 						for (; curlevel > curiter.level(); --curlevel)
 							curpath = curpath.branch_path();
+#if BOOST_VERSION <= 103500
 						curpath /= curiter->leaf();
+#else
+						curpath /= curiter->filename();
+#endif
 						++curlevel;
 						if(ext::filesystem::exists(*curiter)) {
 							if (boost::filesystem::is_directory(*curiter)) {

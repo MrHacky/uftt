@@ -44,6 +44,7 @@ namespace openwrapper {
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/bind.hpp>
+#include "../util/PosixError.h"
 
 /*****************************************************************/
 // Service default implementation?
@@ -251,9 +252,7 @@ namespace services {
 				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
 					return boost::system::error_code();
-				boost::system::posix_error::posix_errno err = (boost::system::posix_error::posix_errno)errno;
-				std::cout << "error opening file:" << path << "\n";
-				return boost::system::posix_error::make_error_code(err);
+				return ext::posix_error::make_error_code(errno);
 			}
 
 			void close() {
@@ -306,7 +305,7 @@ namespace services {
 					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)error),
+							ext::posix_error::make_error_code(error),
 							0)
 						);
 						return;
@@ -337,7 +336,7 @@ namespace services {
 
 					if (written == 0) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)ferror(fd)),
+							ext::posix_error::make_error_code(ferror(fd)),
 							0)
 						);
 						return;
@@ -373,7 +372,7 @@ namespace services {
 					}
 					if (int error = ferror(fd)) {
 						service.dispatch(boost::bind<void>(handler,
-							boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)error),
+							ext::posix_error::make_error_code(error),
 							0)
 						);
 						return;
@@ -417,7 +416,7 @@ namespace services {
 							);
 						} else {
 							service.dispatch(boost::bind<void>(handler,
-								boost::system::posix_error::make_error_code((boost::system::posix_error::posix_errno)ferror(fd)),
+								ext::posix_error::make_error_code(ferror(fd)),
 								0)
 							);
 						}
