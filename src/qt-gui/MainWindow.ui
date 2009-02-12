@@ -112,6 +112,9 @@
     <layout class="QVBoxLayout" >
      <item>
       <widget class="QDragDropTreeWidget" name="listShares" >
+       <property name="selectionMode" >
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
        <column>
         <property name="text" >
          <string>User</string>

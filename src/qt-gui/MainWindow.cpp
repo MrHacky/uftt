@@ -399,16 +399,16 @@ void MainWindow::on_buttonDownload_clicked()
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
-	QTreeWidgetItem* rwi = listShares->currentItem();
-	if (!rwi)
-		return;
+	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
 
-	ShareID sid = rwi->data(0, Qt::UserRole).value<ShareID>();
-	if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
-		// evil hax!!!
-		sid.sid[0] = 'x';
+	BOOST_FOREACH(QTreeWidgetItem* rwi, selected) {
+		ShareID sid = rwi->data(0, Qt::UserRole).value<ShareID>();
+		if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
+			// evil hax!!!
+			sid.sid[0] = 'x';
+		}
+		backend->startDownload(sid, dlpath);
 	}
-	backend->startDownload(sid, dlpath);
 }
 
 
@@ -746,12 +746,9 @@ void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 	}
 }
 
-void MainWindow::on_listShares_itemDoubleClicked(QTreeWidgetItem* twi, int)
+void MainWindow::on_listShares_itemActivated(QTreeWidgetItem*, int)
 {
-	if (listShares->currentItem() == twi)
-		on_buttonDownload_clicked();
-	else
-		std::cout << "Doubleclicked on non-current share?\n";
+	on_buttonDownload_clicked();
 }
 
 void MainWindow::new_task(const TaskInfo& info)

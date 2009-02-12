@@ -87,7 +87,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_actionUpdateMonthly_toggled(bool);
 
 		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
-		void on_listShares_itemDoubleClicked(QTreeWidgetItem*, int);
+		void on_listShares_itemActivated(QTreeWidgetItem*, int);
 
 		void on_editNickName_textChanged(QString text);
 
