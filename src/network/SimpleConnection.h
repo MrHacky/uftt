@@ -269,6 +269,8 @@ class SimpleConnection: public ConnectionBase {
 		std::set<uint32> rcommands;
 		bool rresume;
 
+		uint32 maxBufSize;
+
 		cmdinfo rcmd;
 	public:
 		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
@@ -288,6 +290,7 @@ class SimpleConnection: public ConnectionBase {
 			open_files = 0;
 			taskinfo.transferred = 0;
 			taskinfo.size = 0;
+			maxBufSize = 1024*10;
 
 			// todo, make this more global?
 			for (uint32 i = 1; i < END_OF_COMMANDS; ++i)
@@ -305,6 +308,11 @@ class SimpleConnection: public ConnectionBase {
 		}
 
 		boost::asio::deadline_timer progress_timer;
+
+		uint32 getRcvBufSize(uint64 size)
+		{
+			return ((size>maxBufSize) ? maxBufSize : (uint32)size);
+		}
 
 		void start_update_progress() {
 			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
@@ -1234,7 +1242,7 @@ class SimpleConnection: public ConnectionBase {
 
 			if (!dataready) {
 				// kick off async_read for when we received some data (capped by file size)
-				rbuf->resize((fsize>1024*1024*10) ? 1024*1024*10 : (uint32)fsize); // cast is ok because of ?:
+				rbuf->resize(getRcvBufSize(fsize)); 
 				boost::asio::async_read(socket, GETBUF(rbuf),
 					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
 			} else {
@@ -1269,6 +1277,8 @@ class SimpleConnection: public ConnectionBase {
 				return;
 			}
 
+			maxBufSize = min(maxBufSize*2, uint32(1024*1024*10));
+
 			taskinfo.transferred += wbuf->size();
 			size -= wbuf->size();
 
@@ -1284,7 +1294,7 @@ class SimpleConnection: public ConnectionBase {
 				} else {
 					*done = false;
 					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
+					nrbuf->resize(getRcvBufSize(size));
 					boost::asio::async_read(socket, GETBUF(nrbuf),
 						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
@@ -1330,7 +1340,7 @@ class SimpleConnection: public ConnectionBase {
 				} else {
 					*done = false;
 					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize((size>1024*1024*10) ? 1024*1024*10 : (uint32)size); // cast is ok because of ?:
+					nrbuf->resize(getRcvBufSize(size));
 					boost::asio::async_read(socket, GETBUF(nrbuf),
 						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
 				};
