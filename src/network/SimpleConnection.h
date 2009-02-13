@@ -1277,7 +1277,7 @@ class SimpleConnection: public ConnectionBase {
 				return;
 			}
 
-			maxBufSize = min(maxBufSize*2, uint32(1024*1024*10));
+			maxBufSize = std::min(maxBufSize*2, uint32(1024*1024*10));
 
 			taskinfo.transferred += wbuf->size();
 			size -= wbuf->size();
