@@ -42,12 +42,10 @@ boost::rand48 rng;
 std::vector<uint8*> testbuffers;
 
 #define LINK_QT_RESOURCE(name) \
+	do { \
 		extern int qInitResources_ ## name (); \
-		namespace { namespace name ## addr { \
-			void* name ## addr = (void*)& qInitResources_ ## name ; \
-		}	}
-
-LINK_QT_RESOURCE(icons);
+		qInitResources_ ## name (); \
+	} while (0)
 
 			struct settrue {
 				bool* value;
@@ -218,6 +216,8 @@ bool waitonexit = false;
 
 int imain( int argc, char **argv )
 {
+	LINK_QT_RESOURCE(icons);
+
 	bool madeConsole = false;
 	if (argc > 1 && !platform::hasConsole()) {
 		madeConsole = platform::newConsole();
