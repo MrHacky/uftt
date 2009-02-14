@@ -12,14 +12,9 @@
 
 namespace dgram {
 	namespace timeout {
-		const boost::posix_time::time_duration resend = boost::posix_time::milliseconds(500);          // 500ms
-		const boost::posix_time::time_duration giveup = boost::posix_time::minutes(1);                 // 1min
-
-		const boost::asio::deadline_timer::duration_type disconn = boost::posix_time::milliseconds(10*1000*60); // 10min
-		const boost::asio::deadline_timer::duration_type active = boost::posix_time::milliseconds(5*1000);      // 5sec
-		const boost::asio::deadline_timer::duration_type idle = boost::posix_time::milliseconds(1000*60);       // 1min
-
-		const boost::posix_time::time_duration conn_reuse = boost::posix_time::minutes(10);
+		const boost::posix_time::time_duration resend     = boost::posix_time::milliseconds(500);          // 500ms
+		const boost::posix_time::time_duration giveup     = boost::posix_time::minutes(1);                 // 1min
+		const boost::posix_time::time_duration conn_reuse = boost::posix_time::minutes(10);                // 10min
 	}
 
 	struct packet {
@@ -86,9 +81,13 @@ namespace dgram {
 	class conn_service;
 
 	template<typename Proto>
-	class conn : private boost::noncopyable {
+	class conn;
+
+	template<typename Proto>
+	class conn_impl : private boost::noncopyable {
 		private:
 			friend class conn_service<Proto>;
+			friend class conn<Proto>;
 
 			enum state_enum {
 				closed = 0,
@@ -96,11 +95,16 @@ namespace dgram {
 				synsent,
 				synreceived,
 				established,
-				finwait1,
-				finwait2,
-				timewait,
 				closing,
-				lastack,
+				timewait,
+				reuse,
+				//finwait1,
+				//finwait2,
+				//lastack,
+			};
+
+			enum retflag {
+				rf_sendpack,
 			};
 
 			boost::asio::io_service& service;
@@ -120,6 +124,8 @@ namespace dgram {
 			bool fin_rcv;
 			bool fin_snd;
 			bool fin_ack;
+
+			bool hashandle;
 
 			uint16 lqid;
 			uint16 rqid;
@@ -176,26 +182,30 @@ namespace dgram {
 				pack.window = rcv_wnd; // - received packets in queue
 				pack.datalen = datalen; // default
 
+				if (fin_snd)
+					pack.flags |= packet::flag_fin;
+
 				pack.header[0] = (pack.recvqid >> 8) & 0xff;
 				pack.header[1] = (pack.recvqid >> 0) & 0xff;
 				pack.header[2] = pack.flags;
 				pack.header[3] = packet::signiature;
-
-				if (fin_snd) pack.flags |= packet::flag_fin;
 			}
 
-			void check_queues()
+			int check_queues()
 			{
-				check_recv_queues();
-				check_send_queues();
+				int ret = 0;
+				ret |= check_recv_queues();
+				ret |= check_send_queues();
 
-				if (fin_rcv && fin_snd && fin_ack) {
-					setstate(closed);
+				if (fin_rcv && fin_snd && fin_ack && state != timewait) {
+					setstate(timewait);
 				}
+				return ret;
 			}
 
-			void check_send_queues()
+			int check_send_queues()
 			{
+				int ret = 0;
 				if (snd_una == snd_nxt && !send_queue.empty()) {
 					snditem& front = send_queue.front();
 					size_t trylen = front.len;
@@ -205,6 +215,7 @@ namespace dgram {
 					memcpy(sendpack.data,  front.data, trylen);
 					sendpack.seqnum = snd_nxt++;
 					send_packet();
+					ret |= rf_sendpack;
 					front.data = ((char*)front.data) + trylen;
 					front.len -= trylen;
 					send_undelivered += trylen;
@@ -221,24 +232,28 @@ namespace dgram {
 					initsendpack(sendpack);
 					sendpack.seqnum = snd_nxt++;
 					send_packet();
+					ret |= rf_sendpack;
 				}
+
+				if (state != closing && !cansend()) {
+					while (!send_queue.empty()) {
+						snditem front = send_queue.front();
+						send_queue.pop_front();
+						if (front.handler) {
+							cservice->service.dispatch(boost::bind(front.handler,
+								boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted),
+								0
+							));
+						}
+					}
+				}
+				return ret;
 			}
 
-			void check_recv_queues()
+			int check_recv_queues()
 			{
-				if (rdsize == 0) {
-					while (fin_rcv && !recv_queue.empty()) {
-						rcvitem ritem = recv_queue.front();
-						recv_queue.pop_front();
-						boost::system::error_code errc = boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted);
-						cservice->service.dispatch(
-							boost::bind<void>(ritem.handler, errc, 0)
-						);
-					};
-					return;
-				}
-
-				if (!recv_queue.empty()) {
+				int ret = 0;
+				while (rdsize != 0 && !recv_queue.empty()) {
 					#undef min
 					size_t len = std::min(recv_queue.front().len, rdsize-rdoff);
 					memcpy(recv_queue.front().data, rdata+rdoff, len);
@@ -257,6 +272,18 @@ namespace dgram {
 					cservice->service.dispatch(boost::bind(ritem.handler, boost::system::error_code(), len));
 				}
 
+				if (rdsize == 0 && !canreceive()) {
+					while (!recv_queue.empty()) {
+						rcvitem ritem = recv_queue.front();
+						recv_queue.pop_front();
+						cservice->service.dispatch(boost::bind(ritem.handler, boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted), 0));
+					};
+					if (handler) {
+						cservice->service.dispatch(boost::bind(handler, boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted)));
+						handler.clear();
+					}
+				}
+				return ret;
 			}
 
 			void send_packet_once() {
@@ -277,7 +304,7 @@ namespace dgram {
 					send_packet_once(sendpack);
 
 					short_timer.expires_from_now(timeout::resend);
-					short_timer.async_wait(boost::bind(&conn<Proto>::send_packet, this, boost::asio::placeholders::error, false));
+					short_timer.async_wait(boost::bind(&conn_impl<Proto>::send_packet, this, boost::asio::placeholders::error, false));
 					++resend; // count all packets we send while using a timeout
 				} else
 					--resend; // and subtract all canceled timeouts
@@ -333,8 +360,9 @@ namespace dgram {
 									}
 								}
 							}
-							if (pack->flags & packet::flag_fin) {
+							if (rdsize == 0 && pack->flags & packet::flag_fin) {
 								fin_rcv = true;
+								++rcv_nxt;
 							}
 						}
 						if (pack->flags & packet::flag_ack && pack->acknum == snd_una+1) {
@@ -343,20 +371,21 @@ namespace dgram {
 							if (fin_snd) fin_ack = true;
 							setstate(state); // clears send timeouts
 						}
-						check_queues();
-						if (pack->seqnum != rcv_nxt) {
+						int check = check_queues();
+						if (!(check & rf_sendpack) && pack->seqnum != rcv_nxt) {
 							// sender could use new ack packet
 							initsendpack(sendpackonce);
 							send_packet_once();
 						}
 					}; break;
-					case finwait1: {
-					}; break;
-					case finwait2: {
-					}; break;
 					case timewait: {
+						if (fin_rcv && pack->seqnum != rcv_nxt) {
+							// sender could use new ack packet
+							initsendpack(sendpackonce);
+							send_packet_once();
+						}
 					}; break;
-					case lastack: {
+					case reuse: {
 					}; break;
 				}
 			}
@@ -365,8 +394,20 @@ namespace dgram {
 				state = newstate;
 				short_timer.cancel();
 				long_timer.cancel();
-				long_timer.expires_from_now(timeout::giveup);
-				long_timer.async_wait(boost::bind(&conn<Proto>::giveup, this, boost::asio::placeholders::error));
+
+				if (state == reuse) {
+					if (!hashandle) {
+						clearconn();
+					}
+					return;
+				}
+
+				if (state != timewait) {
+					long_timer.expires_from_now(timeout::giveup);
+				} else {
+					long_timer.expires_from_now(timeout::conn_reuse);
+				}
+				long_timer.async_wait(boost::bind(&conn_impl<Proto>::giveup, this, boost::asio::placeholders::error));
 
 				resending = false;
 			}
@@ -374,16 +415,26 @@ namespace dgram {
 			void giveup(const boost::system::error_code& e)
 			{
 				if (!e) {
-					if (resending) {
-						setstate(closed);
+					if (state != timewait) {
+						if (resending) {
+							setstate(timewait);
+							check_queues();
+						} else {
+							setstate(state);
+						}
 					} else {
-						setstate(state);
+						setstate(reuse);
 					}
 				}
 			}
 
+			void clearconn()
+			{
+				cservice->delconn(this);
+			}
+
 		public:
-			conn(conn_service<Proto>* cservice_)
+			conn_impl(conn_service<Proto>* cservice_)
 			: cservice(cservice_), short_timer(cservice_->service), long_timer(cservice_->service), service(cservice_->service)
 			{
 				rcv_wnd = 1;
@@ -392,18 +443,13 @@ namespace dgram {
 				cservice->addconn(this);
 			}
 
-			conn(conn_service<Proto>& cservice_)
+			conn_impl(conn_service<Proto>& cservice_)
 			: cservice(&cservice_), short_timer(cservice_.service), long_timer(cservice_.service), service(cservice_.service)
 			{
 				rcv_wnd = 1;
 				rdoff = rdsize = 0;
 				fin_rcv = fin_snd = fin_ack = false;
 				cservice->addconn(this);
-			}
-
-			~conn()
-			{
-				cservice->delconn(this);
 			}
 
 			typename Proto::endpoint remote_endpoint() const {
@@ -527,9 +573,10 @@ namespace dgram {
 				snd_una = cservice->get_isn();
 				handler = handler_;
 				endpoint = endpoint_;
-				state = synsent;
 				snd_nxt = snd_una+1;
 				rqid = 0xffff;
+
+				setstate(synsent);
 				initsendpack(sendpack, 0, packet::flag_syn);
 				send_packet();
 			}
@@ -540,7 +587,8 @@ namespace dgram {
 				snd_una = cservice->get_isn();
 				cservice->acceptlog.push_back(lqid);
 				handler = handler_;
-				state = listening;
+
+				state = listening; // no setstate() to avoid giveup timeout
 			}
 
 			template <typename AcceptHandler>
@@ -552,8 +600,83 @@ namespace dgram {
 
 			void close()
 			{
-				setstate(closing);
-				check_queues();
+				if (state != closed && state != closing && state != timewait && state != reuse) {
+					setstate(closing);
+					check_queues();
+				}
+			}
+
+			bool is_open()
+			{
+				return cansend() || canreceive();
+			}
+	};
+
+	// connection handle class;
+	template<typename Proto>
+	class conn : private boost::noncopyable {
+		private:
+			conn_impl<Proto>* impl;
+		public:
+			conn(conn_service<Proto>& cservice_) {
+				impl = new conn_impl<Proto>(cservice_);
+				impl->hashandle = true;
+			};
+
+			~conn()
+			{
+				close();
+				impl->hashandle = false;
+				if (impl->state == conn_impl<Proto>::reuse)
+					impl->setstate(impl->state);
+			}
+
+			typename Proto::endpoint remote_endpoint() const {
+				return impl->remote_endpoint();
+			}
+
+			template <typename MBS, typename Handler>
+			void async_read_some(MBS& mbs, const Handler& handler)
+			{
+				impl->async_read_some(mbs, handler);
+			}
+
+			template <typename CBS, typename Handler>
+			void async_write_some(CBS& cbs, const Handler& handler)
+			{
+				impl->async_write_some(cbs, handler);
+			}
+
+			template <typename CBS>
+			size_t write_some(CBS& cbs, boost::system::error_code& ec)
+			{
+				return impl->write_some(cbs, ec);
+			}
+
+			template <typename ConnectHandler>
+			void async_connect(const typename Proto::endpoint& endpoint_, const ConnectHandler& handler_)
+			{
+				impl->async_connect(endpoint_, handler_);
+			}
+
+			template <typename AcceptHandler>
+			void async_accept(const AcceptHandler& handler_)
+			{
+				impl->async_accept(handler_);
+			}
+
+			void close()
+			{
+				impl->close();
+			}
+
+			bool is_open()
+			{
+				return impl->is_open();
+			}
+
+			boost::asio::io_service& get_io_service() {
+				return impl->get_io_service();
 			}
 	};
 
@@ -561,15 +684,16 @@ namespace dgram {
 	class conn_service {
 		private:
 			friend class conn<Proto>;
+			friend class conn_impl<Proto>;
 			boost::asio::io_service& service;
 			typename Proto::socket& socket;
 
-			std::vector<conn<Proto>*> conninfo;
+			std::vector<conn_impl<Proto>*> conninfo;
 			std::deque<size_t> acceptlog;
 
 			uint64 isn_ofs;
 
-			void addconn(conn<Proto>* tconn)
+			void addconn(conn_impl<Proto>* tconn)
 			{
 				for (size_t i = 0; i < conninfo.size(); ++i)
 					if (!conninfo[i]) {
@@ -587,14 +711,15 @@ namespace dgram {
 				conninfo.push_back(tconn);
 			}
 
-			void delconn(conn<Proto>* tconn)
+			void delconn(conn_impl<Proto>* tconn)
 			{
-				conninfo[tconn->lqid] = (conn<Proto>*)(((uintptr_t)0)-1);
-				asio_timer_oneshot(service, timeout::conn_reuse, boost::bind(&conn_service<Proto>::clrconn, this, tconn->lqid));
+				//asio_timer_oneshot(service, timeout::conn_reuse, boost::bind(&conn_service<Proto>::clrconn, this, tconn->lqid));
+				service.post(boost::bind(&conn_service<Proto>::clrconn, this, tconn->lqid));
 			}
 
 			void clrconn(size_t cqid)
 			{
+				delete conninfo[cqid];
 				conninfo[cqid] = NULL;
 			}
 
@@ -603,9 +728,6 @@ namespace dgram {
 					return false;
 
 				if (conninfo[idx] == NULL)
-					return false;
-
-				if (conninfo[idx] == (conn<Proto>*)(((uintptr_t)0)-1))
 					return false;
 
 				return true;
@@ -649,7 +771,7 @@ namespace dgram {
 				pack->flags   = pack->header[2];
 				pack->datalen = len - packet::headersize;
 
-				conn<Proto>* tconn = NULL;
+				conn_impl<Proto>* tconn = NULL;
 				if ((pack->flags & packet::flag_syn) && !(pack->flags & packet::flag_ack)) {
 					while (!acceptlog.empty() && !is_valid_idx(acceptlog.front()))
 						acceptlog.pop_front();
@@ -662,7 +784,7 @@ namespace dgram {
 					tconn = conninfo[pack->recvqid];
 
 				if (tconn) {
-					if ((tconn->state == conn<Proto>::listening || tconn->state == conn<Proto>::synsent) && pack->flags & packet::flag_syn) {
+					if ((tconn->state == conn_impl<Proto>::listening || tconn->state == conn_impl<Proto>::synsent) && pack->flags & packet::flag_syn) {
 						tconn->endpoint = *peer;
 						tconn->rqid = pack->sendqid;
 						tconn->rcv_nxt = pack->seqnum+1;
