@@ -606,7 +606,9 @@ class SimpleBackend: public INetModule {
 			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
 			try {
 				udp_sock_v6.open(boost::asio::ip::udp::v6());
-				udp_sock_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				#ifdef __linux__
+					udp_sock_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				#endif
 				udp_sock_v6.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
 
 				udp_sock_v6.set_option(boost::asio::ip::udp::socket::broadcast(true));
@@ -645,7 +647,9 @@ class SimpleBackend: public INetModule {
 
 			try {
 				tcplistener_v6.open(boost::asio::ip::tcp::v6());
-				tcplistener_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				#ifdef __linux__
+					tcplistener_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				#endif
 				tcplistener_v6.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
 				tcplistener_v6.listen(16);
 				start_tcp_accept(&tcplistener_v6);
