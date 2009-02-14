@@ -22,6 +22,7 @@
 #include <QUrl>
 #include <QWidget>
 #include <QScrollBar>
+#include <QSysInfo>
 
 #include <boost/foreach.hpp>
 
@@ -227,7 +228,12 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 
 	{
 		QIcon* uftticon = new QIcon();
-		uftticon->addFile(":/icon/uftt-16x16.png");
+#ifdef Q_WS_WIN
+		if (QSysInfo::WindowsVersion & (QSysInfo::WV_32s|QSysInfo::WV_95|QSysInfo::WV_98))
+			uftticon->addFile(":/icon/uftt-16x16x4.png");
+		else
+#endif
+			uftticon->addFile(":/icon/uftt-16x16.png");
 		uftticon->addFile(":/icon/uftt-32x32.png");
 		uftticon->addFile(":/icon/uftt-48x48.png");
 		// TODO: add 22x22 icon as that apparently is preferred for trayicons on linux
@@ -235,6 +241,10 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 		trayicon->show();
 
 		connect(trayicon, SIGNAL(activated(QSystemTrayIcon::ActivationReason))  , this, SLOT(handle_trayicon_activated(QSystemTrayIcon::ActivationReason)));
+
+#ifndef Q_WS_WIN
+		this->setWindowIcon(*uftticon);
+#endif
 	}
 }
 
