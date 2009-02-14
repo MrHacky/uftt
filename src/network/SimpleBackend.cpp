@@ -33,6 +33,7 @@ void SimpleBackend::connectSigTaskStatus(const TaskID& tid, const boost::functio
 void SimpleBackend::doRefreshShares()
 {
 	service.post(boost::bind(&SimpleBackend::send_query, this, uftt_bcst_if, uftt_bcst_ep));
+	start_peerfinder();
 }
 
 void SimpleBackend::startDownload(const ShareID& sid, const boost::filesystem::path& path)
@@ -175,6 +176,8 @@ void SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::func
 void SimpleBackend::stun_new_addr()
 {
 	boost::posix_time::ptime checktime = settings.laststuncheck + boost::posix_time::minutes(1);
+	settings.laststuncheck = boost::posix_time::second_clock::universal_time();
+	stun_timer.cancel();
 	stun_timer.expires_at(checktime);
 	stun_timer.async_wait(boost::bind(&SimpleBackend::stun_do_check, this, _1, 0));
 }
@@ -185,7 +188,6 @@ void SimpleBackend::stun_do_check(const boost::system::error_code& e, int retry)
 		return;
 
 	if (retry == 0) {
-		settings.laststuncheck = boost::posix_time::second_clock::universal_time();
 		stun_server_found = false;
 	} else if (stun_server_found)
 		return;
@@ -254,8 +256,8 @@ void SimpleBackend::handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost
 			cout << "Internet reachable address: " << mapped_address << '\n';
 			if (mapped_address != stun_endpoint) {
 				stun_endpoint = mapped_address;
-				settings.lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
-				settings.prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
+				lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
+				prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 				start_peerfinder();
 			}
 			stun_timer2.expires_at(boost::posix_time::second_clock::universal_time() + boost::posix_time::minutes(1));
@@ -275,7 +277,7 @@ void SimpleBackend::stun_send_bind(const boost::system::error_code& e)
 	boost::system::error_code err;
 	send_udp_packet(udp_info_v4, stunep, boost::asio::buffer("\x00\x01\x00\x08         \x0B\x0C     \x00\x03\x00\x04\x00\x00\x00\x06", 28), err);
 
-	stun_timer2.expires_at(boost::posix_time::second_clock::universal_time() + boost::posix_time::minutes(1));
+	stun_timer2.expires_at(boost::posix_time::second_clock::universal_time() + boost::posix_time::minutes(10));
 	stun_timer2.async_wait(boost::bind(&SimpleBackend::stun_send_bind, this, _1));
 }
 

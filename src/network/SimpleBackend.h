@@ -91,7 +91,10 @@ class SimpleBackend: public INetModule {
 		UDPSockInfoRef udp_info_v6;
 
 		std::set<boost::asio::ip::udp::endpoint> foundpeers;
+		std::set<boost::asio::ip::udp::endpoint> trypeers;
 		boost::asio::deadline_timer peerfindertimer;
+		boost::posix_time::ptime lastpeerquery;
+		boost::posix_time::ptime prevpeerquery;
 		boost::asio::deadline_timer stun_timer;
 		boost::asio::deadline_timer stun_timer2;
 		boost::asio::ip::udp::endpoint stun_server;
@@ -103,38 +106,39 @@ class SimpleBackend: public INetModule {
 			if (e) {
 				std::cout << "Failed to get simple global peer list: " << e.message() << '\n';
 			} else {
-				const std::vector<uint8>& page = request->getContent();
+				try {
+					const std::vector<uint8>& page = request->getContent();
 
-				uint8 content_start[] = "*S*T*A*R*T*\r";
-				uint8 content_end[] = "*S*T*O*P*\r";
+					uint8 content_start[] = "*S*T*A*R*T*\r";
+					uint8 content_end[] = "*S*T*O*P*\r";
 
-				typedef std::vector<uint8>::const_iterator vpos;
+					typedef std::vector<uint8>::const_iterator vpos;
 
-				vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
-				vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
+					vpos spos = std::search(page.begin(), page.end(), content_start   , content_start    + sizeof(content_start   ) - 1);
+					vpos epos = std::search(page.begin(), page.end(), content_end     , content_end      + sizeof(content_end     ) - 1);
 
-				if (spos == page.end() || epos == page.end()) {
-					std::cout << "Error parsing global peer list.";
-					start_peerfinder();
-					return;
-				}
+					if (spos == page.end() || epos == page.end())
+						throw std::runtime_error("No valid start/end markers found.");
 
-				spos += sizeof(content_start) - 1;
+					spos += sizeof(content_start) - 1;
 
-				std::string content(spos, epos);
+					std::string content(spos, epos);
 
-				std::vector<std::string> lines;
-				boost::split(lines, content, boost::is_any_of("\r\n"));
+					std::vector<std::string> lines;
+					boost::split(lines, content, boost::is_any_of("\r\n"));
 
-				std::set<boost::asio::ip::address> addrs;
+					std::set<boost::asio::ip::address> addrs;
 
-				settings.foundpeers.clear();
-				BOOST_FOREACH(const std::string& line, lines) {
-					std::vector<std::string> cols;
-					boost::split(cols, line, boost::is_any_of("\t"));
-					if (cols.size() >= 2) {
-						settings.foundpeers.insert(cols[0] + "\t" + cols[1]);
+					trypeers.clear();
+					BOOST_FOREACH(const std::string& line, lines) {
+						std::vector<std::string> cols;
+						boost::split(cols, line, boost::is_any_of("\t"));
+						if (cols.size() == 2) {
+							trypeers.insert(boost::asio::ip::udp::endpoint(my_addr_from_string(cols[0]), atoi(cols[1].c_str())));
+						}
 					}
+				} catch (std::exception& ex) {
+					std::cout << "Error parsing global peer list: " << ex.what() << '\n';
 				}
 			}
 
@@ -147,8 +151,8 @@ class SimpleBackend: public INetModule {
 				std::cout << "handle_peerfinder_timer: " << e.message() << '\n';
 			} else {
 				if (settings.enablepeerfinder) {
-					settings.prevpeerquery = settings.lastpeerquery;
-					settings.lastpeerquery = boost::posix_time::second_clock::universal_time();
+					prevpeerquery = lastpeerquery;
+					lastpeerquery = boost::posix_time::second_clock::universal_time();
 
 					std::string url;
 					//url = "http://hackykid.heliohost.org/site/bootstrap.php";
@@ -176,11 +180,12 @@ class SimpleBackend: public INetModule {
 			if (!settings.enablepeerfinder) return;
 
 			boost::posix_time::ptime dl;
-			if (settings.lastpeerquery - settings.prevpeerquery > boost::posix_time::minutes(55))
-				dl = settings.lastpeerquery + boost::posix_time::seconds(20);
+			if (lastpeerquery - prevpeerquery > boost::posix_time::minutes(55))
+				dl = lastpeerquery + boost::posix_time::seconds(20);
 			else
-				dl = settings.lastpeerquery + boost::posix_time::minutes(50);
+				dl = lastpeerquery + boost::posix_time::minutes(50);
 
+			peerfindertimer.cancel();
 			peerfindertimer.expires_at(dl);
 			peerfindertimer.async_wait(boost::bind(&SimpleBackend::handle_peerfinder_timer, this, _1));
 
@@ -194,17 +199,8 @@ class SimpleBackend: public INetModule {
 			udp_send_buf[4] = 4;
 
 			boost::system::error_code err;
-			BOOST_FOREACH(const std::string peer, settings.foundpeers) {
+			BOOST_FOREACH(const boost::asio::ip::udp::endpoint& ep, trypeers) {
 				try {
-					boost::asio::ip::udp::endpoint ep;
-					size_t colonpos = peer.find_first_of("\t");
-					if (colonpos == std::string::npos) {
-						ep.address(my_addr_from_string(peer));
-						ep.port(UFTT_PORT);
-					} else {
-						ep.address(my_addr_from_string(peer.substr(0, colonpos)));
-						ep.port(atoi(peer.substr(colonpos+1).c_str()));
-					}
 					send_udp_packet(uftt_bcst_if, ep, boost::asio::buffer(udp_send_buf), err);
 				} catch (...) {
 				}
@@ -326,10 +322,9 @@ class SimpleBackend: public INetModule {
 					udp_send_buf[3] = (1 >> 24) & 0xff;
 					udp_send_buf[4] = 5;
 					send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
-				};// intentional fallthrough break;
+				};// intentional fallthrough
 				case 5: { // peerfinder reply
 					foundpeers.insert(*recv_peer);
-					settings.foundpeers.insert(STRFORMAT("%s\t%d", recv_peer->address(), recv_peer->port()));
 					send_query(si, *recv_peer);
 				}; break;
 			}
@@ -508,9 +503,12 @@ class SimpleBackend: public INetModule {
 						std::cout << "send to (" << ep << ") failed: " << err.message() << '\n';
 				}
 			} else {
-				if (ep == uftt_bcst_ep)
+				if (ep == uftt_bcst_ep) {
 					send_udp_packet_to(si, si->bcst_ep, buf, err, flags);
-				else
+					BOOST_FOREACH(const boost::asio::ip::udp::endpoint& fpep, foundpeers) {
+						send_udp_packet_to(si, fpep, buf, err, flags);
+					}
+				} else
 					send_udp_packet_to(si, ep, buf, err, flags);
 			}
 		}

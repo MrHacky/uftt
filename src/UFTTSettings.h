@@ -69,9 +69,6 @@ class UFTTSettings {
 		boost::posix_time::ptime lastupdate;
 
 		bool enablepeerfinder;
-		boost::posix_time::ptime lastpeerquery;
-		boost::posix_time::ptime prevpeerquery;
-		std::set<std::string> foundpeers;
 		std::string nickname;
 
 		boost::posix_time::ptime laststuncheck;
@@ -93,9 +90,14 @@ class UFTTSettings {
 			if (version >=  8) ar & NVP("nickname", nickname);
 
 			if (version >=  5) ar & NVP("lastupdate", lastupdate);
-			if (version >=  6) ar & NVP("lastpeerquery", lastpeerquery);
-			if (version >=  6) ar & NVP("prevpeerquery", prevpeerquery);
-			if (version >=  6) ar & NVP("foundpeers", foundpeers);
+			if (version >=  6 && version <=  8) {
+				boost::posix_time::ptime lastpeerquery;
+				boost::posix_time::ptime prevpeerquery;
+				std::set<std::string> foundpeers;
+				ar & NVP("lastpeerquery", lastpeerquery);
+				ar & NVP("prevpeerquery", prevpeerquery);
+				ar & NVP("foundpeers", foundpeers);
+			}
 			if (version >=  4) ar & NVP("dockinfo", dockinfo);
 
 			//if (version >=  4 && version < 6) ar & NVP("dockinfo", dockinfo);
@@ -103,7 +105,7 @@ class UFTTSettings {
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 8)
+BOOST_CLASS_VERSION(UFTTSettings, 9)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path
