@@ -660,6 +660,8 @@ class SimpleBackend: public INetModule {
 				boost::bind(&SimpleBackend::send_publish, this, uftt_bcst_if, uftt_bcst_ep, _1, 1, true)
 			);
 
+			lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
+			prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 			start_peerfinder();
 		}
 
