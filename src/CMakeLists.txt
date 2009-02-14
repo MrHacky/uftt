@@ -11,9 +11,13 @@ LINK_DIRECTORIES("${BOOST_LIBRARY_DIR}")
 
 SUBDIRS(net-asio)
 SUBDIRS(qt-gui)
-SUBDIRS(bench)
 SUBDIRS(util)
 SUBDIRS(network)
+
+SET(BUILD_BENCHES OFF CACHE BOOL "Build benchmarks and tests. (bench directory)")
+IF(BUILD_BENCHES)
+	SUBDIRS(bench)
+ENDIF()
 
 IF(UNIX)
 	SUBDIRS(linux)
