@@ -592,36 +592,31 @@ class SimpleBackend: public INetModule {
 			, stun_timer2(core_->get_io_service())
 		{
 			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4, true));
-			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
-
-			try {
-				udp_sock_v6.open(boost::asio::ip::udp::v6());
-				udp_sock_v6.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
-				udp_sock_v6.set_option(boost::asio::ip::udp::socket::broadcast(true));
-				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
-
-				start_udp_receive(udp_info_v6, recv_buf_v6, &recv_peer_v6);
-
-			} catch (std::exception& e) {
-				std::cout << "Failed to initialise IPv6 UDP scoket: " << e.what() << "\n";
-			}
-
 			try {
 				udp_sock_v4.open(boost::asio::ip::udp::v4());
 				udp_sock_v4.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
+
 				udp_sock_v4.set_option(boost::asio::ip::udp::socket::broadcast(true));
-				udp_sock_v4.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
 				start_udp_receive(udp_info_v4, recv_buf_v4, &recv_peer_v4);
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
-#ifdef __linux__
-				if (udp_sock_v6.is_open()) {
-					std::cout << "Re-using IPv6 UDP socket\n";
-					udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, true));
-				}
-#endif
 			}
+
+			udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
+			try {
+				udp_sock_v6.open(boost::asio::ip::udp::v6());
+				udp_sock_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				udp_sock_v6.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
+
+				udp_sock_v6.set_option(boost::asio::ip::udp::socket::broadcast(true));
+				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
+
+				start_udp_receive(udp_info_v6, recv_buf_v6, &recv_peer_v6);
+			} catch (std::exception& e) {
+				std::cout << "Failed to initialise IPv6 UDP socket: " << e.what() << "\n";
+			}
+
 			udp_conn_service.reset(new UDPConnService(service, udp_info_v4->sock));
 
 			start_udp_accept(udp_conn_service.get());
@@ -640,21 +635,22 @@ class SimpleBackend: public INetModule {
 			watcher_v6.async_wait();
 
 			try {
-				tcplistener_v6.open(boost::asio::ip::tcp::v6());
-				tcplistener_v6.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
-				tcplistener_v6.listen(16);
-				start_tcp_accept(&tcplistener_v6);
-			} catch (std::exception& e) {
-				std::cout << "Failed to initialize IPv6 TCP listener: " << e.what() << '\n';
-			}
-
-			try {
 				tcplistener_v4.open(boost::asio::ip::tcp::v4());
 				tcplistener_v4.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::any(), UFTT_PORT));
 				tcplistener_v4.listen(16);
 				start_tcp_accept(&tcplistener_v4);
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialize IPv4 TCP listener: " << e.what() << '\n';
+			}
+
+			try {
+				tcplistener_v6.open(boost::asio::ip::tcp::v6());
+				tcplistener_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
+				tcplistener_v6.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
+				tcplistener_v6.listen(16);
+				start_tcp_accept(&tcplistener_v6);
+			} catch (std::exception& e) {
+				std::cout << "Failed to initialize IPv6 TCP listener: " << e.what() << '\n';
 			}
 
 			// bind autoupdater
