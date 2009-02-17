@@ -100,6 +100,7 @@ class SimpleBackend: public INetModule {
 		boost::asio::ip::udp::endpoint stun_server;
 		boost::asio::ip::udp::endpoint stun_endpoint;
 		bool stun_server_found;
+		int stun_retries;
 
 		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
 		{
@@ -588,6 +589,8 @@ class SimpleBackend: public INetModule {
 			, core(core_)
 			, stun_timer(core_->get_io_service())
 			, stun_timer2(core_->get_io_service())
+			, stun_server_found(false)
+			, stun_retries(0)
 		{
 			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4, true));
 			try {
