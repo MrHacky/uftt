@@ -195,6 +195,7 @@ void SimpleBackend::stun_do_check(const boost::system::error_code& e, int retry)
 	boost::asio::ip::udp::endpoint stunep(boost::asio::ip::address::from_string("83.103.82.85"), 3478);
 
 	boost::system::error_code err;
+	stun_retries = 3;
 	send_udp_packet(udp_info_v4, stunep, boost::asio::buffer("\x00\x01\x00\x00         \x0B\x0C     ", 20), err);
 	if (retry < 5) {
 		++retry;
@@ -262,7 +263,8 @@ void SimpleBackend::handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost
 			}
 			stun_timer2.expires_at(boost::posix_time::second_clock::universal_time() + boost::posix_time::minutes(1));
 			stun_timer2.async_wait(boost::bind(&SimpleBackend::stun_send_bind, this, _1));
-		} else {
+		} else if (stun_retries > 0) {
+			--stun_retries;
 			stun_send_bind(boost::system::error_code());
 		}
 	}
