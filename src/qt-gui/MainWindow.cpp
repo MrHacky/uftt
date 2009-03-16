@@ -124,11 +124,10 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 		}
 		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
 		QLabel* imagelabel = new QLabel();
-		QImage image1(":/status/status-ok.png");
-		QImage image2("D:/Stuff/Projects/UFTT/trunk/src/qt-gui/Icons/status-ok.png");
-		imagelabel->setPixmap(QPixmap::fromImage(image1));
-		bar->addPermanentWidget(imagelabel);
-		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		//QImage image1(":/status/status-ok.png");
+		//imagelabel->setPixmap(QPixmap::fromImage(image1));
+		//bar->addPermanentWidget(imagelabel);
+		//bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
 		bar->addWidget(new QLabel("Status bar"));
 	}
 
