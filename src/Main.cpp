@@ -251,7 +251,7 @@ int imain( int argc, char **argv )
 	if (madeConsole)
 		platform::freeConsole();
 
-	// get services (gdiskio global evilly initialized by SimpleBackend constructror...)
+	// get services
 	boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
 	boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
 
