@@ -99,7 +99,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 		std::vector<char> buffer(bytes);
 
 		LPSOCKET_ADDRESS_LIST v6info = (LPSOCKET_ADDRESS_LIST)&buffer[0];
-		SOCKET_ADDRESS* addrs = (SOCKET_ADDRESS*)&buffer[sizeof(SOCKET_ADDRESS_LIST)];
+		SOCKET_ADDRESS* addrs = (SOCKET_ADDRESS*)&v6info->Address;
 
 		int status = WSAIoctl(sock,
 			SIO_ADDRESS_LIST_QUERY,

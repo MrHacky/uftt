@@ -550,7 +550,18 @@ class SimpleBackend: public INetModule {
 					UDPSockInfoRef newsock(new UDPSockInfo(udp_info_v6->sock, false));
 					boost::asio::ip::address_v6 bcaddr = my_addr_from_string("ff02::1").to_v6();
 					bcaddr.scope_id(addr.to_v6().scope_id());
-					newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
+
+					try {
+						newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
+					} catch (boost::system::system_error& e) {
+						#ifdef WIN32
+							if (e.code().value() == 10022)
+								std::cout << "Warning: failed to join multicast group for " << addr << '\n';
+							else
+						#endif
+								throw e;
+					}
+
 					newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
 
 					udpsocklist[addr] = newsock;
