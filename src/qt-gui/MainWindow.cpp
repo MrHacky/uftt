@@ -119,7 +119,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 		int left, top, right, bottom;
 		bar->getContentsMargins(&left, &top, &right, &bottom);
 		top += this->style()->pixelMetric(QStyle::PM_DockWidgetSeparatorExtent);
-		if(stylename != "QCleanlooksStyle") {
+		if((stylename != "QCleanlooksStyle") && (stylename != "QGtkStyle")) {
 			bar->setContentsMargins( left,  top,  right,  bottom);
 		}
 		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
