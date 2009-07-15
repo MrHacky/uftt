@@ -559,7 +559,12 @@ class SimpleBackend: public INetModule {
 								std::cout << "Warning: failed to join multicast group for " << addr << '\n';
 							else
 						#endif
-								throw e;
+						#ifdef __linux__
+							if (e.code().value() == EADDRINUSE)
+								std::cout << "Warning: failed to join multicast group for " << addr << '\n';
+							else
+						#endif
+							throw e;
 					}
 
 					newsock->bcst_ep = boost::asio::ip::udp::endpoint(bcaddr, UFTT_PORT);
