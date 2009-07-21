@@ -1,0 +1,46 @@
+our udp protocol so far uses the following start ids:
+0000 0001 0000 0000 0000 0000 0000 0000 (0x01000000)
+0000 0010 0000 0000 0000 0000 0000 0000 (0x02000000)
+0000 0011 0000 0000 0000 0000 0000 0000 (0x03000000)
+
+stun packets are guaranteed to start with the following: (t = type, l * 4 = length)
+00tt tttt tttt tttt llll llll llll ll00
+
+we'll use the following mask to check for old style id's (check &, == 0)
+1111 1100 1111 1111 1111 1111 1111 1111 (0xfcffffff)
+
+this is highly unlikely to match a stun response, as all responses
+have at least 1 mandatory attribute, so 'l' will not be zero
+
+then we'll use the following mask to check for stun packets (check &, == 0)
+1100 0000 0000 0000 0000 0000 0000 0011
+
+we'll have to make sure new id's will be identifyable without matching the first or second masks, could be something like:
+vvvv vvvv vvvv vvvv ???? ???? ???? tttt
+where vvvv will be the version of the packet, and tttt a type:
+tttt == ??00 -> not allowed to be able to distinguish it from STUN
+tttt == 0001 -> share request/response
+tttt == 0010 -> peer query/response
+tttt == 0011 -> semi-udp connection packet
+tttt == 0101 -> something else
+tttt == 0110 -> etc etc
+
+---------------------------------------
+
+0010 0100 0000 0000 0000 0001 0000 0001
+1100 0000 0000 0000 0000 0000 0000 0011
+
+0000 0011 0000 0000 0000 0000 1100 0000
+
+
+
+00tt tttt tttt tttt llll llll llll ll00
+
+1111 1111 2222 2222 3333 3333 4444 4444
+       xx
+
+- some stun provivers:
+stun01.sipphone.com
+larry.gloo.net
+stun01.newkinetics.com
+
