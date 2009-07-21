@@ -239,6 +239,17 @@ int imain( int argc, char **argv )
 	UFTTSettings settings;
 	settings.load();
 
+	std::string extrabuildpath;
+	std::string extrabuildname;
+	if (argc > 1 && string(argv[1]) == "--dotest") {
+		for (int i = 2; i < argc; ++i) {
+			if (string(argv[i]) == "test_extra_build") {
+				extrabuildname = argv[++i];
+				extrabuildpath = argv[++i];
+			}
+		}
+	}
+
 	waitonexit = true;
 	QTMain gui(argc, argv, &settings);
 
@@ -258,6 +269,8 @@ int imain( int argc, char **argv )
 
 		// kick off some async tasks (which hijack the disk io thread)
 		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
+		if (!extrabuildname.empty())
+			updateProvider.checkfile(core.get_disk_service(), run_service, work_service, extrabuildpath, extrabuildname, true);
 		if (argc > 2 && string(argv[1]) == "--delete")
 			AutoUpdater::remove(run_service, work_service, argv[2]);
 
