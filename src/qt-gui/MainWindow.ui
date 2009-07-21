@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>MainWindow</class>
- <widget class="QMainWindow" name="MainWindow" >
-  <property name="geometry" >
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,20 +10,12 @@
     <height>593</height>
    </rect>
   </property>
-  <property name="windowTitle" >
+  <property name="windowTitle">
    <string>UFTT</string>
   </property>
-  <widget class="QWidget" name="centralwidget" >
-   <property name="geometry" >
-    <rect>
-     <x>280</x>
-     <y>319</y>
-     <width>357</width>
-     <height>255</height>
-    </rect>
-   </property>
-   <widget class="QLabel" name="label_2" >
-    <property name="geometry" >
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
      <rect>
       <x>876</x>
       <y>9</y>
@@ -30,13 +23,13 @@
       <height>263</height>
      </rect>
     </property>
-    <property name="text" >
+    <property name="text">
      <string>!UFTT!</string>
     </property>
    </widget>
   </widget>
-  <widget class="QMenuBar" name="menubar" >
-   <property name="geometry" >
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
@@ -44,152 +37,136 @@
      <height>19</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menu_File" >
-    <property name="title" >
+   <widget class="QMenu" name="menu_File">
+    <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_Quit" />
+    <addaction name="action_Quit"/>
    </widget>
-   <widget class="QMenu" name="menu_View" >
-    <property name="title" >
+   <widget class="QMenu" name="menu_View">
+    <property name="title">
      <string>&amp;View</string>
     </property>
    </widget>
-   <widget class="QMenu" name="menu_Options" >
-    <property name="title" >
+   <widget class="QMenu" name="menu_Options">
+    <property name="title">
      <string>&amp;Options</string>
     </property>
-    <widget class="QMenu" name="menuCheckForUpdatesAutomatically" >
-     <property name="tearOffEnabled" >
+    <widget class="QMenu" name="menuCheckForUpdatesAutomatically">
+     <property name="tearOffEnabled">
       <bool>false</bool>
      </property>
-     <property name="title" >
+     <property name="title">
       <string>Check for Updates Automatically</string>
      </property>
-     <addaction name="actionUpdateNever" />
-     <addaction name="actionUpdateDaily" />
-     <addaction name="actionUpdateWeekly" />
-     <addaction name="actionUpdateMonthly" />
+     <addaction name="actionUpdateNever"/>
+     <addaction name="actionUpdateDaily"/>
+     <addaction name="actionUpdateWeekly"/>
+     <addaction name="actionUpdateMonthly"/>
     </widget>
-    <addaction name="actionEnableGlobalPeerfinder" />
-    <addaction name="actionEnableDownloadResume" />
-    <addaction name="separator" />
-    <addaction name="actionEnableAutoupdate" />
-    <addaction name="actionCheckForWebUpdates" />
-    <addaction name="menuCheckForUpdatesAutomatically" />
+    <addaction name="actionEnableGlobalPeerfinder"/>
+    <addaction name="actionEnableDownloadResume"/>
+    <addaction name="separator"/>
+    <addaction name="actionEnableAutoupdate"/>
+    <addaction name="actionCheckForWebUpdates"/>
+    <addaction name="menuCheckForUpdatesAutomatically"/>
    </widget>
-   <addaction name="menu_File" />
-   <addaction name="menu_View" />
-   <addaction name="menu_Options" />
+   <addaction name="menu_File"/>
+   <addaction name="menu_View"/>
+   <addaction name="menu_Options"/>
   </widget>
-  <widget class="QDockWidget" name="dockShares" >
-   <property name="geometry" >
-    <rect>
-     <x>0</x>
-     <y>19</y>
-     <width>629</width>
-     <height>294</height>
-    </rect>
-   </property>
-   <property name="features" >
+  <widget class="QDockWidget" name="dockShares">
+   <property name="features">
     <set>QDockWidget::AllDockWidgetFeatures</set>
    </property>
-   <property name="windowTitle" >
+   <property name="windowTitle">
     <string>Share List</string>
    </property>
-   <attribute name="dockWidgetArea" >
+   <attribute name="dockWidgetArea">
     <number>4</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_2" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>629</width>
-      <height>274</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" >
+   <widget class="QWidget" name="dockWidgetContents_2">
+    <layout class="QVBoxLayout">
      <item>
-      <widget class="QDragDropTreeWidget" name="listShares" >
-       <property name="selectionMode" >
+      <widget class="QDragDropTreeWidget" name="listShares">
+       <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>User</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Share Name</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Host</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Protocol</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>URL</string>
         </property>
        </column>
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" >
+      <layout class="QHBoxLayout">
        <item>
-        <widget class="QPushButton" name="buttonRefresh" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonRefresh">
+         <property name="text">
           <string>Refresh</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-refresh.png</normaloff>:/button/button-refresh.png</iconset>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonAdd1" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonAdd1">
+         <property name="text">
           <string>Add Share (dir)...</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-addsharedir.png</normaloff>:/button/button-addsharedir.png</iconset>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonAdd2" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonAdd2">
+         <property name="text">
           <string>Add Share(dir)...</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonAdd3" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonAdd3">
+         <property name="text">
           <string>Add Share (file)...</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
          </property>
         </widget>
        </item>
        <item>
         <spacer>
-         <property name="orientation" >
+         <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" stdset="0">
           <size>
            <width>40</width>
            <height>20</height>
@@ -198,51 +175,51 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLabel" name="lblNickName" >
-         <property name="text" >
+        <widget class="QLabel" name="lblNickName">
+         <property name="text">
           <string>Nickname:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="editNickName" />
+        <widget class="QLineEdit" name="editNickName"/>
        </item>
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" >
+      <layout class="QHBoxLayout">
        <item>
-        <widget class="QPushButton" name="buttonDownload" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonDownload">
+         <property name="text">
           <string>Download</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-download.png</normaloff>:/button/button-download.png</iconset>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLabel" name="label" >
-         <property name="text" >
+        <widget class="QLabel" name="label">
+         <property name="text">
           <string>To:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="DownloadEdit" >
-         <property name="text" >
+        <widget class="QLineEdit" name="DownloadEdit">
+         <property name="text">
           <string>C:\temp\</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonBrowse" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonBrowse">
+         <property name="text">
           <string>Browse...</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-browsedir.png</normaloff>:/button/button-browsedir.png</iconset>
          </property>
         </widget>
@@ -252,94 +229,62 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockWidgetDebug" >
-   <property name="geometry" >
-    <rect>
-     <x>635</x>
-     <y>19</y>
-     <width>282</width>
-     <height>294</height>
-    </rect>
-   </property>
-   <property name="windowTitle" >
+  <widget class="QDockWidget" name="dockWidgetDebug">
+   <property name="windowTitle">
     <string>Debug Log</string>
    </property>
-   <attribute name="dockWidgetArea" >
+   <attribute name="dockWidgetArea">
     <number>4</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_3" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>282</width>
-      <height>274</height>
-     </rect>
-    </property>
-    <layout class="QHBoxLayout" >
+   <widget class="QWidget" name="dockWidgetContents_3">
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QTextEdit" name="debugText" />
+      <widget class="QTextEdit" name="debugText"/>
      </item>
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockManualConnect" >
-   <property name="geometry" >
-    <rect>
-     <x>0</x>
-     <y>319</y>
-     <width>274</width>
-     <height>255</height>
-    </rect>
-   </property>
-   <property name="windowTitle" >
+  <widget class="QDockWidget" name="dockManualConnect">
+   <property name="windowTitle">
     <string>Manual Connect</string>
    </property>
-   <attribute name="dockWidgetArea" >
+   <attribute name="dockWidgetArea">
     <number>1</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>274</width>
-      <height>235</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" >
+   <widget class="QWidget" name="dockWidgetContents">
+    <layout class="QVBoxLayout">
      <item>
-      <layout class="QGridLayout" >
-       <item row="1" column="0" >
-        <widget class="QLineEdit" name="editManualPublish" >
-         <property name="text" >
+      <layout class="QGridLayout">
+       <item row="1" column="0">
+        <widget class="QLineEdit" name="editManualPublish">
+         <property name="text">
           <string>255.255.255.255</string>
          </property>
-         <property name="cursorPosition" >
+         <property name="cursorPosition">
           <number>0</number>
          </property>
         </widget>
        </item>
-       <item row="0" column="0" >
-        <widget class="QLineEdit" name="editManualQuery" >
-         <property name="text" >
+       <item row="0" column="0">
+        <widget class="QLineEdit" name="editManualQuery">
+         <property name="text">
           <string>255.255.255.255</string>
          </property>
-         <property name="cursorPosition" >
+         <property name="cursorPosition">
           <number>0</number>
          </property>
         </widget>
        </item>
-       <item row="0" column="1" >
-        <widget class="QPushButton" name="buttonManualQuery" >
-         <property name="text" >
+       <item row="0" column="1">
+        <widget class="QPushButton" name="buttonManualQuery">
+         <property name="text">
           <string>Query</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="1" >
-        <widget class="QPushButton" name="buttonManualPublish" >
-         <property name="text" >
+       <item row="1" column="1">
+        <widget class="QPushButton" name="buttonManualPublish">
+         <property name="text">
           <string>Publish</string>
          </property>
         </widget>
@@ -347,20 +292,20 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" >
+      <layout class="QHBoxLayout">
        <item>
-        <widget class="QLabel" name="label_3" >
-         <property name="text" >
+        <widget class="QLabel" name="label_3">
+         <property name="text">
           <string>Broadcast emulation:</string>
          </property>
         </widget>
        </item>
        <item>
         <spacer>
-         <property name="orientation" >
+         <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" stdset="0">
           <size>
            <width>40</width>
            <height>20</height>
@@ -369,8 +314,8 @@
         </spacer>
        </item>
        <item>
-        <widget class="QPushButton" name="buttonResolveBroadcast" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonResolveBroadcast">
+         <property name="text">
           <string>Resolve</string>
          </property>
         </widget>
@@ -378,26 +323,26 @@
       </layout>
      </item>
      <item>
-      <widget class="QTreeWidget" name="listBroadcastHosts" >
-       <property name="selectionMode" >
+      <widget class="QTreeWidget" name="listBroadcastHosts">
+       <property name="selectionMode">
         <enum>QAbstractItemView::SingleSelection</enum>
        </property>
-       <property name="selectionBehavior" >
+       <property name="selectionBehavior">
         <enum>QAbstractItemView::SelectItems</enum>
        </property>
-       <property name="rootIsDecorated" >
+       <property name="rootIsDecorated">
         <bool>false</bool>
        </property>
-       <property name="allColumnsShowFocus" >
+       <property name="allColumnsShowFocus">
         <bool>true</bool>
        </property>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Host/IP</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Resolved</string>
         </property>
        </column>
@@ -406,104 +351,88 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QDockWidget" name="dockTaskList" >
-   <property name="geometry" >
-    <rect>
-     <x>643</x>
-     <y>319</y>
-     <width>274</width>
-     <height>255</height>
-    </rect>
-   </property>
-   <property name="windowTitle" >
+  <widget class="QDockWidget" name="dockTaskList">
+   <property name="windowTitle">
     <string>Task List</string>
    </property>
-   <attribute name="dockWidgetArea" >
+   <attribute name="dockWidgetArea">
     <number>2</number>
    </attribute>
-   <widget class="QWidget" name="dockWidgetContents_4" >
-    <property name="geometry" >
-     <rect>
-      <x>0</x>
-      <y>20</y>
-      <width>274</width>
-      <height>235</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" >
+   <widget class="QWidget" name="dockWidgetContents_4">
+    <layout class="QVBoxLayout">
      <item>
-      <widget class="QTreeWidget" name="listTasks" >
+      <widget class="QTreeWidget" name="listTasks">
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Share Name</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Status</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Host</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>User</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Time</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>ETA</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Transferred</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Size</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Speed</string>
         </property>
        </column>
        <column>
-        <property name="text" >
+        <property name="text">
          <string>Queue</string>
         </property>
        </column>
       </widget>
      </item>
      <item>
-      <layout class="QHBoxLayout" >
+      <layout class="QHBoxLayout">
        <item>
-        <widget class="QPushButton" name="buttonClearCompletedTasks" >
-         <property name="text" >
+        <widget class="QPushButton" name="buttonClearCompletedTasks">
+         <property name="text">
           <string>Clear Completed</string>
          </property>
-         <property name="icon" >
-          <iconset resource="Icons/icons.qrc" >
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-clearcompleted.png</normaloff>:/button/button-clearcompleted.png</iconset>
          </property>
         </widget>
        </item>
        <item>
         <spacer>
-         <property name="orientation" >
+         <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
-         <property name="sizeHint" stdset="0" >
+         <property name="sizeHint" stdset="0">
           <size>
            <width>40</width>
            <height>20</height>
@@ -516,79 +445,70 @@
     </layout>
    </widget>
   </widget>
-  <widget class="QStatusBar" name="statusBar" >
-   <property name="geometry" >
-    <rect>
-     <x>0</x>
-     <y>574</y>
-     <width>917</width>
-     <height>19</height>
-    </rect>
-   </property>
-  </widget>
-  <action name="action_Quit" >
-   <property name="text" >
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="action_Quit">
+   <property name="text">
     <string>&amp;Quit</string>
    </property>
   </action>
-  <action name="actionEnableAutoupdate" >
-   <property name="checkable" >
+  <action name="actionEnableAutoupdate">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Enable &amp;Automatic Updates from Peers</string>
    </property>
   </action>
-  <action name="actionCheckForWebUpdates" >
-   <property name="text" >
+  <action name="actionCheckForWebUpdates">
+   <property name="text">
     <string>Check for Web Updates Now</string>
    </property>
   </action>
-  <action name="actionUpdateNever" >
-   <property name="checkable" >
+  <action name="actionUpdateNever">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Never</string>
    </property>
   </action>
-  <action name="actionUpdateDaily" >
-   <property name="checkable" >
+  <action name="actionUpdateDaily">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Daily</string>
    </property>
   </action>
-  <action name="actionUpdateWeekly" >
-   <property name="checkable" >
+  <action name="actionUpdateWeekly">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Weekly</string>
    </property>
   </action>
-  <action name="actionUpdateMonthly" >
-   <property name="checkable" >
+  <action name="actionUpdateMonthly">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Monthly</string>
    </property>
   </action>
-  <action name="actionEnableGlobalPeerfinder" >
-   <property name="checkable" >
+  <action name="actionEnableGlobalPeerfinder">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Enable &amp;Global Peer Discovery</string>
    </property>
   </action>
-  <action name="actionEnableDownloadResume" >
-   <property name="checkable" >
+  <action name="actionEnableDownloadResume">
+   <property name="checkable">
     <bool>true</bool>
    </property>
-   <property name="text" >
+   <property name="text">
     <string>Enable Download Resume (Experimental)</string>
    </property>
   </action>
@@ -607,7 +527,7 @@
   <tabstop>DownloadEdit</tabstop>
  </tabstops>
  <resources>
-  <include location="Icons/icons.qrc" />
+  <include location="Icons/icons.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -616,11 +536,11 @@
    <receiver>MainWindow</receiver>
    <slot>close()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>-1</x>
      <y>-1</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>394</x>
      <y>286</y>
     </hint>
