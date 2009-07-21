@@ -100,12 +100,17 @@ class UFTTSettings {
 			}
 			if (version >=  4) ar & NVP("dockinfo", dockinfo);
 
+			if (version <=  9) { // force new defaults for old versions
+				experimentalresume = true;
+				autoupdate = true;
+			}
+
 			//if (version >=  4 && version < 6) ar & NVP("dockinfo", dockinfo);
 			//if (version >=  6) ar & NVP("dockinfo", vector_as_string(dockinfo));
 		}
 };
 
-BOOST_CLASS_VERSION(UFTTSettings, 9)
+BOOST_CLASS_VERSION(UFTTSettings, 10)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

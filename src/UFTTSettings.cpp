@@ -18,7 +18,7 @@ UFTTSettings::UFTTSettings()
 	sizex = sizey = 0;
 
 	dl_path = "C:/temp";
-	autoupdate = false;
+	autoupdate = true;
 	webupdateinterval = 2; // default to weekly update checks
 	lastupdate = boost::posix_time::ptime(boost::posix_time::min_date_time);
 
@@ -27,7 +27,7 @@ UFTTSettings::UFTTSettings()
 
 	nickname = platform::getUserName();
 
-	experimentalresume = false;
+	experimentalresume = true;
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)
