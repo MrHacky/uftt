@@ -125,6 +125,10 @@ class UFTTCore {
 		// Service getters
 		boost::asio::io_service& get_io_service();
 		services::diskio_service& get_disk_service();
+
+		// Slightly hacky error passing to GUI
+		int error_state; // 0 == none, 1 == warning, 2 == error
+		std::string error_string;
 };
 
 #endif//UFTT_CORE_H

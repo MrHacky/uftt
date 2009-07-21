@@ -608,6 +608,8 @@ class SimpleBackend: public INetModule {
 			, stun_server_found(false)
 			, stun_retries(0)
 		{
+			bool workv4 = false;
+			bool workv6 = false;
 			udp_info_v4 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v4, true));
 			try {
 				udp_sock_v4.open(boost::asio::ip::udp::v4());
@@ -616,6 +618,7 @@ class SimpleBackend: public INetModule {
 				udp_sock_v4.set_option(boost::asio::ip::udp::socket::broadcast(true));
 
 				start_udp_receive(udp_info_v4, recv_buf_v4, &recv_peer_v4);
+				workv4 = true;
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
 			}
@@ -632,8 +635,14 @@ class SimpleBackend: public INetModule {
 				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
 				start_udp_receive(udp_info_v6, recv_buf_v6, &recv_peer_v6);
+				workv6 = true;
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv6 UDP socket: " << e.what() << "\n";
+			}
+
+			if (!workv4 && !workv6) {
+				core->error_state = 2;
+				core->error_string = "Failed to initialize network layer, you probably already have an UFTT instance running.";
 			}
 
 			udp_conn_service.reset(new UDPConnService(service, udp_info_v4->sock));

@@ -10,6 +10,7 @@ typedef boost::shared_ptr<INetModule> INetModuleRef;
 UFTTCore::UFTTCore(UFTTSettings& settings_)
 : settings(settings_)
 , disk_service(io_service)
+, error_state(0)
 {
 	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)

@@ -246,29 +246,31 @@ int imain( int argc, char **argv )
 
 	UFTTCore core(settings);
 
-	gui.BindEvents(&core);
+	try {
+		gui.BindEvents(&core);
 
-	if (madeConsole)
-		platform::freeConsole();
+		if (madeConsole)
+			platform::freeConsole();
 
-	// get services
-	boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
-	boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
+		// get services
+		boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
+		boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
 
-	// kick off some async tasks (which hijack the disk io thread)
-	updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
-	if (argc > 2 && string(argv[1]) == "--delete")
-		AutoUpdater::remove(run_service, work_service, argv[2]);
+		// kick off some async tasks (which hijack the disk io thread)
+		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
+		if (argc > 2 && string(argv[1]) == "--delete")
+			AutoUpdater::remove(run_service, work_service, argv[2]);
 
-	int ret = gui.run();
+		int ret = gui.run();
 
-	settings.save();
+		settings.save();
 
-	// hax...
-
-	exit(ret);
-
-	return ret;
+		exit(ret); // hax
+		return ret;
+	} catch (int i) {
+		exit(i); // hax
+		return i;
+	}
 }
 
 int main( int argc, char **argv ) {

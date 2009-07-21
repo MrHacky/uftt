@@ -597,6 +597,16 @@ void MainWindow::SetBackend(UFTTCore* be)
 	backend->connectSigNewTask(
 		marshaller.wrap(boost::bind(&MainWindow::new_task, this, _1))
 	);
+
+	if (backend->error_state == 2) {
+		QMessageBox::critical( 0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
+		throw int(1); // thrown integers will quit application with integer as exit code
+		//throw std::runtime_error(std::string("Fatal Error: ") + backend->error_string);
+	}
+
+	if (backend->error_state == 1) {
+		QMessageBox::warning( 0, "UFTT", QString::fromStdString(backend->error_string));
+	}
 }
 
 void MainWindow::on_buttonManualQuery_clicked()
