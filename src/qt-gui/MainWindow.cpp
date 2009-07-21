@@ -627,13 +627,13 @@ void MainWindow::on_buttonManualPublish_clicked()
 
 void MainWindow::on_actionAboutUFTT_triggered()
 {
-    QMessageBox::about( this, "About UFTT", QString() +
-        "<h3>UFTT - Ultimate File Transfer Tool</h3>" +
+	QMessageBox::about( this, "About UFTT", QString() +
+		"<h3>UFTT - Ultimate File Transfer Tool</h3>" +
 		"<p>A simple no-nonsense tool for transferring files</p>" +
 		"<p>Build number: " + QString::fromStdString(thebuildstring) + "</p>" +
-//        "Copyright 1991-2003 Such-and-such. "
-//        "Licenced under GPL\n\n"
-        "<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );
+		//"Copyright 1991-2003 Such-and-such. "
+		//"Licenced under GPL\n\n"
+		"<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );
 }
 
 void MainWindow::on_actionAboutQt_triggered()
