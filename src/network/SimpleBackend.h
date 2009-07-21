@@ -42,9 +42,10 @@ struct UDPSockInfo {
 	boost::asio::ip::udp::endpoint bcst_ep;
 
 	bool is_v4;
+	bool is_main;
 
 	UDPSockInfo(boost::asio::ip::udp::socket& nsock, bool is_v4_)
-	: sock(nsock), is_v4(is_v4_)
+	: sock(nsock), is_v4(is_v4_), is_main(false)
 	{};
 };
 typedef boost::shared_ptr<UDPSockInfo> UDPSockInfoRef;
@@ -505,10 +506,11 @@ class SimpleBackend: public INetModule {
 				}
 			} else {
 				if (ep == uftt_bcst_ep) {
-					send_udp_packet_to(si, si->bcst_ep, buf, err, flags);
-					BOOST_FOREACH(const boost::asio::ip::udp::endpoint& fpep, foundpeers) {
-						send_udp_packet_to(si, fpep, buf, err, flags);
-					}
+					if (!si->is_main)
+						send_udp_packet_to(si, si->bcst_ep, buf, err, flags);
+					else
+						BOOST_FOREACH(const boost::asio::ip::udp::endpoint& fpep, foundpeers)
+							send_udp_packet_to(si, fpep, buf, err, flags);
 				} else
 					send_udp_packet_to(si, ep, buf, err, flags);
 			}
@@ -618,6 +620,10 @@ class SimpleBackend: public INetModule {
 				udp_sock_v4.set_option(boost::asio::ip::udp::socket::broadcast(true));
 
 				start_udp_receive(udp_info_v4, recv_buf_v4, &recv_peer_v4);
+
+				udpsocklist[boost::asio::ip::address_v4::any()] = udp_info_v4;
+				udp_info_v4->is_main = true;
+
 				workv4 = true;
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv4 UDP socket: " << e.what() << "\n";
@@ -635,6 +641,10 @@ class SimpleBackend: public INetModule {
 				udp_sock_v6.set_option(boost::asio::ip::multicast::enable_loopback(true));
 
 				start_udp_receive(udp_info_v6, recv_buf_v6, &recv_peer_v6);
+
+				udpsocklist[boost::asio::ip::address_v6::any()] = udp_info_v6;
+				udp_info_v6->is_main = true;
+
 				workv6 = true;
 			} catch (std::exception& e) {
 				std::cout << "Failed to initialise IPv6 UDP socket: " << e.what() << "\n";
