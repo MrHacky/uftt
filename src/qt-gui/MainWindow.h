@@ -35,6 +35,11 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QMarshaller marshaller;
 		QSystemTrayIcon* trayicon;
 
+		uint32 timerid;
+		bool isreallyactive;
+
+		void timerLostFocus(uint32 tid);
+
 		void addLocalShare(std::string url);
 		void setUpdateInterval(int i);
 		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
@@ -53,6 +58,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDragEnterTriggered(QDragEnterEvent* evt);
 		void onDragMoveTriggered(QDragMoveEvent* evt);
 		void onDropTriggered(QDropEvent* evt);
+		void onFocusChanged(QWidget* old, QWidget* now);
 
 	public:
 		MainWindow(UFTTSettings& settings_);

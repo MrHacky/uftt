@@ -17,7 +17,7 @@ class QTImpl {
 		QTImpl( int& argc, char **argv, UFTTSettings& settings)
 			: app(argc, argv), wnd(settings)
 		{
-
+			QObject::connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)), &wnd, SLOT(onFocusChanged(QWidget*, QWidget*)));
 		};
 
 	private:

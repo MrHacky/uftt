@@ -33,6 +33,7 @@
 #include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
+#include "../util/asio_timer_oneshot.h"
 
 #include "../Globals.h"
 
@@ -81,6 +82,8 @@ public:
 
 MainWindow::MainWindow(UFTTSettings& settings_)
 : settings(settings_)
+, isreallyactive(false)
+, timerid(0)
 {
 	setupUi(this);
 
@@ -248,19 +251,39 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
 {
 	switch (reason) {
+		case QSystemTrayIcon::Trigger: {
+		}; break;
 		case QSystemTrayIcon::DoubleClick: {
-			if (this->isVisible()) {
+			if (isreallyactive) {
 				this->setVisible(false);
+				this->isreallyactive = false;
 			} else {
 				if (this->isMinimized()) this->showNormal();
 				this->setVisible(true);
 				this->activateWindow();
 				this->raise();
 			}
+			++timerid;
 		}; break;
 		default: /* nothing */ ;
 	}
+}
 
+void MainWindow::onFocusChanged(QWidget* old, QWidget* now)
+{
+	++timerid;
+	if (this->isActiveWindow())
+		isreallyactive = true;
+	else if (isreallyactive)
+		asio_timer_oneshot(backend->get_io_service(), 500, boost::bind(&MainWindow::timerLostFocus, this, timerid));
+}
+
+void MainWindow::timerLostFocus(uint32 tid)
+{
+	if (tid == timerid) {
+		++timerid;
+		isreallyactive = false;
+	}
 }
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
@@ -287,6 +310,9 @@ void MainWindow::hideEvent(QHideEvent * evnt)
 {
 	// propagate to parent
 	QMainWindow::hideEvent(evnt);
+
+	this->isreallyactive = false;
+	++timerid;
 
 	if (evnt->type() == QEvent::Hide && this->isMinimized() && trayicon->isVisible()) {
 		// minimize to tray
