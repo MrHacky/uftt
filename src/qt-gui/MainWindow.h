@@ -78,6 +78,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_actionEnableAutoupdate_toggled(bool);
 		void on_actionCheckForWebUpdates_triggered();
 
+		void on_actionAboutUFTT_triggered();
+		void on_actionAboutQt_triggered();
+
 		void on_buttonClearCompletedTasks_clicked();
 		void on_listBroadcastHosts_itemChanged(QTreeWidgetItem* item, int column);
 

@@ -122,7 +122,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 		if((stylename != "QCleanlooksStyle") && (stylename != "QGtkStyle")) {
 			bar->setContentsMargins( left,  top,  right,  bottom);
 		}
-		bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		//bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
 		QLabel* imagelabel = new QLabel();
 		//QImage image1(":/status/status-ok.png");
 		//imagelabel->setPixmap(QPixmap::fromImage(image1));
@@ -241,9 +241,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 
 		connect(trayicon, SIGNAL(activated(QSystemTrayIcon::ActivationReason))  , this, SLOT(handle_trayicon_activated(QSystemTrayIcon::ActivationReason)));
 
-#ifndef Q_WS_WIN
 		this->setWindowIcon(*uftticon);
-#endif
 	}
 }
 
@@ -625,6 +623,22 @@ void MainWindow::on_buttonManualPublish_clicked()
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	}
+}
+
+void MainWindow::on_actionAboutUFTT_triggered()
+{
+    QMessageBox::about( this, "About UFTT", QString() +
+        "<h3>UFTT - Ultimate File Transfer Tool</h3>" +
+		"<p>A simple no-nonsense tool for transferring files</p>" +
+		"<p>Build number: " + QString::fromStdString(thebuildstring) + "</p>" +
+//        "Copyright 1991-2003 Such-and-such. "
+//        "Licenced under GPL\n\n"
+        "<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );
+}
+
+void MainWindow::on_actionAboutQt_triggered()
+{
+	QMessageBox::aboutQt(this);
 }
 
 void MainWindow::on_actionEnableAutoupdate_toggled(bool value)

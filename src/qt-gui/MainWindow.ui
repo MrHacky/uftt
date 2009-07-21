@@ -71,9 +71,17 @@
     <addaction name="actionCheckForWebUpdates"/>
     <addaction name="menuCheckForUpdatesAutomatically"/>
    </widget>
+   <widget class="QMenu" name="menu_Help">
+    <property name="title">
+     <string>&amp;Help</string>
+    </property>
+    <addaction name="actionAboutUFTT"/>
+    <addaction name="actionAboutQt"/>
+   </widget>
    <addaction name="menu_File"/>
    <addaction name="menu_View"/>
    <addaction name="menu_Options"/>
+   <addaction name="menu_Help"/>
   </widget>
   <widget class="QDockWidget" name="dockShares">
    <property name="features">
@@ -510,6 +518,16 @@
    </property>
    <property name="text">
     <string>Enable Download Resume (Experimental)</string>
+   </property>
+  </action>
+  <action name="actionAboutUFTT">
+   <property name="text">
+    <string>&amp;About UFTT</string>
+   </property>
+  </action>
+  <action name="actionAboutQt">
+   <property name="text">
+    <string>About &amp;Qt</string>
    </property>
   </action>
  </widget>
