@@ -246,14 +246,41 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 
 		this->setWindowIcon(*uftticon);
 	}
+
+	traymenu = new QMenu("tray menu", this);
+	traymenu->addAction(actionSingleClickToActivateTrayIcon);
+	traymenu->addAction(actionDoubleClickToActivateTrayIcon);
+	traymenu->addSeparator();
+	traymenu->addAction(action_Quit);
+
+	setTrayDoubleClick(settings.traydoubleclick);
+}
+
+void MainWindow::setTrayDoubleClick(bool b)
+{
+	actionSingleClickToActivateTrayIcon->setChecked(!b);
+	actionDoubleClickToActivateTrayIcon->setChecked(b);
+
+	settings.traydoubleclick = b;
+}
+
+void MainWindow::on_actionSingleClickToActivateTrayIcon_toggled(bool b)
+{
+	if (b) setTrayDoubleClick(false);
+}
+
+void MainWindow::on_actionDoubleClickToActivateTrayIcon_toggled(bool b)
+{
+	if (b) setTrayDoubleClick(true);
 }
 
 void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
 {
 	switch (reason) {
-		case QSystemTrayIcon::Trigger: {
-		}; break;
+		case QSystemTrayIcon::Trigger:
 		case QSystemTrayIcon::DoubleClick: {
+			if (settings.traydoubleclick && reason == QSystemTrayIcon::Trigger) return;
+			if (!settings.traydoubleclick && reason == QSystemTrayIcon::DoubleClick) return;
 			if (isreallyactive) {
 				this->setVisible(false);
 				this->isreallyactive = false;
@@ -264,6 +291,9 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 				this->raise();
 			}
 			++timerid;
+		}; break;
+		case QSystemTrayIcon::Context: {
+			traymenu->exec(QCursor::pos());
 		}; break;
 		default: /* nothing */ ;
 	}

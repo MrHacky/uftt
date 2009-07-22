@@ -530,6 +530,22 @@
     <string>About &amp;Qt</string>
    </property>
   </action>
+  <action name="actionSingleClickToActivateTrayIcon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Single click to activate tray icon</string>
+   </property>
+  </action>
+  <action name="actionDoubleClickToActivateTrayIcon">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Double click to activate tray icon</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>

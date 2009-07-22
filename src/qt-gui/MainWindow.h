@@ -34,6 +34,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		bool ctwiu;
 		QMarshaller marshaller;
 		QSystemTrayIcon* trayicon;
+		QMenu* traymenu;
 
 		uint32 timerid;
 		bool isreallyactive;
@@ -42,6 +43,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void addLocalShare(std::string url);
 		void setUpdateInterval(int i);
+		void setTrayDoubleClick(bool b);
 		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
 
 		void new_autoupdate(const ShareInfo& info);
@@ -94,6 +96,9 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_actionUpdateDaily_toggled(bool);
 		void on_actionUpdateWeekly_toggled(bool);
 		void on_actionUpdateMonthly_toggled(bool);
+
+		void on_actionSingleClickToActivateTrayIcon_toggled(bool);
+		void on_actionDoubleClickToActivateTrayIcon_toggled(bool);
 
 		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
 		void on_listShares_itemActivated(QTreeWidgetItem*, int);

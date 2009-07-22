@@ -28,6 +28,8 @@ UFTTSettings::UFTTSettings()
 	nickname = platform::getUserName();
 
 	experimentalresume = true;
+
+	traydoubleclick = true;
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)
