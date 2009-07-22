@@ -2,14 +2,22 @@
 -----BEGIN RSA CHECKED CONTENT-----
 </div>
 <p>
+<a href="http://uftt.googlecode.com/files/uftt-xp-r610.exe">uftt-win32.nt-static-1.30.610</a>
+<p>
+<a href="http://uftt.googlecode.com/files/uftt-9x-r610.exe">uftt-win32.9x-static-1.30.610</a>
+<p>
+<a href="http://uftt.googlecode.com/svn/files/uftt-0.1.610-Linux.deb.signed">uftt-linux.i386-deb-1.30.610</a>
+<p>
 <a href="http://uftt.googlecode.com/files/uftt-xp-r482.exe">uftt-win32.nt-static-1.26.482</a>
 <p>
 <a href="http://uftt.googlecode.com/files/uftt-9x-r482.exe">uftt-win32.9x-static-1.26.482</a>
+<p>
+<a href="http://uftt.googlecode.com/svn/files/uftt-0.1.343-Linux.deb.signed">uftt-linux.i386-deb-1.16.343</a>
 <div style="display:none;">
 -----END RSA CHECKED CONTENT-----
 </div>
 <div style="display:none;">
 -----BEGIN RSA SIGNIATURE-----
-Si+O4il4rx1fvgOiO5jbgX/TdNbq2nSS7BeZVaoRHZ81VuRYMVJLBqyxzGLzl72Lz+JpQFwjr3vRLWaOU9O1x9gzmE3ip3ajdeQ3dup47d6mMvkOMtV5AOVuFBpYWk90+IVaoPJI17eEolOhyDnSz4MdbyknLL+Ygix/blzE3nBIMDAFa5CCpuJ/+qYkPkgXKElB3LY2NpoKC0+MfLdiXgJNTZYJ4/N/nUF7PRvEeZ0wJHIh1GWpMMOOMbySYglnt7cKOkqwrvsySyUeubCu/t34JbckHt+9vTxOlUdjI4PVynUlMgZUtlV+iq0QUEH7N3T8L4ACzrRq+8wLWMCzCb7ZyuJNu9QNsTYiMftFFfi5sImF2Fv9uwzJUdBl8fWuswlSVXuzph/Htktzi4K2YRmSAKqGtBfee8kzYqW8d7SEArdPuMPJ8Ys/nU/i5I3ndDXNbtDCNZ2MOUC/LKrKpa75OePgVbML9gabCNHk/rR8wKkP7uLr8WL5r5hBuNuYQ2frDZwCe+6dhjyHXb8JfXy8pRuP7voHVqa7jU9iREm/4QmzK5jMaM8LUE4r1W75XQw7EE02+Zpbx4hVz1qogOEQY4vVm6W/VPF1d9U5cbmt8ZksISUaWyJ3DPE7pvj/cb9KJOO1wjIwQkCrNFk1u/wpr0UtBn3/GbEdHuViBBQ=
+H7nukD8zIIM+Gw66LwtWMafSlEHOFWFdLlPZrFdvrnSPR4g9QhrZW1Y13YnmGM+BBFT7RQ3f6g/yD+/eA481RcvaNSLA49evxqOuPNr6M1DPBNkWqLxsJX/vEMARJN35zwzJ+DkM8s4DqfasClp+2Ewdp4w3Mz+UAABYKPEktX+kf+v1l2GDerViNF5YPj843A+qpO/SCW0EelQMFdOizOZ5Y/QA0P/wueV2R9NoncjD63k4lC4bHm1o+hKwy/9JGBts207k7Rg2NnoIjCWHw7iVEG/MH08C9z6fw3hhugYsijwjJCptW1s2CypPEQ2Ep5ZwkdRhG5Ka6HRwgvrnD1aBFgl9o+6/pRfsnDo9yel2N14McOzdbYLKDJ2lIHcHnUCUo1GwuiH5aO5TZje6SBYBVlsFXTMh7B/AkF0BhKgnI5IQfQ3tuf0hwJcxXzDuJrT13E/lrTKWBFaO0YLjPsxScgXuiDhJuKGYS2UnIyJsXsjCyRI6A/z9oi2safZIqZwCYQ//jAIBgimbU+Oue1ucfjpFeEBiqextkGJft3yWy5JYMOKmMxAyVLfZbMF3vMTkDj/LevgblIi/axEVW4hv8rWRTzBa1m/pRuvMQxoSf3tFI1BDBr4uDQXFgy8NXQk3DXWpqZLkqfAgSdf3/eu0KUDUDaVA/aRFX2eaizg=
 -----END RSA SIGNIATURE-----
 </div>
