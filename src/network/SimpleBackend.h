@@ -200,6 +200,7 @@ class SimpleBackend: public INetModule {
 			udp_send_buf[3] = (1 >> 24) & 0xff;
 			udp_send_buf[4] = 4;
 
+			std::cout << "Finding peers...\n";
 			boost::system::error_code err;
 			BOOST_FOREACH(const boost::asio::ip::udp::endpoint& ep, trypeers) {
 				try {
@@ -207,6 +208,7 @@ class SimpleBackend: public INetModule {
 				} catch (...) {
 				}
 			}
+			std::cout << "Finding peers...Done\n";
 		}
 
 		void start_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer)
@@ -487,7 +489,10 @@ class SimpleBackend: public INetModule {
 		template<typename BUF>
 		void send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
-			std::cout << "Send udp packet to " << ep << "(" << si->is_v4 << ")\n";
+			std::cout << "Send udp packet to " << ep;
+			if (boost::asio::buffer_size(buf) >= 5)
+				std::cout << " = " << (int)boost::asio::buffer_cast<const uint8*>(buf)[4];
+			std::cout << " (" << si->is_v4 << ")\n";
 			if (si->is_v4 == ep.address().is_v4())
 				send_udp_packet_to(si->sock, ep, buf, err, flags);
 			else
