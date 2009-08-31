@@ -203,7 +203,7 @@ class SimpleBackend: public INetModule {
 			boost::system::error_code err;
 			BOOST_FOREACH(const boost::asio::ip::udp::endpoint& ep, trypeers) {
 				try {
-					send_udp_packet(uftt_bcst_if, ep, boost::asio::buffer(udp_send_buf), err);
+					send_udp_packet(udp_info_v4, ep, boost::asio::buffer(udp_send_buf), err);
 				} catch (...) {
 				}
 			}
