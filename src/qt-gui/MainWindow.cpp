@@ -240,7 +240,6 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 		uftticon->addFile(":/icon/uftt-48x48.png");
 		// TODO: add 22x22 icon as that apparently is preferred for trayicons on linux
 		trayicon = new QSystemTrayIcon(*uftticon, this);
-		trayicon->show();
 
 		connect(trayicon, SIGNAL(activated(QSystemTrayIcon::ActivationReason))  , this, SLOT(handle_trayicon_activated(QSystemTrayIcon::ActivationReason)));
 
@@ -780,6 +779,7 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 void MainWindow::pre_show() {
 	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
 	this->editNickName->setText(QString::fromStdString(settings.nickname));
+	trayicon->show();
 }
 
 void MainWindow::post_show() {
