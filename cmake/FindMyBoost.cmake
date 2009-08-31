@@ -21,9 +21,10 @@ GLOB_PATHS(BOOST_SEARCH_PATHS
 		/usr/local/include
 		"C:/Program Files/boost"
 		"C:/Program Files"
+		"D:/Program Files/boost"
+		"D:/Program Files"
 		"C:/Boost"
 		"D:/Prog/Boost"
-
 )
 
 FIND_PATH(BOOST_INCLUDE_DIR
