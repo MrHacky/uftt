@@ -115,10 +115,17 @@ IF(EXISTS "${CMAKE_ROOT}/Modules/CPack.cmake")
 	SET(CPACK_SOURCE_PACKAGE_FILE_NAME "uftt-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 	SET(CPACK_PACKAGE_EXECUTABLES "uftt" "UFTT Executable")
 
+	SET(CPACK_RPM_PACKAGE_ARCHITECTURE i386)
+	SET(CPACK_RPM_PACKAGE_LICENSE GLPV2)
+
 	SET(CPACK_DEBIAN_PACKAGE_DEPENDS
 		#"libc6, libfontconfig1, libfreetype6, libgcc1, libice6, libpng12-0, libqt4-core, libqt4-gui, libsm6, libssl0.9.8, libstdc++6, libx11-6, libxcursor1, libxext6, libxi6, libxinerama1, libxrandr2, libxrender1, zlib1g"
-		"libc6, libgcc1, libstdc++6, libqt4-gui, libssl0.9.8"
+		"libc6, libgcc1, libstdc++6, libqt4-gui >= (4.4.0), libssl0.9.8"
 		#old:	"libc6 (>= 2.3.1-6), libgcc1 (>= 1:3.4.2-12)"
+	)
+
+	SET(CPACK_RPM_PACKAGE_REQUIRES
+		"requires: glibc, libgcc, libstdc++6, libqt4 >= 4.4.0, libopenssl0_9_8"
 	)
 
 	IF(UNIX)
