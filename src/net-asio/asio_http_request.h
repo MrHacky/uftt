@@ -20,6 +20,8 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include "../Types.h"
+
+#include <boost/algorithm/string/predicate.hpp>
 namespace boost { namespace asio {
 
 class http_request
@@ -29,6 +31,7 @@ public:
       const std::string& server, const std::string& path, uint16 port_ = 80)
     : resolver_(io_service),
       socket_(io_service)
+	, totalsize(0)
 	{
 		doconnect(server, path, port_);
 	}
@@ -85,7 +88,7 @@ public:
           boost::asio::placeholders::iterator));
   }
 
-	void setHandler(boost::function<void(boost::system::error_code)> handler_) {
+	void setHandler(boost::function<void(int, boost::system::error_code)> handler_) {
 		handler = handler_;
 	}
 
@@ -195,13 +198,15 @@ private:
   {
     if (!err)
     {
-      // Process the response headers.
-      std::istream response_stream(&response_);
-      std::string header;
-      while (std::getline(response_stream, header) && header != "\r")
-        /*std::cout << header << "\n"*/;
-      //std::cout << "\n";
-
+		// Process the response headers.
+		std::istream response_stream(&response_);
+		std::string header;
+		while (std::getline(response_stream, header) && header != "\r") {
+			if (boost::algorithm::istarts_with(header, "Content-Length: ")) {
+				std::string num(header.begin()+16, header.end()-1);
+				totalsize = atoi(num.c_str());
+			}
+		}
       // Write whatever content we already have to output.
 	  if (response_.size() > 0) {
 		std::stringstream ss;
@@ -209,14 +214,11 @@ private:
 
 		for (uint i = 0; i < ss.str().size(); ++i)
 			content.push_back(ss.str()[i]);
-
+		handler(ss.str().size(), boost::system::error_code());
 	  }
 
       // Start reading remaining data until EOF.
-      boost::asio::async_read(socket_, response_,
-          boost::asio::transfer_at_least(1),
-          boost::bind(&http_request::handle_read_content, this,
-            boost::asio::placeholders::error, 0, false));
+	  handle_read_content(boost::system::error_code(), 0);
     }
     else
     {
@@ -224,21 +226,12 @@ private:
     }
   }
 
-  void handle_read_content(const boost::system::error_code& err, size_t len, bool usebuf)
+  void handle_read_content(const boost::system::error_code& err, size_t len)
   {
     if (!err)
     {
-      // Write all of the data that has been read so far.
-		if (!usebuf) {
-			std::stringstream ss;
-			ss << &response_;
-
-			for (uint i = 0; i < ss.str().size(); ++i)
-				bigbuf[i] = ss.str()[i];
-			len = ss.str().size();
-		}
-
 		//std::cout << "len: " << len << '\n';
+		handler(len, boost::system::error_code());
 
 		content.insert(content.end(), bigbuf, bigbuf + len);
 		//if (!ss.str().empty())
@@ -248,7 +241,7 @@ private:
       // Continue reading remaining data until EOF.
 		socket_.async_receive(boost::asio::buffer(bigbuf),
 			boost::bind(&http_request::handle_read_content, this,
-			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred, true)
+			boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred)
 			);
 
 //      boost::asio::async_read(socket_, response_,
@@ -259,9 +252,9 @@ private:
     else if (err != boost::asio::error::eof)
     {
       std::cout << "Error handle_read_content: " << err << "\n";
-	  handler(err);
+	  handler(-1, err);
 	} else {
-		handler(boost::system::error_code());
+		handler(-1, boost::system::error_code());
 	}
   }
 
@@ -270,9 +263,12 @@ private:
   boost::asio::ip::tcp::socket socket_;
   boost::asio::streambuf request_;
   boost::asio::streambuf response_;
-  boost::function<void(boost::system::error_code)> handler;
+  boost::function<void(int, boost::system::error_code)> handler;
   std::vector<uint8> content;
   uint16 port;
+
+public:
+  uint32 totalsize;
 };
 
 } } // namespaces

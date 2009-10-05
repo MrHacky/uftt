@@ -103,8 +103,10 @@ class SimpleBackend: public INetModule {
 		bool stun_server_found;
 		int stun_retries;
 
-		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request)
+		void handle_peerfinder_query(const boost::system::error_code& e, boost::shared_ptr<boost::asio::http_request> request, int prog)
 		{
+			if (prog >= 0)
+				return;
 			if (e) {
 				std::cout << "Failed to get simple global peer list: " << e.message() << '\n';
 			} else {
@@ -164,7 +166,7 @@ class SimpleBackend: public INetModule {
 					url += STRFORMAT("&port=%d", stun_endpoint.port());
 
 					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
-					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, boost::asio::placeholders::error, request));
+					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, _2, request, _1));
 				}
 			}
 		}

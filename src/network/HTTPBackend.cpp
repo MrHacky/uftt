@@ -99,11 +99,13 @@ void HTTPBackend::check_for_web_updates()
 	//std::string weburl = "http://localhost:8080/site/autoupdate.php";
 
 	HTTPTaskRef task(new HTTPTask(core, weburl));
-	task->req.setHandler(boost::bind(&HTTPBackend::web_update_page_handler, this, boost::asio::placeholders::error, task));
+	task->req.setHandler(boost::bind(&HTTPBackend::web_update_page_handler, this, _2, task, _1));
 }
 
-void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, HTTPTaskRef task)
+void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, HTTPTaskRef task, int prog)
 {
+	if (prog >= 0)
+		return;
 	if (err) {
 		std::cout << "Error checking for web updates: " << err.message() << '\n';
 	} else {
@@ -174,15 +176,19 @@ void HTTPBackend::do_start_download(const ShareID& sid, const boost::filesystem:
 	tasklist.push_back(task);
 	sig_new_task(task->info);
 
-	task->req.setHandler(boost::bind(&HTTPBackend::handle_download_done, this, _1, task));
+	task->req.setHandler(boost::bind(&HTTPBackend::handle_download_progress, this, _2, task, _1));
 }
 
-void HTTPBackend::handle_download_done(const boost::system::error_code& err, HTTPTaskRef task)
+void HTTPBackend::handle_download_progress(const boost::system::error_code& err, HTTPTaskRef task, int prog)
 {
-	if (err) {
+	if (prog >= 0) {
+		task->info.transferred += prog;
+		task->info.size = task->req.totalsize;
+	} else if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
 		task->info.status = STRFORMAT("Failed: %s", err);
 	} else {
+		task->info.size = task->req.totalsize;
 		task->info.transferred = task->req.getContent().size();
 		task->info.queue = 2;
 		string fname = task->info.shareinfo.name;
