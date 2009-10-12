@@ -16,7 +16,11 @@
 #    define BUILD_STRING_PLATFORM "win32.nt"
 #  endif
 #elif defined(__linux__)
-#  define BUILD_STRING_PLATFORM "linux.i386"
+#  if defined(__LP64__)
+#    define BUILD_STRING_PLATFORM "linux.x86_64"
+#  else
+#    define BUILD_STRING_PLATFORM "linux.i386"
+#  endif
 #else
 #  define BUILD_STRING_PLATFORM "unknown"
 #endif
