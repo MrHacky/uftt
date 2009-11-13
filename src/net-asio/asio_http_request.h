@@ -27,19 +27,26 @@ namespace boost { namespace asio {
 class http_request
 {
 public:
-	http_request(boost::asio::io_service& io_service,
-      const std::string& server, const std::string& path, uint16 port_ = 80)
-    : resolver_(io_service),
-      socket_(io_service)
+	http_request(boost::asio::io_service& io_service)
+    : resolver_(io_service)
+    , socket_(io_service)
 	, totalsize(0)
 	{
+	}
+
+	void async_http_request(
+      const std::string& server, const std::string& path, uint16 port_,
+	  boost::function<void(int, boost::system::error_code)> handler_)
+	{
+		handler = handler_;
 		doconnect(server, path, port_);
 	}
 
-	http_request(boost::asio::io_service& io_service, const std::string& url)
-    : resolver_(io_service),
-      socket_(io_service)
+	void async_http_request(
+      const std::string& url,
+	  boost::function<void(int, boost::system::error_code)> handler_)
 	{
+		handler = handler_;
 		using std::string;
 		if (string(url.begin(), url.begin()+7) != "http://")
 			throw std::runtime_error("not a valid url");
@@ -88,10 +95,6 @@ public:
           boost::asio::placeholders::iterator));
   }
 
-	void setHandler(boost::function<void(int, boost::system::error_code)> handler_) {
-		handler = handler_;
-	}
-
 	const std::vector<uint8> & getContent() {
 		return content;
 	}
@@ -118,7 +121,8 @@ private:
     }
     else
     {
-      std::cout << "Error handle_resolve: " << err.message() << "\n";
+      //std::cout << "Error handle_resolve: " << err.message() << "\n";
+	  handler(-1, err);
     }
   }
 
@@ -140,7 +144,8 @@ private:
     }
     else
     {
-      std::cout << "Error handle_connect: " << err.message() << "\n";
+      //std::cout << "Error handle_connect: " << err.message() << "\n";
+      handler(-1, err);
     }
   }
 
@@ -155,7 +160,8 @@ private:
     }
     else
     {
-      std::cout << "Error handle_write_request: " << err.message() << "\n";
+      //std::cout << "Error handle_write_request: " << err.message() << "\n";
+	  handler(-1, err);
     }
   }
 
@@ -174,12 +180,14 @@ private:
       if (!response_stream || http_version.substr(0, 5) != "HTTP/")
       {
         std::cout << "Invalid response\n";
+	    handler(-1,   boost::system::posix_error::make_error_code(boost::system::posix_error::bad_message));
         return;
       }
       if (status_code != 200)
       {
         std::cout << "Response returned with status code ";
         std::cout << status_code << "\n";
+	    handler(-1,   boost::system::posix_error::make_error_code(boost::system::posix_error::bad_message));
         return;
       }
 
@@ -190,7 +198,8 @@ private:
     }
     else
     {
-      std::cout << "Error handle_read_status_line: " << err << "\n";
+      //std::cout << "Error handle_read_status_line: " << err << "\n";
+	  handler(-1, err);
     }
   }
 
@@ -222,7 +231,8 @@ private:
     }
     else
     {
-      std::cout << "Error handle_read_headers: " << err << "\n";
+      //std::cout << "Error handle_read_headers: " << err << "\n";
+	  handler(-1, err);
     }
   }
 
@@ -251,7 +261,7 @@ private:
     }
     else if (err != boost::asio::error::eof)
     {
-      std::cout << "Error handle_read_content: " << err << "\n";
+      //std::cout << "Error handle_read_content: " << err << "\n";
 	  handler(-1, err);
 	} else {
 		handler(-1, boost::system::error_code());

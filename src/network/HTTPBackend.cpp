@@ -21,8 +21,8 @@ class HTTPTask {
 		TaskInfo info;
 		boost::signal<void(const TaskInfo&)> sig_progress;
 
-		HTTPTask(UFTTCore* core, const std::string& url)
-		: req(core->get_io_service(), url), file(core->get_disk_service())
+		HTTPTask(UFTTCore* core)
+		: req(core->get_io_service()), file(core->get_disk_service())
 		{}
 };
 
@@ -98,8 +98,8 @@ void HTTPBackend::check_for_web_updates()
 	std::string weburl = "http://uftt.googlecode.com/svn/trunk/site/autoupdate.php";
 	//std::string weburl = "http://localhost:8080/site/autoupdate.php";
 
-	HTTPTaskRef task(new HTTPTask(core, weburl));
-	task->req.setHandler(boost::bind(&HTTPBackend::web_update_page_handler, this, _2, task, _1));
+	HTTPTaskRef task(new HTTPTask(core));
+	task->req.async_http_request(weburl, boost::bind(&HTTPBackend::web_update_page_handler, this, _2, task, _1));
 }
 
 void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, HTTPTaskRef task, int prog)
@@ -159,7 +159,7 @@ void HTTPBackend::do_start_download(const ShareID& sid, const boost::filesystem:
 
 	std::string url = sid.sid;
 
-	HTTPTaskRef task(new HTTPTask(core, url));
+	HTTPTaskRef task(new HTTPTask(core));
 
 	task->info.id.mid = mid;
 	task->info.id.cid = tasklist.size();
@@ -176,7 +176,7 @@ void HTTPBackend::do_start_download(const ShareID& sid, const boost::filesystem:
 	tasklist.push_back(task);
 	sig_new_task(task->info);
 
-	task->req.setHandler(boost::bind(&HTTPBackend::handle_download_progress, this, _2, task, _1));
+	task->req.async_http_request(url, boost::bind(&HTTPBackend::handle_download_progress, this, _2, task, _1));
 }
 
 void HTTPBackend::handle_download_progress(const boost::system::error_code& err, HTTPTaskRef task, int prog)

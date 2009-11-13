@@ -165,8 +165,8 @@ class SimpleBackend: public INetModule {
 					url += STRFORMAT("&ip=%s", stun_endpoint.address());
 					url += STRFORMAT("&port=%d", stun_endpoint.port());
 
-					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service, url));
-					request->setHandler(boost::bind(&SimpleBackend::handle_peerfinder_query, this, _2, request, _1));
+					boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service));
+					request->async_http_request(url, boost::bind(&SimpleBackend::handle_peerfinder_query, this, _2, request, _1));
 				}
 			}
 		}
