@@ -107,7 +107,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	}
 
 	// setup debug stream
-	new QDebugStream(std::cout, debugText);
+	new QDebugStream(std::cout, marshaller.wrap(boost::bind(&QTextEdit::append, debugText, _1)));
 
 	// remove central widget so everything is dockable
 	{

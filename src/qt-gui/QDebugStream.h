@@ -8,7 +8,6 @@
 #include <iostream>
 #include <streambuf>
 #include <string>
-#include "QtBooster.h"
 
 #include "qtextedit.h"
 
@@ -17,12 +16,11 @@
 class QDebugStream : public std::basic_streambuf<char>
 {
 public:
- QDebugStream(std::ostream &stream, QTextEdit* text_edit) : m_stream(stream)
+ QDebugStream(std::ostream &stream, const boost::function<void(QString)>& callback) : m_stream(stream)
  {
-  log_window = text_edit;
   m_old_buf = stream.rdbuf();
   stream.rdbuf(this);
-  appender = QTBOOSTER(log_window, QTextEdit::append);
+  appender = callback;
  }
  ~QDebugStream()
  {
@@ -77,7 +75,6 @@ private:
  std::ostream &m_stream;
  std::streambuf *m_old_buf;
  std::string m_string;
- QTextEdit* log_window;
 };
 
 #endif

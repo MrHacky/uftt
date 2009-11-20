@@ -40,7 +40,6 @@ ADD_LIBRARY(uftt-qt
 	DialogDirectoryChooser.h
 	QDebugStream.h
 	QtLogger.h
-	QtBooster.h
 	QTMain.h
 	${UI_FILES}
 )
