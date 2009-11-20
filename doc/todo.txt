@@ -1,5 +1,4 @@
 * Major features ordered by priority.
-- Fix bugs
 - implement share announcement via reliable transport (tcp), and peer discovery via broadcasts (udp)
 - task management
 
@@ -9,6 +8,7 @@
 - uniquely identify (parts of) shares somehow
 - allow downloading parts of the same share from different sources
 - allow simultanious downloading via broadcast link
+- allow simultanious downloading via chained links
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
@@ -20,6 +20,7 @@
 - implement console detaching/attaching for linux
 - allow ipx-semi connections in architecture, and gui, and make it not too haxxy
 - implement udp hole punching through firewall for local link
+- try udp connection when tcp fails transparently to work around firewalls
 - use configurable temp dir for compressing & downloading updates
 - implement remote browsing
 - clean up http request class (wait for boost implementation? :-p)
@@ -27,7 +28,6 @@
 - and use it for web updates, and possibly global peer discovery
 - implement automatic test suite for stuff
 - check more things in --runcheck
-- show progress for web update tasks
 - make size-optimized bootstrapper executable (no gui etc)
 - make bootstrapper universal (detect os, web version)
 - make uftt.dat location changable after initial startup
@@ -37,6 +37,7 @@
 - implement debian/ubuntu .deb autoupdate (again)
 
 * Already completed features.
+- [DONE] show progress for web update tasks
 - [DONE] implement udp hole punching via central web server
 - [DONE] support ipv6 connections/discovery, especially link-local
 - [DONE] udp connectivity
