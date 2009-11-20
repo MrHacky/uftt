@@ -183,12 +183,12 @@ void HTTPBackend::handle_download_progress(const boost::system::error_code& err,
 {
 	if (prog >= 0) {
 		task->info.transferred += prog;
-		task->info.size = task->req.totalsize;
+		task->info.size = task->req.getTotalSize();
 	} else if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
 		task->info.status = STRFORMAT("Failed: %s", err);
 	} else {
-		task->info.size = task->req.totalsize;
+		task->info.size = task->req.getTotalSize();
 		task->info.transferred = task->req.getContent().size();
 		task->info.queue = 2;
 		string fname = task->info.shareinfo.name;
