@@ -742,7 +742,7 @@ namespace dgram {
 				if (tps > 250000)
 					tps = 250000;
 
-				uint64 ret = ud.total_microseconds();
+				uint64 ret = ud.ticks();
 				ret *= tps;
 				ret /= 1000000;
 				return ret & 0xffffffff;
