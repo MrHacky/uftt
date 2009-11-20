@@ -41,7 +41,7 @@ class http_request
 			const std::string& server, const std::string& path, uint16 port_,
 			boost::function<void(int, boost::system::error_code)> handler_)
 		{
-			handler = handler_;
+			handlerfunc = handler_;
 			doconnect(server, path, port_);
 		}
 
@@ -49,15 +49,14 @@ class http_request
 			const std::string& url,
 			boost::function<void(int, boost::system::error_code)> handler_)
 		{
-			handler = handler_;
+			handlerfunc = handler_;
 
-			if (url.size() < 7 && std::string(url.begin(), url.begin()+7) != "http://") {
-				get_io_service().post(boost::bind(handler, -1, boost::system::posix_error::make_error_code(boost::system::posix_error::bad_address)));
+			if (url.size() < 7 || std::string(url.begin(), url.begin()+7) != "http://") {
+				get_io_service().post(boost::bind(&http_request::handler, this, -1, boost::system::posix_error::make_error_code(boost::system::posix_error::bad_address)));
 				return;
 			}
 
 			std::string hoststr = url.substr(7);
-			std::string::size_type colonpos = hoststr.find_first_of(':');
 			std::string::size_type slashpos = hoststr.find_first_of('/');
 			std::string portstr;
 			std::string substr;
@@ -67,6 +66,7 @@ class http_request
 				substr = hoststr.substr(slashpos);
 				hoststr.erase(slashpos);
 			}
+			std::string::size_type colonpos = hoststr.find_first_of(':');
 			uint16 iport;
 			if (colonpos == std::string::npos)
 				iport = 80;
@@ -76,7 +76,7 @@ class http_request
 				try {
 					iport = boost::lexical_cast<int>(portstr);
 				} catch (...) {
-					get_io_service().post(boost::bind(handler, -1, boost::system::posix_error::make_error_code(boost::system::posix_error::bad_address)));
+					get_io_service().post(boost::bind(&http_request::handler, this, -1, boost::system::posix_error::make_error_code(boost::system::posix_error::bad_address)));
 					return;
 				}
 			}
@@ -254,12 +254,32 @@ class http_request
 			}
 		}
 
+		void handler(int code, const boost::system::error_code& err) {
+			if (!handlerfunc) return;
+
+			handlerfunc(code, err);
+
+			if (code == -1) {
+				// called handler for the last time
+				// in case clearing the handler triggers the destruction of the http_request object,
+				// make sure handlerfunc is already cleared by keeping a copy of the handler object
+				// alive by passing it to a function to be called later
+				get_io_service().post(boost::bind(&http_request::clearhandler, handlerfunc));
+				handlerfunc.clear();
+			}
+		}
+
+		static void clearhandler(const boost::function<void(int, boost::system::error_code)>& h)
+		{
+			//h.clear();
+		}
+
 		uint8 bigbuf[100*1024];
 		boost::asio::ip::tcp::resolver resolver;
 		boost::asio::ip::tcp::socket socket;
 		boost::asio::streambuf request;
 		boost::asio::streambuf response;
-		boost::function<void(int, boost::system::error_code)> handler;
+		boost::function<void(int, boost::system::error_code)> handlerfunc;
 		std::vector<uint8> content;
 		uint32 totalsize;
 };
