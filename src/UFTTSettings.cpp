@@ -17,7 +17,7 @@ UFTTSettings::UFTTSettings()
 	posx  = posy  = 0;
 	sizex = sizey = 0;
 
-	dl_path = "C:/temp";
+	dl_path = platform::getDownloadPathDefault();
 	autoupdate = true;
 	webupdateinterval = 2; // default to weekly update checks
 	lastupdate = boost::posix_time::ptime(boost::posix_time::min_date_time);

@@ -38,6 +38,7 @@ namespace platform {
 
 	spathlist getSettingsPathList();
 	spathinfo getSettingsPathDefault();
+	boost::filesystem::path getDownloadPathDefault();
 
 	std::string getUserName();
 } // namespace platform
