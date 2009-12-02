@@ -3,6 +3,7 @@
 	#include "../UFTTCore.h"
 	#include "../UFTTSettings.h"
 	#include "AutoScrollingWindow.h"
+	#include "TaskList.h"
 	#include "dispatcher_marshaller.h"
 	#include <iostream>
 	#include <boost/signal.hpp>
@@ -70,42 +71,6 @@
 			};
 			ShareListColumns share_list_columns;
 
-			class TaskListColumns : public Gtk::TreeModelColumnRecord {
-				public:
-					TaskListColumns() {
-						add(status);
-						add(time_elapsed);
-						add(time_remaining);
-						add(transferred);
-						add(total_size);
-						add(speed);
-						add(queue);
-						add(task_info);
-						add(user_name);
-						add(share_name);
-						add(host_name);
-						add(protocol);
-						add(url);
-					}
-
-					Gtk::TreeModelColumn<Glib::ustring> status;
-					Gtk::TreeModelColumn<Glib::ustring> time_elapsed;
-					Gtk::TreeModelColumn<Glib::ustring> time_remaining;
-					Gtk::TreeModelColumn<Glib::ustring> transferred;
-					Gtk::TreeModelColumn<Glib::ustring> total_size;
-					Gtk::TreeModelColumn<Glib::ustring> speed;
-					Gtk::TreeModelColumn<uint32>        queue;
-					Gtk::TreeModelColumn<TaskInfo>      task_info;
-					// TaskInfo contains a ShareInfo, so list that here too
-					// NOTE: We're purposly not inheriting from TaskListColumns
-					Gtk::TreeModelColumn<Glib::ustring> user_name;
-					Gtk::TreeModelColumn<Glib::ustring> share_name;
-					Gtk::TreeModelColumn<Glib::ustring> host_name;
-					Gtk::TreeModelColumn<Glib::ustring> protocol;
-					Gtk::TreeModelColumn<Glib::ustring> url;
-			};
-			TaskListColumns task_list_columns;
-
 			/* Widgets */
 			Gtk::Menu*               menubar_ptr; // Menu is created dynamically using UIManager
 			Gtk::RadioButtonGroup    menu_options_check_updates_frequency_radio_button_group;
@@ -119,8 +84,7 @@
 			Gtk::Frame               share_list_frame;
 			Gtk::ScrolledWindow      share_list_scrolledwindow;
 			Gtk::TreeView            share_list_treeview;
-			Gtk::TreeView            task_list_treeview;
-			Gtk::ScrolledWindow      task_list_scrolledwindow;
+			TaskList                 task_list;
 			Gtk::VBox                share_list_vbox;
 			Gtk::Alignment           share_list_alignment;
 			Gtk::Alignment           task_list_alignment;
@@ -156,8 +120,6 @@
 			void on_add_share_folder();
 			bool refresh_shares();
 			void on_signal_add_share(const ShareInfo& info);
-			void on_signal_new_task(const TaskInfo& info);
-			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& ti);
 			bool on_statusicon_signal_size_changed(int xy);
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);
