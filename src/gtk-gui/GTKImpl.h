@@ -3,6 +3,7 @@
 	#include "../UFTTCore.h"
 	#include "../UFTTSettings.h"
 	#include "dispatcher_marshaller.h"
+	#include <boost/shared_ptr.hpp>
 	#include <iostream>
 	#include <gtkmm/box.h>
 	#include <gtkmm/main.h>
@@ -18,11 +19,11 @@
 
 	class UFTTWindow : public Gtk::Window {
 		public:
-			UFTTWindow(UFTTCore& _core, UFTTSettings& _settings);
+			UFTTWindow(UFTTSettingsRef _settings);
 
 		private:
-				UFTTCore& core;
-				UFTTSettings& settings;
+//				UFTTCore& core;
+				UFTTSettingsRef settings;
 			/* Variables */
 //			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
 

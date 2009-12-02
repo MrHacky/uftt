@@ -14,7 +14,7 @@ class QTImpl {
 		QApplication app;
 		MainWindow wnd;
 
-		QTImpl( int& argc, char **argv, UFTTSettings& settings)
+		QTImpl(int argc, char **argv, UFTTSettingsRef settings)
 			: app(argc, argv), wnd(settings)
 		{
 			QObject::connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)), &wnd, SLOT(onFocusChanged(QWidget*, QWidget*)));
@@ -24,9 +24,9 @@ class QTImpl {
 		QTImpl(const QTImpl&);
 };
 
-QTMain::QTMain( int& argc, char **argv, UFTTSettings* settings)
+QTMain::QTMain(int argc, char **argv, UFTTSettingsRef settings)
 {
-	impl = new QTImpl(argc, argv, *settings);
+	impl = new QTImpl(argc, argv, settings);
 }
 
 QTMain::~QTMain()
@@ -34,9 +34,9 @@ QTMain::~QTMain()
 	delete impl;
 }
 
-void QTMain::bindEvents(UFTTCore* t)
+void QTMain::bindEvents(UFTTCoreRef core)
 {
-	impl->wnd.SetBackend(t);
+	impl->wnd.SetBackend(core);
 }
 
 int QTMain::run()

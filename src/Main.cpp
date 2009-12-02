@@ -3,17 +3,15 @@
 // allow upx compression (prevents use of TLS callbacks in boost::thread)
 extern "C" void tss_cleanup_implemented(void){}
 
-//#define ENABLE_GTK_GUI
 //#define BOOST_ASIO_DISABLE_IOCP
 //#define _WIN32_WINNT 0x0500
 //#define WINVER 0x0500
 //#define _WIN32_WINDOWS 0x0410
 #define NOMINMAX
 
-#include "BuildString.h"
+#include "UFTTGui.h"
 #include "qt-gui/QTMain.h"
-#include "gtk-gui/GTKMain.h"
-//#include "network/NetworkThread.h"
+#include "BuildString.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"
 
@@ -237,11 +235,6 @@ int imain( int argc, char **argv )
 	if (argc > 2 && string(argv[1]) == "--replace")
 		return AutoUpdater::replace(argv[0], argv[2]);
 
-	// initialize backend & gui
-	UFTTSettings settings;
-	UFTTCore core(settings);
-	settings.load();
-
 	std::string extrabuildpath;
 	std::string extrabuildname;
 	if (argc > 1 && string(argv[1]) == "--dotest") {
@@ -255,37 +248,34 @@ int imain( int argc, char **argv )
 
 	waitonexit = true;
 
-#ifdef ENABLE_GTK_GUI
-//	GTKMain gui(argc, argv, settings);
-	boost::shared_ptr<UFTTGui> gui(GTKMain::makeGui(argc, argv, core, settings));
-#else
-	QTMain _gui(argc, argv, &settings);
-	QTMain* gui = &_gui;
-#endif
-
+	// initialize settings & gui
+	UFTTSettingsRef settings(new UFTTSettings());
+	settings->load();
+	boost::shared_ptr<UFTTGui> gui(UFTTGui::makeGui(argc, argv, settings));
 
 	cout << "Build: " << thebuildstring << '\n';
 
 	try {
-		gui->bindEvents(&core);
+		UFTTCoreRef core(new UFTTCore(settings));
+		gui->bindEvents(core);
 
 		if (madeConsole)
 			platform::freeConsole();
 
 		// get services
-		boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
-		boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
+		boost::asio::io_service& run_service  = core->get_disk_service().get_io_service();
+		boost::asio::io_service& work_service = core->get_disk_service().get_work_service();
 
 		// kick off some async tasks (which hijack the disk io thread)
-		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
+		updateProvider.checkfile(core->get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
 		if (!extrabuildname.empty())
-			updateProvider.checkfile(core.get_disk_service(), run_service, work_service, extrabuildpath, extrabuildname, true);
+			updateProvider.checkfile(core->get_disk_service(), run_service, work_service, extrabuildpath, extrabuildname, true);
 		if (argc > 2 && string(argv[1]) == "--delete")
 			AutoUpdater::remove(run_service, work_service, argv[2]);
 
 		int ret = gui->run();
 
-		settings.save();
+		settings->save();
 
 		exit(ret); // hax
 		return ret;

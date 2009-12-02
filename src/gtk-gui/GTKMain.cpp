@@ -9,31 +9,25 @@ using namespace boost;
 // implementation class (PIMPL idiom)
 class GTKImpl {
 	public:
-		GTKImpl( int& argc, char **argv, UFTTCore& _core, UFTTSettings& _settings)
-		: settings(_settings),
-		  core(_core)
+		GTKImpl( int& argc, char **argv, UFTTSettingsRef _settings)
+		: settings(_settings)
 		{
 			if(!Glib::thread_supported())
 				Glib::thread_init();
 			// kit and wnd should only be initialized after glib::thread_init()
 			kit = shared_ptr<Gtk::Main>(new Gtk::Main(argc, argv));
-			wnd = shared_ptr<UFTTWindow>(new UFTTWindow(core, settings));
+			wnd = shared_ptr<UFTTWindow>(new UFTTWindow(settings));
 		};
 
-		UFTTSettings& settings;
-		UFTTCore& core;
+		UFTTSettingsRef settings;
 		shared_ptr<Gtk::Main> kit;
 		shared_ptr<UFTTWindow> wnd;
 	private:
 		GTKImpl(const GTKImpl&);
 };
 
-const shared_ptr<UFTTGui> GTKMain::makeGui(int argc, char** argv, UFTTCore& core, UFTTSettings& settings) {
-	return shared_ptr<UFTTGui>(new GTKMain(argc, argv, core, settings));
-}
-
-GTKMain::GTKMain(int argc, char **argv, UFTTCore& core, UFTTSettings& settings)
-: impl(shared_ptr<GTKImpl>(new GTKImpl(argc, argv, core, settings)))
+GTKMain::GTKMain(int argc, char **argv, UFTTSettingsRef settings)
+: impl(shared_ptr<GTKImpl>(new GTKImpl(argc, argv, settings)))
 {
 }
 
@@ -41,7 +35,7 @@ GTKMain::~GTKMain()
 {
 }
 
-void GTKMain::bindEvents(UFTTCore* t)
+void GTKMain::bindEvents(UFTTCoreRef core)
 {
 //	impl->wnd.SetBackend(t);
 }

@@ -273,7 +273,7 @@ class SimpleConnection: public ConnectionBase {
 
 		cmdinfo rcmd;
 	public:
-		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
+		SimpleConnection(boost::asio::io_service& service_, UFTTCoreRef core_, SockInit sockinit_)
 			: ConnectionBase(service_, core_)
 			, socket(sockinit_)
 			, progress_timer(service_)
@@ -634,9 +634,11 @@ class SimpleConnection: public ConnectionBase {
 				start_receive_command(tbuf);
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
-				qitems.push_back(qitem(0, sharename, 0));
-				rresume = core->getSettingsRef().experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
-				handle_qitems(tbuf);
+				rresume = core->getSettingsRef()->experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
+				// QItem download start is delayed until further notice
+				keep_updating = false;
+				keep_status = true;
+				taskinfo.status = "Enqueued";
 			} else if (rcommands.count(5)) {
 				// simple style connection
 				uint32 nlen = sharename.size();
@@ -1242,7 +1244,7 @@ class SimpleConnection: public ConnectionBase {
 
 			if (!dataready) {
 				// kick off async_read for when we received some data (capped by file size)
-				rbuf->resize(getRcvBufSize(fsize)); 
+				rbuf->resize(getRcvBufSize(fsize));
 				boost::asio::async_read(socket, GETBUF(rbuf),
 					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
 			} else {

@@ -5,7 +5,7 @@
 
 class SimpleTCPConnection : public SimpleConnection<boost::asio::ip::tcp::socket, boost::asio::io_service&> {
 	public:
-		SimpleTCPConnection(boost::asio::io_service& service_, UFTTCore* core_)
+		SimpleTCPConnection(boost::asio::io_service& service_, UFTTCoreRef core_)
 		: SimpleConnection<boost::asio::ip::tcp::socket, boost::asio::io_service&>(service_, core_, service_)
 		{
 		}

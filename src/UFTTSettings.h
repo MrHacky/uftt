@@ -111,6 +111,7 @@ class UFTTSettings {
 			//if (version >=  6) ar & NVP("dockinfo", vector_as_string(dockinfo));
 		}
 };
+typedef boost::shared_ptr<UFTTSettings> UFTTSettingsRef;
 
 BOOST_CLASS_VERSION(UFTTSettings, 11)
 

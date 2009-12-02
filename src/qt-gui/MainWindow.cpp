@@ -80,7 +80,7 @@ public:
     }
 };
 
-MainWindow::MainWindow(UFTTSettings& settings_)
+MainWindow::MainWindow(UFTTSettingsRef settings_)
 : settings(settings_)
 , isreallyactive(false)
 , timerid(0)
@@ -155,31 +155,31 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 
 
 	/* load/set dock layout */
-	if (!settings.loaded && ext::filesystem::exists("uftt.layout")) {
+	if (!settings->loaded && ext::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
 		if (layoutfile.open(QIODevice::ReadOnly)) {
 			QRect rect;
 			layoutfile.read((char*)&rect, sizeof(QRect));
-			settings.posx = rect.x();
-			settings.posy = rect.y();
-			settings.sizex = rect.width();
-			settings.sizey = rect.height();
+			settings->posx = rect.x();
+			settings->posy = rect.y();
+			settings->sizex = rect.width();
+			settings->sizey = rect.height();
 			QByteArray data = layoutfile.readAll();
-			settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+			settings->dockinfo.insert(settings->dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
 			layoutfile.remove();
 		}
 	}
 
 	/* apply size settings */
-	if (settings.sizex != 0 && settings.sizey !=0) {
-		this->resize(QSize(settings.sizex, settings.sizey));
-		this->move(QPoint(settings.posx, settings.posy));
+	if (settings->sizex != 0 && settings->sizey !=0) {
+		this->resize(QSize(settings->sizex, settings->sizey));
+		this->move(QPoint(settings->posx, settings->posy));
 	} else
 		this->resize(750, 550);
 
 	/* apply dock layout */
-	if (settings.dockinfo.size() > 0)
-		this->restoreState(QByteArray((char*)&settings.dockinfo[0],settings.dockinfo.size()));
+	if (settings->dockinfo.size() > 0)
+		this->restoreState(QByteArray((char*)&settings->dockinfo[0],settings->dockinfo.size()));
 	else {
 		this->splitDockWidget (dockShares   , dockTaskList      , Qt::Horizontal);
 		this->splitDockWidget (dockTaskList , dockWidgetDebug   , Qt::Vertical  );
@@ -202,16 +202,16 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
-	if (!ext::filesystem::exists(settings.dl_path)) {
+	if (!ext::filesystem::exists(settings->dl_path)) {
 		boost::filesystem::path npath(QDir::tempPath().toStdString());
 		if (ext::filesystem::exists(npath))
-			settings.dl_path = npath;
+			settings->dl_path = npath;
 	}
 
-	this->DownloadEdit->setText(QString::fromStdString(settings.dl_path.native_directory_string()));
-	this->actionEnableAutoupdate->setChecked(settings.autoupdate);
-	this->actionEnableDownloadResume->setChecked(settings.experimentalresume);
-	this->setUpdateInterval(settings.webupdateinterval);
+	this->DownloadEdit->setText(QString::fromStdString(settings->dl_path.native_directory_string()));
+	this->actionEnableAutoupdate->setChecked(settings->autoupdate);
+	this->actionEnableDownloadResume->setChecked(settings->experimentalresume);
+	this->setUpdateInterval(settings->webupdateinterval);
 
 	//connect(listShares, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
@@ -252,7 +252,7 @@ MainWindow::MainWindow(UFTTSettings& settings_)
 	traymenu->addSeparator();
 	traymenu->addAction(action_Quit);
 
-	setTrayDoubleClick(settings.traydoubleclick);
+	setTrayDoubleClick(settings->traydoubleclick);
 }
 
 void MainWindow::setTrayDoubleClick(bool b)
@@ -260,7 +260,7 @@ void MainWindow::setTrayDoubleClick(bool b)
 	actionSingleClickToActivateTrayIcon->setChecked(!b);
 	actionDoubleClickToActivateTrayIcon->setChecked(b);
 
-	settings.traydoubleclick = b;
+	settings->traydoubleclick = b;
 }
 
 void MainWindow::on_actionSingleClickToActivateTrayIcon_toggled(bool b)
@@ -278,8 +278,8 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 	switch (reason) {
 		case QSystemTrayIcon::Trigger:
 		case QSystemTrayIcon::DoubleClick: {
-			if (settings.traydoubleclick && reason == QSystemTrayIcon::Trigger) return;
-			if (!settings.traydoubleclick && reason == QSystemTrayIcon::DoubleClick) return;
+			if (settings->traydoubleclick && reason == QSystemTrayIcon::Trigger) return;
+			if (!settings->traydoubleclick && reason == QSystemTrayIcon::DoubleClick) return;
 			if (isreallyactive) {
 				this->setVisible(false);
 				this->isreallyactive = false;
@@ -318,16 +318,16 @@ void MainWindow::timerLostFocus(uint32 tid)
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
 	/* put stuff back into settings */
-	settings.posx = this->pos().x();
-	settings.posy = this->pos().y();
-	settings.sizex = this->size().width();
-	settings.sizey = this->size().height();
+	settings->posx = this->pos().x();
+	settings->posy = this->pos().y();
+	settings->sizex = this->size().width();
+	settings->sizey = this->size().height();
 
-	settings.dockinfo.clear();
+	settings->dockinfo.clear();
 	QByteArray data = saveState();
-	settings.dockinfo.insert(settings.dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+	settings->dockinfo.insert(settings->dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
 
-	settings.dl_path = DownloadEdit->text().toStdString();
+	settings->dl_path = DownloadEdit->text().toStdString();
 
 	trayicon->hide();
 
@@ -432,7 +432,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 }
 
 void MainWindow::on_editNickName_textChanged(QString text) {
-	settings.nickname = text.toStdString();
+	settings->nickname = text.toStdString();
 	//TODO: Rebroadcast sharelist (needs backend support)
 	//      (re-add every share with new nickname)
 	on_buttonRefresh_clicked();
@@ -588,7 +588,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 	std::string build = info.name;
 
 	bool fromweb = (info.proto == "http");
-	if (!fromweb && !settings.autoupdate)
+	if (!fromweb && !settings->autoupdate)
 		return;
 
 	if (!AutoUpdater::isBuildBetter(build, thebuildstring)) {
@@ -640,7 +640,7 @@ void MainWindow::download_done(const ShareID& sid)
 	}
 }
 
-void MainWindow::SetBackend(UFTTCore* be)
+void MainWindow::SetBackend(UFTTCoreRef be)
 {
 	backend = be;
 
@@ -698,7 +698,7 @@ void MainWindow::on_actionAboutQt_triggered()
 
 void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
 {
-	settings.autoupdate = value;
+	settings->autoupdate = value;
 }
 
 void MainWindow::on_actionEnableGlobalPeerfinder_toggled(bool enabled)
@@ -708,7 +708,7 @@ void MainWindow::on_actionEnableGlobalPeerfinder_toggled(bool enabled)
 
 void MainWindow::on_actionEnableDownloadResume_toggled(bool enabled)
 {
-	settings.experimentalresume = enabled;
+	settings->experimentalresume = enabled;
 }
 
 void MainWindow::on_buttonClearCompletedTasks_clicked()
@@ -765,7 +765,7 @@ void MainWindow::setUpdateInterval(int i)
 	actionUpdateWeekly->setChecked(i == 2);
 	actionUpdateMonthly->setChecked(i == 3);
 
-	settings.webupdateinterval = i;
+	settings->webupdateinterval = i;
 }
 
 #ifdef __linux__
@@ -777,8 +777,8 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 #endif
 
 void MainWindow::pre_show() {
-	this->actionEnableGlobalPeerfinder->setChecked(settings.enablepeerfinder);
-	this->editNickName->setText(QString::fromStdString(settings.nickname));
+	this->actionEnableGlobalPeerfinder->setChecked(settings->enablepeerfinder);
+	this->editNickName->setText(QString::fromStdString(settings->nickname));
 	trayicon->show();
 }
 

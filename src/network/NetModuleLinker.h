@@ -4,18 +4,19 @@
 #include <vector>
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include "../UFTTCore.h"
 
 class INetModule;
 class UFTTCore;
 
 namespace NetModuleLinker {
-	std::vector<boost::shared_ptr<INetModule> > getNetModuleList(UFTTCore* core);
+	std::vector<boost::shared_ptr<INetModule> > getNetModuleList(UFTTCoreRef core);
 
-	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCore*)>& fp);
+	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCoreRef)>& fp);
 
 	template <class T>
 	struct create_netmodule {
-		boost::shared_ptr<INetModule> operator()(UFTTCore* core)
+		boost::shared_ptr<INetModule> operator()(UFTTCoreRef core)
 		{
 			return boost::shared_ptr<INetModule>(new T(core));
 		}

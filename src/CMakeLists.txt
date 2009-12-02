@@ -50,6 +50,7 @@ SET(UFTT_SOURCES
 	Globals.h
 	BuildString.h
 	UFTTCore.h            UFTTCore.cpp
+	UFTTGui.h             UFTTGui.cpp
 	UFTTSettings.h        UFTTSettings.cpp
 	UFTTStatus.h          #UFTTStatus.cpp
 	AutoUpdate.h          AutoUpdate.cpp

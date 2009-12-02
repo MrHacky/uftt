@@ -4,20 +4,22 @@
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/shared_ptr.hpp>
 
+#include "../UFTTGui.h"
 #include "../UFTTCore.h"
 class UFTTCore;
 class UFTTSettings;
-class QTMain {
+class QTMain : public UFTTGui {
 	private:
 		// implementation class (PIMPL idiom)
 		class QTImpl* impl;
 
 	public:
-		QTMain( int& argc, char **argv, UFTTSettings* settings);
+		QTMain(int argc, char **argv, UFTTSettingsRef settings);
 		~QTMain();
 
-		void bindEvents(UFTTCore* t);
+		void bindEvents(UFTTCoreRef core);
 		int run();
 };
 

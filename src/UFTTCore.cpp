@@ -7,12 +7,18 @@
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
-UFTTCore::UFTTCore(UFTTSettings& settings_)
+struct null_deleter {
+	void operator()(void const *) const {}
+};
+
+
+UFTTCore::UFTTCore(UFTTSettingsRef settings_)
 : settings(settings_)
 , disk_service(io_service)
 , error_state(0)
 {
-	netmodules = NetModuleLinker::getNetModuleList(this);
+	boost::shared_ptr<UFTTCore> pthis(this, null_deleter());
+	netmodules = NetModuleLinker::getNetModuleList(pthis);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 
@@ -140,7 +146,7 @@ void UFTTCore::doSetPeerfinderEnabled(bool enabled)
 		nm->doSetPeerfinderEnabled(enabled);
 }
 
-UFTTSettings& UFTTCore::getSettingsRef()
+UFTTSettingsRef UFTTCore::getSettingsRef()
 {
 	return settings;
 }

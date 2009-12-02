@@ -24,12 +24,12 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	Q_OBJECT
 
 	private:
-		UFTTSettings& settings;
+		UFTTSettingsRef settings;
 		bool askonupdates;
 		ShareID auto_update_share;
 		boost::filesystem::path auto_update_path;
 		std::string auto_update_build;
-		UFTTCore* backend;
+		UFTTCoreRef backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
@@ -63,8 +63,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onFocusChanged(QWidget* old, QWidget* now);
 
 	public:
-		MainWindow(UFTTSettings& settings_);
-		void SetBackend(UFTTCore* be);
+		MainWindow(UFTTSettingsRef settings_);
+		void SetBackend(UFTTCoreRef be);
 		~MainWindow();
 
 	public Q_SLOTS:

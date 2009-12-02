@@ -3,7 +3,7 @@
 
 class UDPSemiConnection : public SimpleConnection<UDPConn, UDPConnService&> {
 	public:
-		UDPSemiConnection(boost::asio::io_service& service_, UFTTCore* core_, UDPConnService& cservice)
+		UDPSemiConnection(boost::asio::io_service& service_, UFTTCoreRef core_, UDPConnService& cservice)
 		: SimpleConnection<UDPConn, UDPConnService&>(service_, core_, cservice)
 		{
 		}

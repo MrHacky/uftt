@@ -2,7 +2,7 @@
 
 #include "../UFTTCore.h"
 
-ConnectionBase::ConnectionBase(boost::asio::io_service& service_, UFTTCore* core_)
+ConnectionBase::ConnectionBase(boost::asio::io_service& service_, UFTTCoreRef core_)
 : service(service_)
 , core(core_)
 {

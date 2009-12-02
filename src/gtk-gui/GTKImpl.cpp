@@ -10,9 +10,8 @@
 
 using namespace std;
 
-UFTTWindow::UFTTWindow(UFTTCore& _core, UFTTSettings& _settings) 
-: core(_core),
-  settings(_settings)
+UFTTWindow::UFTTWindow(UFTTSettingsRef _settings) 
+: settings(_settings)
 {
 	construct_gui();
 }
@@ -107,12 +106,6 @@ void UFTTWindow::construct_gui() {
 	                        "      <menuitem action='HelpAboutGTK'/>"
 	                        "    </menu>"
 	                        "  </menubar>"
-	                        "  <popup name='Popup'>"
-	                        "    <menuitem action='FileSelectServer'/>"
-	                        "    <menuitem action='FilePreferences'/>"
-	                        "    <separator/>"
-	                        "    <menuitem action='FileQuit'/>"
-	                        "  </popup>"
 	                        "</ui>";
 
 	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid

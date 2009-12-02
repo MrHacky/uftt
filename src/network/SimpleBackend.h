@@ -62,7 +62,7 @@ const UDPSockInfoRef uftt_bcst_if;
 
 class SimpleBackend: public INetModule {
 	private:
-		UFTTCore* core;
+		UFTTCoreRef core;
 
 		boost::asio::io_service& service;
 		services::diskio_service& diskio;
@@ -154,7 +154,7 @@ class SimpleBackend: public INetModule {
 			if (e) {
 				std::cout << "handle_peerfinder_timer: " << e.message() << '\n';
 			} else {
-				if (settings.enablepeerfinder) {
+				if (settings->enablepeerfinder) {
 					prevpeerquery = lastpeerquery;
 					lastpeerquery = boost::posix_time::second_clock::universal_time();
 
@@ -173,15 +173,15 @@ class SimpleBackend: public INetModule {
 
 		void start_peerfinder(bool enabled)
 		{
-			if (settings.enablepeerfinder != enabled) {
-				settings.enablepeerfinder = enabled;
+			if (settings->enablepeerfinder != enabled) {
+				settings->enablepeerfinder = enabled;
 				start_peerfinder();
 			}
 		}
 
 		void start_peerfinder()
 		{
-			if (!settings.enablepeerfinder) return;
+			if (!settings->enablepeerfinder) return;
 
 			boost::posix_time::ptime dl;
 			if (lastpeerquery - prevpeerquery > boost::posix_time::minutes(55))
@@ -448,9 +448,9 @@ class SimpleBackend: public INetModule {
 
 			if(sharever == 1 || sharever >= 3) { // Version 3 added support for usernames (nicknames)
 				#undef min
-				int nickname_length = std::min((size_t)255, settings.nickname.size());
+				int nickname_length = std::min((size_t)255, settings->nickname.size());
 				udp_send_buf[plen++] = nickname_length;
-				memcpy(&udp_send_buf[plen], settings.nickname.data(), nickname_length);
+				memcpy(&udp_send_buf[plen], settings->nickname.data(), nickname_length);
 				plen += nickname_length;
 			}
 
@@ -523,7 +523,7 @@ class SimpleBackend: public INetModule {
 			}
 		}
 
-		UFTTSettings& getSettings() {
+		UFTTSettingsRef getSettings() {
 			return settings;
 		}
 
@@ -592,14 +592,14 @@ class SimpleBackend: public INetModule {
 			udpsocklist.erase(addr);
 		}
 	public:
-		UFTTSettings& settings; // TODO: remove need for this hack!
+		UFTTSettingsRef settings; // TODO: remove need for this hack!
 
 		void print_addr(std::string prefix, boost::asio::ip::address a)
 		{
 			std::cout << prefix << a << '\n';
 		}
 
-		SimpleBackend(UFTTCore* core_)
+		SimpleBackend(UFTTCoreRef core_)
 			: service(core_->get_io_service())
 			, diskio(core_->get_disk_service())
 			, tcplistener_v4(core_->get_io_service())

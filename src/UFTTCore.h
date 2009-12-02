@@ -81,7 +81,7 @@ class UFTTCore {
 	private:
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
-		UFTTSettings& settings;
+		UFTTSettingsRef settings;
 
 		boost::asio::io_service io_service;
 		services::diskio_service disk_service;
@@ -89,7 +89,7 @@ class UFTTCore {
 
 		void servicerunfunc();
 	public:
-		UFTTCore(UFTTSettings& settings_);
+		UFTTCore(UFTTSettingsRef settings_);
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
@@ -120,7 +120,7 @@ class UFTTCore {
 
 		// Deprecated but still in use
 		void doSetPeerfinderEnabled(bool enabled);
-		UFTTSettings& getSettingsRef();
+		UFTTSettingsRef getSettingsRef();
 
 		// Service getters
 		boost::asio::io_service& get_io_service();
@@ -130,5 +130,5 @@ class UFTTCore {
 		int error_state; // 0 == none, 1 == warning, 2 == error
 		std::string error_string;
 };
-
+typedef boost::shared_ptr<UFTTCore> UFTTCoreRef;
 #endif//UFTT_CORE_H

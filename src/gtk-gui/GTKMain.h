@@ -12,11 +12,10 @@ class GTKMain : public UFTTGui {
 		// implementation class (PIMPL idiom)
 		boost::shared_ptr<class GTKImpl> impl;
 		GTKMain();
-		GTKMain(int argc, char** argv, UFTTCore& core, UFTTSettings& settings);
 
 	public:
-		static const boost::shared_ptr<UFTTGui> makeGui(int argc, char** argv, UFTTCore& core, UFTTSettings& settings);
-		void bindEvents(UFTTCore* t);
+		GTKMain(int argc, char** argv, UFTTSettingsRef settings);
+		void bindEvents(UFTTCoreRef core);
 		int run();
 		~GTKMain();
 };

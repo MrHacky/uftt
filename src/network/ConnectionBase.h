@@ -13,9 +13,9 @@ class ConnectionBase {
 	private:
 	protected:
 		boost::asio::io_service& service;
-		UFTTCore* core;
+		UFTTCoreRef core;
 	public:
-		ConnectionBase(boost::asio::io_service& service_, UFTTCore* core_);
+		ConnectionBase(boost::asio::io_service& service_, UFTTCoreRef core_);
 		virtual ~ConnectionBase();
 
 		boost::signal<void(const TaskInfo&)> sig_progress;
