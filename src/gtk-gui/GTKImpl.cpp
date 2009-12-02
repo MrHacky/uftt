@@ -303,6 +303,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");
 	add_share_file_toolbutton.set_tooltip_text("Share a single file");
 	add_share_folder_toolbutton.set_tooltip_text("Share a whole folder");
+
+	if(settings->loaded) {
+		set_position(Gtk::WIN_POS_NONE);
+		move(settings->posx, settings->posy);
+		resize(settings->sizex, settings->sizey);
+	}
 	
 	// FIXME: We need to call show_all() and present() here, otherwise some
 	//         widgets will not know their own size and setting the positions
@@ -318,13 +324,19 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 void UFTTWindow::on_statusicon_signal_activate() {
 	if( is_visible() ) {
 		if( property_is_active() ) {
+			int x,y;
+			get_position(x, y); // NOTE: Need to get_position *before* hide()
+			settings->posx = x;
+			settings->posy = y;
 			hide();
 		}
 		else {
+			move(settings->posx, settings->posy);
 			present();
 		}
 	}
 	else {
+		move(settings->posx, settings->posy);
 		show();
 	}
 }
@@ -683,6 +695,18 @@ bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
 }
 
 void UFTTWindow::on_menu_file_quit() { // FIXME: Disconnect signals etc?
+	{
+		// Store settings, FIXME: Check if there are signals we can use to
+		// capture these before we need to quit()
+		int x,y;
+		get_position(x, y); // NOTE: Need to get_position *before* hide()
+		settings->posx = x;
+		settings->posy = y;
+		int w,h;
+		get_size(w, h);
+		settings->sizex = w;
+		settings->sizey = h;
+	}
 	hide();
 	Gtk::Main::quit();
 }
