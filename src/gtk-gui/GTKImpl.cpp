@@ -89,13 +89,13 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup = Gtk::ActionGroup::create();
 	/* File menu */
 	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
-	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share File..."),
+	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share _File..."),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share Folder..."),
+	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share F_older..."),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "Download"),
+	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "_Download"),
 	                      boost::bind(&ShareList::download_selected_shares, &share_list));
-	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download To..."));/*,
+	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download _To..."));/*,
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
@@ -119,6 +119,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT));//, "About _UFTT"));
 //	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
+	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
+	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
+
+		
 	m_refUIManager = Gtk::UIManager::create();
 	m_refUIManager->insert_action_group(m_refActionGroup);
 
@@ -159,6 +163,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "    </menu>"
 	                        "  </menubar>"
 	                        "  <popup name='StatusIconPopup'>"
+	                        "    <menuitem action='StatusIconShowUFTT'/>"
+	                        "    <separator/>"
 	                        "    <menuitem action='FileAddShareFile'/>"
 	                        "    <menuitem action='FileAddSharefolder'/>"
 	                        "    <separator/>"
@@ -296,7 +302,20 @@ void UFTTWindow::on_statusicon_signal_activate() {
 	}
 }
 
+void UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled() {
+	Gtk::CheckMenuItem* m = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT");
+	bool b = m->get_active();
+	if(b && !is_visible()) {
+		show();
+	}
+	else if(!b && is_visible()) {
+		save_window_size_and_position();
+		hide();
+	}
+}
+
 void UFTTWindow::on_statusicon_signal_popup_menu(guint button, guint32 activate_time) {
+	((Gtk::CheckMenuItem*)(m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT")))->set_active(get_visible());
 	Gtk::Menu* m = (Gtk::Menu*)(m_refUIManager->get_widget("/StatusIconPopup"));
 	statusicon->popup_menu_at_position(*m, button, activate_time);
 }

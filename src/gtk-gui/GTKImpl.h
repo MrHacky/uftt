@@ -83,6 +83,7 @@
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);
 			void on_statusicon_signal_activate();
+			void on_statusicon_show_uftt_checkmenuitem_toggled();
 			void save_window_size_and_position();
 			void restore_window_size_and_position();
 			void on_view_toolbar_checkmenuitem_signal_toggled();
