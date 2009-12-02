@@ -27,7 +27,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
   add_share_file_dialog(*this, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
   add_share_folder_dialog(*this, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   refresh_shares_toolbutton(Gtk::Stock::REFRESH),
-  download_shares_toolbutton(Gtk::Stock::EXECUTE),
+  download_shares_toolbutton(Gtk::Stock::GO_DOWN),
   edit_preferences_toolbutton(Gtk::Stock::PREFERENCES),
   add_share_file_toolbutton(Gtk::Stock::FILE),
   add_share_folder_toolbutton(Gtk::Stock::DIRECTORY),
@@ -93,6 +93,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
 	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share folder"),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
+	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "Download"),
+	                      boost::bind(&ShareList::download_selected_shares, &share_list));
+	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download to..."));/*,
+	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
@@ -129,6 +133,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "    <menu action='FileMenu'>"
 	                        "      <menuitem action='FileAddShareFile'/>"
 	                        "      <menuitem action='FileAddSharefolder'/>"
+	                        "      <separator/>"
+	                        "      <menuitem action='FileDownload'/>"
+	                        "      <menuitem action='FileDownloadTo'/>"
 	                        "      <separator/>"
 	                        "      <menuitem action='FileQuit'/>"
 	                        "    </menu>"
