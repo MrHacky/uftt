@@ -77,6 +77,13 @@ class UFTTSettings {
 
 		/* Gtk GUI */
 		bool show_toolbar;
+		bool show_task_tray_icon;
+		// 0 = Do not minimize to tray,
+		// 1 = Minimize to tray on close,
+		// 2 = Minimize to tray on minimize.
+		// Option 2 may not be implemented for all platforms/gui combinations.
+		int  minimize_to_tray_mode;
+		bool start_in_tray;
 
 	public:
 		template<class Archive>
@@ -115,11 +122,14 @@ class UFTTSettings {
 
 			/* Gtk GUI */
 			if (version >= 12) ar & NVP("show_toolbar", show_toolbar);
+			if (version >= 13) ar & NVP("show_task_tray_icon", show_task_tray_icon);
+			if (version >= 13) ar & NVP("minimize_to_tray_mode", minimize_to_tray_mode);
+			if (version >= 13) ar & NVP("start_in_tray", start_in_tray);
 		}
 };
 typedef boost::shared_ptr<UFTTSettings> UFTTSettingsRef;
 
-BOOST_CLASS_VERSION(UFTTSettings, 12)
+BOOST_CLASS_VERSION(UFTTSettings, 13)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

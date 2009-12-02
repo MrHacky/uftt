@@ -33,6 +33,9 @@ UFTTSettings::UFTTSettings()
 
 	/* Gtk GUI */
 	show_toolbar = true;
+	show_task_tray_icon = true;
+	minimize_to_tray_mode = 1;
+	start_in_tray = false;
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)
