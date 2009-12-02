@@ -97,6 +97,9 @@
 			void on_menu_file_quit();
 			void on_signal_hide();
 			void on_share_list_treeview_signal_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y, const Gtk::SelectionData& selection_data, guint info, guint time);
+			sigc::connection on_download_destination_path_entry_signal_changed_connection;
+			void on_download_destination_path_entry_signal_changed();
+			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
 			void _set_backend(UFTTCoreRef _core);
 			void add_share(const ShareInfo& info);
 	};

@@ -148,8 +148,14 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_scrolledwindow.add(share_list_treeview);
 	share_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
+	on_download_destination_path_entry_signal_changed_connection =
+		download_destination_path_entry.signal_changed().connect(
+			boost::bind(&UFTTWindow::on_download_destination_path_entry_signal_changed, this));
+	download_destination_path_entry.set_text(settings->dl_path.native_directory_string());
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
+	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
+		boost::bind(&UFTTWindow::on_browse_for_download_destination_path_button_signal_current_folder_changed, this));
 	download_destination_path_label.set_alignment(0.0f, 0.5f);
 	download_destination_path_label.set_text("Download location:");
 	download_destination_path_vbox.add(download_destination_path_label);
@@ -199,6 +205,40 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+void UFTTWindow::on_download_destination_path_entry_signal_changed() {
+	settings->dl_path = download_destination_path_entry.get_text();
+	while(settings->dl_path.leaf() == ".") settings->dl_path.remove_leaf(); // Remove trailing '/' 's
+	if(!ext::filesystem::exists(settings->dl_path)) {
+		download_destination_path_entry.modify_text(Gtk::STATE_NORMAL, Gdk::Color("#000000"));
+		// Note: some windows app uses #ffb3b3 and black text, anjuta uses #ff6666 and white text (the average is about #ff9494)
+		download_destination_path_entry.modify_base(Gtk::STATE_NORMAL, Gdk::Color("#ffb3b3"));
+	}
+	else {
+		download_destination_path_entry.unset_base(Gtk::STATE_NORMAL);
+		download_destination_path_entry.unset_text(Gtk::STATE_NORMAL);
+		on_download_destination_path_entry_signal_changed_connection.block();
+		browse_for_download_destination_path_button.set_current_folder(settings->dl_path.string());
+	}
+}
+
+void UFTTWindow::on_browse_for_download_destination_path_button_signal_current_folder_changed() {
+	boost::filesystem::path pa(download_destination_path_entry.get_text());
+	boost::filesystem::path pb(browse_for_download_destination_path_button.get_current_folder());
+	while(pa.leaf() == ".") pa.remove_leaf();
+	while(pb.leaf() == ".") pb.remove_leaf();
+	
+	if((!on_download_destination_path_entry_signal_changed_connection.blocked()) && (pa.string() != pb.string())) {
+		// If this connection is blocked it means we are being called because the
+		// entry is updating the current_folder of the filechooserbutton. Don't
+		// try to tell the entry it is wrong, it is right!
+		// The compare on pa and pb is needed because the filechooser seems to
+		// always strip trailing path separators, and we don't want to undo a '/'
+		// typed by the user.
+		download_destination_path_entry.set_text(browse_for_download_destination_path_button.get_current_folder());
+	}
+	on_download_destination_path_entry_signal_changed_connection.unblock();
 }
 
 string urldecode(std::string s) { //http://www.koders.com/cpp/fid6315325A03C89DEB1E28732308D70D1312AB17DD.aspx
