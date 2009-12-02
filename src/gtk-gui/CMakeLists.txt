@@ -179,6 +179,7 @@ IF(ENABLE_GTK_GUI)
 	            AutoScrollingWindow.cpp	AutoScrollingWindow.h
 	            ShareList.cpp          	ShareList.h
 	            TaskList.cpp           	TaskList.h
+	            ShowURI.cpp            	ShowURI.h
 	            dispatcher_marshaller.h
 	            OStreamGtkTextBuffer.h
 	)
