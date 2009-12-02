@@ -305,9 +305,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	add_share_folder_toolbutton.set_tooltip_text("Share a whole folder");
 
 	if(settings->loaded) {
-		set_position(Gtk::WIN_POS_NONE);
-		move(settings->posx, settings->posy);
-		resize(settings->sizex, settings->sizey);
+		restore_window_size_and_position();
 	}
 	
 	// FIXME: We need to call show_all() and present() here, otherwise some
@@ -321,22 +319,36 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
+void UFTTWindow::save_window_size_and_position() {
+	int x,y;
+	get_position(x, y); // NOTE: Need to get_position *before* hide()
+	settings->posx = x;
+	settings->posy = y;
+	int w,h;
+	get_size(w, h);
+	settings->sizex = w;
+	settings->sizey = h;
+}
+
+void UFTTWindow::restore_window_size_and_position() {
+	set_position(Gtk::WIN_POS_NONE);
+	move(settings->posx, settings->posy);
+	resize(settings->sizex, settings->sizey);
+}
+
 void UFTTWindow::on_statusicon_signal_activate() {
 	if( is_visible() ) {
 		if( property_is_active() ) {
-			int x,y;
-			get_position(x, y); // NOTE: Need to get_position *before* hide()
-			settings->posx = x;
-			settings->posy = y;
+			save_window_size_and_position();
 			hide();
 		}
 		else {
-			move(settings->posx, settings->posy);
+			restore_window_size_and_position();
 			present();
 		}
 	}
 	else {
-		move(settings->posx, settings->posy);
+		restore_window_size_and_position();
 		show();
 	}
 }
@@ -689,23 +701,23 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_new_task, this, _1)));
 }
 
+
 bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
-	on_statusicon_signal_activate();
+	// TODO:
+	// if self.config["close_to_tray"] and self.config["enable_system_tray"]:
+	save_window_size_and_position();
+	hide();
+	// else:
+	// on_menu_file_quit();
 	return true;
 }
+
 
 void UFTTWindow::on_menu_file_quit() { // FIXME: Disconnect signals etc?
 	{
 		// Store settings, FIXME: Check if there are signals we can use to
 		// capture these before we need to quit()
-		int x,y;
-		get_position(x, y); // NOTE: Need to get_position *before* hide()
-		settings->posx = x;
-		settings->posy = y;
-		int w,h;
-		get_size(w, h);
-		settings->sizex = w;
-		settings->sizey = h;
+		save_window_size_and_position();
 	}
 	hide();
 	Gtk::Main::quit();
