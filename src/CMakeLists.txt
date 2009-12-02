@@ -10,6 +10,7 @@ INCLUDE_DIRECTORIES("${BOOST_INCLUDE_DIR}")
 LINK_DIRECTORIES("${BOOST_LIBRARY_DIR}")
 
 SUBDIRS(net-asio)
+SUBDIRS(gtk-gui)
 SUBDIRS(qt-gui)
 SUBDIRS(util)
 SUBDIRS(network)
@@ -59,6 +60,7 @@ SET(UFTT_SOURCES
 
 SET(UFTT_LIBRARIES
 	uftt-qt
+	uftt-gtk
 	uftt-network
 	lib-net-asio
 	lib-util

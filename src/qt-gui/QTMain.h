@@ -17,8 +17,7 @@ class QTMain {
 		QTMain( int& argc, char **argv, UFTTSettings* settings);
 		~QTMain();
 
-		void BindEvents(UFTTCore* t);
-
+		void bindEvents(UFTTCore* t);
 		int run();
 };
 

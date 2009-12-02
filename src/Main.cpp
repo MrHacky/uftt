@@ -3,6 +3,7 @@
 // allow upx compression (prevents use of TLS callbacks in boost::thread)
 extern "C" void tss_cleanup_implemented(void){}
 
+//#define ENABLE_GTK_GUI
 //#define BOOST_ASIO_DISABLE_IOCP
 //#define _WIN32_WINNT 0x0500
 //#define WINVER 0x0500
@@ -11,6 +12,7 @@ extern "C" void tss_cleanup_implemented(void){}
 
 #include "BuildString.h"
 #include "qt-gui/QTMain.h"
+#include "gtk-gui/GTKMain.h"
 //#include "network/NetworkThread.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"
@@ -237,6 +239,7 @@ int imain( int argc, char **argv )
 
 	// initialize backend & gui
 	UFTTSettings settings;
+	UFTTCore core(settings);
 	settings.load();
 
 	std::string extrabuildpath;
@@ -251,14 +254,20 @@ int imain( int argc, char **argv )
 	}
 
 	waitonexit = true;
-	QTMain gui(argc, argv, &settings);
+
+#ifdef ENABLE_GTK_GUI
+//	GTKMain gui(argc, argv, settings);
+	boost::shared_ptr<UFTTGui> gui(GTKMain::makeGui(argc, argv, core, settings));
+#else
+	QTMain _gui(argc, argv, &settings);
+	QTMain* gui = &_gui;
+#endif
+
 
 	cout << "Build: " << thebuildstring << '\n';
 
-	UFTTCore core(settings);
-
 	try {
-		gui.BindEvents(&core);
+		gui->bindEvents(&core);
 
 		if (madeConsole)
 			platform::freeConsole();
@@ -274,7 +283,7 @@ int imain( int argc, char **argv )
 		if (argc > 2 && string(argv[1]) == "--delete")
 			AutoUpdater::remove(run_service, work_service, argv[2]);
 
-		int ret = gui.run();
+		int ret = gui->run();
 
 		settings.save();
 
