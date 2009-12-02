@@ -103,6 +103,8 @@
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
 			void on_download_destination_path_entry_signal_changed();
 			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
+			void on_refresh_shares_toolbutton_clicked();
+			bool refresh_shares();
 			void _set_backend(UFTTCoreRef _core);
 			void add_share(const ShareInfo& info);
 	};

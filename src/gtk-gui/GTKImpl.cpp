@@ -193,6 +193,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	edit_preferences_toolbutton.set_label("Preferences");
 	download_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::download_selected_shares, this));
 	toolbar.append(download_shares_toolbutton);
+	refresh_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
 	toolbar.append(refresh_shares_toolbutton);
 	toolbar.append(refresh_preferences_separatortoolitem);
 	toolbar.append(edit_preferences_toolbutton);
@@ -340,6 +341,27 @@ void UFTTWindow::download_selected_shares() {
 			}
 		}
 		core->addDownloadTask(sid, settings->dl_path);
+	}
+}
+
+bool UFTTWindow::refresh_shares() {
+	if(core) core->doRefreshShares();
+	return false;
+}
+
+void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
+	// FIXME: begin QTGui QuirkMode Emulation TM
+	Gdk::ModifierType mask;
+	int x,y;
+	get_window()->get_pointer(x, y, mask);
+	if((mask & Gdk::SHIFT_MASK) != Gdk::SHIFT_MASK) {
+		share_list_liststore->clear();
+	}
+	if((mask & Gdk::CONTROL_MASK) != Gdk::CONTROL_MASK) {
+		for(int i=0; i<8; ++i) {
+			sigc::slot<bool> slot = sigc::mem_fun(*this, &UFTTWindow::refresh_shares);
+			Glib::signal_timeout().connect(slot, i*20);
+		}
 	}
 }
 
