@@ -17,7 +17,11 @@
 using namespace std;
 
 UFTTWindow::UFTTWindow(UFTTSettingsRef _settings) 
-: settings(_settings)
+: settings(_settings),
+  browse_for_download_destination_path_button(Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  refresh_shares_toolbutton(Gtk::Stock::REFRESH),
+  download_shares_toolbutton(Gtk::Stock::EXECUTE),
+  edit_preferences_toolbutton(Gtk::Stock::PREFERENCES)
 {
 	signal_hide().connect(boost::bind(&UFTTWindow::on_signal_hide, this));
 	set_title("UFTT");
@@ -128,34 +132,61 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_treeview.set_headers_clickable(true);
 	share_list_treeview.set_rules_hint(true);
 	share_list_treeview.set_search_column(share_list_columns.share_name);
+	share_list_liststore->set_sort_column(share_list_columns.host_name, Gtk::SORT_ASCENDING);
 	BOOST_FOREACH(Gtk::TreeViewColumn* column, share_list_treeview.get_columns()) {
-		column->set_reorderable(true); //FIXME: May break DnD?
-		column->set_sort_indicator(true);
+		column->set_reorderable(true);
 	}
 	share_list_treeview.set_enable_search(true);
 	share_list_treeview.set_rubber_banding(true);
 	share_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
-	share_list_scrolledwindow.add(share_list_treeview);
-	share_list_frame.add(share_list_scrolledwindow);
 	std::list<Gtk::TargetEntry> listTargets;
 	listTargets.push_back( Gtk::TargetEntry("text/uri-list", Gtk::TARGET_OTHER_APP, 0) ); // Last parameter is 'Info', used to distinguish
 	listTargets.push_back( Gtk::TargetEntry("text/plain"   , Gtk::TARGET_OTHER_APP, 1) ); // different types of TargetEntry in the drop handler
 	listTargets.push_back( Gtk::TargetEntry("STRING"       , Gtk::TARGET_OTHER_APP, 2) );
 	share_list_treeview.drag_dest_set(listTargets); // Should use defaults, DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
 	share_list_treeview.signal_drag_data_received().connect(boost::bind(&UFTTWindow::on_share_list_treeview_signal_drag_data_received, this, _1, _2, _3, _4, _5, _6));
+	share_list_scrolledwindow.add(share_list_treeview);
+	share_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
+
+	download_destination_path_hbox.add(download_destination_path_entry);
+	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
+	download_destination_path_label.set_alignment(0.0f, 0.5f);
+	download_destination_path_label.set_text("Download location:");
+	download_destination_path_vbox.add(download_destination_path_label);
+	download_destination_path_vbox.add(download_destination_path_hbox);
+	download_destination_path_alignment.add(download_destination_path_vbox);
+	download_destination_path_alignment.set_padding(8, 4, 4, 4);
+	share_list_alignment.set_padding(4, 4, 4, 4);
+	task_list_alignment.set_padding(4, 4, 4, 4);
+	debug_log_alignment.set_padding(4, 4, 4, 4);
+
 	
-	share_task_list_vpaned.add(share_list_frame);
+	share_list_vbox.add(share_list_scrolledwindow);
+	share_list_vbox.pack_start(download_destination_path_alignment, Gtk::PACK_SHRINK);
+	share_list_frame.add(share_list_vbox);
+	share_list_alignment.add(share_list_frame);
+	share_task_list_vpaned.add(share_list_alignment);
 	task_list_frame.set_label("Tasklist:");
 	task_list_frame.add(task_list_treeview);
-	share_task_list_vpaned.add(task_list_frame);
+	task_list_alignment.add(task_list_frame);
+	share_task_list_vpaned.add(task_list_alignment);
 	main_paned.add(share_task_list_vpaned);
 	debug_log_textview.set_buffer(Glib::RefPtr<Gtk::TextBuffer>(new OStreamGtkTextBuffer(std::cout)));
 	debug_log_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	debug_log_scrolledwindow.add(debug_log_textview);
 	debug_log_frame.add(debug_log_scrolledwindow);
 	debug_log_frame.set_label("Debuglog:");
-	main_paned.add(debug_log_frame);
+	debug_log_alignment.add(debug_log_frame);
+	main_paned.add(debug_log_alignment);
 	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
+	refresh_shares_toolbutton.set_label("Refresh");
+	download_shares_toolbutton.set_label("Download");
+	edit_preferences_toolbutton.set_label("Edit Preferences");
+	toolbar.append(download_shares_toolbutton);
+	toolbar.append(refresh_shares_toolbutton);
+	toolbar.append(refresh_preferences_separatortoolitem);
+	toolbar.append(edit_preferences_toolbutton);
+	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
 	add(menu_main_paned_vbox);
 
@@ -211,6 +242,9 @@ void UFTTWindow::on_share_list_treeview_signal_drag_data_received(
 	const Gtk::SelectionData& selection_data, guint info, guint time)
 {
 	// Note: We know we only receive strings (of type STRING, text/uri-list and text/plain)
+	//       so we could use something similar to g_uri_list_extract_uris, but this is not
+	//       present in GlibMM (yet?). The single line version filename_from_uri is, but
+	//       we have an uri-list...
 	switch(info) {
 		case 0: {
 			BOOST_FOREACH(std::string file, urilist_convert(selection_data.get_data_as_string())) {

@@ -12,13 +12,20 @@
 	#include <gtkmm/menu.h>
 	#include <gtkmm/paned.h>
 	#include <gtkmm/frame.h>
+	#include <gtkmm/button.h>
 	#include <gtkmm/window.h>
+	#include <gtkmm/toolbar.h>
 	#include <gtkmm/treeview.h>
 	#include <gtkmm/textview.h>
+	#include <gtkmm/alignment.h>
 	#include <gtkmm/liststore.h>
+	#include <gtkmm/separator.h>
 	#include <gtkmm/uimanager.h>
+	#include <gtkmm/toolbutton.h>
 	#include <gtkmm/scrolledwindow.h>
 	#include <gtkmm/radiobuttongroup.h>
+	#include <gtkmm/filechooserbutton.h>
+	#include <gtkmm/separatortoolitem.h>
 
 	class UFTTWindow : public Gtk::Window {
 		public:
@@ -69,6 +76,22 @@
 			Gtk::ScrolledWindow      share_list_scrolledwindow;
 			Gtk::TreeView            share_list_treeview;
 			Gtk::TreeView            task_list_treeview;
+			Gtk::VBox                share_list_vbox;
+			Gtk::Alignment           share_list_alignment;
+			Gtk::Alignment           task_list_alignment;
+			Gtk::Alignment           debug_log_alignment;
+			Gtk::Alignment           download_destination_path_alignment;
+			Gtk::HBox                download_destination_path_hbox;
+			Gtk::VBox                download_destination_path_vbox;
+			Gtk::Entry               download_destination_path_entry;
+			Gtk::Label               download_destination_path_label;
+			Gtk::FileChooserButton   browse_for_download_destination_path_button;
+			Gtk::Toolbar             toolbar;
+			Gtk::Image               refresh_shares_image;
+			Gtk::ToolButton          download_shares_toolbutton;
+			Gtk::ToolButton          refresh_shares_toolbutton;
+			Gtk::SeparatorToolItem   refresh_preferences_separatortoolitem;
+			Gtk::ToolButton          edit_preferences_toolbutton;
 
 			/* Functions */
 			void on_menu_file_quit();
