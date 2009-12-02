@@ -35,7 +35,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 {
 	set_title("UFTT");
 	set_default_size(1024, 640);
-	set_position(Gtk::WIN_POS_CENTER);
 	set_visible(false);
 
 	{
@@ -280,7 +279,6 @@ void UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled() {
 }
 
 void UFTTWindow::restore_window_size_and_position() {
-	set_position(Gtk::WIN_POS_NONE);
 	move(settings->posx, settings->posy);
 	resize(settings->sizex, settings->sizey);
 }
