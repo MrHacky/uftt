@@ -78,7 +78,7 @@
 			void on_refresh_shares_toolbutton_clicked();
 			void on_add_share_file();
 			void on_add_share_folder();
-			bool refresh_shares();
+			void refresh_shares();
 			bool on_statusicon_signal_size_changed(int xy);
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);

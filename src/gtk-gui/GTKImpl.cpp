@@ -359,9 +359,8 @@ void UFTTWindow::on_add_share_folder() {
 	add_share_folder_dialog_connection.unblock();
 }
 
-bool UFTTWindow::refresh_shares() {
+void UFTTWindow::refresh_shares() {
 	if(core) core->doRefreshShares();
-	return false;
 }
 
 void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
@@ -374,8 +373,7 @@ void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
 	}
 	if((mask & Gdk::CONTROL_MASK) != Gdk::CONTROL_MASK) {
 		for(int i=0; i<8; ++i) {
-			sigc::slot<bool> slot = sigc::mem_fun(*this, &UFTTWindow::refresh_shares);
-			Glib::signal_timeout().connect(slot, i*20);
+			Glib::signal_timeout().connect_once(dispatcher.wrap(boost::bind(&UFTTWindow::refresh_shares, this)), i*20);
 		}
 	}
 }
