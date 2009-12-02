@@ -180,7 +180,7 @@ class http_request
 
 				std::string status_message;
 				std::getline(response_stream, status_message);
-				if (!response_stream || http_version.substr(0, 5) != "HTTP/") {
+				if (!response_stream || http_version.size() < 5 || http_version.substr(0, 5) != "HTTP/") {
 					std::cout << "Invalid response\n";
 					handler(-1, boost::system::posix_error::make_error_code(boost::system::posix_error::bad_message));
 					return;
@@ -255,23 +255,20 @@ class http_request
 		}
 
 		void handler(int code, const boost::system::error_code& err) {
-			if (!handlerfunc) return;
+			if (handlerfunc.empty()) return;
 
-			handlerfunc(code, err);
-
-			if (code == -1) {
+			if (code >= 0) {
+				// just a progress report
+				handlerfunc(code, err);
+			} else {
 				// called handler for the last time
-				// in case clearing the handler triggers the destruction of the http_request object,
-				// make sure handlerfunc is already cleared by keeping a copy of the handler object
-				// alive by passing it to a function to be called later
-				get_io_service().post(boost::bind(&http_request::clearhandler, handlerfunc));
+				// clearing the handler to prevent memleaks if it has shared pointer references
+				// executing the handler or clearing the handler could destroy the http_request
+				// so move the handler object to local scope to prevent destructor loops
+				boost::function<void(int, boost::system::error_code)> th(handlerfunc);
 				handlerfunc.clear();
+				th(code, err);
 			}
-		}
-
-		static void clearhandler(const boost::function<void(int, boost::system::error_code)>& h)
-		{
-			//h.clear();
 		}
 
 		uint8 bigbuf[100*1024];
