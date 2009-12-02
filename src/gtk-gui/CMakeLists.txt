@@ -1,8 +1,8 @@
 STRING(COMPARE EQUAL "${ENABLE_GTK_GUI}" "" AUTODETECT_GTK_GUI)
 IF(AUTODETECT_GTK_GUI)
 	find_package(PkgConfig)
-	pkg_check_modules(GTKMM24 gtkmm-2.4)
-	pkg_check_modules(GTHREAD gthread-2.0)
+	pkg_check_modules(GTKMM24 REQUIRED gtkmm-2.4>=2.18.3)
+	pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
 
 	IF(PKG_CONFIG_FOUND)
 		IF(GTKMM24_FOUND)

@@ -16,18 +16,50 @@
 
 using namespace std;
 
-UFTTWindow::UFTTWindow(UFTTSettingsRef _settings) 
+UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 : settings(_settings),
-  browse_for_download_destination_path_button(Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  add_share_file_dialog(*this, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
+  add_share_folder_dialog(*this, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  browse_for_download_destination_path_button("Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   refresh_shares_toolbutton(Gtk::Stock::REFRESH),
   download_shares_toolbutton(Gtk::Stock::EXECUTE),
-  edit_preferences_toolbutton(Gtk::Stock::PREFERENCES)
+  edit_preferences_toolbutton(Gtk::Stock::PREFERENCES),
+  add_share_file_toolbutton(Gtk::Stock::FILE),
+  add_share_folder_toolbutton(Gtk::Stock::DIRECTORY)
 {
 	signal_hide().connect(boost::bind(&UFTTWindow::on_signal_hide, this));
 	set_title("UFTT");
 	set_default_size(1024, 640);
 	set_position(Gtk::WIN_POS_CENTER);
 
+	{
+		Gtk::Button* button;
+		button = add_share_file_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_file_dialog));
+		button = add_share_file_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+		button->set_label("_Select");
+		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
+		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
+		button->set_image(*image);
+		add_share_file_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_file, this));
+		add_share_file_dialog.set_transient_for(*this);
+		add_share_file_dialog.set_modal(true);
+		add_share_file_dialog.set_create_folders(false);
+	}
+	{
+		Gtk::Button* button;
+		button = add_share_folder_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_folder_dialog));
+		button = add_share_folder_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+		button->set_label("_Select");
+		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
+		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
+		button->set_image(*image);
+		add_share_folder_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_folder, this));
+		add_share_folder_dialog.set_transient_for(*this);
+		add_share_folder_dialog.set_modal(true);
+		add_share_folder_dialog.set_create_folders(false);
+	}
 	/*
 	guint8* data = new guint8[gmpmpc_icon_data.width * gmpmpc_icon_data.height * gmpmpc_icon_data.bytes_per_pixel];
 	GIMP_IMAGE_RUN_LENGTH_DECODE(data,
@@ -53,8 +85,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup = Gtk::ActionGroup::create();
 	/* File menu */
 	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
+	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share file"),
+	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
+	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share folder"),
+	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
-	                      sigc::mem_fun(*this, &UFTTWindow::on_menu_file_quit));
+	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewSharelist", "_Sharelist"));
@@ -87,6 +123,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	Glib::ustring ui_info = "<ui>"
 	                        "  <menubar name='MenuBar'>"
 	                        "    <menu action='FileMenu'>"
+	                        "      <menuitem action='FileAddShareFile'/>"
+	                        "      <menuitem action='FileAddSharefolder'/>"
+	                        "      <separator/>"
 	                        "      <menuitem action='FileQuit'/>"
 	                        "    </menu>"
 	                        "    <menu action='ViewMenu'>"
@@ -188,14 +227,25 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	debug_log_alignment.add(debug_log_frame);
 	main_paned.add(debug_log_alignment);
 	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
+
+	Gtk::SeparatorToolItem* separator;
 	refresh_shares_toolbutton.set_label("Refresh");
 	download_shares_toolbutton.set_label("Download");
 	edit_preferences_toolbutton.set_label("Preferences");
+	add_share_file_toolbutton.set_label("Share file");
+	add_share_folder_toolbutton.set_label("Share folder");
 	download_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::download_selected_shares, this));
-	toolbar.append(download_shares_toolbutton);
 	refresh_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
+	add_share_file_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
+	add_share_folder_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
+	toolbar.append(add_share_file_toolbutton);
+	toolbar.append(add_share_folder_toolbutton);
+	separator = Gtk::manage(new Gtk::SeparatorToolItem());
+	toolbar.append(*separator);
+	toolbar.append(download_shares_toolbutton);
 	toolbar.append(refresh_shares_toolbutton);
-	toolbar.append(refresh_preferences_separatortoolitem);
+	separator = Gtk::manage(new Gtk::SeparatorToolItem());
+	toolbar.append(*separator);
 	toolbar.append(edit_preferences_toolbutton);
 	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
@@ -216,6 +266,46 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+void UFTTWindow::on_add_share_file() {
+	add_share_file_dialog_connection.block();  // Work around some funny Gtk behaviour
+	std::string filename = add_share_file_dialog.get_filename();
+	if(filename != "") {
+		boost::filesystem::path path = filename;
+		if(ext::filesystem::exists(path)) {
+			add_share_file_dialog.hide();
+			core->addLocalShare(path.leaf(), path);
+		}
+		else {
+			Gtk::MessageDialog dialog("File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			dialog.set_transient_for(add_share_file_dialog);
+			dialog.set_modal(true);
+			dialog.set_secondary_text("The file you have selected to share does not appear to exist.\nPlease verify that the path and filename are correct and try again.");
+			dialog.run();
+		}
+	}
+	add_share_file_dialog_connection.unblock();
+}
+
+void UFTTWindow::on_add_share_folder() {
+	add_share_folder_dialog_connection.block(); // Work around some funny Gtk behaviour
+	std::string filename = add_share_folder_dialog.get_filename();
+	if(filename != "") {
+		boost::filesystem::path path = filename;
+		if(ext::filesystem::exists(path)) {
+			add_share_folder_dialog.hide();
+			core->addLocalShare(path.leaf(), path);
+		}
+		else {
+			Gtk::MessageDialog dialog("Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			dialog.set_transient_for(add_share_folder_dialog);
+			dialog.set_modal(true);
+			dialog.set_secondary_text("The folder you have selected to share does not appear to exist.\nPlease verify that the path and foldername are correct and try again.");
+			dialog.run();
+		}
+	}
+	add_share_folder_dialog_connection.unblock();
 }
 
 void UFTTWindow::on_download_destination_path_entry_signal_changed() {

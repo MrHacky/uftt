@@ -87,13 +87,18 @@
 			Gtk::VBox                download_destination_path_vbox;
 			Gtk::Entry               download_destination_path_entry;
 			Gtk::Label               download_destination_path_label;
+			sigc::connection         add_share_file_dialog_connection;
+			Gtk::FileChooserDialog   add_share_file_dialog;
+			sigc::connection         add_share_folder_dialog_connection;
+			Gtk::FileChooserDialog   add_share_folder_dialog;
 			Gtk::FileChooserButton   browse_for_download_destination_path_button;
 			Gtk::Toolbar             toolbar;
 			Gtk::Image               refresh_shares_image;
 			Gtk::ToolButton          download_shares_toolbutton;
 			Gtk::ToolButton          refresh_shares_toolbutton;
-			Gtk::SeparatorToolItem   refresh_preferences_separatortoolitem;
 			Gtk::ToolButton          edit_preferences_toolbutton;
+			Gtk::ToolButton          add_share_file_toolbutton;
+			Gtk::ToolButton          add_share_folder_toolbutton;
 
 			/* Functions */
 			void on_menu_file_quit();
@@ -104,6 +109,8 @@
 			void on_download_destination_path_entry_signal_changed();
 			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
 			void on_refresh_shares_toolbutton_clicked();
+			void on_add_share_file();
+			void on_add_share_folder();
 			bool refresh_shares();
 			void _set_backend(UFTTCoreRef _core);
 			void add_share(const ShareInfo& info);
