@@ -35,13 +35,14 @@ GTKMain::~GTKMain() {
 }
 
 void GTKMain::bindEvents(UFTTCoreRef core) {
-	// NOTE: Error dialogs are not presented to the user until run() is called
-	//       (Gtk::Main::run()). We can work around this (a bit) but it is more
-	//       trouble than it's worth.
 	impl->wnd->set_backend(core);
 }
 
 int GTKMain::run() {
+	impl->wnd->pre_show();
+	impl->wnd->show_all();
+	impl->wnd->present();
+	impl->wnd->post_show();
 	impl->kit->run();
 	impl->wnd->hide();
 	return 0;

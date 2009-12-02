@@ -35,6 +35,8 @@
 
 			/* Public functions */
 			void set_backend(UFTTCoreRef _core);
+			void pre_show();
+			void post_show();
 		private:
 			UFTTCoreRef core;
 			UFTTSettingsRef settings;
@@ -153,7 +155,6 @@
 			void on_add_share_file();
 			void on_add_share_folder();
 			bool refresh_shares();
-			void _set_backend(UFTTCoreRef _core);
 			void on_signal_add_share(const ShareInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& ti);

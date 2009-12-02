@@ -35,6 +35,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	set_title("UFTT");
 	set_default_size(1024, 640);
 	set_position(Gtk::WIN_POS_CENTER);
+	set_visible(false);
 
 	{
 		Gtk::Button* button;
@@ -69,7 +70,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	statusicon = Gtk::StatusIcon::create(statusicon_pixbuf);
 	set_default_icon(statusicon_pixbuf);
 	statusicon->set_tooltip("UFTT\nThe Ultimate File Transfer Tool");
-	statusicon->set_visible(true);
+	statusicon->set_visible(false);
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
 	statusicon->signal_size_changed().connect(slot);
 	statusicon->signal_popup_menu().connect(boost::bind(&UFTTWindow::on_statusicon_signal_popup_menu, this, _1, _2));
@@ -307,16 +308,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	if(settings->loaded) {
 		restore_window_size_and_position();
 	}
-	
-	// FIXME: We need to call show_all() and present() here, otherwise some
-	//         widgets will not know their own size and setting the positions
-	//         of the paneds will fail. However this leads to an ugly presentation
-	//         to the user because the user can now see this layouting process
-	//         in action.
-	show_all();
-	present();
-	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
-	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
 void UFTTWindow::save_window_size_and_position() {
@@ -672,35 +663,48 @@ void UFTTWindow::on_signal_new_task(const TaskInfo& info) {
 }
 
 void UFTTWindow::set_backend(UFTTCoreRef _core) {
-	dispatcher.invoke(boost::bind(&UFTTWindow::_set_backend, this, _core));
-}
+	{
+		// FIXME: We probably want to do this *AFTER* checking for errors/warnings
+		//         but this causes a nasty exception in SimpleBackend on exit if
+		//         we throw().
+		this->core = _core;
+		core->connectSigAddShare(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_add_share, this, _1)));
+		core->connectSigNewTask(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_new_task, this, _1)));
+	}
 
-void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	if(_core->error_state == 2) { // FIXME: Magic Constant
 		Gtk::MessageDialog dialog("Error during initialization", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text(STRFORMAT("There was a problem during the initialization of UFTT's core:\n\n\"%s\"\n\nUFTT can not continue and will now quit.", _core->error_string));
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);
+		dialog.set_skip_taskbar_hint(false);
 		dialog.run();
-//		throw int(1); // thrown integers will quit application with integer as exit code // FIXME: Can't we just quit() nicely?
-		on_menu_file_quit();
+		throw int(1); // thrown integers will quit application with integer as exit code
 	}
 	if(_core->error_state == 1) {// FIXME: Magic Constant
 		Gtk::MessageDialog dialog("Warning during initialization", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
 		dialog.set_secondary_text(STRFORMAT("Some warnings were generated during the initialization of UFTT's core:\n\n%s\n\nDo you still want to continue?", _core->error_string));
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);
+		dialog.set_skip_taskbar_hint(false);
 		dialog.set_default_response(Gtk::RESPONSE_YES);
 		if(dialog.run() == Gtk::RESPONSE_NO) {
-			on_menu_file_quit();
+			throw int(0); // thrown integers will quit application with integer as exit code
 		}
 	}
-
-	this->core = _core;
-	core->connectSigAddShare(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_add_share, this, _1)));
-	core->connectSigNewTask(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_new_task, this, _1)));
 }
 
+void UFTTWindow::pre_show() {
+	statusicon->set_visible(true);
+}
+
+void UFTTWindow::post_show() {
+	// FIXME: Because the window is already visible we get an ugly presentation
+	//         to the user because the user can now see the layouting process
+	//         for the paneds in action.
+	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
+	main_paned.set_position(main_paned.get_width()*5/8);
+}
 
 bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
 	// TODO:
