@@ -1,5 +1,7 @@
 #include "GTKImpl.h"
 #include "OStreamGtkTextBuffer.h"
+#include "ShowURI.h"
+#include "../Globals.h"
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
 #include "uftt-16x16.png.h"
@@ -111,17 +113,22 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewToolbar", "_Toolbar"));
 
 	m_refActionGroup->add(Gtk::Action::create("Help", "_Help"));
-	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP));
-	m_refActionGroup->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"));
-	m_refActionGroup->add(Gtk::Action::create("HelpBugs", "Report _Bugs/Patches/Requests"));
-	m_refActionGroup->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"));
+	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP),
+	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/UFTTHowto"));
+	m_refActionGroup->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"),
+	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/FAQ"));
+	m_refActionGroup->add(Gtk::Action::create("HelpBugs", "Report _Bugs/Patches/Requests"),
+	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/issues/list"));
+	m_refActionGroup->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"),
+	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/"));
+
 	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT));//, "About _UFTT"));
 //	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
 	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
 	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
 
-		
+
 	m_refUIManager = Gtk::UIManager::create();
 	m_refUIManager->insert_action_group(m_refActionGroup);
 
@@ -206,11 +213,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);
 	task_list_alignment.set_padding(4, 4, 4, 4);
-	
+
 	share_task_list_vpaned.add(share_list_alignment);
 	share_task_list_vpaned.add(task_list_alignment);
 	main_paned.add(share_task_list_vpaned);
-	
+
 	debug_log_textview.set_buffer(Glib::RefPtr<Gtk::TextBuffer>(new OStreamGtkTextBuffer(std::cout)));
 	debug_log_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	debug_log_scrolledwindow.add(debug_log_textview);
@@ -258,6 +265,20 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		toolbar.set_no_show_all(true);
 		mi->set_active(settings->show_toolbar);
 		toolbar.set_visible(settings->show_toolbar);
+	}
+}
+
+void UFTTWindow::show_uri(Glib::ustring uri) {
+	try {
+		Gtk::show_uri(Glib::wrap((GdkScreen*)NULL), uri, GDK_CURRENT_TIME);
+	}
+	catch(Glib::SpawnError e) {
+		Gtk::MessageDialog dialog("Failed to open URL", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		dialog.set_transient_for(*this);
+		dialog.set_modal(true);
+		dialog.set_secondary_text(STRFORMAT("UFTT wanted to open the following URI in your default browser,\n"
+		                                    "but could not determine what browser you use.\n\n\"%s\"", uri));
+		dialog.run();
 	}
 }
 
