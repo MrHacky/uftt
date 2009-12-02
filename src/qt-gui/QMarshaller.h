@@ -44,16 +44,16 @@ class QMarshaller: public QObject
 					typedef void result_type;
 			};
 
-			void queue_runfunction(const QMarshaller::functype& func)
+			void queue_runfunction(const functype& func)
 			{
 				this->signal_runfunction(func);
 			}
 
 		Q_SIGNALS:
-			void signal_runfunction(const QMarshaller::functype& func);
+			void signal_runfunction(const functype& func);
 
 		protected Q_SLOTS:
-			void execute_runfunction(const QMarshaller::functype& func)
+			void execute_runfunction(const functype& func)
 			{
 				func();
 			}
@@ -75,7 +75,7 @@ class QMarshaller: public QObject
 #define n BOOST_PP_ITERATION()
 
 #if n > 0
-template <BOOST_PP_ENUM_PARAMS(n, class T)>
+template <BOOST_PP_ENUM_PARAMS(n, typename T)>
 #endif
 void operator()(BOOST_PP_ENUM_BINARY_PARAMS(n, const T, &t))
 {

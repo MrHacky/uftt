@@ -10,6 +10,7 @@
 
 #include "Platform.h"
 
+#include <iostream>
 #include <fstream>
 
 #include <openssl/rsa.h>

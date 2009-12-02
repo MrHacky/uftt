@@ -33,7 +33,7 @@ void SimpleBackend::connectSigTaskStatus(const TaskID& tid, const boost::functio
 void SimpleBackend::doRefreshShares()
 {
 	service.post(boost::bind(&SimpleBackend::send_query, this, uftt_bcst_if, uftt_bcst_ep));
-	start_peerfinder();
+	service.post(boost::bind(&SimpleBackend::start_peerfinder, this));
 }
 
 void SimpleBackend::startDownload(const ShareID& sid, const boost::filesystem::path& path)

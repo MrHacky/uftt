@@ -5,6 +5,7 @@
 #include <boost/foreach.hpp>
 
 #include <set>
+#include <iostream>
 
 #ifdef WIN32
 #endif

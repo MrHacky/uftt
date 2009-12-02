@@ -89,7 +89,9 @@ class http_request
 			// Use 'Connection: close' so EOF equals the end of the data
 			std::ostream request_stream(&request);
 			request_stream << "GET " << path << " HTTP/1.0\r\n";
-			request_stream << "Host: " << server << ':' << port << "\r\n";
+			request_stream << "Host: " << server;
+			if (port != 80) request_stream << ':' << port;
+			request_stream << "\r\n";
 			request_stream << "Accept: */*\r\n";
 			request_stream << "Connection: close\r\n\r\n";
 
