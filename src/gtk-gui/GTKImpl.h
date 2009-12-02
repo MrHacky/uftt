@@ -34,7 +34,7 @@
 			/* Containers (widgets not referenced by code) */
 
 			/* Widgets (referenced by code) */
-			Gtk::Menu* menubar_ptr; // Menu is created dynamically using UIManager
+			Gtk::Menu*            menubar_ptr; // Menu is created dynamically using UIManager
 			Gtk::RadioButtonGroup menu_options_check_updates_frequency_radio_button_group;
 			Gtk::VBox             menu_main_paned_vbox;
 			Gtk::HPaned           main_paned;
@@ -42,6 +42,7 @@
 			Gtk::Frame            share_list_frame;
 			Gtk::Frame            task_list_frame;
 			Gtk::Frame            debug_log_frame;
+			Gtk::ScrolledWindow   debug_log_scrolledwindow;
 			Gtk::TextView         debug_log_textview;
 			Gtk::TreeView         share_list_treeview;
 			Gtk::TreeView         task_list_treeview;

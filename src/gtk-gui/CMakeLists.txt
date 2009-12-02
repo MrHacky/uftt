@@ -150,6 +150,7 @@ IF(ENABLE_GTK_GUI)
 	               GTKMain.h			GTKMain.cpp
 	               GTKImpl.cpp		GTKImpl.h
 	               dispatcher_marshaller.h
+	               OStreamGtkTextBuffer.h
 	)
 
 	TARGET_LINK_LIBRARIES(uftt-gtk

@@ -1,4 +1,5 @@
 #include "GTKImpl.h"
+#include "OStreamGtkTextBuffer.h"
 #include <gtkmm/stock.h>
 //#include <gtkmm/actiongroup.h>
 #include <gtkmm/action.h>
@@ -118,8 +119,11 @@ void UFTTWindow::construct_gui() {
 	task_list_frame.add(task_list_treeview);
 	share_task_list_vpaned.add(task_list_frame);
 	main_paned.add(share_task_list_vpaned);
+	debug_log_textview.set_buffer(Glib::RefPtr<Gtk::TextBuffer>(new OStreamGtkTextBuffer(std::cout)));
+	debug_log_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
+	debug_log_scrolledwindow.add(debug_log_textview);
+	debug_log_frame.add(debug_log_scrolledwindow);
 	debug_log_frame.set_label("Debuglog:");
-	debug_log_frame.add(debug_log_textview);
 	main_paned.add(debug_log_frame);
 	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
@@ -128,7 +132,7 @@ void UFTTWindow::construct_gui() {
 	show_all();
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
-	main_paned.set_position(main_paned.get_width()*3/4);
+	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
 void UFTTWindow::on_menu_file_quit() {
