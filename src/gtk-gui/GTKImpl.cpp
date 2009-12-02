@@ -145,6 +145,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	listTargets.push_back( Gtk::TargetEntry("STRING"       , Gtk::TARGET_OTHER_APP, 2) );
 	share_list_treeview.drag_dest_set(listTargets); // Should use defaults, DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
 	share_list_treeview.signal_drag_data_received().connect(boost::bind(&UFTTWindow::on_share_list_treeview_signal_drag_data_received, this, _1, _2, _3, _4, _5, _6));
+	// FIXME: TreeView deselects rows before calling activated when pressing enter.
+	//         See http://bugzilla.xfce.org/show_bug.cgi?id=5943
+	share_list_treeview.signal_row_activated().connect(boost::bind(&UFTTWindow::download_selected_shares, this));
 	share_list_scrolledwindow.add(share_list_treeview);
 	share_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
@@ -188,6 +191,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	refresh_shares_toolbutton.set_label("Refresh");
 	download_shares_toolbutton.set_label("Download");
 	edit_preferences_toolbutton.set_label("Preferences");
+	download_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::download_selected_shares, this));
 	toolbar.append(download_shares_toolbutton);
 	toolbar.append(refresh_shares_toolbutton);
 	toolbar.append(refresh_preferences_separatortoolitem);
@@ -315,7 +319,32 @@ void UFTTWindow::on_share_list_treeview_signal_drag_data_received(
 	context->drag_finish(true, false, time);
 }
 
+void UFTTWindow::download_selected_shares() {
+	//FIXME: Don't forget to test dl_path for validity and writeablity
+	if(!ext::filesystem::exists(settings->dl_path)) {
+		Gtk::MessageDialog dialog("Download destination path does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		dialog.set_secondary_text("The path you have selected for downloaded shares to be placed does not appear to exist.\nPlease select another download destination and try again.");
+		dialog.run();
+		return;
+	}
+	Glib::RefPtr<Gtk::TreeSelection> sel = share_list_treeview.get_selection();
+	BOOST_FOREACH(Gtk::TreeModel::Path p, sel->get_selected_rows()) {
+		const Gtk::TreeModel::Row& row = *(share_list_liststore->get_iter(p));
+		ShareID sid = row[share_list_columns.share_id];
+		{ // evil hax!!!
+			Gdk::ModifierType mask;
+			int x,y;
+			get_window()->get_pointer(x, y, mask);
+			if((mask & Gdk::SHIFT_MASK) == Gdk::SHIFT_MASK) {
+				sid.sid[0] = 'x';
+			}
+		}
+		core->addDownloadTask(sid, settings->dl_path);
+	}
+}
+
 void UFTTWindow::add_share(const ShareInfo& info) {
+	// FIXME: Check for duplicates
 	Gtk::TreeModel::iterator i = share_list_liststore->append();
 	(*i)[share_list_columns.user_name]  = info.user;
 	(*i)[share_list_columns.share_name] = info.name;
@@ -323,6 +352,7 @@ void UFTTWindow::add_share(const ShareInfo& info) {
 	(*i)[share_list_columns.host_name]  = info.host;
 	(*i)[share_list_columns.protocol]   = info.proto;
 	(*i)[share_list_columns.url]        = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+	(*i)[share_list_columns.share_id]   = info.id;
 }
 
 void UFTTWindow::set_backend(UFTTCoreRef _core) {

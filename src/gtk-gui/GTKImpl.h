@@ -52,6 +52,7 @@
 						add(host_name);
 						add(protocol);
 						add(url);
+						add(share_id);
 					}
 
 					Gtk::TreeModelColumn<Glib::ustring> user_name;
@@ -59,6 +60,7 @@
 					Gtk::TreeModelColumn<Glib::ustring> host_name;
 					Gtk::TreeModelColumn<Glib::ustring> protocol;
 					Gtk::TreeModelColumn<Glib::ustring> url;
+					Gtk::TreeModelColumn<ShareID>       share_id;
 			};
 			ShareListColumns share_list_columns;
 
@@ -97,6 +99,7 @@
 			void on_menu_file_quit();
 			void on_signal_hide();
 			void on_share_list_treeview_signal_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y, const Gtk::SelectionData& selection_data, guint info, guint time);
+			void download_selected_shares();
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
 			void on_download_destination_path_entry_signal_changed();
 			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
