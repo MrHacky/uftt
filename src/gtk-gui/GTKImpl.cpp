@@ -32,7 +32,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
   add_share_file_toolbutton(Gtk::Stock::FILE),
   add_share_folder_toolbutton(Gtk::Stock::DIRECTORY)
 {
-	signal_hide().connect(boost::bind(&UFTTWindow::on_signal_hide, this));
 	set_title("UFTT");
 	set_default_size(1024, 640);
 	set_position(Gtk::WIN_POS_CENTER);
@@ -74,6 +73,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
 	statusicon->signal_size_changed().connect(slot);
 	statusicon->signal_popup_menu().connect(boost::bind(&UFTTWindow::on_statusicon_signal_popup_menu, this, _1, _2));
+	statusicon->signal_activate().connect(boost::bind(&UFTTWindow::on_statusicon_signal_activate, this));
 
 	std::vector<Glib::RefPtr<Gdk::Pixbuf> > icon_list;
 	icon_list.push_back(get_best_uftt_icon_for_size(16, 16));
@@ -313,6 +313,20 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+void UFTTWindow::on_statusicon_signal_activate() {
+	if( is_visible() ) {
+		if( property_is_active() ) {
+			hide();
+		}
+		else {
+			present();
+		}
+	}
+	else {
+		show();
+	}
 }
 
 void UFTTWindow::on_statusicon_signal_popup_menu(guint button, guint32 activate_time) {
@@ -663,10 +677,12 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_new_task, this, _1)));
 }
 
-void UFTTWindow::on_signal_hide() { // Close button (?)
-	on_menu_file_quit();
+bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
+	on_statusicon_signal_activate();
+	return true;
 }
 
-void UFTTWindow::on_menu_file_quit() {
+void UFTTWindow::on_menu_file_quit() { // FIXME: Disconnect signals etc?
+	hide();
 	Gtk::Main::quit();
 }

@@ -143,7 +143,7 @@
 
 			/* Functions */
 			void on_menu_file_quit();
-			void on_signal_hide();
+			bool on_delete_event(GdkEventAny* event);
 			void on_share_list_treeview_signal_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y, const Gtk::SelectionData& selection_data, guint info, guint time);
 			void download_selected_shares();
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
@@ -160,6 +160,7 @@
 			bool on_statusicon_signal_size_changed(int xy);
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);
+			void on_statusicon_signal_activate();
 	};
 
 #endif
