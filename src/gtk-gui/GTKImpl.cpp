@@ -307,8 +307,13 @@ void UFTTWindow::on_add_share_file() {
 	if(filename != "") {
 		boost::filesystem::path path = filename;
 		if(ext::filesystem::exists(path)) {
-			add_share_file_dialog.hide();
-			core->addLocalShare(path.leaf(), path);
+			if(boost::filesystem::is_directory(path)) {
+				add_share_file_dialog.set_current_folder(filename);
+			}
+			else {
+				add_share_file_dialog.hide();
+				core->addLocalShare(path.leaf(), path);
+			}
 		}
 		else {
 			Gtk::MessageDialog dialog("File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
