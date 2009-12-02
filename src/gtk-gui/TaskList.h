@@ -12,6 +12,7 @@
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
 			void set_backend(UFTTCoreRef _core);
+			void set_popup_menu(Gtk::Menu* _popup_menu);
 		private:
 			UFTTCoreRef core;
 			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
@@ -52,5 +53,8 @@
 			TaskListColumns              task_list_columns;
 			Glib::RefPtr<Gtk::ListStore> task_list_liststore;
 			Gtk::TreeView                task_list_treeview;
+			Gtk::Menu*                    popup_menu;
+			/* Functions */
+			bool on_task_list_treeview_signal_button_press_event(GdkEventButton* event);
 	};
 #endif // TASK_LIST_H

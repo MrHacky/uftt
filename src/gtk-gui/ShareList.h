@@ -15,6 +15,7 @@
 			void clear();
 			void download_selected_shares();
 			void set_backend(UFTTCoreRef _core);
+			void set_popup_menu(Gtk::Menu* _on_row_popup_menu, Gtk::Menu* _not_on_row_popup_menu);
 		private:
 			UFTTCoreRef core;
 			UFTTSettingsRef settings;
@@ -48,6 +49,8 @@
 			Gtk::Entry                    download_destination_path_entry;
 			Gtk::Label                    download_destination_path_label;
 			Gtk::FileChooserButton        browse_for_download_destination_path_button;
+			Gtk::Menu*                    on_row_popup_menu;
+			Gtk::Menu*                    not_on_row_popup_menu;
 
 			// Functions / callbacks
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
@@ -55,6 +58,7 @@
 			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
 			void on_share_list_treeview_signal_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y, const Gtk::SelectionData& selection_data, guint info, guint time);
 			void on_signal_add_share(const ShareInfo& info);
+			bool on_share_list_treeview_signal_button_press_event(GdkEventButton* event);
 	};
 
 #endif // SHARE_LIST_H

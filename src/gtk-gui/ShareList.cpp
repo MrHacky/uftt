@@ -2,6 +2,7 @@
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
 #include <string>
+#include <gdkmm/event.h>
 #include <gtkmm/stock.h>
 #include <boost/foreach.hpp>
 #include <gtkmm/messagedialog.h>
@@ -44,12 +45,14 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 	// FIXME: TreeView deselects rows before calling activated when pressing enter.
 	//         See http://bugzilla.xfce.org/show_bug.cgi?id=5943
 	share_list_treeview.signal_row_activated().connect(boost::bind(&ShareList::download_selected_shares, this));
+	share_list_treeview.signal_button_press_event().connect(
+		sigc::mem_fun(this, &ShareList::on_share_list_treeview_signal_button_press_event), false);
 	share_list_scrolledwindow.add(share_list_treeview);
 	share_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
 	on_download_destination_path_entry_signal_changed_connection =
 		download_destination_path_entry.signal_changed().connect(
-			boost::bind(&ShareList::on_download_destination_path_entry_signal_changed, this));	
+			boost::bind(&ShareList::on_download_destination_path_entry_signal_changed, this));
 	download_destination_path_entry.set_text(settings->dl_path.native_directory_string());
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
@@ -67,6 +70,36 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 
 	this->add(share_list_scrolledwindow);
 	this->pack_start(download_destination_path_alignment, Gtk::PACK_SHRINK);
+}
+
+void ShareList::set_popup_menu(Gtk::Menu* _on_row_popup_menu, Gtk::Menu* _not_on_row_popup_menu) {
+	on_row_popup_menu     = _on_row_popup_menu;
+	not_on_row_popup_menu = _not_on_row_popup_menu;
+}
+
+bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton* event) {
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
+		Gtk::TreeModel::Path  path;
+		Gtk::TreeViewColumn* column;
+		double x, y;
+		int    cell_x, cell_y;
+		bool exists = share_list_treeview.get_path_at_pos((int)(event->x), (int)(event->y), path, column, cell_x, cell_y);
+		if(exists) {
+			if(!share_list_treeview.get_selection()->is_selected(path)) {
+				share_list_treeview.get_selection()->unselect_all();
+				share_list_treeview.get_selection()->select(path);
+			}
+			if(on_row_popup_menu != NULL)
+				on_row_popup_menu->popup(event->button, event->time);
+			return true;
+		}
+		else {
+			if(not_on_row_popup_menu != NULL)
+				not_on_row_popup_menu->popup(event->button, event->time);
+			return true;
+		}
+	}
+	return false;
 }
 
 void ShareList::set_backend(UFTTCoreRef _core) {

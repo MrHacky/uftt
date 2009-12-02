@@ -102,11 +102,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	m_refActionGroup->add(Gtk::Action::create("EditMenu", "_Edit"));
 	m_refActionGroup->add(Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES));
-	
+
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
 	m_refActionGroup->add(Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist"),
 	                      boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
-	m_refActionGroup->add(Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Tasklist"));
+	m_refActionGroup->add(Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewToolbar", "_Toolbar"));
@@ -164,16 +164,39 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "    <separator/>"
 	                        "    <menuitem action='FileQuit'/>"
 	                        "  </popup>"
+	                        "  <popup name='ShareListOnRowPopup'>"
+	                        "    <menuitem action='FileAddShareFile'/>"
+	                        "    <menuitem action='FileAddSharefolder'/>"
+	                        "    <separator/>"
+	                        "    <menuitem action='FileDownload'/>"
+	                        "    <menuitem action='FileDownloadTo'/>"
+	                        "    <separator/>"
+	                        "    <menuitem action='ViewRefreshShareList'/>"
+	                        "  </popup>"
+	                        "  <popup name='ShareListNotOnRowPopup'>"
+	                        "    <menuitem action='FileAddShareFile'/>"
+	                        "    <menuitem action='FileAddSharefolder'/>"
+	                        "    <separator/>"
+	                        "    <menuitem action='ViewRefreshShareList'/>"
+	                        "  </popup>"
+	                        "  <popup name='TaskListPopup'>"
+	                        "    <menuitem action='ViewClearTaskList'/>"
+	                        "  </popup>"
 	                        "</ui>";
 
 	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid
 	menubar_ptr = (Gtk::Menu*)m_refUIManager->get_widget("/MenuBar");
 
+	share_list.set_popup_menu(
+		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListOnRowPopup"),
+		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListNotOnRowPopup")
+	);
 	share_list_frame.set_label("Sharelist:");
 	share_list_frame.add(share_list);
 	share_list_alignment.add(share_list_frame);
 	share_list_alignment.set_padding(4, 4, 4, 4);
 
+	task_list.set_popup_menu( (Gtk::Menu*)m_refUIManager->get_widget("/TaskListPopup") );
 	task_list_frame.set_label("Tasklist:");
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);

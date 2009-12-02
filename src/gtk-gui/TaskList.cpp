@@ -35,6 +35,20 @@ TaskList::TaskList() {
 	task_list_treeview.set_enable_search(true);
 	task_list_treeview.set_rubber_banding(true);
 	task_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
+	task_list_treeview.signal_button_press_event().connect(
+		sigc::mem_fun(this, &TaskList::on_task_list_treeview_signal_button_press_event), false);
+}
+
+void TaskList::set_popup_menu(Gtk::Menu* _popup_menu) {
+	popup_menu = _popup_menu;
+}
+
+bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* event) {
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (popup_menu != NULL)) {
+		popup_menu->popup(event->button, event->time);
+		return true;
+	}
+	return false;
 }
 
 void TaskList::set_backend(UFTTCoreRef _core) {
