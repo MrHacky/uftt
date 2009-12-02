@@ -75,6 +75,9 @@ class UFTTSettings {
 		boost::posix_time::ptime laststuncheck;
 		std::string stunpublicip;
 
+		/* Gtk GUI */
+		bool show_toolbar;
+
 	public:
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
@@ -109,11 +112,14 @@ class UFTTSettings {
 
 			//if (version >=  4 && version < 6) ar & NVP("dockinfo", dockinfo);
 			//if (version >=  6) ar & NVP("dockinfo", vector_as_string(dockinfo));
+
+			/* Gtk GUI */
+			if (version >= 12) ar & NVP("show_toolbar", show_toolbar);
 		}
 };
 typedef boost::shared_ptr<UFTTSettings> UFTTSettingsRef;
 
-BOOST_CLASS_VERSION(UFTTSettings, 11)
+BOOST_CLASS_VERSION(UFTTSettings, 12)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path

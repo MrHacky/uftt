@@ -216,7 +216,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	menu_main_paned_vbox.add(main_paned);
 	add(menu_main_paned_vbox);
 
-	//FIXME: View -> Toolbar on/off
 	download_shares_toolbutton.set_tooltip_text("Download selected shares");
 	edit_preferences_toolbutton.set_tooltip_text("Edit Preferences");
 	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");
@@ -225,6 +224,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	if(settings->loaded) {
 		restore_window_size_and_position();
+		Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
+		mi->signal_toggled().connect(boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
+		toolbar.show_all();
+		toolbar.set_no_show_all(true);
+		mi->set_active(settings->show_toolbar);
+		toolbar.set_visible(settings->show_toolbar);
 	}
 }
 
@@ -237,6 +242,12 @@ void UFTTWindow::save_window_size_and_position() {
 	get_size(w, h);
 	settings->sizex = w;
 	settings->sizey = h;
+}
+
+void UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled() {
+	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
+	settings->show_toolbar = mi->get_active();
+	toolbar.set_visible(settings->show_toolbar);
 }
 
 void UFTTWindow::restore_window_size_and_position() {

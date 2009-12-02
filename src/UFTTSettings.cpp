@@ -30,6 +30,9 @@ UFTTSettings::UFTTSettings()
 	experimentalresume = true;
 
 	traydoubleclick = true;
+
+	/* Gtk GUI */
+	show_toolbar = true;
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)

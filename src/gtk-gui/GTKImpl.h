@@ -85,6 +85,7 @@
 			void on_statusicon_signal_activate();
 			void save_window_size_and_position();
 			void restore_window_size_and_position();
+			void on_view_toolbar_checkmenuitem_signal_toggled();
 	};
 
 #endif
