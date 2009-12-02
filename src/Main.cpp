@@ -216,7 +216,9 @@ bool waitonexit = false;
 
 int imain( int argc, char **argv )
 {
+	#ifdef ENABLE_QT_GUI
 	LINK_QT_RESOURCE(icons);
+	#endif
 
 	bool madeConsole = false;
 	if (argc > 1 && !platform::hasConsole()) {

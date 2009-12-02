@@ -1,5 +1,4 @@
 #include "UFTTGui.h"
-//#define ENABLE_GTK_GUI // FIXME: This should be set from CMake
 #ifdef ENABLE_GTK_GUI
 	#include "gtk-gui/GTKMain.h"
 #else
