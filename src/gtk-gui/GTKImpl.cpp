@@ -175,6 +175,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_liststore->set_sort_column(share_list_columns.host_name, Gtk::SORT_ASCENDING);
 	BOOST_FOREACH(Gtk::TreeViewColumn* column, share_list_treeview.get_columns()) {
 		column->set_reorderable(true);
+		column->set_resizable(true);
 	}
 	share_list_treeview.set_enable_search(true);
 	share_list_treeview.set_rubber_banding(true);
@@ -240,6 +241,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	task_list_liststore->set_sort_column(task_list_columns.share_name, Gtk::SORT_ASCENDING);
 	BOOST_FOREACH(Gtk::TreeViewColumn* column, task_list_treeview.get_columns()) {
 		column->set_reorderable(true);
+		column->set_resizable(true);
 	}
 	task_list_treeview.set_enable_search(true);
 	task_list_treeview.set_rubber_banding(true);
