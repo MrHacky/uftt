@@ -232,7 +232,7 @@ void ShareList::download_selected_shares() {
 				sid.sid[0] = 'x';
 			}
 		}
-		core->addDownloadTask(sid, settings->dl_path);
+		core->startDownload(sid, settings->dl_path);
 	}
 }
 
