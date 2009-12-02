@@ -122,7 +122,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/"));
 
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT));//, "About _UFTT"));
+	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT),
+	                      boost::bind(&Gtk::AboutDialog::present, &uftt_about_dialog));//, "About _UFTT"));
 //	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
 	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
@@ -256,6 +257,34 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");
 	add_share_file_toolbutton.set_tooltip_text("Share a single file");
 	add_share_folder_toolbutton.set_tooltip_text("Share a whole folder");
+
+	vector<string> author_list;
+	author_list.push_back("\"CodeAcc\" <http://code.google.com/u/CodeAcc/>");
+	author_list.push_back("Daniël Geelen <http://code.google.com/u/daniel.geelen/>");
+	author_list.push_back("Simon Sasburg <http://code.google.com/u/simon.sasburg/>");
+	uftt_about_dialog.set_authors(author_list);
+	uftt_about_dialog.set_comments("A simple no-nonsense tool for transferring files.");
+	uftt_about_dialog.set_copyright("\302\251 Copyright 2009 the UFTT Team");
+	uftt_about_dialog.set_license("UFTT is free software; you can redistribute it and/or modify\n"
+	                              "it under the terms of the GNU General Public License as published by\n"
+	                              "the Free Software Foundation; either version 2 of the License, or\n"
+	                              "(at your option) any later version.\n"
+	                              "\n"
+	                              "UFTT is distributed in the hope that it will be useful,\n"
+	                              "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+	                              "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the\n"
+	                              "GNU General Public License for more details.\n"
+	                              "\n"
+	                              "You should have received a copy of the GNU General Public License\n"
+	                              "along with UFTT; if not, write to the Free Software Foundation,Inc.,\n"
+	                              "59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n");
+	uftt_about_dialog.set_logo(Glib::RefPtr<Gdk::Pixbuf>()); // empty RefPtr, so uses default icon
+	uftt_about_dialog.set_program_name("UFTT");
+	uftt_about_dialog.set_version(thebuildstring);
+	uftt_about_dialog.set_website("http://code.google.com/p/uftt/");
+	uftt_about_dialog.signal_response().connect(boost::bind(&Gtk::AboutDialog::hide, &uftt_about_dialog));
+	uftt_about_dialog.set_transient_for(*this);
+	uftt_about_dialog.set_modal(true);
 
 	if(settings->loaded) {
 		restore_window_size_and_position();

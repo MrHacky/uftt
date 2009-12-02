@@ -21,6 +21,7 @@
 	#include <gtkmm/uimanager.h>
 	#include <gtkmm/statusicon.h>
 	#include <gtkmm/toolbutton.h>
+	#include <gtkmm/aboutdialog.h>
 	#include <gtkmm/radiobuttongroup.h>
 
 	class UFTTWindow : public Gtk::Window {
@@ -71,6 +72,7 @@
 			Gtk::ToolButton          edit_preferences_toolbutton;
 			Gtk::ToolButton          add_share_file_toolbutton;
 			Gtk::ToolButton          add_share_folder_toolbutton;
+			Gtk::AboutDialog         uftt_about_dialog;
 
 			/* Functions */
 			void on_menu_file_quit();
