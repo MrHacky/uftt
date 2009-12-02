@@ -157,6 +157,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid
 	menubar_ptr = (Gtk::Menu*)m_refUIManager->get_widget("/MenuBar");
 
+	/* Begin Share List */
 	share_list_frame.set_label("Sharelist:");
 	share_list_liststore = Gtk::ListStore::create(share_list_columns);
 //	share_list_treeview.set_model(SortableTreeDragDest<Gtk::ListStore>::create(share_list_liststore)); // FIXME: Enabling this causes Gtk to give a silly warning
@@ -213,11 +214,45 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_frame.add(share_list_vbox);
 	share_list_alignment.add(share_list_frame);
 	share_task_list_vpaned.add(share_list_alignment);
+	/* End Share List */
+
+	/* Begin Task List */
+	task_list_liststore = Gtk::ListStore::create(task_list_columns);
+//	task_list_treeview.set_model(SortableTreeDragDest<Gtk::ListStore>::create(task_list_liststore)); // FIXME: Enabling this causes Gtk to give a silly warning
+	task_list_treeview.set_model(task_list_liststore);
+	#define ADD_TV_COL_SORTABLE(tv, title, column) tv.get_column(tv.append_column(title, column) - 1)->set_sort_column(column);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Status"         , task_list_columns.status);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Time Elapsed"   , task_list_columns.time_elapsed);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Time Remaining" , task_list_columns.time_remaining);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Transferred"    , task_list_columns.transferred);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Total Size"     , task_list_columns.total_size);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Speed"          , task_list_columns.speed);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Queue"          , task_list_columns.queue);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "User Name"      , task_list_columns.user_name);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Share Name"     , task_list_columns.share_name);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Host Name"      , task_list_columns.host_name);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Protocol"       , task_list_columns.protocol);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "URL"            , task_list_columns.url);
+	#undef ADD_TV_COL_SORTABLE
+	task_list_treeview.set_headers_clickable(true);
+	task_list_treeview.set_rules_hint(true);
+	task_list_treeview.set_search_column(task_list_columns.share_name);
+	task_list_liststore->set_sort_column(task_list_columns.share_name, Gtk::SORT_ASCENDING);
+	BOOST_FOREACH(Gtk::TreeViewColumn* column, task_list_treeview.get_columns()) {
+		column->set_reorderable(true);
+	}
+	task_list_treeview.set_enable_search(true);
+	task_list_treeview.set_rubber_banding(true);
+	task_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
+	task_list_scrolledwindow.add(task_list_treeview);
+	task_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	task_list_frame.set_label("Tasklist:");
-	task_list_frame.add(task_list_treeview);
+	task_list_frame.add(task_list_scrolledwindow);
 	task_list_alignment.add(task_list_frame);
+	/* End Task List*/
 	share_task_list_vpaned.add(task_list_alignment);
 	main_paned.add(share_task_list_vpaned);
+	
 	debug_log_textview.set_buffer(Glib::RefPtr<Gtk::TextBuffer>(new OStreamGtkTextBuffer(std::cout)));
 	debug_log_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	debug_log_scrolledwindow.add(debug_log_textview);
@@ -459,7 +494,7 @@ void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
 	}
 }
 
-void UFTTWindow::add_share(const ShareInfo& info) {
+void UFTTWindow::on_signal_add_share(const ShareInfo& info) {
 	if (info.isupdate) { // FIXME: Should be handled by core
 		return;
 	}
@@ -489,6 +524,64 @@ void UFTTWindow::add_share(const ShareInfo& info) {
 	}
 }
 
+void UFTTWindow::on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& info) {
+	boost::posix_time::ptime current_time = boost::posix_time::second_clock::universal_time();
+	boost::posix_time::time_duration time_elapsed = current_time-start_time;
+
+	(*i)[task_list_columns.status]         = info.status;
+	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(time_elapsed);
+	if (info.size > 0 && info.size >= info.transferred && info.transferred > 0) {
+		(*i)[task_list_columns.time_remaining] = 
+			boost::posix_time::to_simple_string(
+				boost::posix_time::time_duration(
+					boost::posix_time::seconds(
+						((info.size-info.transferred) * time_elapsed.total_seconds() / info.transferred)
+					)
+				)
+			);
+	}
+	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
+	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
+	if(time_elapsed.total_seconds() > 0) {
+		(*i)[task_list_columns.speed] = STRFORMAT("%s\\s", StrFormat::bytes(info.transferred/time_elapsed.total_seconds()));
+	}
+	(*i)[task_list_columns.queue]          = info.queue;
+	// Share info
+	(*i)[task_list_columns.user_name]      = info.shareinfo.user;
+	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
+	(*i)[task_list_columns.share_name]     = (info.isupload ? "U: " : "D: ") + info.shareinfo.name;
+
+// FIXME: Something with auto-update
+//	if (!info.isupload && info.status == "Completed") {} 
+}
+
+void UFTTWindow::on_signal_new_task(const TaskInfo& info) {
+	Gtk::TreeModel::iterator i = task_list_liststore->append();
+	// Task info (real values only filled in on_signal_task_status)
+	(*i)[task_list_columns.status]         = "Waiting for peer";
+	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
+	(*i)[task_list_columns.time_remaining] = "Unknown";
+	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
+	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
+	(*i)[task_list_columns.speed]          = "Unknown";
+	(*i)[task_list_columns.queue]          = info.queue;
+	// Share info
+	(*i)[task_list_columns.user_name]      = info.shareinfo.user;
+	(*i)[task_list_columns.share_name]     = info.shareinfo.name;
+	if(info.shareinfo.name == "") (*i)[task_list_columns.share_name] = "Anonymous";
+	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
+	(*i)[task_list_columns.protocol]       = info.shareinfo.proto;
+	(*i)[task_list_columns.url]            = STRFORMAT("%s:\\\\%s\\%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
+
+	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
+	// NOTE: Gtk::ListStore guarantees that iterators are valid as long as the
+	// row they reference is valid.
+	// See http://library.gnome.org/devel/gtkmm/unstable/classGtk_1_1TreeIter.html#_details
+	boost::function<void(const TaskInfo&)> handler =
+		dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_task_status, this, i, starttime, _1));
+	core->connectSigTaskStatus(info.id, handler);
+}
+
 void UFTTWindow::set_backend(UFTTCoreRef _core) {
 	dispatcher.invoke(boost::bind(&UFTTWindow::_set_backend, this, _core));
 }
@@ -515,7 +608,8 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	}
 
 	this->core = _core;
-	core->connectSigAddShare(dispatcher.wrap(boost::bind(&UFTTWindow::add_share, this, _1)));
+	core->connectSigAddShare(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_add_share, this, _1)));
+	core->connectSigNewTask(dispatcher.wrap(boost::bind(&UFTTWindow::on_signal_new_task, this, _1)));
 }
 
 void UFTTWindow::on_signal_hide() { // Close button (?)
