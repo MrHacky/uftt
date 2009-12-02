@@ -89,38 +89,35 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup = Gtk::ActionGroup::create();
 	/* File menu */
 	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
-	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share file"),
+	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share File..."),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share folder"),
+	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share Folder..."),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
 	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "Download"),
 	                      boost::bind(&ShareList::download_selected_shares, &share_list));
-	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download to..."));/*,
+	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download To..."));/*,
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
+	m_refActionGroup->add(Gtk::Action::create("EditMenu", "_Edit"));
+	m_refActionGroup->add(Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES));
+	
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("ViewSharelist", "_Sharelist"));
+	m_refActionGroup->add(Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist"),
+	                      boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
+	m_refActionGroup->add(Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Tasklist"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("ViewTasklist", "_Tasklist"));
+	m_refActionGroup->add(Gtk::ToggleAction::create("ViewToolbar", "_Toolbar"));
 
-	m_refActionGroup->add(Gtk::Action::create("OptionsMenu", "_Options"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("OptionsEnableGlobalPeerDiscovery", "Enable _global peer discovery"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("OptionsEnableDownloadResume", "Enable _download resume"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("OptionsEnableAutomaticUpdatesFromPeers", "Enable automatic _updates from peers"));
-	m_refActionGroup->add(Gtk::Action::create("OptionsCheckForWebUpdatesNow", "Check for _web-updates now"));	
-	m_refActionGroup->add(Gtk::Action::create("OptionsCheckForUpdatesAutomatically", "Check for _updates automatically"));	
-	Gtk::RadioButtonGroup& rbg(menu_options_check_updates_frequency_radio_button_group);
-	m_refActionGroup->add(Gtk::RadioAction::create(rbg, "OptionsCheckForUpdatesAutomaticallyNever", "_Never"));	
-	m_refActionGroup->add(Gtk::RadioAction::create(rbg, "OptionsCheckForUpdatesAutomaticallyDaily", "_Daily"));	
-	m_refActionGroup->add(Gtk::RadioAction::create(rbg, "OptionsCheckForUpdatesAutomaticallyWeekly", "_Weekly"));	
-	m_refActionGroup->add(Gtk::RadioAction::create(rbg, "OptionsCheckForUpdatesAutomaticallyMonthly", "_Monthly"));	
-
-	m_refActionGroup->add(Gtk::Action::create("Help", "_Help"));	
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT, "About _UFTT"));	
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK"));	
+	m_refActionGroup->add(Gtk::Action::create("Help", "_Help"));
+	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP));
+	m_refActionGroup->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"));
+	m_refActionGroup->add(Gtk::Action::create("HelpBugs", "Report _Bugs/Patches/Requests"));
+	m_refActionGroup->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"));
+	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT));//, "About _UFTT"));
+//	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
 	m_refUIManager = Gtk::UIManager::create();
 	m_refUIManager->insert_action_group(m_refActionGroup);
@@ -139,28 +136,26 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "      <separator/>"
 	                        "      <menuitem action='FileQuit'/>"
 	                        "    </menu>"
+	                        "    <menu action='EditMenu'>"
+	                        "      <menuitem action='EditPreferences'/>"
+	                        "    </menu>"
 	                        "    <menu action='ViewMenu'>"
-	                        "      <menuitem action='ViewSharelist'/>"
+	                        "      <menuitem action='ViewRefreshShareList'/>"
+	                        "      <menuitem action='ViewClearTaskList'/>"
+	                        "      <separator/>"
 	                        "      <menuitem action='ViewDebuglog'/>"
 	                        "      <menuitem action='ViewManualConnect'/>"
-	                        "      <menuitem action='ViewTasklist'/>"
-	                        "    </menu>"
-	                        "    <menu action='OptionsMenu'>"
-	                        "      <menuitem action='OptionsEnableGlobalPeerDiscovery'/>"
-	                        "      <menuitem action='OptionsEnableDownloadResume'/>"
-	                        "      <separator/>"
-	                        "      <menuitem action='OptionsEnableAutomaticUpdatesFromPeers'/>"
-	                        "      <menuitem action='OptionsCheckForWebUpdatesNow'/>"
-	                        "      <menu action='OptionsCheckForUpdatesAutomatically'>"
-	                        "        <menuitem action='OptionsCheckForUpdatesAutomaticallyNever'/>"
-	                        "        <menuitem action='OptionsCheckForUpdatesAutomaticallyDaily'/>"
-	                        "        <menuitem action='OptionsCheckForUpdatesAutomaticallyWeekly'/>"
-	                        "        <menuitem action='OptionsCheckForUpdatesAutomaticallyMonthly'/>"
-	                        "      </menu>"
+	                        "      <menuitem action='ViewToolbar'/>"
 	                        "    </menu>"
 	                        "    <menu action='Help'>"
+	                        "      <menuitem action='HelpUserManual'/>"
+	                        "      <menuitem action='HelpFAQ'/>"
+	                        "      <separator/>"
+	                        "      <menuitem action='HelpHomePage'/>"
+	                        "      <menuitem action='HelpBugs'/>"
+	                        "      <separator/>"
 	                        "      <menuitem action='HelpAboutUFTT'/>"
-	                        "      <menuitem action='HelpAboutGTK'/>"
+//	                        "      <menuitem action='HelpAboutGTK'/>" Win32 only
 	                        "    </menu>"
 	                        "  </menubar>"
 	                        "  <popup name='StatusIconPopup'>"

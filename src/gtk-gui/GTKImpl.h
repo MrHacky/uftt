@@ -46,7 +46,6 @@
 
 			/* Widgets */
 			Gtk::Menu*               menubar_ptr; // Menu is created dynamically using UIManager
-			Gtk::RadioButtonGroup    menu_options_check_updates_frequency_radio_button_group;
 			Gtk::VBox                menu_main_paned_vbox;
 			Gtk::HPaned              main_paned;
 			Gtk::VPaned              share_task_list_vpaned;
