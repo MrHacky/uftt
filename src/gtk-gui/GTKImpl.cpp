@@ -2,22 +2,23 @@
 #include "OStreamGtkTextBuffer.h"
 #include "../util/StrFormat.h"
 #include <ios>
+#include <boost/bind.hpp>
 #include <glib/gthread.h>
 #include <gtkmm/stock.h>
 #include <gtkmm/action.h>
+#include <gtkmm/liststore.h>
 #include <gtkmm/radioaction.h>
 #include <gtkmm/toggleaction.h>
 #include <gtkmm/messagedialog.h>
+#include <gtkmm/treemodelsort.h>
+#include <gtkmm/treeviewcolumn.h>
 
 using namespace std;
 
 UFTTWindow::UFTTWindow(UFTTSettingsRef _settings) 
 : settings(_settings)
 {
-	construct_gui();
-}
-
-void UFTTWindow::construct_gui() {
+	signal_hide().connect(boost::bind(&UFTTWindow::on_signal_hide, this));
 	set_title("UFTT");
 	set_default_size(1024, 640);
 	set_position(Gtk::WIN_POS_CENTER);
@@ -113,7 +114,28 @@ void UFTTWindow::construct_gui() {
 	menubar_ptr = (Gtk::Menu*)m_refUIManager->get_widget("/MenuBar");
 
 	share_list_frame.set_label("Sharelist:");
-	share_list_frame.add(share_list_treeview);
+	share_list_liststore = Gtk::ListStore::create(share_list_columns);
+	share_list_treeview.set_model(Gtk::TreeModelSort::create(share_list_liststore));
+	#define ADD_TV_COL_SORTABLE(tv, title, column) tv.get_column(tv.append_column(title, column) - 1)->set_sort_column(column);
+	ADD_TV_COL_SORTABLE(share_list_treeview, "User Name" , share_list_columns.user_name);
+	ADD_TV_COL_SORTABLE(share_list_treeview, "Share Name", share_list_columns.share_name);
+	ADD_TV_COL_SORTABLE(share_list_treeview, "Host Name" , share_list_columns.host_name);
+	ADD_TV_COL_SORTABLE(share_list_treeview, "Protocol"  , share_list_columns.protocol);
+	ADD_TV_COL_SORTABLE(share_list_treeview, "URL"       , share_list_columns.url);
+	#undef ADD_TV_COL_SORTABLE
+	share_list_treeview.set_headers_clickable(true);
+	share_list_treeview.set_rules_hint(true);
+	share_list_treeview.set_search_column(share_list_columns.share_name);
+	BOOST_FOREACH(Gtk::TreeViewColumn* column, share_list_treeview.get_columns()) {
+		column->set_reorderable(true); //FIXME: May break DnD?
+		column->set_sort_indicator(true);
+	}
+	share_list_treeview.set_enable_search(true);
+	share_list_treeview.set_rubber_banding(true);
+	share_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
+	share_list_scrolledwindow.add(share_list_treeview);
+	share_list_frame.add(share_list_scrolledwindow);
+
 	share_task_list_vpaned.add(share_list_frame);
 	task_list_frame.set_label("Tasklist:");
 	task_list_frame.add(task_list_treeview);
@@ -140,6 +162,16 @@ void UFTTWindow::construct_gui() {
 	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
+void UFTTWindow::add_share(const ShareInfo& info) {
+	Gtk::TreeModel::iterator i = share_list_liststore->append();
+	(*i)[share_list_columns.user_name]  = info.user;
+	(*i)[share_list_columns.share_name] = info.name;
+	if(info.name == "") (*i)[share_list_columns.share_name] = "Anonymous";
+	(*i)[share_list_columns.host_name]  = info.host;
+	(*i)[share_list_columns.protocol]   = info.proto;
+	(*i)[share_list_columns.url]        = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+}
+
 void UFTTWindow::set_backend(UFTTCoreRef _core) {
 	dispatcher.invoke(boost::bind(&UFTTWindow::_set_backend, this, _core));
 }
@@ -160,6 +192,13 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 			on_menu_file_quit();
 		}
 	}
+
+	this->core = _core;
+	core->connectSigAddShare(dispatcher.wrap(boost::bind(&UFTTWindow::add_share, this, _1)));
+}
+
+void UFTTWindow::on_signal_hide() { // Close button (?)
+	on_menu_file_quit();
 }
 
 void UFTTWindow::on_menu_file_quit() {
