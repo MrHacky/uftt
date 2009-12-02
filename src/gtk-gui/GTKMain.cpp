@@ -40,8 +40,10 @@ void GTKMain::bindEvents(UFTTCoreRef core) {
 
 int GTKMain::run() {
 	impl->wnd->pre_show();
-	impl->wnd->show_all();
-	impl->wnd->present();
+	if(!impl->settings->start_in_tray) {
+		impl->wnd->show_all();
+		impl->wnd->present();
+	}
 	impl->wnd->post_show();
 	impl->kit->run();
 	impl->wnd->hide();

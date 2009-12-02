@@ -5,6 +5,7 @@
 	#include "AutoScrollingWindow.h"
 	#include "ShareList.h"
 	#include "TaskList.h"
+	#include "PreferencesDialog.h"
 	#include "dispatcher_marshaller.h"
 	#include <iostream>
 	#include <boost/signal.hpp>
@@ -73,6 +74,7 @@
 			Gtk::ToolButton          add_share_file_toolbutton;
 			Gtk::ToolButton          add_share_folder_toolbutton;
 			Gtk::AboutDialog         uftt_about_dialog;
+			UFTTPreferencesDialog    uftt_preferences_dialog;
 
 			/* Functions */
 			void on_menu_file_quit();
@@ -81,6 +83,7 @@
 			void on_add_share_file();
 			void on_add_share_folder();
 			void refresh_shares();
+			void on_apply_settings();
 			bool on_statusicon_signal_size_changed(int xy);
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);

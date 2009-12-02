@@ -180,6 +180,7 @@ IF(ENABLE_GTK_GUI)
 	            ShareList.cpp          	ShareList.h
 	            TaskList.cpp           	TaskList.h
 	            ShowURI.cpp            	ShowURI.h
+	            PreferencesDialog.cpp  	PreferencesDialog.h
 	            dispatcher_marshaller.h
 	            OStreamGtkTextBuffer.h
 	)

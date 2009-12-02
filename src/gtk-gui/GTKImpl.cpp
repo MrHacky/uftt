@@ -33,7 +33,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
   edit_preferences_toolbutton(Gtk::Stock::PREFERENCES),
   add_share_file_toolbutton(Gtk::Stock::FILE),
   add_share_folder_toolbutton(Gtk::Stock::DIRECTORY),
-  share_list(_settings, *this)
+  share_list(_settings, *this),
+  uftt_preferences_dialog(_settings)
 {
 	set_title("UFTT");
 	set_default_size(1024, 640);
@@ -102,7 +103,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
 	m_refActionGroup->add(Gtk::Action::create("EditMenu", "_Edit"));
-	m_refActionGroup->add(Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES));
+	m_refActionGroup->add(Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES),
+	                      boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
 
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
 	m_refActionGroup->add(Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist"),
@@ -215,10 +217,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	task_list_alignment.add(task_list_frame);
 	task_list_alignment.set_padding(4, 4, 4, 4);
 
-	share_task_list_vpaned.signal_realize().connect(
-		boost::bind(&UFTTWindow::on_share_task_list_vpaned_realize, this));
-	main_paned.signal_realize().connect(
-		boost::bind(&UFTTWindow::on_main_paned_realize, this));
+	share_task_list_vpaned.signal_realize().connect(boost::bind(&UFTTWindow::on_share_task_list_vpaned_realize, this));
+	main_paned.signal_realize().connect(boost::bind(&UFTTWindow::on_main_paned_realize, this));
 	share_task_list_vpaned.add(share_list_alignment);
 	share_task_list_vpaned.add(task_list_alignment);
 	main_paned.add(share_task_list_vpaned);
@@ -243,6 +243,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	refresh_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
 	add_share_file_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
 	add_share_folder_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
+	edit_preferences_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
 	toolbar.append(add_share_file_toolbutton);
 	toolbar.append(add_share_folder_toolbutton);
 	separator = Gtk::manage(new Gtk::SeparatorToolItem());
@@ -291,6 +292,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	uftt_about_dialog.set_transient_for(*this);
 	uftt_about_dialog.set_modal(true);
 
+	uftt_preferences_dialog.set_transient_for(*this);
+	uftt_preferences_dialog.signal_settings_changed.connect(boost::bind(&UFTTWindow::on_apply_settings, this));
+
 	if(settings->loaded) {
 		restore_window_size_and_position();
 		Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
@@ -303,15 +307,19 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 }
 
 void UFTTWindow::on_main_paned_realize() {
-	int width = main_paned.get_width();
-	cout << "realized! width=" << width << endl;
-	main_paned.set_position(width*5/8);
+	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
 void UFTTWindow::on_share_task_list_vpaned_realize() {
-	int height = share_task_list_vpaned.get_height();
-	cout << "realized! height=" << height << endl;
-	share_task_list_vpaned.set_position(height/2);
+	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
+}
+
+void UFTTWindow::on_apply_settings() {
+	statusicon->set_visible(settings->show_task_tray_icon);
+
+	//TODO: Rebroadcast sharelist (needs backend support)
+	//      (re-add every share with new nickname)
+	refresh_shares();
 }
 
 void UFTTWindow::show_uri(Glib::ustring uri) {
@@ -524,12 +532,13 @@ void UFTTWindow::post_show() {
 }
 
 bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
-	// TODO:
-	// if self.config["close_to_tray"] and self.config["enable_system_tray"]:
-	save_window_size_and_position();
-	hide();
-	// else:
-	// on_menu_file_quit();
+	if(settings->show_task_tray_icon && settings->minimize_to_tray_mode == 1) {
+		save_window_size_and_position();
+		hide();
+	}
+	else {
+		on_menu_file_quit();
+	}
 	return true;
 }
 
