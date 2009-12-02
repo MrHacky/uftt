@@ -44,16 +44,16 @@ class QMarshaller: public QObject
 					typedef void result_type;
 			};
 
-			void queue_runfunction(const functype& func)
+			void queue_runfunction(const QMarshaller::functype& func)
 			{
 				this->signal_runfunction(func);
 			}
 
 		Q_SIGNALS:
-			void signal_runfunction(const functype& func);
+			void signal_runfunction(const QMarshaller::functype& func);
 
 		protected Q_SLOTS:
-			void execute_runfunction(const functype& func)
+			void execute_runfunction(const QMarshaller::functype& func)
 			{
 				func();
 			}
