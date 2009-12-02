@@ -4,8 +4,9 @@
 	#include "../UFTTSettings.h"
 	#include "AutoScrollingWindow.h"
 	#include "dispatcher_marshaller.h"
-	#include <boost/shared_ptr.hpp>
 	#include <iostream>
+	#include <boost/signal.hpp>
+	#include <boost/shared_ptr.hpp>
 	#include <gtkmm/box.h>
 	#include <gtkmm/main.h>
 	#include <gtkmm/menu.h>
@@ -22,11 +23,14 @@
 		public:
 			UFTTWindow(UFTTSettingsRef _settings);
 
+			void add_share(const ShareInfo& info);
+			boost::signals::connection sig_add_share_connection;
+			void set_backend(UFTTCoreRef _core);
 		private:
 //				UFTTCore& core;
 				UFTTSettingsRef settings;
 			/* Variables */
-//			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
+			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
 
 			/* Helpers */
 			Glib::RefPtr<Gtk::UIManager>   m_refUIManager;
@@ -51,6 +55,8 @@
 			/* Functions */
 			void construct_gui();
 			void on_menu_file_quit();
+			void _add_shares(ShareInfo info);
+			void _set_backend(UFTTCoreRef _core);
 	};
 
 #endif

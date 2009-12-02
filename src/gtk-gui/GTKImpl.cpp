@@ -1,13 +1,13 @@
 #include "GTKImpl.h"
 #include "OStreamGtkTextBuffer.h"
+#include "../util/StrFormat.h"
+#include <ios>
+#include <glib/gthread.h>
 #include <gtkmm/stock.h>
-//#include <gtkmm/actiongroup.h>
 #include <gtkmm/action.h>
 #include <gtkmm/radioaction.h>
-//#include <gtkmm/recentaction.h>
 #include <gtkmm/toggleaction.h>
-#include <glib/gthread.h>
-#include <ios>
+#include <gtkmm/messagedialog.h>
 
 using namespace std;
 
@@ -129,13 +129,39 @@ void UFTTWindow::construct_gui() {
 	menu_main_paned_vbox.add(main_paned);
 	add(menu_main_paned_vbox);
 
+	// FIXME: We need to call show_all() and present() here, otherwise some
+	//         widgets will not know their own size and setting the positions
+	//         of the paneds will fail. However this leads to an ugly presentation
+	//         to the user because the user can now see this layouting process
+	//         in action.
 	show_all();
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
+void UFTTWindow::set_backend(UFTTCoreRef _core) {
+	dispatcher.invoke(boost::bind(&UFTTWindow::_set_backend, this, _core));
+}
+
+void UFTTWindow::_set_backend(UFTTCoreRef _core) {
+	if(_core->error_state == 2) { // FIXME: Magic Constant
+		Gtk::MessageDialog dialog("Fatal error.", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		dialog.set_secondary_text(STRFORMAT("There was a problem during the initialization of UFTT's core:\n\n\"%s\"\n\nUFTT can not continue and will now quit.", _core->error_string));
+		dialog.run();
+//		throw int(1); // thrown integers will quit application with integer as exit code // FIXME: Can't we just quit() nicely?
+		on_menu_file_quit();
+	}
+	if(_core->error_state == 1) {// FIXME: Magic Constant
+		Gtk::MessageDialog dialog("Warning.", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
+		dialog.set_secondary_text(STRFORMAT("%s\n\nDo you still want to continue?", _core->error_string));
+		dialog.set_default_response(Gtk::RESPONSE_YES);
+		if(dialog.run() == Gtk::RESPONSE_NO) {
+			on_menu_file_quit();
+		}
+	}
+}
+
 void UFTTWindow::on_menu_file_quit() {
-	hide();
-//	Gtk::Main::quit(); FIXME: Do this when we have a trayicon
+	Gtk::Main::quit();
 }

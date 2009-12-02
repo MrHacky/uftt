@@ -31,19 +31,19 @@ GTKMain::GTKMain(int argc, char **argv, UFTTSettingsRef settings)
 {
 }
 
-GTKMain::~GTKMain()
-{
+GTKMain::~GTKMain() {
 }
 
-void GTKMain::bindEvents(UFTTCoreRef core)
-{
-//	impl->wnd.SetBackend(t);
+void GTKMain::bindEvents(UFTTCoreRef core) {
+	// NOTE: Error dialogs are not presented to the user until run() is called
+	//       (Gtk::Main::run()). We can work around this (a bit) but it is more
+	//       trouble than it's worth.
+	impl->wnd->set_backend(core);
 }
 
-int GTKMain::run()
-{
-	impl->wnd->show();
-	Gtk::Main::run(*impl->wnd); // returns when wnd is hidden (use Gtk::Main::run(void) & Gtk::Main::quit() when implementing tray-icon)
+int GTKMain::run() {
+	impl->kit->run();
 	impl->wnd->hide();
 	return 0;
 }
+ 
