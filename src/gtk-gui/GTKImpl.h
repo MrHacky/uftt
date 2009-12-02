@@ -21,6 +21,7 @@
 	#include <gtkmm/liststore.h>
 	#include <gtkmm/separator.h>
 	#include <gtkmm/uimanager.h>
+	#include <gtkmm/statusicon.h>
 	#include <gtkmm/toolbutton.h>
 	#include <gtkmm/scrolledwindow.h>
 	#include <gtkmm/radiobuttongroup.h>
@@ -39,8 +40,10 @@
 			UFTTSettingsRef settings;
 			/* Variables */
 			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
-			Glib::RefPtr<Gtk::ListStore> share_list_liststore;
-			Glib::RefPtr<Gtk::ListStore> task_list_liststore;
+			Glib::RefPtr<Gtk::ListStore>  share_list_liststore;
+			Glib::RefPtr<Gtk::ListStore>  task_list_liststore;
+			Glib::RefPtr<Gdk::Pixbuf>     statusicon_pixbuf;
+			Glib::RefPtr<Gtk::StatusIcon> statusicon;
 
 			/* Helpers */
 			Glib::RefPtr<Gtk::UIManager>   m_refUIManager;
@@ -154,6 +157,8 @@
 			void on_signal_add_share(const ShareInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& ti);
+			bool on_statusicon_signal_size_changed(int xy);
+			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
 	};
 
 #endif

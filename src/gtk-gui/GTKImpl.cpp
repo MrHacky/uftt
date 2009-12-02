@@ -2,9 +2,14 @@
 #include "OStreamGtkTextBuffer.h"
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
+#include "uftt-16x16.png.h"
+//#include "uftt-22x22.png.h" // FIXME: Does not exist (yet)
+#include "uftt-32x32.png.h"
+#include "uftt-48x48.png.h"
 #include <ios>
 #include <boost/bind.hpp>
 #include <glib/gthread.h>
+#include <gdkmm/pixbufloader.h>
 #include <gtkmm/stock.h>
 #include <gtkmm/action.h>
 #include <gtkmm/liststore.h>
@@ -60,26 +65,22 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		add_share_folder_dialog.set_modal(true);
 		add_share_folder_dialog.set_create_folders(false);
 	}
-	/*
-	guint8* data = new guint8[gmpmpc_icon_data.width * gmpmpc_icon_data.height * gmpmpc_icon_data.bytes_per_pixel];
-	GIMP_IMAGE_RUN_LENGTH_DECODE(data,
-		                           gmpmpc_icon_data.rle_pixel_data,
-		                           gmpmpc_icon_data.width * gmpmpc_icon_data.height,
-		                           gmpmpc_icon_data.bytes_per_pixel);
 
-	statusicon_pixbuf = Gdk::Pixbuf::create_from_data(data,
-		                                                Gdk::COLORSPACE_RGB,
-		                                                true,
-		                                                8,
-		                                                256,
-		                                                256,
-		                                                256*4
-		                                                );
+	statusicon_pixbuf = get_best_uftt_icon_for_size(256, 256);
 	statusicon = Gtk::StatusIcon::create(statusicon_pixbuf);
 	set_default_icon(statusicon_pixbuf);
 	statusicon->set_tooltip("UFTT\nThe Ultimate File Transfer Tool");
 	statusicon->set_visible(true);
-	*/
+	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
+	statusicon->signal_size_changed().connect(slot);
+	
+	std::vector<Glib::RefPtr<Gdk::Pixbuf> > icon_list;
+	icon_list.push_back(get_best_uftt_icon_for_size(16, 16));
+//	icon_list.push_back(get_best_uftt_icon_for_size(22, 22));
+	icon_list.push_back(get_best_uftt_icon_for_size(32, 32));
+	icon_list.push_back(get_best_uftt_icon_for_size(48, 48));
+	set_default_icon_list(icon_list);
+
 
 	/* Create actions */
 	m_refActionGroup = Gtk::ActionGroup::create();
@@ -305,6 +306,42 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+bool UFTTWindow::on_statusicon_signal_size_changed(int xy) {
+	Glib::RefPtr<Gdk::Pixbuf> pixbuf = get_best_uftt_icon_for_size(xy, xy);
+	statusicon->set(pixbuf->scale_simple(xy, xy, Gdk::INTERP_HYPER));
+	return true;
+}
+
+Glib::RefPtr<Gdk::Pixbuf> UFTTWindow::get_best_uftt_icon_for_size(int x, int y) {
+	long surface = x * y;
+	int	best_match = 0; // starts at 48 x 48, does not allow upscaling (in either direction)
+	if(x <= 32  && y <= 32) best_match = 1;
+//	if(x < 22  && y < 22) best_match = 2;
+	if(x <= 16  && y <= 16) best_match = 3;
+
+	// Note we use the PixbufLoader instead of directly encoding the png with
+	// gdk-pixbuf-csource in order to avoid having to find out how to access
+	// gdk-pixbuf-csource from cmake
+	Glib::RefPtr<Gdk::PixbufLoader> loader = Gdk::PixbufLoader::create("png");
+	switch(best_match) {
+		default:
+		case 0: {
+			loader->write(uftt_48x48_png, sizeof(uftt_48x48_png));
+		}; break;
+		case 1: {
+			loader->write(uftt_32x32_png, sizeof(uftt_32x32_png));
+		}; break;
+//		case 2: {
+//			loader->write(uftt_48x48_png, sizeof(uftt_48x48_png));
+//		}; break;
+		case 3: {
+			loader->write(uftt_16x16_png, sizeof(uftt_16x16_png));
+		}; break;
+	}
+	loader->close();
+	return loader->get_pixbuf();
 }
 
 void UFTTWindow::on_add_share_file() {
