@@ -1,6 +1,7 @@
 #include "GTKImpl.h"
 #include "OStreamGtkTextBuffer.h"
 #include "../util/StrFormat.h"
+#include "../util/Filesystem.h"
 #include <ios>
 #include <boost/bind.hpp>
 #include <glib/gthread.h>
@@ -115,7 +116,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	share_list_frame.set_label("Sharelist:");
 	share_list_liststore = Gtk::ListStore::create(share_list_columns);
-	share_list_treeview.set_model(Gtk::TreeModelSort::create(share_list_liststore));
+//	share_list_treeview.set_model(SortableTreeDragDest<Gtk::ListStore>::create(share_list_liststore)); // FIXME: Enabling this causes Gtk to give a silly warning
+	share_list_treeview.set_model(share_list_liststore);
 	#define ADD_TV_COL_SORTABLE(tv, title, column) tv.get_column(tv.append_column(title, column) - 1)->set_sort_column(column);
 	ADD_TV_COL_SORTABLE(share_list_treeview, "User Name" , share_list_columns.user_name);
 	ADD_TV_COL_SORTABLE(share_list_treeview, "Share Name", share_list_columns.share_name);
@@ -135,7 +137,13 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
 	share_list_scrolledwindow.add(share_list_treeview);
 	share_list_frame.add(share_list_scrolledwindow);
-
+	std::list<Gtk::TargetEntry> listTargets;
+	listTargets.push_back( Gtk::TargetEntry("text/uri-list", Gtk::TARGET_OTHER_APP, 0) ); // Last parameter is 'Info', used to distinguish
+	listTargets.push_back( Gtk::TargetEntry("text/plain"   , Gtk::TARGET_OTHER_APP, 1) ); // different types of TargetEntry in the drop handler
+	listTargets.push_back( Gtk::TargetEntry("STRING"       , Gtk::TARGET_OTHER_APP, 2) );
+	share_list_treeview.drag_dest_set(listTargets); // Should use defaults, DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
+	share_list_treeview.signal_drag_data_received().connect(boost::bind(&UFTTWindow::on_share_list_treeview_signal_drag_data_received, this, _1, _2, _3, _4, _5, _6));
+	
 	share_task_list_vpaned.add(share_list_frame);
 	task_list_frame.set_label("Tasklist:");
 	task_list_frame.add(task_list_treeview);
@@ -160,6 +168,71 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+string urldecode(std::string s) { //http://www.koders.com/cpp/fid6315325A03C89DEB1E28732308D70D1312AB17DD.aspx
+	std::string buffer = "";
+	int len = s.length();
+
+	for (int i = 0; i < len; i++) {
+		int j = i ;
+		char ch = s.at(j);
+		if (ch == '%'){
+			char tmpstr[] = "0x0__";
+			int chnum;
+			tmpstr[3] = s.at(j+1);
+			tmpstr[4] = s.at(j+2);
+			chnum = strtol(tmpstr, NULL, 16);
+			buffer += chnum;
+			i += 2;
+		} else {
+			buffer += ch;
+		}
+	}
+	return buffer;
+}
+
+vector<std::string> urilist_convert(const std::string urilist) {
+	vector<std::string> files;
+	int begin = urilist.find("file://", 0);
+	int end = urilist.find("\r\n", begin);
+	while( end != string::npos) {
+		files.push_back(urldecode(urilist.substr(begin + 7, end-begin-7)));
+		begin = urilist.find("file://", end);
+		if(begin == string::npos) break;
+		end = urilist.find("\r\n", begin);
+	}
+	return files;
+}
+
+void UFTTWindow::on_share_list_treeview_signal_drag_data_received(
+	const Glib::RefPtr<Gdk::DragContext>& context, 
+	int x, int y,
+	const Gtk::SelectionData& selection_data, guint info, guint time)
+{
+	// Note: We know we only receive strings (of type STRING, text/uri-list and text/plain)
+	switch(info) {
+		case 0: {
+			BOOST_FOREACH(std::string file, urilist_convert(selection_data.get_data_as_string())) {
+				boost::filesystem::path path = file;
+				if (path.leaf() == ".") // linux thingy
+					path.remove_leaf();
+				core->addLocalShare(path.leaf(), path);
+			}
+		}; break;
+		case 2:
+		case 1: {
+				boost::filesystem::path path = selection_data.get_data_as_string();
+				if (path.leaf() == ".") // linux thingy
+					path.remove_leaf();
+				core->addLocalShare(path.leaf(), path);
+		}; break;
+		default:
+			cout << "Warning: unhandled drop event!" << endl;
+			context->drag_finish(false, false, time);
+			return;
+	}
+	context->drag_finish(true, false, time);
 }
 
 void UFTTWindow::add_share(const ShareInfo& info) {
