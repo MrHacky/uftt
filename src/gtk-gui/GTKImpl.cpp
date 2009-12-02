@@ -111,8 +111,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::RadioAction::create(rbg, "OptionsCheckForUpdatesAutomaticallyMonthly", "_Monthly"));	
 
 	m_refActionGroup->add(Gtk::Action::create("Help", "_Help"));	
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", "About _UFTT"));	
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", "About _GTK"));	
+	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT, "About _UFTT"));	
+	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK"));	
 
 	m_refUIManager = Gtk::UIManager::create();
 	m_refUIManager->insert_action_group(m_refActionGroup);
@@ -192,14 +192,14 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	on_download_destination_path_entry_signal_changed_connection =
 		download_destination_path_entry.signal_changed().connect(
-			boost::bind(&UFTTWindow::on_download_destination_path_entry_signal_changed, this));
+			boost::bind(&UFTTWindow::on_download_destination_path_entry_signal_changed, this));	
 	download_destination_path_entry.set_text(settings->dl_path.native_directory_string());
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
 	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
 		boost::bind(&UFTTWindow::on_browse_for_download_destination_path_button_signal_current_folder_changed, this));
 	download_destination_path_label.set_alignment(0.0f, 0.5f);
-	download_destination_path_label.set_text("Download location:");
+	download_destination_path_label.set_text("Download destination folder:");
 	download_destination_path_vbox.add(download_destination_path_label);
 	download_destination_path_vbox.add(download_destination_path_hbox);
 	download_destination_path_alignment.add(download_destination_path_vbox);
@@ -208,7 +208,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	task_list_alignment.set_padding(4, 4, 4, 4);
 	debug_log_alignment.set_padding(4, 4, 4, 4);
 
-	
 	share_list_vbox.add(share_list_scrolledwindow);
 	share_list_vbox.pack_start(download_destination_path_alignment, Gtk::PACK_SHRINK);
 	share_list_frame.add(share_list_vbox);
@@ -250,12 +249,15 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
 	add(menu_main_paned_vbox);
-	
-	download_destination_path_entry.set_tooltip_text("Enter the path where downloaded shares should be placed");
-	browse_for_download_destination_path_button.set_tooltip_text("Select the path where downloaded shares should be placed");
+
+	//FIXME: View -> Toolbar on/off
+	download_destination_path_entry.set_tooltip_text("Enter the folder where downloaded shares should be placed");
+	browse_for_download_destination_path_button.set_tooltip_text("Select the folder where downloaded shares should be placed");
 	download_shares_toolbutton.set_tooltip_text("Download selected shares");
 	edit_preferences_toolbutton.set_tooltip_text("Edit Preferences");
-	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");	
+	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");
+	add_share_file_toolbutton.set_tooltip_text("Share a single file");
+	add_share_folder_toolbutton.set_tooltip_text("Share a whole folder");
 	
 	// FIXME: We need to call show_all() and present() here, otherwise some
 	//         widgets will not know their own size and setting the positions
@@ -413,8 +415,10 @@ void UFTTWindow::on_share_list_treeview_signal_drag_data_received(
 void UFTTWindow::download_selected_shares() {
 	//FIXME: Don't forget to test dl_path for validity and writeablity
 	if(!ext::filesystem::exists(settings->dl_path)) {
-		Gtk::MessageDialog dialog("Download destination path does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
-		dialog.set_secondary_text("The path you have selected for downloaded shares to be placed does not appear to exist.\nPlease select another download destination and try again.");
+		Gtk::MessageDialog dialog("Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		dialog.set_secondary_text("The folder you have selected for downloaded shares to be placed in does not appear to exist.\nPlease select another download destination and try again.");
+		dialog.set_transient_for(*this);
+		dialog.set_modal(true);
 		dialog.run();
 		return;
 	}
@@ -493,6 +497,8 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	if(_core->error_state == 2) { // FIXME: Magic Constant
 		Gtk::MessageDialog dialog("Error during initialization", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text(STRFORMAT("There was a problem during the initialization of UFTT's core:\n\n\"%s\"\n\nUFTT can not continue and will now quit.", _core->error_string));
+		dialog.set_transient_for(*this);
+		dialog.set_modal(true);
 		dialog.run();
 //		throw int(1); // thrown integers will quit application with integer as exit code // FIXME: Can't we just quit() nicely?
 		on_menu_file_quit();
@@ -500,6 +506,8 @@ void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	if(_core->error_state == 1) {// FIXME: Magic Constant
 		Gtk::MessageDialog dialog("Warning during initialization", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
 		dialog.set_secondary_text(STRFORMAT("Some warnings were generated during the initialization of UFTT's core:\n\n%s\n\nDo you still want to continue?", _core->error_string));
+		dialog.set_transient_for(*this);
+		dialog.set_modal(true);
 		dialog.set_default_response(Gtk::RESPONSE_YES);
 		if(dialog.run() == Gtk::RESPONSE_NO) {
 			on_menu_file_quit();
