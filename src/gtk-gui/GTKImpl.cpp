@@ -344,15 +344,33 @@ void UFTTWindow::download_selected_shares() {
 }
 
 void UFTTWindow::add_share(const ShareInfo& info) {
-	// FIXME: Check for duplicates
-	Gtk::TreeModel::iterator i = share_list_liststore->append();
-	(*i)[share_list_columns.user_name]  = info.user;
-	(*i)[share_list_columns.share_name] = info.name;
-	if(info.name == "") (*i)[share_list_columns.share_name] = "Anonymous";
-	(*i)[share_list_columns.host_name]  = info.host;
-	(*i)[share_list_columns.protocol]   = info.proto;
-	(*i)[share_list_columns.url]        = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
-	(*i)[share_list_columns.share_id]   = info.id;
+	if (info.isupdate) { // FIXME: Should be handled by core
+		return;
+	}
+
+	uint32 version = atoi(info.proto.substr(6).c_str()); // FIXME: Perhaps put this type of check in the core
+	bool found = false;
+	BOOST_FOREACH(const Gtk::TreeRow& row, share_list_liststore->children()) {
+		if((row[share_list_columns.host_name] == info.host) && (row[share_list_columns.share_name] == info.name)) {
+			found = true;
+			uint32 over = atoi(((Glib::ustring)row[share_list_columns.protocol]).substr(6).c_str());
+			if(over <= version) {
+				row[share_list_columns.user_name] = info.user;
+				row[share_list_columns.protocol]  = info.proto;
+				row[share_list_columns.url]       = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+			}
+		}
+	}
+	if(!found) {
+		Gtk::TreeModel::iterator i = share_list_liststore->append();
+		(*i)[share_list_columns.user_name]  = info.user;
+		(*i)[share_list_columns.share_name] = info.name;
+		if(info.name == "") (*i)[share_list_columns.share_name] = "Anonymous";
+		(*i)[share_list_columns.host_name]  = info.host;
+		(*i)[share_list_columns.protocol]   = info.proto;
+		(*i)[share_list_columns.url]        = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+		(*i)[share_list_columns.share_id]   = info.id;
+	}
 }
 
 void UFTTWindow::set_backend(UFTTCoreRef _core) {
