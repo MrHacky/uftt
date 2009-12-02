@@ -588,7 +588,7 @@ void UFTTWindow::on_signal_add_share(const ShareInfo& info) {
 			if(over <= version) {
 				row[share_list_columns.user_name] = info.user;
 				row[share_list_columns.protocol]  = info.proto;
-				row[share_list_columns.url]       = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+				row[share_list_columns.url]       = STRFORMAT("%s://%s/%s", info.proto, info.host, info.name);
 			}
 		}
 	}
@@ -599,7 +599,7 @@ void UFTTWindow::on_signal_add_share(const ShareInfo& info) {
 		if(info.name == "") (*i)[share_list_columns.share_name] = "Anonymous";
 		(*i)[share_list_columns.host_name]  = info.host;
 		(*i)[share_list_columns.protocol]   = info.proto;
-		(*i)[share_list_columns.url]        = STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name);
+		(*i)[share_list_columns.url]        = STRFORMAT("%s://%s/%s", info.proto, info.host, info.name);
 		(*i)[share_list_columns.share_id]   = info.id;
 	}
 }
@@ -623,7 +623,7 @@ void UFTTWindow::on_signal_task_status(const Gtk::TreeModel::iterator i, const b
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
 	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
 	if(time_elapsed.total_seconds() > 0) {
-		(*i)[task_list_columns.speed] = STRFORMAT("%s\\s", StrFormat::bytes(info.transferred/time_elapsed.total_seconds()));
+		(*i)[task_list_columns.speed] = STRFORMAT("%s/s", StrFormat::bytes(info.transferred/time_elapsed.total_seconds()));
 	}
 	(*i)[task_list_columns.queue]          = info.queue;
 	// Share info
@@ -651,7 +651,7 @@ void UFTTWindow::on_signal_new_task(const TaskInfo& info) {
 	if(info.shareinfo.name == "") (*i)[task_list_columns.share_name] = "Anonymous";
 	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
 	(*i)[task_list_columns.protocol]       = info.shareinfo.proto;
-	(*i)[task_list_columns.url]            = STRFORMAT("%s:\\\\%s\\%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
+	(*i)[task_list_columns.url]            = STRFORMAT("%s://%s/%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 	// NOTE: Gtk::ListStore guarantees that iterators are valid as long as the
