@@ -435,6 +435,7 @@ void UFTTWindow::on_menu_file_quit() { // FIXME: Disconnect signals etc?
 		// capture these before we need to quit()
 		save_window_size_and_position();
 	}
+	statusicon->set_visible(false);
 	hide();
 	Gtk::Main::quit();
 }
