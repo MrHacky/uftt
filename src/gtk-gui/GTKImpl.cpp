@@ -331,15 +331,15 @@ void UFTTWindow::set_backend(UFTTCoreRef _core) {
 
 void UFTTWindow::_set_backend(UFTTCoreRef _core) {
 	if(_core->error_state == 2) { // FIXME: Magic Constant
-		Gtk::MessageDialog dialog("Fatal error.", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		Gtk::MessageDialog dialog("Error during initialization", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text(STRFORMAT("There was a problem during the initialization of UFTT's core:\n\n\"%s\"\n\nUFTT can not continue and will now quit.", _core->error_string));
 		dialog.run();
 //		throw int(1); // thrown integers will quit application with integer as exit code // FIXME: Can't we just quit() nicely?
 		on_menu_file_quit();
 	}
 	if(_core->error_state == 1) {// FIXME: Magic Constant
-		Gtk::MessageDialog dialog("Warning.", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
-		dialog.set_secondary_text(STRFORMAT("%s\n\nDo you still want to continue?", _core->error_string));
+		Gtk::MessageDialog dialog("Warning during initialization", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
+		dialog.set_secondary_text(STRFORMAT("Some warnings were generated during the initialization of UFTT's core:\n\n%s\n\nDo you still want to continue?", _core->error_string));
 		dialog.set_default_response(Gtk::RESPONSE_YES);
 		if(dialog.run() == Gtk::RESPONSE_NO) {
 			on_menu_file_quit();
