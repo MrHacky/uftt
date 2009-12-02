@@ -159,6 +159,7 @@
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& ti);
 			bool on_statusicon_signal_size_changed(int xy);
 			Glib::RefPtr<Gdk::Pixbuf> get_best_uftt_icon_for_size(int x, int y);
+			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);
 	};
 
 #endif

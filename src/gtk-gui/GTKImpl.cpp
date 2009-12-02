@@ -73,7 +73,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	statusicon->set_visible(true);
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
 	statusicon->signal_size_changed().connect(slot);
-	
+	statusicon->signal_popup_menu().connect(boost::bind(&UFTTWindow::on_statusicon_signal_popup_menu, this, _1, _2));
+
 	std::vector<Glib::RefPtr<Gdk::Pixbuf> > icon_list;
 	icon_list.push_back(get_best_uftt_icon_for_size(16, 16));
 //	icon_list.push_back(get_best_uftt_icon_for_size(22, 22));
@@ -153,6 +154,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "      <menuitem action='HelpAboutGTK'/>"
 	                        "    </menu>"
 	                        "  </menubar>"
+	                        "  <popup name='StatusIconPopup'>"
+	                        "    <menuitem action='FileAddShareFile'/>"
+	                        "    <menuitem action='FileAddSharefolder'/>"
+	                        "    <separator/>"
+	                        "    <menuitem action='FileQuit'/>"
+	                        "  </popup>"
 	                        "</ui>";
 
 	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid
@@ -306,6 +313,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	present();
 	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+void UFTTWindow::on_statusicon_signal_popup_menu(guint button, guint32 activate_time) {
+	Gtk::Menu* m = (Gtk::Menu*)(m_refUIManager->get_widget("/StatusIconPopup"));
+	statusicon->popup_menu_at_position(*m, button, activate_time);
 }
 
 bool UFTTWindow::on_statusicon_signal_size_changed(int xy) {
