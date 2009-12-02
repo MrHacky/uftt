@@ -10,15 +10,18 @@ IF(AUTODETECT_GTK_GUI)
 				MESSAGE(STATUS "Enabling gtk-gui")
 				SET(ENABLE_GTK_GUI ON CACHE BOOL "Enable building of the gtk gui")
 				IF(WIN32)
-					               #1234567890          1234567890          1234567890          1234567890
-					               #          1234567890          1234567890          1234567890          1234567890
-					MESSAGE(STATUS "NOTE: You will still need to manually set GTKMM24_INCLUDE_DIRS and")
-					MESSAGE(STATUS "GTHREAD_INCLUDE_DIRS, since pkg-config is broken on WIN32: it will A) generate")
-					MESSAGE(STATUS "CFLAGS only for gnu-tools; and B) can not handle path's with spaces in them")
-					MESSAGE(STATUS "(e.g. gtkmm's default installation path ``c:\\progam files\\gtkmm\\'' will cause")
-					MESSAGE(STATUS "build failures due to bogus include directives like ``-IC:/Program'').")
-					MESSAGE(STATUS "If you are using MSVC there are some Property Sheets in gtkmm's ``MSVC''")
-					MESSAGE(STATUS "directory that you may find usefull.")
+# FIXME: The vsprops parsing magic should handle this now. Check to see if
+#         the whole pkg_check_modules still works / is needed on win32
+#
+#					               #1234567890          1234567890          1234567890          1234567890
+#					               #          1234567890          1234567890          1234567890          1234567890
+#					MESSAGE(STATUS "NOTE: You will still need to manually set GTKMM24_INCLUDE_DIRS and")
+#					MESSAGE(STATUS "GTHREAD_INCLUDE_DIRS, since pkg-config is broken on WIN32: it will A) generate")
+#					MESSAGE(STATUS "CFLAGS only for gnu-tools; and B) can not handle path's with spaces in them")
+#					MESSAGE(STATUS "(e.g. gtkmm's default installation path ``c:\\progam files\\gtkmm\\'' will cause")
+#					MESSAGE(STATUS "build failures due to bogus include directives like ``-IC:/Program'').")
+#					MESSAGE(STATUS "If you are using MSVC there are some Property Sheets in gtkmm's ``MSVC''")
+#					MESSAGE(STATUS "directory that you may find usefull.")
 				ENDIF(WIN32)
 			ELSE(GTHREAD_FOUND)
 				MESSAGE(STATUS "Missing GThread, disabling gtk-gui")
