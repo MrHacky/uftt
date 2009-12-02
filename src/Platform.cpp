@@ -222,7 +222,6 @@ namespace platform {
 	}
 
 	string scan_xdg_user_dirs(string dirname) {
-		cerr << "scan_xdg_user_dirs" << endl;
 		string result;
 		boost::filesystem::path xdgConfigHome(string(_getenv("XDG_CONFIG_HOME")));
 		if(!boost::filesystem::exists(xdgConfigHome))
@@ -230,13 +229,11 @@ namespace platform {
 		if(ext::filesystem::exists(xdgConfigHome) && boost::filesystem::is_directory(xdgConfigHome)) {
 			boost::filesystem::path file(xdgConfigHome / "user-dirs.dirs");
 			if(boost::filesystem::is_regular(file)) {
-				cerr << "xdg file:" << endl;
 				ifstream ifs(file.string().c_str(), ios_base::in | ios_base::binary);
 				string line;
 				string pattern = string() + "XDG_" + dirname + "_DIR=";
 				while(!ifs.eof()) {
 					getline(ifs, line);
-					cerr << "xdg file: " << line << endl;
 					if(line.find(pattern) == 0) { //NOTE: Really strict, like Qt
 						result = line.substr(pattern.size(), line.size() - pattern.size());
 						if((result.find('"') == 0) && (result.rfind('"') == result.size() - 1))
@@ -247,7 +244,6 @@ namespace platform {
 				}
 			}
 		}
-		cerr << "xdg result: \"" << result << "\"" << endl;
 		return result;
 	}
 #endif
@@ -258,7 +254,6 @@ namespace platform {
 #else
 		boost::filesystem::path p;
 
-		cout << "xdg: " << scan_xdg_user_dirs("DESKTOP") << endl;
 		p = boost::filesystem::path(scan_xdg_user_dirs("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
