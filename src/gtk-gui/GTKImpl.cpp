@@ -187,7 +187,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
 	refresh_shares_toolbutton.set_label("Refresh");
 	download_shares_toolbutton.set_label("Download");
-	edit_preferences_toolbutton.set_label("Edit Preferences");
+	edit_preferences_toolbutton.set_label("Preferences");
 	toolbar.append(download_shares_toolbutton);
 	toolbar.append(refresh_shares_toolbutton);
 	toolbar.append(refresh_preferences_separatortoolitem);
@@ -195,7 +195,13 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
 	add(menu_main_paned_vbox);
-
+	
+	download_destination_path_entry.set_tooltip_text("Enter the path where downloaded shares should be placed");
+	browse_for_download_destination_path_button.set_tooltip_text("Select the path where downloaded shares should be placed");
+	download_shares_toolbutton.set_tooltip_text("Download selected shares");
+	edit_preferences_toolbutton.set_tooltip_text("Edit Preferences");
+	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");	
+	
 	// FIXME: We need to call show_all() and present() here, otherwise some
 	//         widgets will not know their own size and setting the positions
 	//         of the paneds will fail. However this leads to an ugly presentation
