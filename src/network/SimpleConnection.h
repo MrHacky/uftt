@@ -634,11 +634,9 @@ class SimpleConnection: public ConnectionBase {
 				start_receive_command(tbuf);
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
+				qitems.push_back(qitem(0, sharename, 0));
 				rresume = core->getSettingsRef()->experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
-				// QItem download start is delayed until further notice
-				keep_updating = false;
-				keep_status = true;
-				taskinfo.status = "Enqueued";
+				handle_qitems(tbuf);
 			} else if (rcommands.count(5)) {
 				// simple style connection
 				uint32 nlen = sharename.size();

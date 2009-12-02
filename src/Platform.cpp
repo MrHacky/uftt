@@ -215,6 +215,7 @@ namespace platform {
 #endif
 	}
 
+#ifndef WIN32
 	string _getenv(string s) {
 		char* r = getenv(s.c_str());
 		return (r == NULL) ? string() : string(r);
@@ -249,6 +250,7 @@ namespace platform {
 		cerr << "xdg result: \"" << result << "\"" << endl;
 		return result;
 	}
+#endif
 
 	boost::filesystem::path getDownloadPathDefault() {
 #ifdef WIN32

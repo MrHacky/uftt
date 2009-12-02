@@ -8,5 +8,5 @@ ADD_LIBRARY(lib-util
 )
 
 ADD_EXECUTABLE(bin2c
-	bin2c.c
+	bin2c.cpp
 )
