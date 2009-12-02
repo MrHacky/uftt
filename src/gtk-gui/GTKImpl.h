@@ -86,6 +86,8 @@
 			void on_statusicon_signal_popup_menu(guint button, guint32 activate_time);
 			void on_statusicon_signal_activate();
 			void on_statusicon_show_uftt_checkmenuitem_toggled();
+			void on_main_paned_realize();
+			void on_share_task_list_vpaned_realize();
 			void save_window_size_and_position();
 			void restore_window_size_and_position();
 			void on_view_toolbar_checkmenuitem_signal_toggled();

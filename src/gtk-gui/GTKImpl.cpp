@@ -215,6 +215,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	task_list_alignment.add(task_list_frame);
 	task_list_alignment.set_padding(4, 4, 4, 4);
 
+	share_task_list_vpaned.signal_realize().connect(
+		boost::bind(&UFTTWindow::on_share_task_list_vpaned_realize, this));
+	main_paned.signal_realize().connect(
+		boost::bind(&UFTTWindow::on_main_paned_realize, this));
 	share_task_list_vpaned.add(share_list_alignment);
 	share_task_list_vpaned.add(task_list_alignment);
 	main_paned.add(share_task_list_vpaned);
@@ -250,6 +254,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	toolbar.append(edit_preferences_toolbutton);
 	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
+	menu_main_paned_vbox.show_all();
 	add(menu_main_paned_vbox);
 
 	download_shares_toolbutton.set_tooltip_text("Download selected shares");
@@ -295,6 +300,18 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		mi->set_active(settings->show_toolbar);
 		toolbar.set_visible(settings->show_toolbar);
 	}
+}
+
+void UFTTWindow::on_main_paned_realize() {
+	int width = main_paned.get_width();
+	cout << "realized! width=" << width << endl;
+	main_paned.set_position(width*5/8);
+}
+
+void UFTTWindow::on_share_task_list_vpaned_realize() {
+	int height = share_task_list_vpaned.get_height();
+	cout << "realized! height=" << height << endl;
+	share_task_list_vpaned.set_position(height/2);
 }
 
 void UFTTWindow::show_uri(Glib::ustring uri) {
@@ -500,16 +517,10 @@ void UFTTWindow::set_backend(UFTTCoreRef _core) {
 	}
 }
 
-void UFTTWindow::pre_show() {
-	statusicon->set_visible(true);
-}
+void UFTTWindow::pre_show() {}
 
 void UFTTWindow::post_show() {
-	// FIXME: Because the window is already visible we get an ugly presentation
-	//         to the user because the user can now see the layouting process
-	//         for the paneds in action.
-	share_task_list_vpaned.set_position(share_task_list_vpaned.get_height()/2);
-	main_paned.set_position(main_paned.get_width()*5/8);
+	statusicon->set_visible(settings->show_task_tray_icon);
 }
 
 bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
