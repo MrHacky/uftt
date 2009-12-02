@@ -2,6 +2,7 @@
 	#define GMPMPC_H
 	#include "../UFTTCore.h"
 	#include "../UFTTSettings.h"
+	#include "AutoScrollingWindow.h"
 	#include "dispatcher_marshaller.h"
 	#include <boost/shared_ptr.hpp>
 	#include <iostream>
@@ -34,18 +35,18 @@
 			/* Containers (widgets not referenced by code) */
 
 			/* Widgets (referenced by code) */
-			Gtk::Menu*            menubar_ptr; // Menu is created dynamically using UIManager
-			Gtk::RadioButtonGroup menu_options_check_updates_frequency_radio_button_group;
-			Gtk::VBox             menu_main_paned_vbox;
-			Gtk::HPaned           main_paned;
-			Gtk::VPaned           share_task_list_vpaned;
-			Gtk::Frame            share_list_frame;
-			Gtk::Frame            task_list_frame;
-			Gtk::Frame            debug_log_frame;
-			Gtk::ScrolledWindow   debug_log_scrolledwindow;
-			Gtk::TextView         debug_log_textview;
-			Gtk::TreeView         share_list_treeview;
-			Gtk::TreeView         task_list_treeview;
+			Gtk::Menu*               menubar_ptr; // Menu is created dynamically using UIManager
+			Gtk::RadioButtonGroup    menu_options_check_updates_frequency_radio_button_group;
+			Gtk::VBox                menu_main_paned_vbox;
+			Gtk::HPaned              main_paned;
+			Gtk::VPaned              share_task_list_vpaned;
+			Gtk::Frame               share_list_frame;
+			Gtk::Frame               task_list_frame;
+			Gtk::Frame               debug_log_frame;
+			Gtk::AutoScrollingWindow debug_log_scrolledwindow;
+			Gtk::TextView            debug_log_textview;
+			Gtk::TreeView            share_list_treeview;
+			Gtk::TreeView            task_list_treeview;
 
 			/* Functions */
 			void construct_gui();

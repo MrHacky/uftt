@@ -147,8 +147,9 @@ IF(ENABLE_GTK_GUI)
 
 	ADD_LIBRARY(uftt-gtk
 	               ${WIN32_UFTT_GTK_ICON_RESOURCES}
-	               GTKMain.h			GTKMain.cpp
-	               GTKImpl.cpp		GTKImpl.h
+	               GTKMain.h              	GTKMain.cpp
+	               GTKImpl.cpp            	GTKImpl.h
+	               AutoScrollingWindow.cpp	AutoScrollingWindow.h
 	               dispatcher_marshaller.h
 	               OStreamGtkTextBuffer.h
 	)
