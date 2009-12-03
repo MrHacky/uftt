@@ -250,7 +250,7 @@ namespace platform {
 
 	boost::filesystem::path getDownloadPathDefault() {
 #ifdef WIN32
-		return boost::filesystem::path("C:\\Temp\\"); /*getFolderLocation(CSIDL_DESKTOP)*/
+		return getFolderLocation(CSIDL_DESKTOP);
 #else
 		boost::filesystem::path p;
 

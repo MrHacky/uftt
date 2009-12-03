@@ -203,7 +203,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	QToggleHeaderAction::addActions(this->listTasks);
 
 	if (!ext::filesystem::exists(settings->dl_path)) {
-		boost::filesystem::path npath(QDir::tempPath().toStdString());
+		boost::filesystem::path npath(platform::getDownloadPathDefault());
 		if (ext::filesystem::exists(npath))
 			settings->dl_path = npath;
 	}
