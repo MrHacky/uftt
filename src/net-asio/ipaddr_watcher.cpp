@@ -431,6 +431,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 			void close()
 			{
+				This()->watcher = NULL;
 #ifdef WIN32
 				sock.close();
 #endif
@@ -439,21 +440,36 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 #endif
 			}
 
-			void newlist()
+			static void checked_invoke_add_addr(boost::shared_ptr<ip_watcher_common<C, T> > this_, T& arg)
 			{
-				set<T> naddrlist = This()->getlist();
+				if (this_->This()->watcher)
+					this_->This()->watcher->add_addr(arg);
+			}
 
-				// there is a race condition here when the watcher object gets destroyed after these are posted,
-				// but before they are executed. However at the moment this does not happen because the
-				// io_service already stopped servicing requests before the destruction of the watcher
+			static void checked_invoke_del_addr(boost::shared_ptr<ip_watcher_common<C, T> > this_, T& arg)
+			{
+				if (this_->This()->watcher)
+					this_->This()->watcher->del_addr(arg);
+			}
+
+			static void checked_invoke_new_list(boost::shared_ptr<ip_watcher_common<C, T> > this_, std::set<T>& arg)
+			{
+				if (this_->This()->watcher)
+					this_->This()->watcher->new_list(arg);
+			}
+
+			static void newlist(boost::shared_ptr<ip_watcher_common<C, T> > this_)
+			{
+				set<T> naddrlist = this_->This()->getlist();
+
 				BOOST_FOREACH(const T& naddr, naddrlist)
-					if (!addrlist.count(naddr))
-						service.post(boost::bind(boost::ref(This()->watcher->add_addr), naddr));
-				BOOST_FOREACH(const T& oaddr, addrlist)
+					if (!this_->addrlist.count(naddr))
+						this_->service.post(boost::bind(&checked_invoke_add_addr, this_, naddr));
+				BOOST_FOREACH(const T& oaddr, this_->addrlist)
 					if (!naddrlist.count(oaddr))
-						service.post(boost::bind(boost::ref(This()->watcher->del_addr), oaddr));
-				addrlist = naddrlist;
-				service.post(boost::bind(boost::ref(This()->watcher->new_list), addrlist));
+						this_->service.post(boost::bind(&checked_invoke_del_addr, this_, oaddr));
+				this_->addrlist = naddrlist;
+				this_->service.post(boost::bind(&checked_invoke_new_list, this_, this_->addrlist));
 			}
 
 			void async_wait(boost::shared_ptr<ip_watcher_common<C, T> > sp)
@@ -475,7 +491,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
 						if (!this_)
 							return;
-						this_->newlist();
+						this_->newlist(this_);
 #ifdef WIN32
 						int inBuffer = 0;
 						int outBuffer = 0;
