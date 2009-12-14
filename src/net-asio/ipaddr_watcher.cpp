@@ -407,22 +407,45 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 			C* This() {
 				return (C*)this;
 			}
-		public:
+		protected:
 			boost::thread thread;
 			boost::asio::io_service& service;
 			set<T> addrlist;
-			boost::asio::ip::udp::socket sock; // win32
-			int fd; // linux
+#ifdef WIN32
+			boost::asio::ip::udp::socket sock;
+#endif
+#ifdef __linux__
+			int fd;
+#endif
 
+		public:
 			ip_watcher_common(boost::asio::io_service& service_)
 			: service(service_), sock(service_)
 			{
+			}
+
+			~ip_watcher_common()
+			{
+				//close();
+			}
+
+			void close()
+			{
+#ifdef WIN32
+				sock.close();
+#endif
+#ifdef __linux__
+				close(fd);
+#endif
 			}
 
 			void newlist()
 			{
 				set<T> naddrlist = This()->getlist();
 
+				// there is a race condition here when the watcher object gets destroyed after these are posted,
+				// but before they are executed. However at the moment this does not happen because the
+				// io_service already stopped servicing requests before the destruction of the watcher
 				BOOST_FOREACH(const T& naddr, naddrlist)
 					if (!addrlist.count(naddr))
 						service.post(boost::bind(boost::ref(This()->watcher->add_addr), naddr));
@@ -433,33 +456,38 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 				service.post(boost::bind(boost::ref(This()->watcher->new_list), addrlist));
 			}
 
-			void async_wait()
+			void async_wait(boost::shared_ptr<ip_watcher_common<C, T> > sp)
 			{
-				thread = boost::thread(boost::bind(&C::main, This())).move();
+				boost::weak_ptr<ip_watcher_common<C, T> > wp(sp);
+
+				thread = boost::thread(boost::bind(&C::main, wp)).move();
 			}
 
-			void main()
+			static void main(boost::weak_ptr<ip_watcher_common<C, T> > wp)
 			{
 				try {
-					newlist();
-					This()->init();
+					{
+						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
+						if (this_)
+							this_->This()->init();
+					}
 					while(1) {
+						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
+						if (!this_)
+							return;
+						this_->newlist();
 #ifdef WIN32
 						int inBuffer = 0;
 						int outBuffer = 0;
 						DWORD outSize = 0;
-						int err = WSAIoctl( sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
-						if (!(err < 0))
-							newlist();
-						else
+						int err = WSAIoctl(this_->sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
+						if (err < 0)
 							cout << "error: ipv?_watcher: " << err << '\n';
 #endif
 #ifdef __linux__
 						char buffer[1024];
-						size_t r = recv(fd, buffer, sizeof(buffer), 0);
-						if (r > 0)
-							newlist();
-						else
+						size_t r = recv(this_fd, buffer, sizeof(buffer), 0);
+						if (r <= 0)
 							cout << "error: ipv?_watcher: " << errno << '\n';
 #endif
 					}
@@ -494,7 +522,6 @@ class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::impl
 
 			fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
-			char buffer[1024];
 #endif
 		}
 
@@ -512,11 +539,12 @@ ipv4_watcher::ipv4_watcher(boost::asio::io_service& service)
 
 ipv4_watcher::~ipv4_watcher()
 {
+	impl->close();
 }
 
 void ipv4_watcher::async_wait()
 {
-	impl->async_wait();
+	impl->async_wait(impl);
 }
 
 
@@ -542,7 +570,6 @@ class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::impl
 
 			fd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 			bind(fd, (struct sockaddr*)&sa, sizeof(sa));
-			char buffer[1024];
 #endif
 		}
 
@@ -560,9 +587,10 @@ ipv6_watcher::ipv6_watcher(boost::asio::io_service& service)
 
 ipv6_watcher::~ipv6_watcher()
 {
+	impl->close();
 }
 
 void ipv6_watcher::async_wait()
 {
-	impl->async_wait();
+	impl->async_wait(impl);
 }

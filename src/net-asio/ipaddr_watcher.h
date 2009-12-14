@@ -3,7 +3,7 @@
 
 #include <boost/signals.hpp>
 #include <boost/asio.hpp>
-#include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
 
 #include <set>
@@ -11,7 +11,7 @@
 class ipv4_watcher : private boost::noncopyable {
 	private:
 		class implementation;
-		boost::scoped_ptr<implementation> impl;
+		boost::shared_ptr<implementation> impl;
 	public:
 		ipv4_watcher(boost::asio::io_service& service);
 		~ipv4_watcher();
@@ -29,7 +29,7 @@ class ipv4_watcher : private boost::noncopyable {
 class ipv6_watcher : private boost::noncopyable {
 	private:
 		class implementation;
-		boost::scoped_ptr<implementation> impl;
+		boost::shared_ptr<implementation> impl;
 	public:
 		ipv6_watcher(boost::asio::io_service& service);
 		~ipv6_watcher();
