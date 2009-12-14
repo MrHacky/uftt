@@ -57,25 +57,23 @@ namespace services {
 		private:
 			boost::asio::io_service& io_service_;
 			boost::asio::io_service work_io_service;
-			boost::scoped_ptr<boost::asio::io_service::work> work_;
 			boost::thread work_thread;
 
 			void thread_loop() {
+				boost::asio::io_service::work work(work_io_service);
 				work_io_service.run();
 			}
 
 		public:
 			explicit diskio_service(boost::asio::io_service& io_service)
 				: io_service_(io_service)
-				, work_(new boost::asio::io_service::work(work_io_service))
 			{
-				boost::thread tt(boost::bind(&diskio_service::thread_loop, this));
-				work_thread.swap(tt);
+				work_thread = boost::thread(boost::bind(&diskio_service::thread_loop, this)).move();
 			}
 
 			~diskio_service()
 			{
-				cancel();
+				stop();
 			}
 
 			typedef diskio_filetype filetype;
@@ -90,9 +88,9 @@ namespace services {
 				return work_io_service;
 			}
 
-			void cancel()
+			void stop()
 			{
-				work_.reset();
+				work_io_service.stop();
 				work_thread.join();
 			}
 
