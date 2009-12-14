@@ -720,20 +720,6 @@ void MainWindow::on_buttonClearCompletedTasks_clicked()
 	}
 }
 
-void MainWindow::new_upload(const TaskInfo& info)
-{
-	std::string name = info.shareinfo.name;
-
-	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-	twi->setText(TLCN_SHARE, QString::fromStdString(name));
-
-	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-	boost::function<void(const TaskInfo&)> handler =
-		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, starttime, _1));
-
-	backend->connectSigTaskStatus(info.id, handler);
-}
-
 void MainWindow::on_actionCheckForWebUpdates_triggered()
 {
 	backend->doManualQuery("webupdate");
@@ -842,17 +828,12 @@ void MainWindow::on_listShares_itemActivated(QTreeWidgetItem*, int)
 
 void MainWindow::new_task(const TaskInfo& info)
 {
-	if (info.isupload) {
-		new_upload(info);
-	} else {
-		QString url = QString::fromStdString(info.shareinfo.name);
-		QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-		twi->setText(TLCN_SHARE, url);
+	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
+	twi->setText(TLCN_SHARE, QString::fromStdString(info.shareinfo.name));
 
-		boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
-		boost::function<void(const TaskInfo&)> handler =
-			marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, starttime, _1));
+	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
+	boost::function<void(const TaskInfo&)> handler =
+		marshaller.wrap(boost::bind(&MainWindow::download_progress, this, twi, starttime, _1));
 
-		backend->connectSigTaskStatus(info.id, handler);
-	}
+	backend->connectSigTaskStatus(info.id, handler);
 }

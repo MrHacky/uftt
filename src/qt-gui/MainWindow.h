@@ -48,7 +48,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void new_autoupdate(const ShareInfo& info);
 		void download_done(const ShareID& sid);
-		void new_upload(const TaskInfo& info);
 
 	protected:
 		// overridden events
