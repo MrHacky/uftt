@@ -8,8 +8,9 @@
 struct asio_timer_oneshot_helper {
 	boost::function<void()> cb;
 	boost::asio::deadline_timer timer;
-	void doit() {
-		cb();
+	void doit(const boost::system::error_code& e) {
+		if (!e)
+			cb();
 	}
 	asio_timer_oneshot_helper(boost::asio::io_service& service) : timer(service) {};
 };
@@ -20,7 +21,7 @@ inline void asio_timer_oneshot(boost::asio::io_service& service, const boost::po
 	boost::shared_ptr<asio_timer_oneshot_helper> helper(new asio_timer_oneshot_helper(service));
 	helper->cb = cb;
 	helper->timer.expires_from_now(time);
-	helper->timer.async_wait(boost::bind(&asio_timer_oneshot_helper::doit, helper));
+	helper->timer.async_wait(boost::bind(&asio_timer_oneshot_helper::doit, helper, boost::asio::placeholders::error));
 }
 
 template<typename CB>
