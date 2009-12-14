@@ -3,12 +3,6 @@
 // allow upx compression (prevents use of TLS callbacks in boost::thread)
 extern "C" void tss_cleanup_implemented(void){}
 
-//#define BOOST_ASIO_DISABLE_IOCP
-//#define _WIN32_WINNT 0x0500
-//#define WINVER 0x0500
-//#define _WIN32_WINDOWS 0x0410
-#define NOMINMAX
-
 #include "UFTTGui.h"
 #include "qt-gui/QTMain.h"
 #include "BuildString.h"
