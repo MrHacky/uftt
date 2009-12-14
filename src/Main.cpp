@@ -273,10 +273,14 @@ int imain( int argc, char **argv )
 
 		settings->save();
 
+#ifndef DEBUG
 		exit(ret); // hax
+#endif
 		return ret;
 	} catch (int i) {
+#ifndef DEBUG
 		exit(i); // hax
+#endif
 		return i;
 	}
 }

@@ -21,6 +21,13 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_)
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 }
 
+UFTTCore::~UFTTCore()
+{
+	disk_service.stop();
+	io_service.stop();
+	servicerunner.join();
+}
+
 void UFTTCore::servicerunfunc() {
 	boost::asio::io_service::work wobj(io_service);
 	io_service.run();

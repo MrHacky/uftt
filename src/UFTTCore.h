@@ -79,17 +79,20 @@ struct TaskInfo {
 
 class UFTTCore {
 	private:
+		// declare these first so they will be destroyed last
+		boost::asio::io_service io_service;
+		services::diskio_service disk_service;
+
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
 		UFTTSettingsRef settings;
 
-		boost::asio::io_service io_service;
-		services::diskio_service disk_service;
 		boost::thread servicerunner;
 
 		void servicerunfunc();
 	public:
 		UFTTCore(UFTTSettingsRef settings_);
+		~UFTTCore();
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
