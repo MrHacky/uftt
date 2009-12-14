@@ -420,7 +420,10 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 		public:
 			ip_watcher_common(boost::asio::io_service& service_)
-			: service(service_), sock(service_)
+			: service(service_)
+#ifdef WIN32
+			, sock(service_)
+#endif
 			{
 			}
 
@@ -436,7 +439,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 				sock.close();
 #endif
 #ifdef __linux__
-				close(fd);
+				::close(fd);
 #endif
 			}
 
@@ -502,7 +505,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 #endif
 #ifdef __linux__
 						char buffer[1024];
-						size_t r = recv(this_fd, buffer, sizeof(buffer), 0);
+						size_t r = recv(this_->fd, buffer, sizeof(buffer), 0);
 						if (r <= 0)
 							cout << "error: ipv?_watcher: " << errno << '\n';
 #endif
