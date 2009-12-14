@@ -130,5 +130,4 @@ class UFTTCore {
 		int error_state; // 0 == none, 1 == warning, 2 == error
 		std::string error_string;
 };
-typedef boost::shared_ptr<UFTTCore> UFTTCoreRef;
 #endif//UFTT_CORE_H

@@ -29,7 +29,7 @@
 			 * core.
 			 * @param core is a reference to the core that the gui should control.
 			 */
-			virtual void bindEvents(UFTTCoreRef core) = 0;
+			virtual void bindEvents(UFTTCore* core) = 0;
 
 			/**
 			 * After the GUI had been created and a core has been bound to the GUI

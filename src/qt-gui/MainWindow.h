@@ -29,7 +29,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		ShareID auto_update_share;
 		boost::filesystem::path auto_update_path;
 		std::string auto_update_build;
-		UFTTCoreRef backend;
+		UFTTCore* backend;
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
@@ -64,7 +64,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	public:
 		MainWindow(UFTTSettingsRef settings_);
-		void SetBackend(UFTTCoreRef be);
+		void SetBackend(UFTTCore* be);
 		~MainWindow();
 
 	public Q_SLOTS:

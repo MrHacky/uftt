@@ -16,11 +16,11 @@
 namespace {
 	// NOTE: Regular pointer is required here, static initialization will overwrite values stored
 	//       in shared_ptr before it's constructor gets executed...
-	static std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCoreRef)> >* netmodulelist = NULL;
+	static std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCore*)> >* netmodulelist = NULL;
 }
 
 namespace NetModuleLinker {
-	std::vector<boost::shared_ptr<INetModule> > getNetModuleList(UFTTCoreRef core)
+	std::vector<boost::shared_ptr<INetModule> > getNetModuleList(UFTTCore* core)
 	{
 		std::vector<boost::shared_ptr<INetModule> > res;
 
@@ -37,9 +37,9 @@ namespace NetModuleLinker {
 		return res;
 	}
 
-	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCoreRef)>& fp) {
+	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCore*)>& fp) {
 		if (netmodulelist == NULL) { // FIXME: leak leak...
-			netmodulelist = new std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCoreRef)> >();
+			netmodulelist = new std::vector<boost::function<boost::shared_ptr<INetModule>(UFTTCore*)> >();
 		}
 		netmodulelist->push_back(fp);
 	};

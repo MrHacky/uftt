@@ -19,7 +19,7 @@ class QTMain : public UFTTGui {
 		QTMain(int argc, char **argv, UFTTSettingsRef settings);
 		~QTMain();
 
-		void bindEvents(UFTTCoreRef core);
+		void bindEvents(UFTTCore* core);
 		int run();
 };
 

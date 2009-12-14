@@ -7,18 +7,12 @@
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
-struct null_deleter {
-	void operator()(void const *) const {}
-};
-
-
 UFTTCore::UFTTCore(UFTTSettingsRef settings_)
 : settings(settings_)
 , disk_service(io_service)
 , error_state(0)
 {
-	boost::shared_ptr<UFTTCore> pthis(this, null_deleter());
-	netmodules = NetModuleLinker::getNetModuleList(pthis);
+	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 

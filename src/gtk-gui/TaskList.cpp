@@ -51,7 +51,7 @@ bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* e
 	return false;
 }
 
-void TaskList::set_backend(UFTTCoreRef _core) {
+void TaskList::set_backend(UFTTCore* _core) {
 	core = _core;
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&TaskList::on_signal_new_task, this, _1)));
 }

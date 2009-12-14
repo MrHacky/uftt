@@ -493,7 +493,7 @@ void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
 	}
 }
 
-void UFTTWindow::set_backend(UFTTCoreRef _core) {
+void UFTTWindow::set_backend(UFTTCore* _core) {
 	{
 		// FIXME: We probably want to do this *AFTER* checking for errors/warnings
 		//         but this causes a nasty exception in SimpleBackend on exit if

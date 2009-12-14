@@ -34,7 +34,7 @@ GTKMain::GTKMain(int argc, char **argv, UFTTSettingsRef settings)
 GTKMain::~GTKMain() {
 }
 
-void GTKMain::bindEvents(UFTTCoreRef core) {
+void GTKMain::bindEvents(UFTTCore* core) {
 	impl->wnd->set_backend(core);
 }
 

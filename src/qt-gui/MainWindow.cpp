@@ -640,7 +640,7 @@ void MainWindow::download_done(const ShareID& sid)
 	}
 }
 
-void MainWindow::SetBackend(UFTTCoreRef be)
+void MainWindow::SetBackend(UFTTCore* be)
 {
 	backend = be;
 

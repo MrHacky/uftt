@@ -11,10 +11,10 @@
 			TaskList();
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
-			void set_backend(UFTTCoreRef _core);
+			void set_backend(UFTTCore* _core);
 			void set_popup_menu(Gtk::Menu* _popup_menu);
 		private:
-			UFTTCoreRef core;
+			UFTTCore* core;
 			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
 			class TaskListColumns : public Gtk::TreeModelColumnRecord {
 				public:

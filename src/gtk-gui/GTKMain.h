@@ -15,7 +15,7 @@ class GTKMain : public UFTTGui {
 
 	public:
 		GTKMain(int argc, char** argv, UFTTSettingsRef settings);
-		void bindEvents(UFTTCoreRef core);
+		void bindEvents(UFTTCore* core);
 		int run();
 		~GTKMain();
 };

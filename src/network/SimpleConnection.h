@@ -273,7 +273,7 @@ class SimpleConnection: public ConnectionBase {
 
 		cmdinfo rcmd;
 	public:
-		SimpleConnection(boost::asio::io_service& service_, UFTTCoreRef core_, SockInit sockinit_)
+		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
 			: ConnectionBase(service_, core_)
 			, socket(sockinit_)
 			, progress_timer(service_)

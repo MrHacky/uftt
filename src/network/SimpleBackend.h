@@ -62,7 +62,7 @@ const UDPSockInfoRef uftt_bcst_if;
 
 class SimpleBackend: public INetModule {
 	private:
-		UFTTCoreRef core;
+		UFTTCore* core;
 
 		boost::asio::io_service& service;
 		services::diskio_service& diskio;
@@ -599,7 +599,7 @@ class SimpleBackend: public INetModule {
 			std::cout << prefix << a << '\n';
 		}
 
-		SimpleBackend(UFTTCoreRef core_)
+		SimpleBackend(UFTTCore* core_)
 			: service(core_->get_io_service())
 			, diskio(core_->get_disk_service())
 			, tcplistener_v4(core_->get_io_service())

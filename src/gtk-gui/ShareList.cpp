@@ -102,7 +102,7 @@ bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton*
 	return false;
 }
 
-void ShareList::set_backend(UFTTCoreRef _core) {
+void ShareList::set_backend(UFTTCore* _core) {
 	core = _core;
 	core->connectSigAddShare(dispatcher.wrap(boost::bind(&ShareList::on_signal_add_share, this, _1)));
 }

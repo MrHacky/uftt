@@ -21,12 +21,12 @@ class HTTPTask {
 		TaskInfo info;
 		boost::signal<void(const TaskInfo&)> sig_progress;
 
-		HTTPTask(UFTTCoreRef core)
+		HTTPTask(UFTTCore* core)
 		: req(core->get_io_service()), file(core->get_disk_service())
 		{}
 };
 
-HTTPBackend::HTTPBackend(UFTTCoreRef core_)
+HTTPBackend::HTTPBackend(UFTTCore* core_)
 : core(core_)
 , service(core_->get_io_service())
 {

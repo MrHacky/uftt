@@ -31,12 +31,12 @@
 			UFTTWindow(UFTTSettingsRef _settings);
 
 			/* Public functions */
-			void set_backend(UFTTCoreRef _core);
+			void set_backend(UFTTCore* _core);
 			void pre_show();
 			void post_show();
 		private:
 			/* Variables */
-			UFTTCoreRef                   core;
+			UFTTCore*                     core;
 			UFTTSettingsRef               settings;
 			DispatcherMarshaller          dispatcher; // Execute a function in the gui thread
 			Glib::RefPtr<Gdk::Pixbuf>     statusicon_pixbuf;

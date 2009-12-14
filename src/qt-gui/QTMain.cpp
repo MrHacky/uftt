@@ -34,7 +34,7 @@ QTMain::~QTMain()
 	delete impl;
 }
 
-void QTMain::bindEvents(UFTTCoreRef core)
+void QTMain::bindEvents(UFTTCore* core)
 {
 	impl->wnd.SetBackend(core);
 }

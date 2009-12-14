@@ -16,7 +16,7 @@ typedef boost::shared_ptr<HTTPTask> HTTPTaskRef;
 
 class HTTPBackend: public INetModule {
 	private:
-		UFTTCoreRef core;
+		UFTTCore* core;
 		uint32 mid;
 		boost::asio::io_service& service;
 
@@ -38,7 +38,7 @@ class HTTPBackend: public INetModule {
 
 		void do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 	public:
-		HTTPBackend(UFTTCoreRef core_);
+		HTTPBackend(UFTTCore* core_);
 	public:
 		// interface starts here!
 
