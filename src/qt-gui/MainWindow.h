@@ -46,6 +46,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void setTrayDoubleClick(bool b);
 		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
 
+		std::string getDownloadPath();
+
 		void new_autoupdate(const ShareInfo& info);
 		void download_done(const ShareID& sid);
 
@@ -103,6 +105,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_listShares_itemActivated(QTreeWidgetItem*, int);
 
 		void on_editNickName_textChanged(QString text);
+		void on_editDownload_textChanged(QString text);
 
 		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);
 	public: // callbacks

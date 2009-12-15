@@ -215,7 +215,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="DownloadEdit">
+        <widget class="QLineEdit" name="editDownload">
          <property name="text">
           <string>C:\temp\</string>
          </property>
@@ -558,7 +558,7 @@
   <tabstop>listShares</tabstop>
   <tabstop>buttonRefresh</tabstop>
   <tabstop>buttonDownload</tabstop>
-  <tabstop>DownloadEdit</tabstop>
+  <tabstop>editDownload</tabstop>
  </tabstops>
  <resources/>
  <connections>

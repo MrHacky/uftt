@@ -208,7 +208,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 			settings->dl_path = npath;
 	}
 
-	this->DownloadEdit->setText(QString::fromStdString(settings->dl_path.native_directory_string()));
+	this->editDownload->setText(QString::fromStdString(settings->dl_path.native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings->autoupdate);
 	this->actionEnableDownloadResume->setChecked(settings->experimentalresume);
 	this->setUpdateInterval(settings->webupdateinterval);
@@ -327,7 +327,7 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	QByteArray data = saveState();
 	settings->dockinfo.insert(settings->dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
 
-	settings->dl_path = DownloadEdit->text().toStdString();
+	settings->dl_path = getDownloadPath();
 
 	trayicon->hide();
 
@@ -454,9 +454,29 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 }
 
+std::string MainWindow::getDownloadPath()
+{
+	std::string path = editDownload->text().toStdString();
+	if (!path.empty()) {
+		char c = path[path.size()-1];
+		if (c != '\\' && c != '/')
+			path.push_back('\\');
+	}
+	return path;
+}
+
+void MainWindow::on_editDownload_textChanged(QString text)
+{
+	boost::filesystem::path dlpath = getDownloadPath();
+	if (ext::filesystem::exists(dlpath))
+		editDownload->setStyleSheet("");
+	else
+		editDownload->setStyleSheet("* { color: black; background-color: #ffb3b3; }");
+}
+
 void MainWindow::on_buttonDownload_clicked()
 {
-	boost::filesystem::path dlpath = DownloadEdit->text().toStdString();
+	boost::filesystem::path dlpath = getDownloadPath();
 	if (!ext::filesystem::exists(dlpath)) {
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
@@ -578,9 +598,9 @@ void MainWindow::on_buttonBrowse_clicked()
 	QString directory;
 	directory = QFileDialog::getExistingDirectory(this,
 		tr("Choose download directory"),
-		DownloadEdit->text());
+		QString::fromStdString(getDownloadPath()));
 	if (!directory.isEmpty())
-		this->DownloadEdit->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
+		this->editDownload->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
 }
 
 void MainWindow::new_autoupdate(const ShareInfo& info)
@@ -619,7 +639,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 		return;
 
 	auto_update_share = info.id;
-	auto_update_path = DownloadEdit->text().toStdString();
+	auto_update_path = getDownloadPath();
 	auto_update_build = build;
 
 	backend->startDownload(auto_update_share, auto_update_path);
@@ -808,7 +828,7 @@ void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
 	if (text.substr(0,3) != "D: ") return;
 	string name = text.substr(3);
 
-	boost::filesystem::path path = DownloadEdit->text().toStdString();
+	boost::filesystem::path path = getDownloadPath();
 	path /= name;
 
 	if (ext::filesystem::exists(path)) {
