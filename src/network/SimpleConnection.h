@@ -28,103 +28,32 @@
 
 #include "ConnectionBase.h"
 
-/// helper classes, TODO: nest them properly...
-struct cmdinfo {
-	uint32 cmd;
-	uint32 ver;
-	uint64 len;
-};
-
-struct filesender {
-	std::string name;
-	boost::filesystem::path path;
-	services::diskio_filetype file;
-
-	bool hsent;
-	uint64 fsize;
-	uint64 offset;
-
-	filesender(services::diskio_service& diskio) : file(diskio) {};
-
-	void init(uint64 offset_ = 0) {
-		offset = offset_;
-		fsize = boost::filesystem::file_size(path) - offset;
-		file.open(path, services::diskio_filetype::in);
-		file.fseeka(offset);
-		hsent = false;
-		//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
-	};
-
-	bool getbuf(shared_vec buf) {
-		if (!hsent) {
-			hsent = true;
-			buf->resize(16 + name.size());
-			cmdinfo hdr;
-			hdr.cmd = (offset == 0) ? 0x01 : 0x17;//CMD_REPLY_PARTIAL_FILE; // file
-			hdr.len = fsize;
-			hdr.ver = name.size();
-			memcpy(&(*buf)[0], &hdr, 16);
-			memcpy(&(*buf)[16], name.data(), hdr.ver);
-			//fsize += buf->size();
-			//handler(boost::system::error_code(), buf->size());
-			return true;
-		}
-		return false;
-		//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
-	};
-};
-
-struct dirsender {
-	std::string name;
-	boost::filesystem::path path;
-
-	boost::filesystem::directory_iterator curiter;
-	boost::filesystem::directory_iterator enditer;
-
-	bool hsent;
-
-	void init() {
-		curiter = boost::filesystem::directory_iterator(path);
-		hsent = false;
-	};
-
-	bool getbuf(shared_vec buf, boost::filesystem::path& newpath)
-	{
-		if (!hsent) {
-			hsent = true;
-			buf->resize(16 + name.size());
-			cmdinfo hdr;
-			hdr.cmd = 0x02; // dir
-			hdr.len = 0;
-			hdr.ver = name.size();
-			memcpy(&(*buf)[0], &hdr, 16);
-			memcpy(&(*buf)[16], name.data(), hdr.ver);
-		} else
-			buf->clear();
-
-		if (curiter == enditer) {
-			cmdinfo hdr;
-			hdr.cmd = 0x03; // ..
-			hdr.len = 0;
-			hdr.ver = 0;
-			uint32 clen = buf->size();
-			buf->resize(clen+16);
-			memcpy(&(*buf)[clen], &hdr, 16);
-			return true;
-		}
-
-		newpath = curiter->path();
-
-		++curiter;
-		return false;
-	};
-};
-
 template <typename SockType, typename SockInit>
 class SimpleConnection: public ConnectionBase {
 	private:
 		enum {
-			CMD_NONE,
+			QITEM_REQUEST_SHARE = 0,
+			QITEM_REQUEST_FILE,
+			QITEM_REQUEST_DIR,
+			QITEM_UNUSED3,
+			QITEM_UNUSED4,
+			QITEM_REQUESTED_FILE,
+			QITEM_REQUESTED_FILESIG,
+			QITEM_REQUESTED_FILESIG_BUSY,
+			QITEM_REQUESTED_PARTFILE,
+			QITEM_UNUSED8, //QITEM_REQUESTED_PARTFILE_BUSY,
+		};
+
+		enum {
+			REQLIST_UNUSED0 = 0,
+			REQLIST_FILE,
+			REQLIST_DIR,
+			REQLIST_UNUSED3, // REQLIST_CDUP
+			REQLIST_ENDOFLIST,
+		};
+
+		enum {
+			CMD_NONE = 0,
 			CMD_OLD_FILE,
 			CMD_OLD_DIR,
 			CMD_OLD_CDUP,
@@ -147,16 +76,96 @@ class SimpleConnection: public ConnectionBase {
 			END_OF_COMMANDS
 		};
 
-		services::diskio_service* gdiskio;
-		SockType socket;
+		struct cmdinfo {
+			uint32 cmd;
+			uint32 ver;
+			uint64 len;
+		};
 
-		std::string sharename;
-		boost::filesystem::path sharepath;
+		struct filesender {
+			std::string name;
+			boost::filesystem::path path;
+			services::diskio_filetype file;
 
-		filesender cursendfile;
-		std::vector<dirsender> quesenddir;
-		bool newstyle;
-		bool qitemsfilled;
+			bool hsent;
+			uint64 fsize;
+			uint64 offset;
+
+			filesender(services::diskio_service& diskio) : file(diskio) {};
+
+			void init(uint64 offset_ = 0) {
+				offset = offset_;
+				fsize = boost::filesystem::file_size(path) - offset;
+				file.open(path, services::diskio_filetype::in);
+				file.fseeka(offset);
+				hsent = false;
+				//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
+			};
+
+			bool getbuf(shared_vec buf) {
+				if (!hsent) {
+					hsent = true;
+					buf->resize(16 + name.size());
+					cmdinfo hdr;
+					hdr.cmd = (offset == 0) ? CMD_OLD_FILE : CMD_REPLY_PARTIAL_FILE;//CMD_REPLY_PARTIAL_FILE; // file
+					hdr.len = fsize;
+					hdr.ver = name.size();
+					memcpy(&(*buf)[0], &hdr, 16);
+					memcpy(&(*buf)[16], name.data(), hdr.ver);
+					//fsize += buf->size();
+					//handler(boost::system::error_code(), buf->size());
+					return true;
+				}
+				return false;
+				//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
+			};
+		};
+
+		struct dirsender {
+			std::string name;
+			boost::filesystem::path path;
+
+			boost::filesystem::directory_iterator curiter;
+			boost::filesystem::directory_iterator enditer;
+
+			bool hsent;
+
+			void init() {
+				curiter = boost::filesystem::directory_iterator(path);
+				hsent = false;
+			};
+
+			bool getbuf(shared_vec buf, boost::filesystem::path& newpath)
+			{
+				if (!hsent) {
+					hsent = true;
+					buf->resize(16 + name.size());
+					cmdinfo hdr;
+					hdr.cmd = CMD_OLD_DIR; // dir
+					hdr.len = 0;
+					hdr.ver = name.size();
+					memcpy(&(*buf)[0], &hdr, 16);
+					memcpy(&(*buf)[16], name.data(), hdr.ver);
+				} else
+					buf->clear();
+
+				if (curiter == enditer) {
+					cmdinfo hdr;
+					hdr.cmd = CMD_OLD_CDUP; // ..
+					hdr.len = 0;
+					hdr.ver = 0;
+					uint32 clen = buf->size();
+					buf->resize(clen+16);
+					memcpy(&(*buf)[clen], &hdr, 16);
+					return true;
+				}
+
+				newpath = curiter->path();
+
+				++curiter;
+				return false;
+			};
+		};
 
 		struct qitem {
 			int type;
@@ -169,13 +178,6 @@ class SimpleConnection: public ConnectionBase {
 			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_, uint32 psize_) : type(type_), path(path_), fsize(-1), pos(pos_), poffset(0), psize(psize_) {};
 		};
 		std::deque<qitem> qitems;
-
-		enum {
-			QITEM_SIGREQ = 6,
-			QITEM_SIGREQ_BUSY,
-			QITEM_PARTFILE_REQ,
-			QITEM_PARTFILE_BUSY,
-		};
 
 		struct sigmaker {
 			boost::asio::io_service& service;
@@ -254,6 +256,17 @@ class SimpleConnection: public ConnectionBase {
 				fclose(fd);
 			}
 		};
+
+		services::diskio_service* gdiskio;
+		SockType socket;
+
+		std::string sharename;
+		boost::filesystem::path sharepath;
+
+		filesender cursendfile;
+		std::vector<dirsender> quesenddir;
+		bool newstyle;
+		bool qitemsfilled;
 
 		std::string error_message;
 		bool dldone;
@@ -551,7 +564,7 @@ class SimpleConnection: public ConnectionBase {
 					}; break;
 					case CMD_REQUEST_FULL_FILE: {
 						if (hdr.len < 0xffff) {
-							qitem nqi(5, (sharepath / std::string(rbuf->begin(), rbuf->end())).string());
+							qitem nqi(QITEM_REQUESTED_FILE, (sharepath / std::string(rbuf->begin(), rbuf->end())).string());
 							qitems.push_back(nqi);
 							checkwhattosend();
 							start_receive_command(rbuf);
@@ -573,7 +586,7 @@ class SimpleConnection: public ConnectionBase {
 							tcpos += pkt_get_vuint64(*rbuf, idx);
 							pos.push_back(tcpos);
 						}
-						qitems.push_back(qitem(QITEM_SIGREQ, name, pos, psize));
+						qitems.push_back(qitem(QITEM_REQUESTED_FILESIG, name, pos, psize));
 						checkwhattosend();
 						start_receive_command(rbuf);
 					}; break;
@@ -591,7 +604,7 @@ class SimpleConnection: public ConnectionBase {
 						std::string name(rbuf->begin()+idx, rbuf->begin()+idx+slen);
 						idx += slen;
 						uint64 poff = pkt_get_vuint64(*rbuf, idx);
-						qitem nqi(5, (sharepath / name).string());
+						qitem nqi(QITEM_REQUESTED_FILE, (sharepath / name).string());
 						nqi.poffset = poff;
 						qitems.push_back(nqi);
 						checkwhattosend();
@@ -634,7 +647,7 @@ class SimpleConnection: public ConnectionBase {
 				start_receive_command(tbuf);
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
-				qitems.push_back(qitem(0, sharename, 0));
+				qitems.push_back(qitem(QITEM_REQUEST_SHARE, sharename, 0));
 				rresume = core->getSettingsRef()->experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
 			} else if (rcommands.count(5)) {
@@ -691,7 +704,7 @@ class SimpleConnection: public ConnectionBase {
 					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
 					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
-					tbuf->push_back(2); // dir
+					tbuf->push_back(REQLIST_DIR); // dir
 					pkt_put_vuint32(curpath.string().size(), *tbuf);
 					for (uint i = 0; i < curpath.string().size(); ++i)
 						tbuf->push_back(curpath.string()[i]);
@@ -710,13 +723,13 @@ class SimpleConnection: public ConnectionBase {
 						++curlevel;
 						if(ext::filesystem::exists(*curiter)) {
 							if (boost::filesystem::is_directory(*curiter)) {
-								tbuf->push_back(2); // dir
+								tbuf->push_back(REQLIST_DIR); // dir
 								pkt_put_vuint32(curpath.string().size(), *tbuf);
 								for (uint i = 0; i < curpath.string().size(); ++i)
 									tbuf->push_back(curpath.string()[i]);
 								//std::cout << "Directory: " << curpath << '\n';
 							} else {
-								tbuf->push_back(1); // file
+								tbuf->push_back(REQLIST_FILE); // file
 								taskinfo.size += boost::filesystem::file_size(*curiter);
 								pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
 								pkt_put_vuint32(curpath.string().size(), *tbuf);
@@ -732,7 +745,7 @@ class SimpleConnection: public ConnectionBase {
 					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
 					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
-					tbuf->push_back(1); // file
+					tbuf->push_back(REQLIST_FILE); // file
 					taskinfo.size += boost::filesystem::file_size(spath);
 					pkt_put_vuint64(boost::filesystem::file_size(spath), *tbuf);
 					pkt_put_vuint32(curpath.string().size(), *tbuf);
@@ -742,7 +755,7 @@ class SimpleConnection: public ConnectionBase {
 					//std::cout << "Single file!\n";
 				}
 			}
-			tbuf->push_back(4); // end of list
+			tbuf->push_back(REQLIST_ENDOFLIST); // end of list
 			pkt_put_uint64(tbuf->size() - 16, &((*tbuf)[0]) + 8);
 			send_receive_packet(tbuf);
 		}
@@ -753,16 +766,16 @@ class SimpleConnection: public ConnectionBase {
 			while (pos < tbuf->size()) {
 				int tp = tbuf->at(pos++);
 				switch (tp) {
-					case 1: { // file
-						qitem qi(1, "", pkt_get_vuint64(*tbuf, pos));
+					case REQLIST_FILE: { // file
+						qitem qi(QITEM_REQUEST_FILE, "", pkt_get_vuint64(*tbuf, pos));
 						taskinfo.size += qi.fsize;
 						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
 						for (uint i = 0; i < nlen; ++i)
 							qi.path.push_back(tbuf->at(pos++));
 						qitems.push_back(qi);
 					}; break;
-					case 2: { // dir
-						qitem qi(2, "");
+					case REQLIST_DIR: { // dir
+						qitem qi(QITEM_REQUEST_DIR, "");
 						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
 						for (uint i = 0; i < nlen; ++i)
 							qi.path.push_back(tbuf->at(pos++));
@@ -770,7 +783,7 @@ class SimpleConnection: public ConnectionBase {
 						boost::filesystem::create_directory(dp);
 						//qitems.push_front(qi);
 					}; break;
-					case 4: { // eol
+					case REQLIST_ENDOFLIST: { // eol
 						pos = tbuf->size();
 					}; break;
 				}
@@ -787,7 +800,7 @@ class SimpleConnection: public ConnectionBase {
 			}
 
 			switch (qitems.front().type) {
-				case 0: {
+				case QITEM_REQUEST_SHARE: {
 					qitem& item = qitems.front();
 					uint32 nlen = item.path.size();
 					tbuf->resize(16 + nlen);
@@ -801,10 +814,10 @@ class SimpleConnection: public ConnectionBase {
 					send_receive_packet(tbuf);
 					qitems.pop_front();
 				}; break;
-				case 1: {
+				case QITEM_REQUEST_FILE: {
 					tbuf->clear();
 					qitemsfilled = true;
-					for (uint i = 0; i < qitems.size() && qitems[i].type == 1; ++i) {
+					for (uint i = 0; i < qitems.size() && qitems[i].type == QITEM_REQUEST_FILE; ++i) {
 						qitem& titem = qitems[i];
 						size_t cstart = tbuf->size();
 						tbuf->resize(tbuf->size()+16);
@@ -842,7 +855,7 @@ class SimpleConnection: public ConnectionBase {
 							// build packet
 							pkt_put_uint32(CMD_REQUEST_SIG_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
-							titem.type = QITEM_SIGREQ; // requested signiature
+							titem.type = QITEM_REQUESTED_FILESIG; // requested signiature
 							titem.poffset = fsize;
 							pkt_put_vuint32(titem.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
@@ -857,7 +870,7 @@ class SimpleConnection: public ConnectionBase {
 						} else {
 							pkt_put_uint32(CMD_REQUEST_FULL_FILE, &((*tbuf)[cstart+0]));
 							pkt_put_uint32(0, &((*tbuf)[cstart+4]));
-							titem.type = 5; // requested file
+							titem.type = QITEM_REQUESTED_FILE; // requested file
 							//pkt_put_vuint32(item.path.size(), *tbuf);
 							for (uint j = 0; j < titem.path.size(); ++j)
 								tbuf->push_back(titem.path[j]);
@@ -953,7 +966,7 @@ class SimpleConnection: public ConnectionBase {
 				} else if (newstyle) {
 					if (!qitems.empty()) {
 						int qtype = qitems.front().type;
-						if (qtype == 5) {
+						if (qtype == QITEM_REQUESTED_FILE) {
 							sbuf->resize(16);
 							uint64 off = qitems.front().poffset;
 							cursendfile.name = qitems[0].path;
@@ -971,14 +984,14 @@ class SimpleConnection: public ConnectionBase {
 							}
 							sendqueue.push_back(sbuf);
 							service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
-						} else if (qtype == QITEM_SIGREQ) {
-							qitems.front().type = QITEM_SIGREQ_BUSY;
+						} else if (qtype == QITEM_REQUESTED_FILESIG) {
+							qitems.front().type = QITEM_REQUESTED_FILESIG_BUSY;
 							qitems.front().path = (sharepath / qitems.front().path).native_file_string();
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
 							sm->cb = boost::bind(&SimpleConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
 							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
-						} else if (qtype == QITEM_SIGREQ_BUSY) {
+						} else if (qtype == QITEM_REQUESTED_FILESIG_BUSY) {
 							// ignore
 						} else {
 							std::cout << "Unknown item type: " << qtype << '\n';
@@ -997,7 +1010,7 @@ class SimpleConnection: public ConnectionBase {
 					service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 				} else if (!donesend) {
 					cmdinfo hdr;
-					hdr.cmd = 0x04; // ..
+					hdr.cmd = CMD_OLD_DONE; // ..
 					hdr.len = 0;
 					hdr.ver = 0;
 					sbuf->resize(16);
@@ -1029,7 +1042,7 @@ class SimpleConnection: public ConnectionBase {
 		{
 			qitem item = qitems.front();
 			qitems.pop_front();
-			item.type = QITEM_PARTFILE_REQ;
+			item.type = QITEM_REQUESTED_PARTFILE;
 			item.poffset = offset;
 
 			if (item.poffset == item.fsize) {
@@ -1105,7 +1118,7 @@ class SimpleConnection: public ConnectionBase {
 					if (sharename.find("-deb-") != std::string::npos) name = name + ".deb.signed";
 					rbuf->resize(16 + name.size());
 					cmdinfo hdr;
-					hdr.cmd = 0x01; // file
+					hdr.cmd = CMD_OLD_FILE; // file
 					hdr.len = buildfile->size();
 					hdr.ver = name.size();
 					memcpy(&(*rbuf)[0], &hdr, 16);
@@ -1137,7 +1150,7 @@ class SimpleConnection: public ConnectionBase {
 			}
 			taskinfo.transferred += buildfile->size();
 			cmdinfo hdr;
-			hdr.cmd = 0x04;
+			hdr.cmd = CMD_OLD_DONE;
 			sbuf->resize(16);
 			memcpy(&(*sbuf)[0], &hdr, 16);
 			boost::asio::async_write(socket, GETBUF(sbuf),
