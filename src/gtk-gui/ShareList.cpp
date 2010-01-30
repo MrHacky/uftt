@@ -81,7 +81,6 @@ bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton*
 	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
 		Gtk::TreeModel::Path  path;
 		Gtk::TreeViewColumn* column;
-		double x, y;
 		int    cell_x, cell_y;
 		bool exists = share_list_treeview.get_path_at_pos((int)(event->x), (int)(event->y), path, column, cell_x, cell_y);
 		if(exists) {
