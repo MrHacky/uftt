@@ -3,8 +3,8 @@ IF(AUTODETECT_GTK_GUI)
 	find_package(PkgConfig)
 
 	IF(PKG_CONFIG_FOUND)
-		pkg_check_modules(GTKMM24 REQUIRED gtkmm-2.4>=2.18.3)
-		pkg_check_modules(GTHREAD REQUIRED gthread-2.0)
+		pkg_check_modules(GTKMM24 gtkmm-2.4>=2.16.0)
+		pkg_check_modules(GTHREAD gthread-2.0)
 		
 		IF(GTKMM24_FOUND)
 			IF(GTHREAD_FOUND)

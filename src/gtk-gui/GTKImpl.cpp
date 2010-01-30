@@ -38,7 +38,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 {
 	set_title("UFTT");
 	set_default_size(1024, 640);
-	set_visible(false);
+	property_visible() = false;
 
 	{
 		Gtk::Button* button;
@@ -52,7 +52,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		add_share_file_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_file, this));
 		add_share_file_dialog.set_transient_for(*this);
 		add_share_file_dialog.set_modal(true);
+#if GTK_CHECK_VERSION(2, 18, 3)
 		add_share_file_dialog.set_create_folders(false);
+#endif
 	}
 	{
 		Gtk::Button* button;
@@ -66,7 +68,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		add_share_folder_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_folder, this));
 		add_share_folder_dialog.set_transient_for(*this);
 		add_share_folder_dialog.set_modal(true);
+#if GTK_CHECK_VERSION(2, 18, 3)
 		add_share_folder_dialog.set_create_folders(false);
+#endif
 	}
 
 	statusicon_pixbuf = get_best_uftt_icon_for_size(256, 256);
@@ -302,7 +306,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		toolbar.show_all();
 		toolbar.set_no_show_all(true);
 		mi->set_active(settings->show_toolbar);
-		toolbar.set_visible(settings->show_toolbar);
+		toolbar.property_visible() = settings->show_toolbar;
 	}
 }
 
@@ -350,7 +354,7 @@ void UFTTWindow::save_window_size_and_position() {
 void UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled() {
 	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
 	settings->show_toolbar = mi->get_active();
-	toolbar.set_visible(settings->show_toolbar);
+	toolbar.property_visible() = settings->show_toolbar;
 }
 
 void UFTTWindow::restore_window_size_and_position() {
@@ -388,7 +392,7 @@ void UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled() {
 }
 
 void UFTTWindow::on_statusicon_signal_popup_menu(guint button, guint32 activate_time) {
-	((Gtk::CheckMenuItem*)(m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT")))->set_active(get_visible());
+	((Gtk::CheckMenuItem*)(m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT")))->set_active(property_visible());
 	Gtk::Menu* m = (Gtk::Menu*)(m_refUIManager->get_widget("/StatusIconPopup"));
 	statusicon->popup_menu_at_position(*m, button, activate_time);
 }
