@@ -10,20 +10,6 @@ IF(AUTODETECT_GTK_GUI)
 			IF(GTHREAD_FOUND)
 				MESSAGE(STATUS "Enabling gtk-gui")
 				SET(ENABLE_GTK_GUI ON CACHE BOOL "Enable building of the gtk gui")
-				IF(WIN32)
-# FIXME: The vsprops parsing magic should handle this now. Check to see if
-#         the whole pkg_check_modules still works / is needed on win32
-#
-#					               #1234567890          1234567890          1234567890          1234567890
-#					               #          1234567890          1234567890          1234567890          1234567890
-#					MESSAGE(STATUS "NOTE: You will still need to manually set GTKMM24_INCLUDE_DIRS and")
-#					MESSAGE(STATUS "GTHREAD_INCLUDE_DIRS, since pkg-config is broken on WIN32: it will A) generate")
-#					MESSAGE(STATUS "CFLAGS only for gnu-tools; and B) can not handle path's with spaces in them")
-#					MESSAGE(STATUS "(e.g. gtkmm's default installation path ``c:\\progam files\\gtkmm\\'' will cause")
-#					MESSAGE(STATUS "build failures due to bogus include directives like ``-IC:/Program'').")
-#					MESSAGE(STATUS "If you are using MSVC there are some Property Sheets in gtkmm's ``MSVC''")
-#					MESSAGE(STATUS "directory that you may find usefull.")
-				ENDIF(WIN32)
 			ELSE(GTHREAD_FOUND)
 				MESSAGE(STATUS "Missing GThread, disabling gtk-gui")
 				SET(ENABLE_GTK_GUI OFF CACHE BOOL "Enable building of the gtk gui")
@@ -38,8 +24,6 @@ IF(AUTODETECT_GTK_GUI)
 	ENDIF(PKG_CONFIG_FOUND)
 ENDIF(AUTODETECT_GTK_GUI)
 
-SET(GENERATE_UFTT_ICON_FROM_SOURCE_PNG_INSTEAD_OF_SVG_BECAUSE_OF_B0RKEN_SVG_SUPPORT_IN_IMAGEMAGICK "" CACHE FILEPATH "Work around bugs in ImageMagick's SVG module")
-
 IF(ENABLE_GTK_GUI)
 	find_package(PkgConfig REQUIRED)
 	find_package(ImageMagick COMPONENTS convert)
@@ -53,61 +37,6 @@ IF(ENABLE_GTK_GUI)
 	pkg_check_modules(GTKMM24 gtkmm-2.4 REQUIRED)
 	pkg_check_modules(GTHREAD gthread-2.0 REQUIRED)
 
-#	MESSAGE(STATUS "GTKMM24_INCLUDE_DIRS: ${GTKMM24_INCLUDE_DIRS}")
-#	MESSAGE(STATUS "GTHREAD_INCLUDE_DIRS: ${GTHREAD_INCLUDE_DIRS}")
-
-
-	IF(MSVC)
-		IF(MSVC80)
-			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-vc80-2_4.vsprops"   "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-vc80-d-2_4.vsprops" "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-		ELSE(MSVC80)
-		IF(MSVC90)
-			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-vc90-2_4.vsprops"   "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-vc90-d-2_4.vsprops" "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-		ELSE(MSVC90)
-			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-2_4.vsprops"        "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-d-2_4.vsprops"      "$ENV{GTKMM_BASEPATH}\\MSVC\\")
-		ENDIF(MSVC90)
-		ENDIF(MSVC80)
-		IF(CMAKE_BUILD_TYPE MATCHES Debug)
-			SET(_PROPERTY_SHEET ${GTKMM_DEBUG_PROPERTY_SHEET})
-		ELSE(CMAKE_BUILD_TYPE MATCHES Debug)
-			SET(_PROPERTY_SHEET ${GTKMM_PROPERTY_SHEET})
-		ENDIF(CMAKE_BUILD_TYPE MATCHES Debug)
-
-		file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES REGEX AdditionalIncludeDirectories)
-		file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_DEPENDENCIES REGEX AdditionalDependencies)
-		file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES REGEX AdditionalLibraryDirectories)
-		STRING(REGEX REPLACE "\\\\" "\\\\\\\\" GTKMM_BASEPATH_REGEX $ENV{GTKMM_BASEPATH})
-		FOREACH(S GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES GTKMM_ADDITIONAL_DEPENDENCIES GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES)
-			STRING(REGEX REPLACE ^.*AdditionalIncludeDirectories[^=]*=[^\"]*\"   ""                        "${S}" "${${S}}")
-			STRING(REGEX REPLACE ^.*AdditionalDependencies[^=]*=[^\"]*\"         ""                        "${S}" "${${S}}")
-			STRING(REGEX REPLACE ^.*AdditionalLibraryDirectories[^=]*=[^\"]*\"   ""                        "${S}" "${${S}}")
-			STRING(REGEX REPLACE \"[^\"]*$                                       ""                        "${S}" "${${S}}")
-			STRING(REGEX REPLACE "\\$\\(GTKMM_BASEPATH\\)"                       ${GTKMM_BASEPATH_REGEX}   "${S}" "${${S}}")
-			STRING(REGEX REPLACE "\\\\;"                                         ";"                       "${S}" "${${S}}")
-			STRING(REGEX REPLACE "&quot\\;"                                      ""                        "${S}" "${${S}}")
-		ENDFOREACH(S)
-		SET(GTKMM24_INCLUDE_DIRS "${GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES}")
-		SET(GTKMM24_LIBRARIES    "${GTKMM_ADDITIONAL_DEPENDENCIES}")
-		SET(GTKMM24_LIBRARY_DIRS "${GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES}")
-	ENDIF(MSVC)
-
-	INCLUDE_DIRECTORIES(${BOOST_INCLUDE_DIR}
-	                    ${GTKMM24_INCLUDE_DIRS}
-	                    ${GTHREAD_INCLUDE_DIRS}
-	                    ${CMAKE_CURRENT_SOURCE_DIR} # For boost/preprocessor/iteration
-	                   )
-	LINK_DIRECTORIES   (${BOOST_LIBRARY_DIR}
-	                    ${GTKMM24_LIBRARY_DIRS}
-	                    ${GTHREAD_LIBRARY_DIRS}
-	                   )
-	LINK_LIBRARIES     (${BOOST_LIBRARIES}
-	                    ${GTKMM24_LIBRARIES}
-	                    ${GTHREAD_LIBRARIES}
-	                   )
-	
 	MACRO(GENERATE_ICON_IMAGE SIZE BPP COLOR_COUNT)
 		STRING(COMPARE NOTEQUAL "X${GENERATE_UFTT_GTK_ICON_FROM_SOURCE_PNG_INSTEAD_OF_SVG_BECAUSE_OF_B0RKEN_SVG_SUPPORT_IN_IMAGEMAGICK}X" "XX" _GENERATE_UFTT_GTK_ICON_FROM_SOURCE_PNG_INSTEAD_OF_SVG_BECAUSE_OF_B0RKEN_SVG_SUPPORT_IN_IMAGEMAGICK)
 		IF(_GENERATE_UFTT_GTK_ICON_FROM_SOURCE_PNG_INSTEAD_OF_SVG_BECAUSE_OF_B0RKEN_SVG_SUPPORT_IN_IMAGEMAGICK)
@@ -128,6 +57,7 @@ IF(ENABLE_GTK_GUI)
 	
 	UNSET(WIN32_UFTT_GTK_ICON_RESOURCES)
 	UNSET(UFTT_GTK_ICON_RESOURCE_FILE)
+	SET(GENERATE_UFTT_ICON_FROM_SOURCE_PNG_INSTEAD_OF_SVG_BECAUSE_OF_B0RKEN_SVG_SUPPORT_IN_IMAGEMAGICK "" CACHE FILEPATH "Work around bugs in ImageMagick's SVG module")
 	IF(WIN32)
 		UNSET(UFTT_GTK_ICON_DEPS)
 		FOREACH(COLOR_COUNT 0 256 16 65535) # NOTE: -colors 0 == do not use color reduction
@@ -153,15 +83,13 @@ IF(ENABLE_GTK_GUI)
 	MACRO(EMBED_BINARY BINPATH BINFILE)
 		SET(_EMBED_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${BINPATH}/${BINFILE}")
 		SET(_EMBED_DST "${CMAKE_CURRENT_BINARY_DIR}/${BINFILE}.h")
-		SET(_EMBED_BIN "${CMAKE_BINARY_DIR}/src/util/bin2c")
 		ADD_CUSTOM_COMMAND(
 			OUTPUT  "${_EMBED_DST}" PRE_BUILD
-			COMMAND "${_EMBED_BIN}" -c
+			COMMAND bin2c -c
 			        "${_EMBED_SRC}"
 			        "${_EMBED_DST}"
-			DEPENDS "${_EMBED_BIN}"
-			        "${_EMBED_SRC}"
-		)
+			DEPENDS "${_EMBED_SRC}"
+			)
 		SET(GENERATED_BIN_HEADERS ${GENERATED_BIN_HEADERS} "${_EMBED_DST}")
 	ENDMACRO(EMBED_BINARY)
 	
@@ -170,8 +98,6 @@ IF(ENABLE_GTK_GUI)
 	EMBED_BINARY("../qt-gui/Icons/" "uftt-32x32.png")
 	EMBED_BINARY("../qt-gui/Icons/" "uftt-48x48.png")
 	
-	# make sure embedded file's headers can be found
-	INCLUDE_DIRECTORIES(${CMAKE_CURRENT_BINARY_DIR})
 	ADD_LIBRARY(uftt-gtk
 	            ${WIN32_UFTT_GTK_ICON_RESOURCES}
 	            ${GENERATED_BIN_HEADERS}
@@ -186,11 +112,75 @@ IF(ENABLE_GTK_GUI)
 	            OStreamGtkTextBuffer.h
 	)
 
-	TARGET_LINK_LIBRARIES(uftt-gtk
+	SET(GUFTT_LINK_LIBRARIES ${GTKMM24_LIBRARIES} ${GTHREAD_LIBRARIES})
+	IF(MSVC)
+		IF(MSVC80)
+			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-vc80-2_4.vsprops"   "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-vc80-d-2_4.vsprops" "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+		ELSE(MSVC80)
+		IF(MSVC90)
+			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-vc90-2_4.vsprops"   "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-vc90-d-2_4.vsprops" "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+		ELSE(MSVC90)
+			find_file(GTKMM_PROPERTY_SHEET       "gtkmm-2_4.vsprops"        "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+			find_file(GTKMM_DEBUG_PROPERTY_SHEET "gtkmm-d-2_4.vsprops"      "$ENV{GTKMM_BASEPATH}\\MSVC\\")
+		ENDIF(MSVC90)
+		ENDIF(MSVC80)
 
+		UNSET(GTKMM_ADDITIONAL_DEPENDENCIES)
+		UNSET(GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES)
+		UNSET(GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES)
+		UNSET(GTKMM24_INCLUDE_DIRS)
+		UNSET(GTKMM24_LIBRARY_DIRS)
+		UNSET(GTKMM24_LIBRARY_NAMES)
+		UNSET(GUFTT_LINK_LIBRARIES)
+		FOREACH(BuildType debug optimized)
+			IF(BuildType MATCHES debug)
+				SET(_PROPERTY_SHEET ${GTKMM_DEBUG_PROPERTY_SHEET})
+			ELSE(BuildType MATCHES debug)
+				SET(_PROPERTY_SHEET ${GTKMM_PROPERTY_SHEET})
+			ENDIF(BuildType MATCHES debug)
+
+			file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES REGEX AdditionalIncludeDirectories)
+			file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_DEPENDENCIES REGEX AdditionalDependencies)
+			file(STRINGS "${_PROPERTY_SHEET}" GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES REGEX AdditionalLibraryDirectories)
+			STRING(REGEX REPLACE "\\\\" "\\\\\\\\" GTKMM_BASEPATH_REGEX $ENV{GTKMM_BASEPATH})
+			FOREACH(S GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES GTKMM_ADDITIONAL_DEPENDENCIES GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES)
+				STRING(REGEX REPLACE ^.*AdditionalIncludeDirectories[^=]*=[^\"]*\"   ""                        "${S}" "${${S}}")
+				STRING(REGEX REPLACE ^.*AdditionalDependencies[^=]*=[^\"]*\"         ""                        "${S}" "${${S}}")
+				STRING(REGEX REPLACE ^.*AdditionalLibraryDirectories[^=]*=[^\"]*\"   ""                        "${S}" "${${S}}")
+				STRING(REGEX REPLACE \"[^\"]*$                                       ""                        "${S}" "${${S}}")
+				STRING(REGEX REPLACE "\\$\\(GTKMM_BASEPATH\\)"                       ${GTKMM_BASEPATH_REGEX}   "${S}" "${${S}}")
+				STRING(REGEX REPLACE "\\\\;"                                         ";"                       "${S}" "${${S}}")
+				STRING(REGEX REPLACE "&quot\\;"                                      ""                        "${S}" "${${S}}")
+			ENDFOREACH(S)
+			SET(GTKMM24_INCLUDE_DIRS ${GTKMM24_INCLUDE_DIRS} "${GTKMM_ADDITIONAL_INCLUDE_DIRECTORIES}")
+			SET(GTKMM24_LIBRARY_DIRS ${GTKMM24_LIBRARY_DIRS} "${GTKMM_ADDITIONAL_LIBRARY_DIRECTORIES}")
+
+			SEPARATE_ARGUMENTS(GTKMM_ADDITIONAL_DEPENDENCIES)
+			SET(GTKMM24_LIBRARY_NAMES ${GTKMM_ADDITIONAL_DEPENDENCIES})
+
+			FOREACH(L ${GTKMM24_LIBRARY_NAMES} ${GTHREAD_LIBRARIES})
+				SET(GTK_LIBPATH NOTFOUND)
+				FIND_LIBRARY(GTK_LIBPATH
+					NAMES ${L}
+					PATHS ${GTKMM24_LIBRARY_DIRS} ${GTHREAD_LIBRARY_DIRS}
+				)
+				SET(GUFTT_LINK_LIBRARIES ${GUFTT_LINK_LIBRARIES} ${BuildType} "${GTK_LIBPATH}")
+				ENDFOREACH(L)
+		ENDFOREACH(BuildType)
+	ENDIF(MSVC)
+
+	INCLUDE_DIRECTORIES(${GTKMM24_INCLUDE_DIRS}
+	                    ${GTHREAD_INCLUDE_DIRS}
+	                    ${CMAKE_CURRENT_SOURCE_DIR} # For boost/preprocessor/iteration
+	                    ${CMAKE_CURRENT_BINARY_DIR} # Make sure embedded file's headers can be found
+	                   )
+
+	TARGET_LINK_LIBRARIES(uftt-gtk
+		${GUFTT_LINK_LIBRARIES}
 	)
 
-	
 	IF(MSVC)
 		file(STRINGS "${_PROPERTY_SHEET}" GTKMM_DISABLE_SPECIFIC_WARNINGS REGEX DisableSpecificWarnings)
 		STRING(REGEX REPLACE ^.*DisableSpecificWarnings[^=]*=[^\"]*\" ";"   "GTKMM_DISABLE_SPECIFIC_WARNINGS" "${GTKMM_DISABLE_SPECIFIC_WARNINGS}")
