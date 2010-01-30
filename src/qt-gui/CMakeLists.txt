@@ -7,7 +7,7 @@ IF(AUTODETECT_QT_GUI)
 		SET(ENABLE_QT_GUI ON CACHE BOOL "Enable building of the Qt gui")
 	ELSE(QT4_FOUND)
 		MESSAGE(STATUS "Disabling Qt gui")
-		SET(ENABLE_QT_GUI OFF CACHE BOOL "Enable building of the Qt gui")
+		SET(ENABLE_QT_GUI OFF CACHE BOOL "Disable building of the Qt gui")
 	ENDIF(QT4_FOUND)
 ENDIF()
 
