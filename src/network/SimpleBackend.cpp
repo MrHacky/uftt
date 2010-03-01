@@ -87,6 +87,9 @@ void SimpleBackend::notifyDelLocalShare(const LocalShareID& sid)
 void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::path& dlpath)
 {
 	TaskInfo ret;
+	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+	ret.start_time = now;
+	ret.last_progress_report = now;
 	std::string shareurl = sid.sid;
 
 	ret.shareid = ret.shareinfo.id = sid;
@@ -156,6 +159,9 @@ void SimpleBackend::handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistene
 	} else {
 		std::cout << "handling tcp accept\n";
 		conlist.push_back(newconn);
+		boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+		newconn->taskinfo.start_time = now;
+		newconn->taskinfo.last_progress_report = now;
 		newconn->taskinfo.shareinfo.name = "Upload";
 		newconn->taskinfo.id.mid = mid;
 		newconn->taskinfo.id.cid = conlist.size()-1;

@@ -9,7 +9,7 @@
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
 			TaskList();
-			void on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& info);
+			void on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
 			void set_backend(UFTTCore* _core);
 			void set_popup_menu(Gtk::Menu* _popup_menu);

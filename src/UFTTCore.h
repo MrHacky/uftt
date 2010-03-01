@@ -74,7 +74,24 @@ struct TaskInfo {
 	uint64 size;
 	uint32 queue;
 
-	TaskInfo(): isupload(true), transferred(0), size(0), queue(0) {};
+	boost::posix_time::ptime         start_time;           // Time that the transfer was first started
+	boost::posix_time::ptime         last_progress_report; // Last time that a sig_progress was issued for this TaskInfo
+	boost::posix_time::ptime         last_rtt_update;      // When we last checked the rtt (not implemented yet)
+	boost::posix_time::time_duration rtt;                  // Estimated round-trip-time for this connection (not implemented yet)
+	uint64                           speed;                // Estimated number of bytes we are currently transferring per second
+
+	TaskInfo()
+	: isupload(true)
+	, transferred(0)
+	, size(0)
+	, queue(0)
+	, start_time(boost::posix_time::not_a_date_time)
+	, last_progress_report(boost::posix_time::not_a_date_time)
+	, last_rtt_update(boost::posix_time::not_a_date_time)
+	, rtt(boost::posix_time::seconds(-1))
+	, speed(0)
+	{
+	};
 };
 
 class UFTTCore {

@@ -56,26 +56,32 @@ void TaskList::set_backend(UFTTCore* _core) {
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&TaskList::on_signal_new_task, this, _1)));
 }
 
-void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const boost::posix_time::ptime start_time, const TaskInfo& info) {
-	boost::posix_time::ptime current_time = boost::posix_time::second_clock::universal_time();
-	boost::posix_time::time_duration time_elapsed = current_time-start_time;
+void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info) {
+	boost::posix_time::ptime current_time = boost::posix_time::microsec_clock::universal_time();
+	boost::posix_time::time_duration time_elapsed = current_time-info.start_time;
 
 	(*i)[task_list_columns.status]         = info.status;
-	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(time_elapsed);
-	if (info.size > 0 && info.size >= info.transferred && info.transferred > 0) {
-		(*i)[task_list_columns.time_remaining] = 
+	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::seconds(time_elapsed.total_seconds()));
+	if (info.size > 0 && info.size >= info.transferred && info.transferred > 0 && info.speed > 0) {
+		(*i)[task_list_columns.time_remaining] =
 			boost::posix_time::to_simple_string(
 				boost::posix_time::time_duration(
 					boost::posix_time::seconds(
-						((info.size-info.transferred) * time_elapsed.total_seconds() / info.transferred)
+						((((info.size-info.transferred) << 0x04) / info.speed) >> 0x04)
 					)
 				)
 			);
 	}
+	else if(info.speed == 0) {
+		(*i)[task_list_columns.time_remaining] = "Unknown";
+	}
+	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
+		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
+	}
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
 	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
 	if(time_elapsed.total_seconds() > 0) {
-		(*i)[task_list_columns.speed] = STRFORMAT("%s/s", StrFormat::bytes(info.transferred/time_elapsed.total_seconds()));
+		(*i)[task_list_columns.speed] = STRFORMAT("%s/s", StrFormat::bytes(info.speed));
 	}
 	(*i)[task_list_columns.queue]          = info.queue;
 	// Share info
@@ -105,11 +111,10 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	(*i)[task_list_columns.protocol]       = info.shareinfo.proto;
 	(*i)[task_list_columns.url]            = STRFORMAT("%s://%s/%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
 
-	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 	// NOTE: Gtk::ListStore guarantees that iterators are valid as long as the
 	// row they reference is valid.
 	// See http://library.gnome.org/devel/gtkmm/unstable/classGtk_1_1TreeIter.html#_details
 	boost::function<void(const TaskInfo&)> handler =
-		dispatcher.wrap(boost::bind(&TaskList::on_signal_task_status, this, i, starttime, _1));
+		dispatcher.wrap(boost::bind(&TaskList::on_signal_task_status, this, i, _1));
 	core->connectSigTaskStatus(info.id, handler);
 }

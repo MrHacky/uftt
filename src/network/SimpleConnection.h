@@ -282,7 +282,9 @@ class SimpleConnection: public ConnectionBase {
 		std::set<uint32> rcommands;
 		bool rresume;
 
-		uint32 maxBufSize;
+		uint32 maxBufSize;                          // Receive buffer size, starts small so that we get an early progress update
+		size_t buffer_position;                     // Where in the current buffer we are (see checkwhattosend)
+		uint64 bytes_transferred_since_last_update; // Number of bytes transferred since last update (see update_statistics)
 
 		cmdinfo rcmd;
 	public:
@@ -291,6 +293,8 @@ class SimpleConnection: public ConnectionBase {
 			, socket(sockinit_)
 			, progress_timer(service_)
 			, cursendfile(core_->get_disk_service())
+			, buffer_position(0)
+			, bytes_transferred_since_last_update(0)
 		{
 			gdiskio = &core->get_disk_service();
 			dldone = false;
@@ -328,7 +332,6 @@ class SimpleConnection: public ConnectionBase {
 		}
 
 		void start_update_progress() {
-			//progress_timer.expires_from_now(boost::posix_time::seconds(1));
 			progress_timer.expires_from_now(boost::posix_time::milliseconds(250));
 			progress_timer.async_wait(boost::bind(&SimpleConnection::update_progress_handler, this, boost::asio::placeholders::error));
 		}
@@ -341,11 +344,16 @@ class SimpleConnection: public ConnectionBase {
 				taskinfo.queue = sendqueue.size()+open_files;
 				if (error_message != "") {
 					taskinfo.status = std::string() + "Error: " + error_message;
+					disconnect();
 				} else if (dldone && open_files == 0) {
 					taskinfo.status ="Completed";
+					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
-				} else if (uldone) {
+				} else if (uldone) { // FIXME: Never triggers?
 					taskinfo.status ="Completed";
+					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else {
 					taskinfo.status ="Transfering";
@@ -924,12 +932,23 @@ class SimpleConnection: public ConnectionBase {
 				return;
 			}
 
-			taskinfo.transferred += len;
 			sbuf->resize(len);
 			cursendfile.fsize -= len;
 			//cout << ">async_write(): " << cursendfile.path << " : " << len << " : " << cursendfile.fsize << '\n';
 			sendqueue.push_back(sbuf);
 			checkwhattosend();
+		}
+
+		void update_statistics(uint64 bytes_transferred) {
+			boost::posix_time::ptime         now(boost::posix_time::microsec_clock::universal_time());
+			boost::posix_time::time_duration time_elapsed(now - taskinfo.last_progress_report);
+			taskinfo.transferred                += bytes_transferred; // total
+			bytes_transferred_since_last_update += bytes_transferred; // since last update
+			if(time_elapsed >= boost::posix_time::time_duration(boost::posix_time::milliseconds(200))) { // Update speed estimate 5 times per second
+				taskinfo.speed = (uint64)(((double(taskinfo.speed) * (15.0 - (time_elapsed.total_microseconds()/1000000.0))) + bytes_transferred_since_last_update) / 15.0);
+				bytes_transferred_since_last_update = 0;
+				taskinfo.last_progress_report = now;
+			}
 		}
 
 		void handle_sent_buffer(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
@@ -938,6 +957,7 @@ class SimpleConnection: public ConnectionBase {
 				return;
 			}
 			issending = false;
+			update_statistics(sbuf->size());
 			checkwhattosend(sbuf);
 		}
 
@@ -1019,13 +1039,38 @@ class SimpleConnection: public ConnectionBase {
 					sendqueue.push_back(sbuf);
 					donesend = true;
 				}
-			}
+			} // fi (sendqueue.size() < 25)
 			if (sendqueue.size() > 0 && !issending) {
-				sbuf = sendqueue.front();
-				sendqueue.pop_front();
+				uint64 todo = taskinfo.speed >> 2; // we aim for 1/4 of the current bps, so 4 updates per second
+				todo = std::min(todo, (uint64)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
+				todo = std::max(todo, (uint64)1024*1); // But transfer at least 1KB
+				shared_vec qbuf = sendqueue.front();
+				shared_vec tbuf = shared_vec(new std::vector<uint8>(todo));
+				uint64 left = qbuf->size() - buffer_position;
+
+				uint64 done = 0;
+				while(qbuf && todo > 0) {
+					uint64 i = std::min(todo, left);
+					memcpy(&(*tbuf)[done], &(*qbuf)[buffer_position], i);
+					done += i;
+					todo -= i;
+					left -= i;
+					buffer_position += i;
+					if(left == 0) { // We've emptied the current buffer, move to the next
+						sendqueue.pop_front();
+						buffer_position = 0;
+						qbuf.reset();
+						if(sendqueue.size() > 0) {
+							qbuf = sendqueue.front();
+							left = qbuf->size();
+						}
+					}
+				}
+				tbuf->resize(done);
+
 				issending = true;
-				boost::asio::async_write(socket, GETBUF(sbuf),
-					boost::bind(&SimpleConnection::handle_sent_buffer, this, _1, _2, sbuf));
+				boost::asio::async_write(socket, GETBUF(tbuf),
+					boost::bind(&SimpleConnection::handle_sent_buffer, this, _1, _2, tbuf));
 			}
 			if (sendqueue.size() == 0 && donesend && !issending)
 				handle_sent_everything();
@@ -1148,7 +1193,6 @@ class SimpleConnection: public ConnectionBase {
 				disconnect(STRFORMAT("sent_autoupdate_file: %s", e.message()));
 				return;
 			}
-			taskinfo.transferred += buildfile->size();
 			cmdinfo hdr;
 			hdr.cmd = CMD_OLD_DONE;
 			sbuf->resize(16);
@@ -1292,7 +1336,6 @@ class SimpleConnection: public ConnectionBase {
 
 			maxBufSize = std::min(maxBufSize*2, uint32(1024*1024*10));
 
-			taskinfo.transferred += wbuf->size();
 			size -= wbuf->size();
 
 			if (!*done) {
@@ -1325,6 +1368,8 @@ class SimpleConnection: public ConnectionBase {
 		 */
 		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf, uint64 offset)
 		{
+			if(wbuf)
+				update_statistics(wbuf->size());
 			if (e) {
 				disconnect(STRFORMAT("handle_ready_file: %s", e.message()));
 				return;
