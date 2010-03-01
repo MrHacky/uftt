@@ -2,6 +2,7 @@
 #define STR_FORMAT_H
 
 #include <string>
+#include <../types.h>
 #include <boost/format.hpp>
 
 /**
@@ -40,35 +41,28 @@ namespace StrFormat {
 		};
 	} // namespace detail
 
-	inline std::string bytes(double size)
+	inline std::string bytes(uint64 n)
 	{
-		static std::string size_suffix[] =
+		static char size_suffix[] =
 		{
-			"",
-			"K",
-			"M",
-			"G",
-			"T",
-			"?"
+			 0 ,
+			'K',
+			'M',
+			'G',
+			'T',
+			'P',
+			'?'
 		};
+		const int maxsuf = (sizeof(size_suffix) / sizeof(size_suffix[0])) - 1;
+
 		int suf;
-		for (suf = 0; size >= 1000; ++suf)
-			size /= 1024;
-
-		if (suf > 5) suf = 5;
-
-		//char buf[11];
-
-		int decs = 2;
-
-		if (size >= 100) --decs;
-		if (size >= 10)  --decs;
-
-		if (suf == 0) decs = 0;
-
-		float fsize = (float)size;
-		std::string fstr = STRFORMAT("%%.%df %%sB", decs);
-		return STRFORMAT(fstr, fsize, size_suffix[suf]);
+		double size = (double)n;
+		for (suf = 0; size >= 1000.0; ++suf)
+			size /= 1024.0;
+		suf = std::min(maxsuf, suf);
+		int decs = (2 - (size >= 10.0) - (size >= 100.0)) * (suf > 0);
+		std::string fstr = STRFORMAT("%%.%df %%siB", decs);
+		return STRFORMAT(fstr, (float)size, std::string(size_suffix + suf, 1));
 	};
 
 #if 0
