@@ -21,10 +21,11 @@ class OStreamGtkTextBuffer : public std::basic_streambuf<char>, public Gtk::Text
 
 	protected:
 		virtual int_type overflow(int_type v) { // Important for flushing and the use of std::endl as newline
-			if (v == '\n')
-				 current_line += "\n";
+			current_line += v;
+			if (v == '\n') {
 				dispatcher.invoke(boost::bind(&OStreamGtkTextBuffer::_append, this, current_line));
 				current_line.clear();
+			}
 			return v;
 		}
 
