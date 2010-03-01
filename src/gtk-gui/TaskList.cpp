@@ -2,7 +2,7 @@
 #include "../util/StrFormat.h"
 #include <boost/foreach.hpp>
 #include <gtkmm/treeviewcolumn.h>
-
+#include <limits.h>
 
 TaskList::TaskList() {
 	this->add(task_list_treeview);
@@ -62,22 +62,27 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 
 	(*i)[task_list_columns.status]         = info.status;
 	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::seconds(time_elapsed.total_seconds()));
-	if (info.size > 0 && info.size >= info.transferred && info.transferred > 0 && info.speed > 0) {
-		(*i)[task_list_columns.time_remaining] =
-			boost::posix_time::to_simple_string(
-				boost::posix_time::time_duration(
-					boost::posix_time::seconds(
-						((((info.size-info.transferred) << 0x04) / info.speed) >> 0x04)
-					)
-				)
-			);
-	}
-	else if(info.speed == 0) {
-		(*i)[task_list_columns.time_remaining] = "Unknown";
+
+	(*i)[task_list_columns.time_remaining] = "Unknown";
+	if(info.speed > 0) {
+		uint64 seconds_remaining = (((((info.size-info.transferred) << 0x04) + 0x08) / info.speed) >> 0x04); // round with 1/16 precision
+		if(seconds_remaining <= std::numeric_limits<long>::max()) {
+			if (info.transferred > 0 && info.size >= info.transferred && info.speed > 0) {
+				(*i)[task_list_columns.time_remaining] =
+					boost::posix_time::to_simple_string(
+						boost::posix_time::time_duration(
+							boost::posix_time::seconds(
+								(long)seconds_remaining
+							)
+						)
+					);
+			}
+		}
 	}
 	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
 		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
 	}
+
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
 	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
 	if(time_elapsed.total_seconds() > 0) {

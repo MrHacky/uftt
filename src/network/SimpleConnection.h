@@ -282,9 +282,9 @@ class SimpleConnection: public ConnectionBase {
 		std::set<uint32> rcommands;
 		bool rresume;
 
-		uint32 maxBufSize;                          // Receive buffer size, starts small so that we get an early progress update
-		size_t buffer_position;                     // Where in the current buffer we are (see checkwhattosend)
-		uint64 bytes_transferred_since_last_update; // Number of bytes transferred since last update (see update_statistics)
+		uint32 maxBufSize;                             // Receive buffer size, starts small so that we get an early progress update
+		std::vector<uint8>::size_type buffer_position; // Where in the current buffer we are (see checkwhattosend)
+		uint64 bytes_transferred_since_last_update;    // Number of bytes transferred since last update (see update_statistics)
 
 		cmdinfo rcmd;
 	public:
@@ -1041,16 +1041,21 @@ class SimpleConnection: public ConnectionBase {
 				}
 			} // fi (sendqueue.size() < 25)
 			if (sendqueue.size() > 0 && !issending) {
-				uint64 todo = taskinfo.speed >> 2; // we aim for 1/4 of the current bps, so 4 updates per second
-				todo = std::min(todo, (uint64)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
-				todo = std::max(todo, (uint64)1024*1); // But transfer at least 1KB
+				std::vector<uint8>::size_type target_speed = 1024*1024*8; // default to 8MB per buffer
+				// we aim for 1/4 of the current bps, so 4 updates per second
+				if(taskinfo.speed >> 2 <= std::numeric_limits<std::vector<uint8>::size_type>::max()) {
+					target_speed = (std::vector<uint8>::size_type)(taskinfo.speed >> 2);
+				}
+				std::vector<uint8>::size_type todo = target_speed;
+				todo = std::min(todo, (std::vector<uint8>::size_type)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
+				todo = std::max(todo, (std::vector<uint8>::size_type)1024*1); // But transfer at least 1KB
 				shared_vec qbuf = sendqueue.front();
 				shared_vec tbuf = shared_vec(new std::vector<uint8>(todo));
-				uint64 left = qbuf->size() - buffer_position;
+				std::vector<uint8>::size_type left = qbuf->size() - buffer_position;
 
-				uint64 done = 0;
+				std::vector<uint8>::size_type done = 0;
 				while(qbuf && todo > 0) {
-					uint64 i = std::min(todo, left);
+					std::vector<uint8>::size_type i = std::min(todo, left);
 					memcpy(&(*tbuf)[done], &(*qbuf)[buffer_position], i);
 					done += i;
 					todo -= i;
