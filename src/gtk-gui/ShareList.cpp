@@ -215,7 +215,7 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 void ShareList::download_selected_shares() {
 	//FIXME: Don't forget to test dl_path for validity and writeablity
 	if(!ext::filesystem::exists(settings->dl_path)) {
-		Gtk::MessageDialog dialog("Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		Gtk::MessageDialog dialog(parent_window, "Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text("The folder you have selected for downloaded shares to be placed in does not appear to exist.\nPlease select another download destination and try again.");
 		dialog.set_transient_for(parent_window);
 		dialog.set_modal(true);

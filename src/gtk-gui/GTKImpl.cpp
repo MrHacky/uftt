@@ -331,7 +331,7 @@ void UFTTWindow::show_uri(Glib::ustring uri) {
 		Gtk::show_uri(Glib::wrap((GdkScreen*)NULL), uri, GDK_CURRENT_TIME);
 	}
 	catch(Glib::SpawnError e) {
-		Gtk::MessageDialog dialog("Failed to open URL", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		Gtk::MessageDialog dialog(*this, "Failed to open URL", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);
 		dialog.set_secondary_text(STRFORMAT("UFTT wanted to open the following URI in your default browser,\n"
@@ -448,7 +448,7 @@ void UFTTWindow::on_add_share_file() {
 			}
 		}
 		else {
-			Gtk::MessageDialog dialog("File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			Gtk::MessageDialog dialog(*this, "File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 			dialog.set_transient_for(add_share_file_dialog);
 			dialog.set_modal(true);
 			dialog.set_secondary_text("The file you have selected to share does not appear to exist.\nPlease verify that the path and filename are correct and try again.");
@@ -468,7 +468,7 @@ void UFTTWindow::on_add_share_folder() {
 			core->addLocalShare(path.leaf(), path);
 		}
 		else {
-			Gtk::MessageDialog dialog("Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			Gtk::MessageDialog dialog(*this, "Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 			dialog.set_transient_for(add_share_folder_dialog);
 			dialog.set_modal(true);
 			dialog.set_secondary_text("The folder you have selected to share does not appear to exist.\nPlease verify that the path and foldername are correct and try again.");
@@ -508,7 +508,7 @@ void UFTTWindow::set_backend(UFTTCore* _core) {
 	}
 
 	if(_core->error_state == 2) { // FIXME: Magic Constant
-		Gtk::MessageDialog dialog("Error during initialization", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		Gtk::MessageDialog dialog(*this, "Error during initialization", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text(STRFORMAT("There was a problem during the initialization of UFTT's core:\n\n\"%s\"\n\nUFTT can not continue and will now quit.", _core->error_string));
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);
@@ -517,7 +517,7 @@ void UFTTWindow::set_backend(UFTTCore* _core) {
 		throw int(1); // thrown integers will quit application with integer as exit code
 	}
 	if(_core->error_state == 1) {// FIXME: Magic Constant
-		Gtk::MessageDialog dialog("Warning during initialization", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
+		Gtk::MessageDialog dialog(*this, "Warning during initialization", false, Gtk::MESSAGE_WARNING, Gtk::BUTTONS_YES_NO, true);
 		dialog.set_secondary_text(STRFORMAT("Some warnings were generated during the initialization of UFTT's core:\n\n%s\n\nDo you still want to continue?", _core->error_string));
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);
