@@ -187,6 +187,9 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 	switch(info) {
 		case 0: {
 			BOOST_FOREACH(std::string file, urilist_convert(selection_data.get_data_as_string())) {
+				#ifdef WIN32
+					file = file.substr(1);
+				#endif
 				boost::filesystem::path path = file;
 				if (path.leaf() == ".") // linux thingy
 					path.remove_leaf();
