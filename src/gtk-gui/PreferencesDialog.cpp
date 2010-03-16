@@ -9,15 +9,18 @@ using namespace std;
 
 UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings) 
 : settings(_settings),
-  enable_global_peer_discovery_checkbutton("_Announce shares over the internet", true),
-  enable_download_resume_checkbutton("_Resume partial downloads", true),
+  enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
+  enable_download_resume_checkbutton("Resume _partial downloads", true),
   enable_tray_icon_checkbutton("Enable system _tray icon", true),
   minimize_on_close_checkbutton("_Minimize to tray on close", true),
-  start_in_tray_checkbutton("_Start in tray", true)
+  start_in_tray_checkbutton("_Start in tray", true),
+  enable_auto_clear_tasks_checkbutton(string() + "Automatically _remove completed tasks after (hh:mm:ss)", true),
+  auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.total_seconds()), 0.0, 24*60*60*1.0, 1.0),
+  auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0)
 {
 	set_modal(true);
 	set_title("Preferences");
-	set_default_size(320, 384);
+	set_default_size(400, 300);
 	set_position(Gtk::WIN_POS_CENTER_ON_PARENT);
 
 	Pango::FontDescription bold_font_description;
@@ -65,6 +68,12 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	options = Gtk::manage(new Gtk::VBox());
 	alignment->add(*options);
 	options->add(enable_download_resume_checkbutton);
+	auto_clear_tasks_spinbutton.set_numeric(false);
+	option = Gtk::manage(new Gtk::HBox());
+	option->add(enable_auto_clear_tasks_checkbutton);
+	option->add(auto_clear_tasks_spinbutton);
+	options->add(*option);
+
 
 	category = Gtk::manage(new Gtk::VBox());
 	categories->add(*category);
@@ -114,7 +123,14 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	CONNECT_SIGNAL_HANDLER(enable_download_resume_checkbutton, toggled);
 	CONNECT_SIGNAL_HANDLER(enable_global_peer_discovery_checkbutton, toggled);
 	CONNECT_SIGNAL_HANDLER(username_entry, changed);
+	CONNECT_SIGNAL_HANDLER(enable_auto_clear_tasks_checkbutton, toggled);
+	CONNECT_SIGNAL_HANDLER(auto_clear_tasks_spinbutton, changed);
 	#undef CONNECT_SIGNAL_HANDLER
+	// These signals have IO, so CONNECT_SIGNAL_HANDLER won't work :(
+	sigc::slot<int, double*> slot1 = sigc::mem_fun(*this, &UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_input);
+	sigc::slot<bool>         slot2 = sigc::mem_fun(*this, &UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_output);
+	auto_clear_tasks_spinbutton.signal_input().connect(slot1);
+	auto_clear_tasks_spinbutton.signal_output().connect(slot2);
 
 	/* TODO: (Requires more support from the core):
 	 * 	bool autoupdate;
@@ -126,6 +142,51 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 void UFTTPreferencesDialog::with_enable_apply_button_do(boost::function<void(void)> f) {
 	set_response_sensitive(Gtk::RESPONSE_APPLY, true);
 	f();
+}
+
+/**
+ * Convert the Entry text to a number.
+ * The computed number should be written to *new_value.
+ * Returns:
+ *         * false: No conversion done, continue with default handler.
+ *         * true: Conversion successful, don't call default handler.
+ *         * Gtk::INPUT_ERROR: Conversion failed, don't call default handler.
+ */
+int UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_input(double* output) {
+	(*output) = auto_clear_tasks_spinbutton.get_adjustment()->get_value();
+	try {
+		settings->auto_clear_tasks_after = boost::posix_time::duration_from_string(auto_clear_tasks_spinbutton.get_text());
+		(*output) = settings->auto_clear_tasks_after.total_seconds();
+	} catch(boost::bad_lexical_cast /*e*/) {};
+	return true;
+}
+
+/**
+ * Convert the Adjustment  position to text.
+ * The computed text should be written via Gtk::Entry::set_text().
+ * Returns:
+ *         * false: No conversion done, continue with default handler.
+ *         * true: Conversion successful, don't call default handler.
+ */
+bool UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_output() {
+	auto_clear_tasks_spinbutton.set_text(boost::posix_time::to_simple_string(boost::posix_time::seconds(auto_clear_tasks_spinbutton.get_adjustment()->get_value())));
+	return true;
+}
+
+void UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_changed() {
+	// Only used to enable the apply button
+}
+
+void UFTTPreferencesDialog::on_enable_auto_clear_tasks_checkbutton_toggled() {
+	if(settings->auto_clear_tasks_after == -settings->auto_clear_tasks_after) {
+		// If the user specified 0 seconds (immediate mode) we can't take
+		// the inverse, so add minute amount so that it is still effectively
+		// immediate (total_seconds() == 0), but we can still distinguish
+		// enabled from disabled.
+		settings->auto_clear_tasks_after += boost::posix_time::microseconds(1);
+	}
+	settings->auto_clear_tasks_after = -settings->auto_clear_tasks_after;
+	auto_clear_tasks_spinbutton.set_sensitive(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0));
 }
 
 void UFTTPreferencesDialog::on_username_entry_changed() {
@@ -173,6 +234,11 @@ void UFTTPreferencesDialog::apply_settings() {
 	start_in_tray_checkbutton.set_sensitive(settings->show_task_tray_icon);
 	enable_download_resume_checkbutton.set_active(settings->experimentalresume);
 	enable_global_peer_discovery_checkbutton.set_active(settings->enablepeerfinder);
+	auto_clear_tasks_spinbutton.set_adjustment(auto_clear_tasks_spinbutton_adjustment);
+	auto_clear_tasks_spinbutton_adjustment.set_value(abs(settings->auto_clear_tasks_after.total_seconds()));
+	auto_clear_tasks_spinbutton.set_sensitive(settings->auto_clear_tasks_after>=boost::posix_time::seconds(0));
+	enable_auto_clear_tasks_checkbutton.set_active(auto_clear_tasks_spinbutton.is_sensitive());
+	on_auto_clear_tasks_spinbutton_output(); // prevent signal_changed firing on_show()
 
 	// Do this last, since we're firing signals with the above set_active's
 	set_response_sensitive(Gtk::RESPONSE_APPLY, false);

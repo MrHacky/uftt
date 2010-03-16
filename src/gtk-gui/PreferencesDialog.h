@@ -10,6 +10,7 @@
 	#include <gtkmm/checkbutton.h>
 	#include <gtkmm/dialog.h>
 	#include <gtkmm/entry.h>
+	#include <gtkmm/spinbutton.h>
 	#include <gtkmm/label.h>
 	#include <gtkmm/textview.h>
 
@@ -30,6 +31,9 @@
 			Gtk::CheckButton enable_auto_update_checkbutton;
 			Gtk::CheckButton enable_download_resume_checkbutton;
 			Gtk::CheckButton enable_global_peer_discovery_checkbutton;
+			Gtk::CheckButton enable_auto_clear_tasks_checkbutton;
+			Gtk::Adjustment  auto_clear_tasks_spinbutton_adjustment; // note: used by auto_clear_tasks_spinbutton, so ensure it is constructed before auto_clear_tasks_spinbutton
+			Gtk::SpinButton  auto_clear_tasks_spinbutton;
 			void with_enable_apply_button_do(boost::function<void(void)> f);
 			void on_username_entry_changed();
 			void on_enable_tray_icon_checkbutton_toggled();
@@ -39,12 +43,11 @@
 			void on_enable_download_resume_checkbutton_toggled();
 			void on_enable_global_peer_discovery_checkbutton_toggled();
 			void on_control_button_clicked(Gtk::ResponseType response);
+			void on_enable_auto_clear_tasks_checkbutton_toggled();
+			int  on_auto_clear_tasks_spinbutton_input(double* d);
+			bool on_auto_clear_tasks_spinbutton_output();
+			void on_auto_clear_tasks_spinbutton_changed();
 			void apply_settings();
-			/*
-			Gtk::Button*     cancel_button;
-			Gtk::Button*     apply_button;
-			Gtk::Button*     ok_button;
-			*/
 	};
 
 #endif // PREFERENCES_DIALOG_H
