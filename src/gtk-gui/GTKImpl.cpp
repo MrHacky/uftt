@@ -14,6 +14,9 @@
 #include <gdkmm/pixbufloader.h>
 #include <gtkmm/stock.h>
 #include <gtkmm/action.h>
+#include <gtkmm/accelkey.h>
+#include <gtkmm/accelmap.h>
+#include <gtkmm/settings.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/radioaction.h>
 #include <gtkmm/toggleaction.h>
@@ -93,7 +96,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 
 	/* Create actions */
-	m_refActionGroup = Gtk::ActionGroup::create();
+	m_refActionGroup = Gtk::ActionGroup::create("UFTT");
+	Glib::RefPtr<Gtk::Action> action; // Only used when we need to add an accel_path to a menu-item
+
 	/* File menu */
 	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
 	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share _File..."),
@@ -107,22 +112,31 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
+	/* Edit Menu */
 	m_refActionGroup->add(Gtk::Action::create("EditMenu", "_Edit"));
-	m_refActionGroup->add(Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES),
-	                      boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
+	action = Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES);
+	m_refActionGroup->add(action, boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Edit/Preferences");
 
+	/* View Menu */
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
-	m_refActionGroup->add(Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist"),
-	                      boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
+	action = Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist");
+	m_refActionGroup->add(action, boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/RefreshShareList");
 	m_refActionGroup->add(Gtk::Action::create("ViewCancelSelectedTasks",Gtk::Stock::MEDIA_STOP, "_Cancel selected tasks"));
 	m_refActionGroup->add(Gtk::Action::create("ViewResumeSelectedTasks",Gtk::Stock::MEDIA_PLAY, "_Resume selected tasks"));
 	m_refActionGroup->add(Gtk::Action::create("ViewPauseSelectedTasks",Gtk::Stock::MEDIA_PAUSE, "_Pause selected tasks"));
-	m_refActionGroup->add(Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks"),
-		boost::bind(&TaskList::cleanup, &task_list));
+	action = Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks");
+	m_refActionGroup->add(action, boost::bind(&TaskList::cleanup, &task_list));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
+
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("ViewToolbar", "_Toolbar"));
+	action = Gtk::ToggleAction::create("ViewToolbar", "_Toolbar");
+	m_refActionGroup->add(action, boost::bind(&TaskList::cleanup, &task_list));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/Toolbar");
 
+	/* Help Menu */
 	m_refActionGroup->add(Gtk::Action::create("HelpMenu", "_Help"));
 	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/UFTTHowto"));
@@ -137,6 +151,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                      boost::bind(&Gtk::AboutDialog::present, &uftt_about_dialog));//, "About _UFTT"));
 //	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
+	/* Various widgets */
 	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
 	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
 
@@ -326,6 +341,15 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	uftt_preferences_dialog.set_transient_for(*this);
 	uftt_preferences_dialog.signal_settings_changed.connect(boost::bind(&UFTTWindow::on_apply_settings, this));
+
+	// We might want to save&load the AccelMap, this way a user can redefine
+	// shortcuts without us having to provide a seperate configuration window.
+	// This does require that the following property be set to true:
+	// Gtk::Settings::get_default()->property_gtk_can_change_accels() = true;
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Edit/Preferences"     , Gtk::AccelKey( "P").get_key(), Gdk::CONTROL_MASK   , true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/RefreshShareList", Gtk::AccelKey("F5").get_key(), Gdk::ModifierType(0), true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/ClearTaskList"   , Gtk::AccelKey("F6").get_key(), Gdk::ModifierType(0), true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey( "T").get_key(), Gdk::CONTROL_MASK   , true);
 
 	if(settings->loaded) {
 		restore_window_size_and_position();
