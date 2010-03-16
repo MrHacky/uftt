@@ -9,6 +9,7 @@
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
 			TaskList();
+			void cleanup();
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
 			void set_backend(UFTTCore* _core);

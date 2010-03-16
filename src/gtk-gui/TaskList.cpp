@@ -44,6 +44,19 @@ void TaskList::set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_
 	no_selection_popup_menu = _no_selection_popup_menu;
 }
 
+void TaskList::cleanup() {
+	Gtk::TreeIter i = task_list_liststore->children().begin();
+	while(i != task_list_liststore->children().end()) {
+		std::string status = i->get_value(task_list_columns.status);
+		if( status == "Completed" || status.substr(0, 5) == "Error") {
+			i = task_list_liststore->erase(i);
+		}
+		else {
+			i++;
+		}
+	}
+}
+
 bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* event) {
 	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
 		Gtk::TreeModel::Path  path;
