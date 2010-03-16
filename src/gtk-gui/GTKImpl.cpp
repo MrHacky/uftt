@@ -123,7 +123,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewToolbar", "_Toolbar"));
 
-	m_refActionGroup->add(Gtk::Action::create("Help", "_Help"));
+	m_refActionGroup->add(Gtk::Action::create("HelpMenu", "_Help"));
 	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/UFTTHowto"));
 	m_refActionGroup->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"),
@@ -169,7 +169,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "      <menuitem action='ViewManualConnect'/>"
 	                        "      <menuitem action='ViewToolbar'/>"
 	                        "    </menu>"
-	                        "    <menu action='Help'>"
+	                        "    <menu action='HelpMenu'>"
 	                        "      <menuitem action='HelpUserManual'/>"
 	                        "      <menuitem action='HelpFAQ'/>"
 	                        "      <separator/>"
