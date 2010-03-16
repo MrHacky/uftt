@@ -1,10 +1,15 @@
 #include "TaskList.h"
 #include "../util/StrFormat.h"
 #include <boost/foreach.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
+#include <boost/lambda/if.hpp>
 #include <gtkmm/treeviewcolumn.h>
 #include <limits.h>
 
-TaskList::TaskList() {
+TaskList::TaskList(UFTTSettingsRef _settings)
+: settings(_settings)
+{
 	this->add(task_list_treeview);
 	this->set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	task_list_liststore = Gtk::ListStore::create(task_list_columns);
@@ -108,8 +113,26 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 			}
 		}
 	}
+
 	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
 		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
+		if(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0)) {
+			Glib::signal_timeout().connect_seconds_once(
+				dispatcher.wrap(
+					boost::function<void(void)>(
+						boost::lambda::if_then(
+							boost::lambda::constant(true),
+							boost::lambda::bind(
+								&Gtk::ListStore::erase,
+								task_list_liststore.operator->(),
+								i
+							)
+						)
+					)
+				),
+				settings->auto_clear_tasks_after.total_seconds()
+			);
+		}
 	}
 
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
@@ -124,7 +147,7 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 	(*i)[task_list_columns.share_name]     = (info.isupload ? "U: " : "D: ") + info.shareinfo.name;
 
 // FIXME: Something with auto-update
-//	if (!info.isupload && info.status == "Completed") {} 
+//	if (!info.isupload && info.status == "Completed") {}
 }
 
 void TaskList::on_signal_new_task(const TaskInfo& info) {

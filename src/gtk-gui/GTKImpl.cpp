@@ -34,6 +34,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
   add_share_file_toolbutton(Gtk::Stock::FILE),
   add_share_folder_toolbutton(Gtk::Stock::DIRECTORY),
   share_list(_settings, *this),
+  task_list(_settings),
   uftt_preferences_dialog(_settings)
 {
 	set_title("UFTT");

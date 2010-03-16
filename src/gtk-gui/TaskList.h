@@ -8,7 +8,7 @@
 
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
-			TaskList();
+			TaskList(UFTTSettingsRef _settings);
 			void cleanup();
 			void on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info);
 			void on_signal_new_task(const TaskInfo& info);
@@ -16,6 +16,7 @@
 			void set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu);
 		private:
 			UFTTCore* core;
+			UFTTSettingsRef settings;
 			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
 			class TaskListColumns : public Gtk::TreeModelColumnRecord {
 				public:
