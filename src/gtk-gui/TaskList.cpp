@@ -39,13 +39,29 @@ TaskList::TaskList() {
 		sigc::mem_fun(this, &TaskList::on_task_list_treeview_signal_button_press_event), false);
 }
 
-void TaskList::set_popup_menu(Gtk::Menu* _popup_menu) {
-	popup_menu = _popup_menu;
+void TaskList::set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu) {
+	selection_popup_menu    = _selection_popup_menu;
+	no_selection_popup_menu = _no_selection_popup_menu;
 }
 
 bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* event) {
-	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (popup_menu != NULL)) {
-		popup_menu->popup(event->button, event->time);
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
+		Gtk::TreeModel::Path  path;
+		Gtk::TreeViewColumn* column;
+		int    cell_x, cell_y;
+		bool exists = task_list_treeview.get_path_at_pos((int)(event->x), (int)(event->y), path, column, cell_x, cell_y);
+		if(exists) {
+			if(!task_list_treeview.get_selection()->is_selected(path)) { // Clicked on a tree row, but it is not selected
+				task_list_treeview.get_selection()->unselect_all();
+				task_list_treeview.get_selection()->select(path);
+			}
+		}
+		if(task_list_treeview.get_selection()->count_selected_rows() > 0) {
+			selection_popup_menu->popup(event->button, event->time);
+		}
+		else {
+			no_selection_popup_menu->popup(event->button, event->time);
+		}
 		return true;
 	}
 	return false;

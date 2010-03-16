@@ -72,31 +72,30 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 	this->pack_start(download_destination_path_alignment, Gtk::PACK_SHRINK);
 }
 
-void ShareList::set_popup_menu(Gtk::Menu* _on_row_popup_menu, Gtk::Menu* _not_on_row_popup_menu) {
-	on_row_popup_menu     = _on_row_popup_menu;
-	not_on_row_popup_menu = _not_on_row_popup_menu;
+void ShareList::set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu) {
+	selection_popup_menu    = _selection_popup_menu;
+	no_selection_popup_menu = _no_selection_popup_menu;
 }
 
 bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton* event) {
-	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
 		Gtk::TreeModel::Path  path;
 		Gtk::TreeViewColumn* column;
 		int    cell_x, cell_y;
 		bool exists = share_list_treeview.get_path_at_pos((int)(event->x), (int)(event->y), path, column, cell_x, cell_y);
 		if(exists) {
-			if(!share_list_treeview.get_selection()->is_selected(path)) {
+			if(!share_list_treeview.get_selection()->is_selected(path)) { // Clicked on a tree row, but it is not selected
 				share_list_treeview.get_selection()->unselect_all();
 				share_list_treeview.get_selection()->select(path);
 			}
-			if(on_row_popup_menu != NULL)
-				on_row_popup_menu->popup(event->button, event->time);
-			return true;
+		}
+		if(share_list_treeview.get_selection()->count_selected_rows() > 0) {
+			selection_popup_menu->popup(event->button, event->time);
 		}
 		else {
-			if(not_on_row_popup_menu != NULL)
-				not_on_row_popup_menu->popup(event->button, event->time);
-			return true;
+			no_selection_popup_menu->popup(event->button, event->time);
 		}
+		return true;
 	}
 	return false;
 }

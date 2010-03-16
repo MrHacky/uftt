@@ -99,9 +99,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
 	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share F_older..."),
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "_Download"),
+	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "_Download selected"),
 	                      boost::bind(&ShareList::download_selected_shares, &share_list));
-	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download _To..."));/*,
+	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download selected _To..."));/*,
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
@@ -113,6 +113,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
 	m_refActionGroup->add(Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist"),
 	                      boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
+	m_refActionGroup->add(Gtk::Action::create("ViewCancelSelectedTasks",Gtk::Stock::MEDIA_STOP, "_Cancel selected tasks"));
+	m_refActionGroup->add(Gtk::Action::create("ViewResumeSelectedTasks",Gtk::Stock::MEDIA_PLAY, "_Resume selected tasks"));
+	m_refActionGroup->add(Gtk::Action::create("ViewPauseSelectedTasks",Gtk::Stock::MEDIA_PAUSE, "_Pause selected tasks"));
 	m_refActionGroup->add(Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
 	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
@@ -183,7 +186,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "    <separator/>"
 	                        "    <menuitem action='FileQuit'/>"
 	                        "  </popup>"
-	                        "  <popup name='ShareListOnRowPopup'>"
+	                        "  <popup name='ShareListSelectionPopup'>"
 	                        "    <menuitem action='FileAddShareFile'/>"
 	                        "    <menuitem action='FileAddSharefolder'/>"
 	                        "    <separator/>"
@@ -192,13 +195,27 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                        "    <separator/>"
 	                        "    <menuitem action='ViewRefreshShareList'/>"
 	                        "  </popup>"
-	                        "  <popup name='ShareListNotOnRowPopup'>"
+	                        "  <popup name='ShareListNoSelectionPopup'>"
 	                        "    <menuitem action='FileAddShareFile'/>"
 	                        "    <menuitem action='FileAddSharefolder'/>"
 	                        "    <separator/>"
+	                        "    <menuitem action='FileDownload'/>"
+	                        "    <menuitem action='FileDownloadTo'/>"
+	                        "    <separator/>"
 	                        "    <menuitem action='ViewRefreshShareList'/>"
 	                        "  </popup>"
-	                        "  <popup name='TaskListPopup'>"
+							"  <popup name='TaskListSelectionPopup'>"
+							"    <menuitem action='ViewPauseSelectedTasks'/>"
+							"    <menuitem action='ViewResumeSelectedTasks'/>"
+							"    <menuitem action='ViewCancelSelectedTasks'/>"
+							"    <separator/>"
+							"    <menuitem action='ViewClearTaskList'/>"
+							"  </popup>"
+	                        "  <popup name='TaskListNoSelectionPopup'>"
+							"    <menuitem action='ViewPauseSelectedTasks'/>"
+							"    <menuitem action='ViewResumeSelectedTasks'/>"
+							"    <menuitem action='ViewCancelSelectedTasks'/>"
+							"    <separator/>"
 	                        "    <menuitem action='ViewClearTaskList'/>"
 	                        "  </popup>"
 	                        "</ui>";
@@ -206,16 +223,24 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid
 	menubar_ptr = (Gtk::Menu*)m_refUIManager->get_widget("/MenuBar");
 
-	share_list.set_popup_menu(
-		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListOnRowPopup"),
-		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListNotOnRowPopup")
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownload"))->set_sensitive(false);
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownloadTo"))->set_sensitive(false);
+	share_list.set_popup_menus(
+		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListSelectionPopup"),
+		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListNoSelectionPopup")
 	);
 	share_list_frame.set_label("Sharelist:");
 	share_list_frame.add(share_list);
 	share_list_alignment.add(share_list_frame);
 	share_list_alignment.set_padding(4, 4, 4, 4);
 
-	task_list.set_popup_menu( (Gtk::Menu*)m_refUIManager->get_widget("/TaskListPopup") );
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewCancelSelectedTasks"))->set_sensitive(false);
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewResumeSelectedTasks"))->set_sensitive(false);
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewPauseSelectedTasks"))->set_sensitive(false);
+	task_list.set_popup_menus(
+		(Gtk::Menu*)m_refUIManager->get_widget("/TaskListSelectionPopup"),
+		(Gtk::Menu*)m_refUIManager->get_widget("/TaskListNoSelectionPopup")
+	);
 	task_list_frame.set_label("Tasklist:");
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);

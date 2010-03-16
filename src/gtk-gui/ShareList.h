@@ -15,7 +15,7 @@
 			void clear();
 			void download_selected_shares();
 			void set_backend(UFTTCore* _core);
-			void set_popup_menu(Gtk::Menu* _on_row_popup_menu, Gtk::Menu* _not_on_row_popup_menu);
+			void set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu);
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;
@@ -49,8 +49,8 @@
 			Gtk::Entry                    download_destination_path_entry;
 			Gtk::Label                    download_destination_path_label;
 			Gtk::FileChooserButton        browse_for_download_destination_path_button;
-			Gtk::Menu*                    on_row_popup_menu;
-			Gtk::Menu*                    not_on_row_popup_menu;
+			Gtk::Menu*                    selection_popup_menu;
+			Gtk::Menu*                    no_selection_popup_menu;
 
 			// Functions / callbacks
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
