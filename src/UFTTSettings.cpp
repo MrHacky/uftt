@@ -36,6 +36,8 @@ UFTTSettings::UFTTSettings()
 	show_task_tray_icon = true;
 	minimize_to_tray_mode = 1;
 	start_in_tray = false;
+
+	auto_clear_tasks_after = boost::posix_time::seconds(30); // default to clearing tasks after 30 seconds
 }
 
 bool UFTTSettings::load(boost::filesystem::path path_)

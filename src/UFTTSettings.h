@@ -85,6 +85,11 @@ class UFTTSettings {
 		int  minimize_to_tray_mode;
 		bool start_in_tray;
 
+		// Automatically clear completed tasks from the tasklist after
+		// this amount of time. Any negative duration indicates that
+		// the option is disabled.
+		boost::posix_time::time_duration auto_clear_tasks_after;
+
 	public:
 		template<class Archive>
 		void serialize(Archive & ar, const unsigned int version) {
@@ -125,11 +130,12 @@ class UFTTSettings {
 			if (version >= 13) ar & NVP("show_task_tray_icon", show_task_tray_icon);
 			if (version >= 13) ar & NVP("minimize_to_tray_mode", minimize_to_tray_mode);
 			if (version >= 13) ar & NVP("start_in_tray", start_in_tray);
+			if (version >= 14) ar & NVP("auto_clear_tasks_after", auto_clear_tasks_after);
 		}
 };
 typedef boost::shared_ptr<UFTTSettings> UFTTSettingsRef;
 
-BOOST_CLASS_VERSION(UFTTSettings, 13)
+BOOST_CLASS_VERSION(UFTTSettings, 14)
 
 ///////////////////////////////////////////////////////////////////////////////
 //  Serialization support for boost::filesystem::path
