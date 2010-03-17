@@ -41,17 +41,17 @@ namespace StrFormat {
 		};
 	} // namespace detail
 
-	inline std::string bytes(uint64 n)
+	inline std::string bytes(uint64 n, bool kibi = false)
 	{
-		static char size_suffix[] =
+		static char* size_suffix[] =
 		{
-			 0 ,
-			'K',
-			'M',
-			'G',
-			'T',
-			'P',
-			'?'
+			"" ,
+			"K",
+			"M",
+			"G",
+			"T",
+			"P",
+			"?"
 		};
 		const int maxsuf = (sizeof(size_suffix) / sizeof(size_suffix[0])) - 1;
 
@@ -61,8 +61,8 @@ namespace StrFormat {
 			size /= 1024.0;
 		suf = std::min(maxsuf, suf);
 		int decs = (2 - (size >= 10.0) - (size >= 100.0)) * (suf > 0);
-		std::string fstr = STRFORMAT("%%.%df %%siB", decs);
-		return STRFORMAT(fstr, (float)size, std::string(size_suffix + suf, 1));
+		std::string fstr = STRFORMAT("%%.%df %%s%sB", decs, kibi ? "i" : "");
+		return STRFORMAT(fstr, (float)size, size_suffix[suf]);
 	};
 
 #if 0
