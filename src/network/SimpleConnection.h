@@ -393,7 +393,7 @@ class SimpleConnection: public ConnectionBase {
 				boost::bind(&SimpleConnection::handle_recv_namelen, this, _1, rbuf));
 			} else if (protver == 2) {
 				rbuf->resize(16 + 8*lcommands.size());
-				pkt_put_uint32(7, &((*rbuf)[0]));
+				pkt_put_uint32(CMD_REQUEST_COMMAND_LIST, &((*rbuf)[0]));
 				pkt_put_uint32(0, &((*rbuf)[4]));
 				pkt_put_uint64(8*lcommands.size(), &((*rbuf)[8]));
 				{
@@ -539,7 +539,7 @@ class SimpleConnection: public ConnectionBase {
 										requested.insert(j);
 						}
 						rbuf->resize(16 + 8*requested.size());
-						pkt_put_uint32(8, &((*rbuf)[0]));
+						pkt_put_uint32(CMD_REPLY_COMMAND_LIST, &((*rbuf)[0]));
 						pkt_put_uint32(0, &((*rbuf)[4]));
 						pkt_put_uint64(8*requested.size(), &((*rbuf)[8]));
 						int i = 16;
@@ -658,11 +658,11 @@ class SimpleConnection: public ConnectionBase {
 				qitems.push_back(qitem(QITEM_REQUEST_SHARE, sharename, 0));
 				rresume = core->getSettingsRef()->experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
-			} else if (rcommands.count(5)) {
+			} else if (rcommands.count(CMD_REQUEST_SHARE_DUMP)) {
 				// simple style connection
 				uint32 nlen = sharename.size();
 				tbuf->resize(16 + nlen);
-				pkt_put_uint32(5, &((*tbuf)[0]));
+				pkt_put_uint32(CMD_REQUEST_SHARE_DUMP, &((*tbuf)[0]));
 				pkt_put_uint32(0, &((*tbuf)[4]));
 				pkt_put_uint64(nlen, &((*tbuf)[8]));
 
@@ -709,7 +709,7 @@ class SimpleConnection: public ConnectionBase {
 					//std::cout << "Single directory!\n";
 
 					tbuf->resize(16);
-					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
+					pkt_put_uint32(CMD_REPLY_TREE_LIST, &((*tbuf)[0]) + 0);
 					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
 					tbuf->push_back(REQLIST_DIR); // dir
@@ -718,6 +718,7 @@ class SimpleConnection: public ConnectionBase {
 						tbuf->push_back(curpath.string()[i]);
 
 					int curlevel = 0;
+					// TODO: move this to a different thread (io thread?)
 					boost::filesystem::recursive_directory_iterator curiter(spath);
 					boost::filesystem::recursive_directory_iterator enditer;
 					for (; curiter != enditer; ++curiter) {
@@ -750,7 +751,7 @@ class SimpleConnection: public ConnectionBase {
 				} else {
 	//				tbuf->clear();
 					tbuf->resize(16);
-					pkt_put_uint32(10, &((*tbuf)[0]) + 0);
+					pkt_put_uint32(CMD_REPLY_TREE_LIST, &((*tbuf)[0]) + 0);
 					pkt_put_uint32(0, &((*tbuf)[0]) + 4);
 
 					tbuf->push_back(REQLIST_FILE); // file
@@ -812,7 +813,7 @@ class SimpleConnection: public ConnectionBase {
 					qitem& item = qitems.front();
 					uint32 nlen = item.path.size();
 					tbuf->resize(16 + nlen);
-					pkt_put_uint32(9, &((*tbuf)[0]));
+					pkt_put_uint32(CMD_REQUEST_TREE_LIST, &((*tbuf)[0]));
 					pkt_put_uint32(0, &((*tbuf)[4]));
 					pkt_put_uint64(nlen, &((*tbuf)[8]));
 
@@ -1237,7 +1238,7 @@ class SimpleConnection: public ConnectionBase {
 					sbuf->push_back(name[i]);
 			} else if (version == 2) {
 				sbuf->resize(4 + 16 + 8*lcommands.size());
-				pkt_put_uint32(7, &((*sbuf)[4]));
+				pkt_put_uint32(CMD_REQUEST_COMMAND_LIST, &((*sbuf)[4]));
 				pkt_put_uint32(0, &((*sbuf)[8]));
 				pkt_put_uint64(8*lcommands.size(), &((*sbuf)[12]));
 				{

@@ -62,6 +62,14 @@ const UDPSockInfoRef uftt_bcst_if;
 
 class SimpleBackend: public INetModule {
 	private:
+		enum {
+			UDPPACK_QUERY_SHARE = 1,
+			UDPPACK_REPLY_SHARE,
+			UDPPACK_REPLY_UPDATE,
+			UDPPACK_QUERY_PEER,
+			UDPPACK_REPLY_PEER,
+		};
+
 		UFTTCore* core;
 
 		boost::asio::io_service& service;
@@ -200,7 +208,7 @@ class SimpleBackend: public INetModule {
 			udp_send_buf[1] = (1 >>  8) & 0xff;
 			udp_send_buf[2] = (1 >> 16) & 0xff;
 			udp_send_buf[3] = (1 >> 24) & 0xff;
-			udp_send_buf[4] = 4;
+			udp_send_buf[4] = UDPPACK_QUERY_PEER;
 
 			std::cout << "Finding peers...\n";
 			boost::system::error_code err;
@@ -249,7 +257,7 @@ class SimpleBackend: public INetModule {
 		{
 			std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
 			switch (recv_buf[4]) {
-				case 1: if (version == 1) { // type = broadcast;
+				case UDPPACK_QUERY_SHARE: if (version == 1) { // type = broadcast;
 					uint32 vstart = 5;
 					if (len > 5)
 						vstart = 6 + recv_buf[5];
@@ -268,7 +276,7 @@ class SimpleBackend: public INetModule {
 						send_publishes(si, *recv_peer, 1, len >= 6 && recv_buf[5] > 0 && len-6 >= recv_buf[5]);
 					}
 				}; break;
-				case 2: { // type = reply;
+				case UDPPACK_REPLY_SHARE: { // type = reply;
 					if (len >= 6) {
 						uint32 slen = recv_buf[5];
 						if (len >= slen+6) {
@@ -302,7 +310,7 @@ class SimpleBackend: public INetModule {
 						}
 					}
 				}; break;
-				case 3: { // type = autoupdate share
+				case UDPPACK_REPLY_UPDATE: { // type = autoupdate share
 					if (len >= 6 && (version == 1)) {
 						uint32 slen = recv_buf[5];
 						if (len >= slen+6) {
@@ -319,17 +327,17 @@ class SimpleBackend: public INetModule {
 						}
 					}
 				}; break;
-				case 4: { // peerfinder query
+				case UDPPACK_QUERY_PEER: { // peerfinder query
 					boost::system::error_code err;
 					uint8 udp_send_buf[5];
 					udp_send_buf[0] = (1 >>  0) & 0xff;
 					udp_send_buf[1] = (1 >>  8) & 0xff;
 					udp_send_buf[2] = (1 >> 16) & 0xff;
 					udp_send_buf[3] = (1 >> 24) & 0xff;
-					udp_send_buf[4] = 5;
+					udp_send_buf[4] = UDPPACK_REPLY_PEER;
 					send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
 				};// intentional fallthrough
-				case 5: { // peerfinder reply
+				case UDPPACK_REPLY_PEER: { // peerfinder reply
 					foundpeers.insert(*recv_peer);
 					send_query(si, *recv_peer);
 				}; break;
@@ -380,7 +388,7 @@ class SimpleBackend: public INetModule {
 			udp_send_buf[ 1] = 0x00;
 			udp_send_buf[ 2] = 0x00;
 			udp_send_buf[ 3] = 0x00;
-			udp_send_buf[ 4] = 0x01;
+			udp_send_buf[ 4] = UDPPACK_QUERY_SHARE;
 			udp_send_buf[ 5] = 0x01;
 			udp_send_buf[ 6] = 0x00;
 			udp_send_buf[ 7] = 0x00;
@@ -409,11 +417,11 @@ class SimpleBackend: public INetModule {
 
 		/**
 		 * send_publish announces our list of shares to the network.
-		 * Note, there is a hack implemented here to also support older versions of the protocol.
-		 * The hack is that we reuse the version number 1. This is because in version 1 uftt did
+		 * Note, there is a trick implemented here to also support older versions of the protocol.
+		 * The trick is that we reuse the version number 1. This is because in version 1 uftt did
 		 * not include backward/forward version info. So we send the packet as version 1 and add
 		 * the extend info at the end. Old version will ignore the extra data while new versions
-		 * will parse this and everybody was happy :-)
+		 * will parse this and everything works properly
 		 **/
 		void send_publish(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, const std::string& name, int sharever, bool isbuild = false)
 		{
@@ -422,7 +430,7 @@ class SimpleBackend: public INetModule {
 			udp_send_buf[1] = (sharever >>  8) & 0xff;
 			udp_send_buf[2] = (sharever >> 16) & 0xff;
 			udp_send_buf[3] = (sharever >> 24) & 0xff;
-			udp_send_buf[4] = isbuild ? 3 : 2;
+			udp_send_buf[4] = isbuild ? UDPPACK_REPLY_UPDATE : UDPPACK_REPLY_SHARE;
 			udp_send_buf[5] = name.size();
 			memcpy(&udp_send_buf[6], name.data(), name.size());
 
