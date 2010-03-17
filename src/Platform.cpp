@@ -235,11 +235,11 @@ namespace platform {
 				while(!ifs.eof()) {
 					getline(ifs, line);
 					if(line.find(pattern) == 0) { //NOTE: Really strict, like Qt
-						result = line.substr(pattern.size(), line.size() - pattern.size());
+						result = line.substr(pattern.size());
 						if((result.find('"') == 0) && (result.rfind('"') == result.size() - 1))
 							result = result.substr(1, result.size() - 2);
 						if(result.find("$HOME") == 0) // FIXME: Hax! (like Qt)
-							result = string(_getenv("HOME")) + result.substr(5, result.size() - 5);
+							result = string(_getenv("HOME")) + result.substr(5);
 					}
 				}
 			}
