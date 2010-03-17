@@ -353,7 +353,6 @@ MainWindow::~MainWindow()
 {
 }
 
-
 void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)
 {
 	if (ctwiu) return;
@@ -451,7 +450,6 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 		// Qt::DropAction dropAction = drag->start();
 	}
-
 }
 
 std::string MainWindow::getDownloadPath()
@@ -492,7 +490,6 @@ void MainWindow::on_buttonDownload_clicked()
 		backend->startDownload(sid, dlpath);
 	}
 }
-
 
 void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti)
 {
@@ -759,6 +756,7 @@ void MainWindow::on_actionUpdateWeekly_toggled(bool on)
 {
 	if (on) setUpdateInterval(2);
 }
+
 void MainWindow::on_actionUpdateMonthly_toggled(bool on)
 {
 	if (on) setUpdateInterval(3);
