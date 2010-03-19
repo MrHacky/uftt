@@ -433,10 +433,13 @@
    <property name="text">
     <string>&amp;Quit</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+Q</string>
+   </property>
   </action>
   <action name="actionCheckForWebUpdates">
    <property name="text">
-    <string>Check for Web Updates Now</string>
+    <string>Check for Web &amp;Updates Now</string>
    </property>
   </action>
   <action name="actionAboutUFTT">
@@ -451,7 +454,10 @@
   </action>
   <action name="actionPreferences">
    <property name="text">
-    <string>Preferences...</string>
+    <string>&amp;Preferences...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+P</string>
    </property>
   </action>
  </widget>
