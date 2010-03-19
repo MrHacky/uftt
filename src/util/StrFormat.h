@@ -43,7 +43,7 @@ namespace StrFormat {
 
 	inline std::string bytes(uint64 n, bool kibi = false)
 	{
-		static char* size_suffix[] =
+		static const char* size_suffix[] =
 		{
 			"" ,
 			"K",
