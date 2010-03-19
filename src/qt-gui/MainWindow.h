@@ -19,11 +19,17 @@
 class QTreeWidgetItem;
 class QCloseEvent;
 
+class DialogPreferences;
+
 class MainWindow: public QMainWindow, public Ui::MainWindow
 {
 	Q_OBJECT
 
 	private:
+		QSystemTrayIcon* trayicon;
+		QMenu* traymenu;
+		DialogPreferences* dialogPreferences;
+
 		UFTTSettingsRef settings;
 		bool askonupdates;
 		ShareID auto_update_share;
@@ -33,8 +39,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
-		QSystemTrayIcon* trayicon;
-		QMenu* traymenu;
 
 		uint32 timerid;
 		bool isreallyactive;
@@ -42,8 +46,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void timerLostFocus(uint32 tid);
 
 		void addLocalShare(std::string url);
-		void setUpdateInterval(int i);
-		void setTrayDoubleClick(bool b);
 		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
 
 		std::string getDownloadPath();
@@ -82,29 +84,19 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonManualQuery_clicked();
 		void on_buttonManualPublish_clicked();
 
-		void on_actionEnableGlobalPeerfinder_toggled(bool);
-		void on_actionEnableDownloadResume_toggled(bool);
-		void on_actionEnableAutoupdate_toggled(bool);
-		void on_actionCheckForWebUpdates_triggered();
-
 		void on_actionAboutUFTT_triggered();
 		void on_actionAboutQt_triggered();
+
+		void on_actionCheckForWebUpdates_triggered();
 
 		void on_buttonClearCompletedTasks_clicked();
 		void on_listBroadcastHosts_itemChanged(QTreeWidgetItem* item, int column);
 
-		void on_actionUpdateNever_toggled(bool);
-		void on_actionUpdateDaily_toggled(bool);
-		void on_actionUpdateWeekly_toggled(bool);
-		void on_actionUpdateMonthly_toggled(bool);
-
-		void on_actionSingleClickToActivateTrayIcon_toggled(bool);
-		void on_actionDoubleClickToActivateTrayIcon_toggled(bool);
+		void on_actionPreferences_triggered();
 
 		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
 		void on_listShares_itemActivated(QTreeWidgetItem*, int);
 
-		void on_editNickName_textChanged(QString text);
 		void on_editDownload_textChanged(QString text);
 
 		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);

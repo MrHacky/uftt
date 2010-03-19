@@ -23,6 +23,7 @@ IF(ENABLE_QT_GUI)
 
 	SET(UI_FILES
 		MainWindow.ui
+		DialogPreferences.ui
 		DialogDirectoryChooser.ui
 	)
 
@@ -33,6 +34,7 @@ IF(ENABLE_QT_GUI)
 		QDragDropSignalWidget.cpp
 		QToggleHeaderAction.cpp
 		DialogDirectoryChooser.cpp
+		DialogPreferences.cpp
 	)
 
 	QT4_AUTOMOC(${UI_SRCS})
@@ -50,6 +52,7 @@ IF(ENABLE_QT_GUI)
 		QToggleHeaderAction.h
 		QMarshaller.h
 		DialogDirectoryChooser.h
+		DialogPreferences.h
 		QDebugStream.h
 		QtLogger.h
 		QTMain.h

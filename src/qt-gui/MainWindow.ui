@@ -34,7 +34,7 @@
      <x>0</x>
      <y>0</y>
      <width>917</width>
-     <height>18</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_File">
@@ -52,24 +52,9 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
-    <widget class="QMenu" name="menuCheckForUpdatesAutomatically">
-     <property name="tearOffEnabled">
-      <bool>false</bool>
-     </property>
-     <property name="title">
-      <string>Check for Updates Automatically</string>
-     </property>
-     <addaction name="actionUpdateNever"/>
-     <addaction name="actionUpdateDaily"/>
-     <addaction name="actionUpdateWeekly"/>
-     <addaction name="actionUpdateMonthly"/>
-    </widget>
-    <addaction name="actionEnableGlobalPeerfinder"/>
-    <addaction name="actionEnableDownloadResume"/>
-    <addaction name="separator"/>
-    <addaction name="actionEnableAutoupdate"/>
     <addaction name="actionCheckForWebUpdates"/>
-    <addaction name="menuCheckForUpdatesAutomatically"/>
+    <addaction name="separator"/>
+    <addaction name="actionPreferences"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
@@ -181,16 +166,6 @@
           </size>
          </property>
         </spacer>
-       </item>
-       <item>
-        <widget class="QLabel" name="lblNickName">
-         <property name="text">
-          <string>Nickname:</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="editNickName"/>
        </item>
       </layout>
      </item>
@@ -459,65 +434,9 @@
     <string>&amp;Quit</string>
    </property>
   </action>
-  <action name="actionEnableAutoupdate">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Enable &amp;Automatic Updates from Peers</string>
-   </property>
-  </action>
   <action name="actionCheckForWebUpdates">
    <property name="text">
     <string>Check for Web Updates Now</string>
-   </property>
-  </action>
-  <action name="actionUpdateNever">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Never</string>
-   </property>
-  </action>
-  <action name="actionUpdateDaily">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Daily</string>
-   </property>
-  </action>
-  <action name="actionUpdateWeekly">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Weekly</string>
-   </property>
-  </action>
-  <action name="actionUpdateMonthly">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Monthly</string>
-   </property>
-  </action>
-  <action name="actionEnableGlobalPeerfinder">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Enable &amp;Global Peer Discovery</string>
-   </property>
-  </action>
-  <action name="actionEnableDownloadResume">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Enable Download Resume (Experimental)</string>
    </property>
   </action>
   <action name="actionAboutUFTT">
@@ -530,20 +449,9 @@
     <string>About &amp;Qt</string>
    </property>
   </action>
-  <action name="actionSingleClickToActivateTrayIcon">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
+  <action name="actionPreferences">
    <property name="text">
-    <string>Single click to activate tray icon</string>
-   </property>
-  </action>
-  <action name="actionDoubleClickToActivateTrayIcon">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Double click to activate tray icon</string>
+    <string>Preferences...</string>
    </property>
   </action>
  </widget>

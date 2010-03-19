@@ -39,6 +39,8 @@
 
 #include "DialogDirectoryChooser.h"
 
+#include "DialogPreferences.h"
+
 // Register ShareID to allow using it inside a QVariant so it can be attached to a tree widget item
 Q_DECLARE_METATYPE(ShareID);
 
@@ -84,6 +86,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 : settings(settings_)
 , isreallyactive(false)
 , timerid(0)
+, dialogPreferences(NULL)
 {
 	setupUi(this);
 
@@ -212,9 +215,6 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	}
 
 	this->editDownload->setText(QString::fromStdString(settings->dl_path.get().native_directory_string()));
-	this->actionEnableAutoupdate->setChecked(settings->autoupdate);
-	this->actionEnableDownloadResume->setChecked(settings->experimentalresume);
-	this->setUpdateInterval(settings->webupdateinterval);
 
 	//connect(listShares, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
@@ -250,30 +250,10 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	}
 
 	traymenu = new QMenu("tray menu", this);
-	traymenu->addAction(actionSingleClickToActivateTrayIcon);
-	traymenu->addAction(actionDoubleClickToActivateTrayIcon);
-	traymenu->addSeparator();
 	traymenu->addAction(action_Quit);
 
-	setTrayDoubleClick(settings->traydoubleclick);
-}
-
-void MainWindow::setTrayDoubleClick(bool b)
-{
-	actionSingleClickToActivateTrayIcon->setChecked(!b);
-	actionDoubleClickToActivateTrayIcon->setChecked(b);
-
-	settings->traydoubleclick = b;
-}
-
-void MainWindow::on_actionSingleClickToActivateTrayIcon_toggled(bool b)
-{
-	if (b) setTrayDoubleClick(false);
-}
-
-void MainWindow::on_actionDoubleClickToActivateTrayIcon_toggled(bool b)
-{
-	if (b) setTrayDoubleClick(true);
+	// TODO: to this in backend
+	settings->nickname.sigChanged.connect(marshaller.wrap(boost::bind(&MainWindow::on_buttonRefresh_clicked, this)));
 }
 
 void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
@@ -430,13 +410,6 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		rwi->setText(SLCN_URL, qurl);
 		rwi->setData(0, Qt::UserRole, QVariant::fromValue(info.id));
 	}
-}
-
-void MainWindow::on_editNickName_textChanged(QString text) {
-	settings->nickname = text.toStdString();
-	//TODO: Rebroadcast sharelist (needs backend support)
-	//      (re-add every share with new nickname)
-	on_buttonRefresh_clicked();
 }
 
 void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
@@ -630,9 +603,9 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 
 	if (res == QMessageBox::NoToAll) {
 		if (!fromweb)
-			this->actionEnableAutoupdate->setChecked(false);
+			settings->autoupdate = false;
 		else
-			this->on_actionUpdateNever_toggled(true);
+			settings->webupdateinterval = 0; // never
 	}
 	if (res != QMessageBox::Yes)
 		return;
@@ -669,6 +642,9 @@ void MainWindow::SetBackend(UFTTCore* be)
 	backend->connectSigNewTask(
 		marshaller.wrap(boost::bind(&MainWindow::new_task, this, _1))
 	);
+
+	// TODO: to this in backed and remove doSetPeerfinderEnabled for real
+	settings->enablepeerfinder.sigChanged.connect(marshaller.wrap(boost::bind(&UFTTCore::doSetPeerfinderEnabled, backend, _1)));
 
 	if (backend->error_state == 2) {
 		QMessageBox::critical( 0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
@@ -710,24 +686,16 @@ void MainWindow::on_actionAboutUFTT_triggered()
 		"<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );
 }
 
+void MainWindow::on_actionPreferences_triggered()
+{
+	if (!dialogPreferences) dialogPreferences = new DialogPreferences(this, settings.get());
+
+	dialogPreferences->exec();
+}
+
 void MainWindow::on_actionAboutQt_triggered()
 {
 	QMessageBox::aboutQt(this);
-}
-
-void MainWindow::on_actionEnableAutoupdate_toggled(bool value)
-{
-	settings->autoupdate = value;
-}
-
-void MainWindow::on_actionEnableGlobalPeerfinder_toggled(bool enabled)
-{
-	backend->doSetPeerfinderEnabled(enabled);
-}
-
-void MainWindow::on_actionEnableDownloadResume_toggled(bool enabled)
-{
-	settings->experimentalresume = enabled;
 }
 
 void MainWindow::on_buttonClearCompletedTasks_clicked()
@@ -744,36 +712,6 @@ void MainWindow::on_actionCheckForWebUpdates_triggered()
 	backend->doManualQuery("webupdate");
 }
 
-void MainWindow::on_actionUpdateNever_toggled(bool on)
-{
-	if (on) setUpdateInterval(0);
-}
-
-void MainWindow::on_actionUpdateDaily_toggled(bool on)
-{
-	if (on) setUpdateInterval(1);
-}
-
-void MainWindow::on_actionUpdateWeekly_toggled(bool on)
-{
-	if (on) setUpdateInterval(2);
-}
-
-void MainWindow::on_actionUpdateMonthly_toggled(bool on)
-{
-	if (on) setUpdateInterval(3);
-}
-
-void MainWindow::setUpdateInterval(int i)
-{
-	actionUpdateNever->setChecked(i == 0);
-	actionUpdateDaily->setChecked(i == 1);
-	actionUpdateWeekly->setChecked(i == 2);
-	actionUpdateMonthly->setChecked(i == 3);
-
-	settings->webupdateinterval = i;
-}
-
 #ifdef __linux__
 void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux only?)
 	QString tmp = qedit->toPlainText();
@@ -783,8 +721,6 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 #endif
 
 void MainWindow::pre_show() {
-	this->actionEnableGlobalPeerfinder->setChecked(settings->enablepeerfinder);
-	this->editNickName->setText(QString::fromStdString(settings->nickname));
 	trayicon->show();
 }
 
