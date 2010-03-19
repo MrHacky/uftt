@@ -8,6 +8,7 @@ extern "C" void tss_cleanup_implemented(void){}
 #include "BuildString.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"
+#include "UFTTSettingsLegacy.h"
 
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
@@ -245,8 +246,11 @@ int imain( int argc, char **argv )
 	waitonexit = true;
 
 	// initialize settings & gui
-	UFTTSettingsRef settings(new UFTTSettings());
-	settings->load();
+	UFTTSettingsRef settings(UFTTSettingsRef::create());
+	if (!settings.load()) {
+		// try legacy settings
+		UFTTSettingsLegacyLoader(settings);
+	};
 	boost::shared_ptr<UFTTGui> gui(UFTTGui::makeGui(argc, argv, settings));
 
 	cout << "Build: " << thebuildstring << '\n';
@@ -271,7 +275,7 @@ int imain( int argc, char **argv )
 
 		int ret = gui->run();
 
-		settings->save();
+		settings.save();
 
 #ifndef DEBUG
 		exit(ret); // hax

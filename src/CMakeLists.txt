@@ -53,6 +53,7 @@ SET(UFTT_SOURCES
 	UFTTCore.h            UFTTCore.cpp
 	UFTTGui.h             UFTTGui.cpp
 	UFTTSettings.h        UFTTSettings.cpp
+	UFTTSettingsLegacy.h  UFTTSettingsLegacy.cpp
 	UFTTStatus.h          #UFTTStatus.cpp
 	AutoUpdate.h          AutoUpdate.cpp
 	Platform.h            Platform.cpp
@@ -95,7 +96,7 @@ IF(ENABLE_QT_GUI)
 			LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
 		)
 	ENDIF()
-	
+
 	SET_TARGET_PROPERTIES(uftt PROPERTIES COMPILE_DEFINITIONS ENABLE_QT_GUI)
 
 	TARGET_LINK_LIBRARIES(uftt
@@ -125,7 +126,7 @@ IF(ENABLE_GTK_GUI)
 			LINK_FLAGS_RELEASE "/SUBSYSTEM:WINDOWS"
 		)
 	ENDIF()
-	
+
 	SET_TARGET_PROPERTIES(guftt PROPERTIES COMPILE_DEFINITIONS ENABLE_GTK_GUI)
 
 	TARGET_LINK_LIBRARIES(guftt

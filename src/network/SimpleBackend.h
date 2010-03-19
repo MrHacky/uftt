@@ -456,9 +456,10 @@ class SimpleBackend: public INetModule {
 
 			if(sharever == 1 || sharever >= 3) { // Version 3 added support for usernames (nicknames)
 				#undef min
-				int nickname_length = std::min((size_t)255, settings->nickname.size());
+				std::string nickname = settings->nickname;
+				int nickname_length = std::min((size_t)255, nickname.size());
 				udp_send_buf[plen++] = nickname_length;
-				memcpy(&udp_send_buf[plen], settings->nickname.data(), nickname_length);
+				memcpy(&udp_send_buf[plen], nickname.data(), nickname_length);
 				plen += nickname_length;
 			}
 

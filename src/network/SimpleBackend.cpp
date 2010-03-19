@@ -181,7 +181,7 @@ void SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::func
 
 void SimpleBackend::stun_new_addr()
 {
-	boost::posix_time::ptime checktime = settings->laststuncheck + boost::posix_time::minutes(1);
+	boost::posix_time::ptime checktime = settings->laststuncheck.get() + boost::posix_time::minutes(1);
 	settings->laststuncheck = boost::posix_time::second_clock::universal_time();
 	stun_timer.cancel();
 	stun_timer.expires_at(checktime);

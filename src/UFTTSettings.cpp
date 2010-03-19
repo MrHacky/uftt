@@ -1,48 +1,12 @@
 #include "UFTTSettings.h"
 
-#include <fstream>
-#include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
 #include "Platform.h"
-
 #include "util/Filesystem.h"
 
-const int settings_version = 1;
-
-UFTTSettings::UFTTSettings()
+boost::filesystem::path UFTTSettings::getSavePath()
 {
-	loaded = false;
-
-	posx  = posy  = 0;
-	sizex = sizey = 0;
-
-	dl_path = platform::getDownloadPathDefault();
-	autoupdate = true;
-	webupdateinterval = 2; // default to weekly update checks
-	lastupdate = boost::posix_time::ptime(boost::posix_time::min_date_time);
-
-	enablepeerfinder = true;
-	laststuncheck = boost::posix_time::ptime(boost::posix_time::min_date_time);
-
-	nickname = platform::getUserName();
-
-	experimentalresume = true;
-
-	traydoubleclick = true;
-
-	/* Gtk GUI */
-	show_toolbar = true;
-	show_task_tray_icon = true;
-	minimize_to_tray_mode = 1;
-	start_in_tray = false;
-
-	auto_clear_tasks_after = boost::posix_time::seconds(30); // default to clearing tasks after 30 seconds
-}
-
-bool UFTTSettings::load(boost::filesystem::path path_)
-{
-	path = path_;
 	if (path.empty()) {
 		platform::spathlist spl = platform::getSettingsPathList();
 		BOOST_FOREACH(const platform::spathinfo& spi, spl) {
@@ -55,30 +19,43 @@ bool UFTTSettings::load(boost::filesystem::path path_)
 		if (path.empty())
 			path = platform::getSettingsPathDefault().second;
 	}
-	try {
-		std::ifstream ifs(path.native_file_string().c_str());
-		if (!ifs.is_open()) return false;
-		boost::archive::xml_iarchive ia(ifs);
-		ia & NVP("settings", *this);
-		loaded = true;
-	} catch (std::exception& e) {
-		std::cout << "Load settings failed: " << e.what() << '\n';
-		loaded = false;
-	}
-	return loaded;
+	return path;
 }
 
-bool UFTTSettings::save()
+void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 {
-	try {
-		boost::filesystem::create_directories(path.branch_path());
-		std::ofstream ofs(path.native_file_string().c_str());
-		if (!ofs.is_open()) return false;
-		boost::archive::xml_oarchive oa(ofs);
-		oa & NVP("settings", *this);
-		return true;
-	} catch (std::exception& e) {
-		std::cout << "Load settings failed: " << e.what() << '\n';
-		return false;
-	}
+	boost::posix_time::ptime mpt(boost::posix_time::min_date_time);
+
+	sm->registerSettingsVariable("gui.qt.dockinfo", dockinfo, createSettingsInfo(std::vector<uint8>()));
+
+	sm->registerSettingsVariable("gui.qt.posx" , posx , createSettingsInfo(0));
+	sm->registerSettingsVariable("gui.qt.posy" , posy , createSettingsInfo(0));
+	sm->registerSettingsVariable("gui.qt.sizex", sizex, createSettingsInfo(0));
+	sm->registerSettingsVariable("gui.qt.sizey", sizey, createSettingsInfo(0));
+
+	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, createSettingsInfo(true));
+
+	sm->registerSettingsVariable("download.path", dl_path, createSettingsInfo(platform::getDownloadPathDefault()));
+	sm->registerSettingsVariable("download.resume", experimentalresume, createSettingsInfo(true));
+
+	sm->registerSettingsVariable("update.frompeers", autoupdate, createSettingsInfo(true));
+	sm->registerSettingsVariable("update.fromweb", webupdateinterval, createSettingsInfo(2));
+	sm->registerSettingsVariable("update.lastwebupdate", lastupdate, createSettingsInfo(mpt));
+
+	sm->registerSettingsVariable("sharing.globalannounce", enablepeerfinder, createSettingsInfo(true));
+	sm->registerSettingsVariable("sharing.nickname", nickname, createSettingsInfo(platform::getUserName()));
+
+	sm->registerSettingsVariable("stun.lastcheck", laststuncheck, createSettingsInfo(mpt));
+	sm->registerSettingsVariable("stun.publicip", stunpublicip, createSettingsInfo(""));
+
+	sm->registerSettingsVariable("systray.showtask", show_task_tray_icon, createSettingsInfo(true));
+	sm->registerSettingsVariable("systray.minimizemode", minimize_to_tray_mode, createSettingsInfo(1));
+	sm->registerSettingsVariable("systray.startintray", start_in_tray, createSettingsInfo(false));
+	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, createSettingsInfo(true));
+
+	sm->registerSettingsVariable("gui.auto_clear_tasks_after", auto_clear_tasks_after, createSettingsInfo(boost::posix_time::seconds(30)));
+}
+
+void UFTTSettings::fixLegacy(std::map<std::string, std::string>& v)
+{
 }

@@ -155,7 +155,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 
 
 	/* load/set dock layout */
-	if (!settings->loaded && ext::filesystem::exists("uftt.layout")) {
+	if (ext::filesystem::exists("uftt.layout")) {
 		QFile layoutfile("uftt.layout");
 		if (layoutfile.open(QIODevice::ReadOnly)) {
 			QRect rect;
@@ -165,7 +165,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 			settings->sizex = rect.width();
 			settings->sizey = rect.height();
 			QByteArray data = layoutfile.readAll();
-			settings->dockinfo.insert(settings->dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+			settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
 			layoutfile.remove();
 		}
 	}
@@ -178,16 +178,19 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 		this->resize(750, 550);
 
 	/* apply dock layout */
-	if (settings->dockinfo.size() > 0)
-		this->restoreState(QByteArray((char*)&settings->dockinfo[0],settings->dockinfo.size()));
-	else {
-		this->splitDockWidget (dockShares   , dockTaskList      , Qt::Horizontal);
-		this->splitDockWidget (dockTaskList , dockWidgetDebug   , Qt::Vertical  );
-		this->splitDockWidget (dockShares   , dockManualConnect , Qt::Vertical  );
-		this->dockManualConnect->hide();
-		#ifdef NDEBUG
-			this->dockWidgetDebug->hide();
-		#endif
+	{
+		std::vector<uint8> dockinfo = settings->dockinfo;
+		if (dockinfo.size() > 0)
+			this->restoreState(QByteArray((char*)&dockinfo[0], dockinfo.size()));
+		else {
+			this->splitDockWidget (dockShares   , dockTaskList      , Qt::Horizontal);
+			this->splitDockWidget (dockTaskList , dockWidgetDebug   , Qt::Vertical  );
+			this->splitDockWidget (dockShares   , dockManualConnect , Qt::Vertical  );
+			this->dockManualConnect->hide();
+			#ifdef NDEBUG
+				this->dockWidgetDebug->hide();
+			#endif
+		}
 	}
 
 	/* set sharelist layout */
@@ -208,7 +211,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 			settings->dl_path = npath;
 	}
 
-	this->editDownload->setText(QString::fromStdString(settings->dl_path.native_directory_string()));
+	this->editDownload->setText(QString::fromStdString(settings->dl_path.get().native_directory_string()));
 	this->actionEnableAutoupdate->setChecked(settings->autoupdate);
 	this->actionEnableDownloadResume->setChecked(settings->experimentalresume);
 	this->setUpdateInterval(settings->webupdateinterval);
@@ -323,9 +326,8 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	settings->sizex = this->size().width();
 	settings->sizey = this->size().height();
 
-	settings->dockinfo.clear();
 	QByteArray data = saveState();
-	settings->dockinfo.insert(settings->dockinfo.begin(), (uint8*)data.data(), (uint8*)data.data()+data.size());
+	settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
 
 	settings->dl_path = getDownloadPath();
 
