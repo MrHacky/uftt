@@ -45,6 +45,22 @@ class SettingsVariableBase
 	public:
 		virtual void setString(const std::string& s) = 0;
 		virtual std::string getString() = 0;
+
+		template <typename T>
+		void setValue(const T& t)
+		{
+			std::string s;
+			settingsmanager::tostring(t, s);
+			setString(s);
+		}
+
+		template <typename T>
+		T getValue()
+		{
+			T t;
+			settingsmanager::fromstring(getString(), t);
+			return t;
+		}
 };
 
 template <typename T>
@@ -289,15 +305,6 @@ class SettingsManagerRef: public boost::shared_ptr<SettingsManager<S> >
 		{
 			getpt()->loadDefaults();
 		}
-/*
-		void set(const S& s) {
-			getpt()->s_curvalues = s;
-		}
-
-		S get() {
-			return getpt()->s_curvalues;
-		}
-*/
 };
 
-#endif // SETTINGS_MANAGER_H
+#endif//SETTINGS_MANAGER_H

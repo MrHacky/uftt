@@ -106,6 +106,23 @@ void SettingsManagerBase::loadDefaults()
 	}
 }
 
+SettingsInfoRef SettingsManagerBase::getInfo(const std::string& key)
+{
+	if (!sinfo.count(key))
+		return SettingsInfoRef();
+	else
+		return sinfo[key];
+}
+
+SettingsVariableBase* SettingsManagerBase::getVariable(const std::string& key)
+{
+	if (!m_curvalues.count(key))
+		return NULL;
+	else
+		return m_curvalues[key];
+}
+
+
 class SettingsInfoImpl: public SettingsInfo {
 	public:
 		std::string def;
