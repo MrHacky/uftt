@@ -39,7 +39,10 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("download.resume", experimentalresume, createSettingsInfo(true));
 
 	sm->registerSettingsVariable("update.frompeers", autoupdate, createSettingsInfo(true));
-	sm->registerSettingsVariable("update.fromweb", webupdateinterval, createSettingsInfo(2));
+	sm->registerSettingsVariable("update.fromweb", webupdateinterval, createSettingsInfo(2,
+		"Never\nDaily\nWeekly\nMonthly",
+		"0\n1\n2\n3"
+	));
 	sm->registerSettingsVariable("update.lastwebupdate", lastupdate, createSettingsInfo(mpt));
 
 	sm->registerSettingsVariable("sharing.globalannounce", enablepeerfinder, createSettingsInfo(true));

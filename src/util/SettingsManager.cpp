@@ -7,6 +7,7 @@
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 
+#include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
 
@@ -148,5 +149,7 @@ SettingsInfoRef createSettingsInfoS(std::string def, std::string enum_str, std::
 {
 	boost::shared_ptr<SettingsInfoImpl> s(new SettingsInfoImpl());
 	s->def = def;
+	if (!enum_str.empty()) boost::split(s->enumstrs, enum_str, boost::is_any_of("\n"));
+	if (!enum_val.empty()) boost::split(s->enumvals, enum_val, boost::is_any_of("\n"));
 	return s;
 }
