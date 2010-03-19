@@ -15,7 +15,7 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
   minimize_on_close_checkbutton("_Minimize to tray on close", true),
   start_in_tray_checkbutton("_Start in tray", true),
   enable_auto_clear_tasks_checkbutton(string() + "Automatically _remove completed tasks after (hh:mm:ss)", true),
-  auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.total_seconds()), 0.0, 24*60*60*1.0, 1.0),
+  auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.get().total_seconds()), 0.0, 24*60*60*1.0, 1.0),
   auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0)
 {
 	set_modal(true);
@@ -156,7 +156,7 @@ int UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_input(double* output) 
 	(*output) = auto_clear_tasks_spinbutton.get_adjustment()->get_value();
 	try {
 		settings->auto_clear_tasks_after = boost::posix_time::duration_from_string(auto_clear_tasks_spinbutton.get_text());
-		(*output) = settings->auto_clear_tasks_after.total_seconds();
+		(*output) = settings->auto_clear_tasks_after.get().total_seconds();
 	} catch(boost::bad_lexical_cast /*e*/) {};
 	return true;
 }
@@ -235,7 +235,7 @@ void UFTTPreferencesDialog::apply_settings() {
 	enable_download_resume_checkbutton.set_active(settings->experimentalresume);
 	enable_global_peer_discovery_checkbutton.set_active(settings->enablepeerfinder);
 	auto_clear_tasks_spinbutton.set_adjustment(auto_clear_tasks_spinbutton_adjustment);
-	auto_clear_tasks_spinbutton_adjustment.set_value(abs(settings->auto_clear_tasks_after.total_seconds()));
+	auto_clear_tasks_spinbutton_adjustment.set_value(abs(settings->auto_clear_tasks_after.get().total_seconds()));
 	auto_clear_tasks_spinbutton.set_sensitive(settings->auto_clear_tasks_after>=boost::posix_time::seconds(0));
 	enable_auto_clear_tasks_checkbutton.set_active(auto_clear_tasks_spinbutton.is_sensitive());
 	on_auto_clear_tasks_spinbutton_output(); // prevent signal_changed firing on_show()

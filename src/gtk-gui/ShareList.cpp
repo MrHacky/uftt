@@ -53,7 +53,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 	on_download_destination_path_entry_signal_changed_connection =
 		download_destination_path_entry.signal_changed().connect(
 			boost::bind(&ShareList::on_download_destination_path_entry_signal_changed, this));
-	download_destination_path_entry.set_text(settings->dl_path.native_directory_string());
+	download_destination_path_entry.set_text(settings->dl_path.get().native_directory_string());
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
 	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
@@ -106,9 +106,11 @@ void ShareList::set_backend(UFTTCore* _core) {
 }
 
 void ShareList::on_download_destination_path_entry_signal_changed() {
-	settings->dl_path = download_destination_path_entry.get_text();
-	while(settings->dl_path.leaf() == ".") settings->dl_path.remove_leaf(); // Remove trailing '/' 's
-	if(!ext::filesystem::exists(settings->dl_path)) {
+	boost::filesystem::path dl_path = download_destination_path_entry.get_text();
+	while(dl_path.leaf() == ".") dl_path.remove_leaf(); // Remove trailing '/' 's
+	
+	settings->dl_path = dl_path;
+	if(!ext::filesystem::exists(dl_path)) {
 		download_destination_path_entry.modify_text(Gtk::STATE_NORMAL, Gdk::Color("#000000"));
 		// Note: some windows app uses #ffb3b3 and black text, anjuta uses #ff6666 and white text (the average is about #ff9494)
 		download_destination_path_entry.modify_base(Gtk::STATE_NORMAL, Gdk::Color("#ffb3b3"));
@@ -117,7 +119,7 @@ void ShareList::on_download_destination_path_entry_signal_changed() {
 		download_destination_path_entry.unset_base(Gtk::STATE_NORMAL);
 		download_destination_path_entry.unset_text(Gtk::STATE_NORMAL);
 		on_download_destination_path_entry_signal_changed_connection.block();
-		browse_for_download_destination_path_button.set_current_folder(settings->dl_path.string());
+		browse_for_download_destination_path_button.set_current_folder(dl_path);
 	}
 }
 

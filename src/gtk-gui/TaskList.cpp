@@ -130,7 +130,7 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 						)
 					)
 				),
-				settings->auto_clear_tasks_after.total_seconds()
+				settings->auto_clear_tasks_after.get().total_seconds()
 			);
 		}
 	}
