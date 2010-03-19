@@ -121,4 +121,4 @@ class UFTTSettings {
 
 typedef SettingsManagerRef<UFTTSettings> UFTTSettingsRef;
 
-#endif UFTT_SETTINGS_H
+#endif // UFTT_SETTINGS_H
