@@ -351,15 +351,13 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/ClearTaskList"   , Gtk::AccelKey("F6").get_key(), Gdk::ModifierType(0), true);
 	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey( "T").get_key(), Gdk::CONTROL_MASK   , true);
 
-	if(settings->loaded) {
-		restore_window_size_and_position();
-		Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
-		mi->signal_toggled().connect(boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
-		toolbar.show_all();
-		toolbar.set_no_show_all(true);
-		mi->set_active(settings->show_toolbar);
-		toolbar.property_visible() = settings->show_toolbar;
-	}
+	restore_window_size_and_position();
+	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
+	mi->signal_toggled().connect(boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
+	toolbar.show_all();
+	toolbar.set_no_show_all(true);
+	mi->set_active(settings->show_toolbar);
+	toolbar.property_visible() = settings->show_toolbar;
 }
 
 void UFTTWindow::on_main_paned_realize() {
