@@ -106,9 +106,9 @@ void ShareList::set_backend(UFTTCore* _core) {
 }
 
 void ShareList::on_download_destination_path_entry_signal_changed() {
-	boost::filesystem::path dl_path = download_destination_path_entry.get_text();
+	boost::filesystem::path dl_path(download_destination_path_entry.get_text());
 	while(dl_path.leaf() == ".") dl_path.remove_leaf(); // Remove trailing '/' 's
-	
+
 	settings->dl_path = dl_path;
 	if(!ext::filesystem::exists(dl_path)) {
 		download_destination_path_entry.modify_text(Gtk::STATE_NORMAL, Gdk::Color("#000000"));
@@ -119,7 +119,7 @@ void ShareList::on_download_destination_path_entry_signal_changed() {
 		download_destination_path_entry.unset_base(Gtk::STATE_NORMAL);
 		download_destination_path_entry.unset_text(Gtk::STATE_NORMAL);
 		on_download_destination_path_entry_signal_changed_connection.block();
-		browse_for_download_destination_path_button.set_current_folder(dl_path);
+		browse_for_download_destination_path_button.set_current_folder(dl_path.string());
 	}
 }
 
@@ -128,7 +128,7 @@ void ShareList::on_browse_for_download_destination_path_button_signal_current_fo
 	boost::filesystem::path pb(browse_for_download_destination_path_button.get_current_folder());
 	while(pa.leaf() == ".") pa.remove_leaf();
 	while(pb.leaf() == ".") pb.remove_leaf();
-	
+
 	if((!on_download_destination_path_entry_signal_changed_connection.blocked()) && (pa.string() != pb.string())) {
 		// If this connection is blocked it means we are being called because the
 		// entry is updating the current_folder of the filechooserbutton. Don't

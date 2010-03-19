@@ -225,7 +225,7 @@ void UFTTPreferencesDialog::on_enable_global_peer_discovery_checkbutton_toggled(
 }
 
 void UFTTPreferencesDialog::apply_settings() {
-	username_entry.set_text(settings->nickname);
+	username_entry.set_text(settings->nickname.get());
 	enable_tray_icon_checkbutton.set_active(settings->show_task_tray_icon);
 	minimize_on_close_checkbutton.set_active(settings->minimize_to_tray_mode != 0);
 	minimize_on_close_checkbutton.set_inconsistent(settings->minimize_to_tray_mode > 1);
