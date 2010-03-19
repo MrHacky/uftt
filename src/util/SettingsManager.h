@@ -28,7 +28,19 @@ namespace settingsmanager {
 class SettingsVariableBase
 {
 	protected:
-		boost::mutex mutex;
+		mutable boost::mutex mutex;
+
+		SettingsVariableBase& operator=(const SettingsVariableBase& svb)
+		{
+		}
+
+		SettingsVariableBase(const SettingsVariableBase& svb)
+		{
+		}
+
+		SettingsVariableBase()
+		{
+		}
 
 	public:
 		virtual void setString(const std::string& s) = 0;
@@ -42,10 +54,77 @@ class SettingsVariable: public SettingsVariableBase
 		T value;
 
 	public:
-		T get()
+		T get() const
 		{
 			boost::mutex::scoped_lock lock(mutex);
 			return value;
+		}
+
+		bool operator==(const T& that) const
+		{
+			return get() == that;
+		}
+
+		bool operator>(const T& that) const
+		{
+			return get() > that;
+		}
+
+		bool operator>=(const T& that) const
+		{
+			return get() >= that;
+		}
+
+		bool operator<(const T& that) const
+		{
+			return get() < that;
+		}
+
+		bool operator<=(const T& that) const
+		{
+			return get() <= that;
+		}
+
+		bool operator!=(const T& that) const
+		{
+			return get() != that;
+		}
+
+		T operator+(const T& that) const
+		{
+			return get() + that;
+		}
+
+		T operator-(const T& that) const
+		{
+			return get() - that;
+		}
+
+		T operator-() const
+		{
+			return -get();
+		}
+
+		SettingsVariable<T>& operator+=(const T& that)
+		{
+			T t;
+			{
+				boost::mutex::scoped_lock lock(mutex);
+				t = (value += that);
+			}
+			sigChanged(t);
+			return *this;
+		}
+
+		SettingsVariable<T>& operator-=(const T& that)
+		{
+			T t;
+			{
+				boost::mutex::scoped_lock lock(mutex);
+				t = (value -= that);
+			}
+			sigChanged(t);
+			return *this;
 		}
 
 		void set(const T& t)
@@ -64,6 +143,21 @@ class SettingsVariable: public SettingsVariableBase
 		{
 			set(t);
 			return *this;
+		}
+
+		SettingsVariable<T>& operator=(const SettingsVariable<T>& svt)
+		{
+			set(svt.get());
+			return *this;
+		}
+
+		SettingsVariable<T>(const SettingsVariable<T>& svt)
+		{
+			set(svt.get());
+		}
+
+		SettingsVariable<T>()
+		{
 		}
 
 		operator T()
@@ -161,10 +255,19 @@ class SettingsManagerRef: public boost::shared_ptr<SettingsManager<S> >
 		{
 		}
 
+	SettingsManager<S>* getpt() {
+		return boost::shared_ptr<SettingsManager<S> >::get();
+	}
+
 	public:
 		S* operator->()
 		{
-			return &get()->s_curvalues;
+			return &getpt()->s_curvalues;
+		}
+
+		S& operator*()
+		{
+			return getpt()->s_curvalues;
 		}
 
 		static SettingsManagerRef create()
@@ -174,18 +277,27 @@ class SettingsManagerRef: public boost::shared_ptr<SettingsManager<S> >
 
 		bool load()
 		{
-			return get()->load(get()->s_curvalues.getSavePath());
+			return getpt()->load(getpt()->s_curvalues.getSavePath());
 		}
 
 		bool save()
 		{
-			return get()->save(get()->s_curvalues.getSavePath());
+			return getpt()->save(getpt()->s_curvalues.getSavePath());
 		}
 
 		void loadDefaults()
 		{
-			get->loadDefaults();
+			getpt()->loadDefaults();
 		}
+/*
+		void set(const S& s) {
+			getpt()->s_curvalues = s;
+		}
+
+		S get() {
+			return getpt()->s_curvalues;
+		}
+*/
 };
 
-#endif//SETTINGS_MANAGER_H
+#endif // SETTINGS_MANAGER_H
