@@ -691,6 +691,7 @@ class SimpleConnection: public ConnectionBase {
 			taskinfo.shareinfo.name = elems[0];
 			boost::filesystem::path spath(core->getLocalSharePath(elems[0]));
 			sharepath = spath.branch_path();
+			taskinfo.path = sharepath;
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
 				return;
@@ -1160,6 +1161,7 @@ class SimpleConnection: public ConnectionBase {
 			taskinfo.shareinfo.name = sharename;
 			taskinfo.isupload = true;
 			sharepath = core->getLocalSharePath(sharename);
+			taskinfo.path = sharepath.branch_path();
 			if (sharepath == "") {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
 				if (buildfile) {

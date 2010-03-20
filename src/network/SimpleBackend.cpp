@@ -88,6 +88,7 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	std::string shareurl = sid.sid;
 
 	ret.shareid = ret.shareinfo.id = sid;
+	ret.path = dlpath;
 	ret.id.mid = mid;
 	ret.id.cid = conlist.size();
 

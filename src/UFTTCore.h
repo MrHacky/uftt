@@ -70,6 +70,7 @@ struct TaskInfo {
 	ShareInfo shareinfo;
 	bool isupload;
 	std::string status;
+	boost::filesystem::path path;   // Path that this Task is being downloaded to / uploaded from
 	uint64 transferred;
 	uint64 size;
 	uint32 queue;
