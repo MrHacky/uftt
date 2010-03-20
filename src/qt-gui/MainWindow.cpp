@@ -309,8 +309,6 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	QByteArray data = saveState();
 	settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
 
-	settings->dl_path = getDownloadPath();
-
 	trayicon->hide();
 
 	// propagate to parent
@@ -429,7 +427,7 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 std::string MainWindow::getDownloadPath()
 {
-	std::string path = editDownload->text().toStdString();
+	std::string path = settings->dl_path.get().native_directory_string();
 	if (!path.empty()) {
 		char c = path[path.size()-1];
 		if (c != '\\' && c != '/')
@@ -440,8 +438,9 @@ std::string MainWindow::getDownloadPath()
 
 void MainWindow::on_editDownload_textChanged(QString text)
 {
-	boost::filesystem::path dlpath = getDownloadPath();
-	if (ext::filesystem::exists(dlpath))
+	boost::filesystem::path dl_path = text.toStdString();
+	settings->dl_path = dl_path;
+	if (ext::filesystem::exists(dl_path))
 		editDownload->setStyleSheet("");
 	else
 		editDownload->setStyleSheet("* { color: black; background-color: #ffb3b3; }");
