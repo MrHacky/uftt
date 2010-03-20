@@ -206,8 +206,7 @@ void UFTTPreferencesDialog::on_enable_tray_icon_checkbutton_toggled() {
 }
 
 void UFTTPreferencesDialog::on_minimize_on_close_checkbutton_toggled() {
-	// FIXME: We don't handle mode 2
-	settings->minimize_to_tray_mode = minimize_on_close_checkbutton.get_active() ? 1 : 0;
+	settings->close_to_tray = minimize_on_close_checkbutton.get_active();;
 }
 
 void UFTTPreferencesDialog::on_start_in_tray_checkbutton_toggled() {
@@ -227,8 +226,7 @@ void UFTTPreferencesDialog::on_enable_global_peer_discovery_checkbutton_toggled(
 void UFTTPreferencesDialog::apply_settings() {
 	username_entry.set_text(settings->nickname.get());
 	enable_tray_icon_checkbutton.set_active(settings->show_task_tray_icon);
-	minimize_on_close_checkbutton.set_active(settings->minimize_to_tray_mode != 0);
-	minimize_on_close_checkbutton.set_inconsistent(settings->minimize_to_tray_mode > 1);
+	minimize_on_close_checkbutton.set_active(settings->close_to_tray);
 	minimize_on_close_checkbutton.set_sensitive(settings->show_task_tray_icon);
 	start_in_tray_checkbutton.set_active(settings->start_in_tray);
 	start_in_tray_checkbutton.set_sensitive(settings->show_task_tray_icon);

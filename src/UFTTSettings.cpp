@@ -52,7 +52,8 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("stun.publicip", stunpublicip, createSettingsInfo(""));
 
 	sm->registerSettingsVariable("systray.showtask", show_task_tray_icon, createSettingsInfo(true));
-	sm->registerSettingsVariable("systray.minimizemode", minimize_to_tray_mode, createSettingsInfo(1));
+	sm->registerSettingsVariable("systray.minimizetotray", minimize_to_tray, createSettingsInfo(true));
+	sm->registerSettingsVariable("systray.closetotray", close_to_tray, createSettingsInfo(true));
 	sm->registerSettingsVariable("systray.startintray", start_in_tray, createSettingsInfo(false));
 	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, createSettingsInfo(true));
 
@@ -61,4 +62,5 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 void UFTTSettings::fixLegacy(std::map<std::string, std::string>& v)
 {
+	if (v.count("systray.minimizemode")) v["systray.closetotray"] = v["systray.minimizemode"];
 }

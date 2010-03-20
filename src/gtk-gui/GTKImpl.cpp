@@ -586,7 +586,7 @@ void UFTTWindow::post_show() {
 }
 
 bool UFTTWindow::on_delete_event(GdkEventAny* event) { // Close button
-	if(settings->show_task_tray_icon && settings->minimize_to_tray_mode == 1) {
+	if(settings->show_task_tray_icon && settings->close_to_tray) {
 		save_window_size_and_position();
 		hide();
 	}

@@ -100,15 +100,13 @@ class UFTTSettings {
 		SettingsVariable<boost::posix_time::ptime> laststuncheck;
 		SettingsVariable<std::string> stunpublicip;
 
+		SettingsVariable<bool> show_task_tray_icon;
+		SettingsVariable<bool> minimize_to_tray;
+		SettingsVariable<bool> close_to_tray;
+		SettingsVariable<bool> start_in_tray;
+
 		/* Gtk GUI */
 		SettingsVariable<bool> show_toolbar;
-		SettingsVariable<bool> show_task_tray_icon;
-		// 0 = Do not minimize to tray,
-		// 1 = Minimize to tray on close,
-		// 2 = Minimize to tray on minimize.
-		// Option 2 may not be implemented for all platforms/gui combinations.
-		SettingsVariable<int>  minimize_to_tray_mode;
-		SettingsVariable<bool> start_in_tray;
 
 		// Automatically clear completed tasks from the tasklist after
 		// this amount of time. Any negative duration indicates that
