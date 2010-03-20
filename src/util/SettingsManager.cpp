@@ -51,8 +51,11 @@ bool SettingsManagerBase::load(std::map<std::string, std::string>& values)
 
 	typedef std::pair<std::string, std::string> mp;
 	BOOST_FOREACH(const mp& sp, values) {
-		if (m_curvalues.count(sp.first))
-			m_curvalues[sp.first]->setString(sp.second);
+		if (m_curvalues.count(sp.first)) {
+			try {
+				m_curvalues[sp.first]->setString(sp.second);
+			} catch(...) {};
+		}
 	}
 	return true;
 }
