@@ -717,10 +717,6 @@ class SimpleBackend: public INetModule {
 			settings->nickname.sigChanged.connect(service.wrap(boost::bind(&SimpleBackend::send_publishes, this, uftt_bcst_if, uftt_bcst_ep, 1, true)));
 		}
 
-		boost::filesystem::path getsharepath(std::string name) {
-			return core->getLocalSharePath(name); // TODO: remove need for this hack!
-		}
-
 		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
 		void dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, boost::filesystem::path dlpath, uint32 version);
 		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener);
