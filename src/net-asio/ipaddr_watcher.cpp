@@ -414,7 +414,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 			boost::asio::io_service& service;
 			set<T> addrlist;
 #ifdef WIN32
-			boost::asio::ip::udp::socket sock;
+			SOCKET fd;
 #endif
 #ifdef __linux__
 			int fd;
@@ -424,9 +424,6 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 			ip_watcher_common(boost::asio::io_service& service_)
 			: service(service_)
 			, closed(true)
-#ifdef WIN32
-			, sock(service_)
-#endif
 			{
 			}
 
@@ -441,12 +438,11 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 				closed = true;
 				This()->watcher = NULL;
 #ifdef WIN32
-				sock.close();
+				::closesocket(fd);
 #endif
 #ifdef __linux__
 				::close(fd);
 #endif
-				thread.join();
 			}
 
 			static void checked_invoke_add_addr(boost::shared_ptr<ip_watcher_common<C, T> > this_, T& arg)
@@ -509,7 +505,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 						int inBuffer = 0;
 						int outBuffer = 0;
 						DWORD outSize = 0;
-						int err = WSAIoctl(this_->sock.native(), SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
+						int err = WSAIoctl(this_->fd, SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
 						if (err < 0)
 							cout << "error: ipv?_watcher: " << err << '\n';
 #endif
@@ -540,7 +536,7 @@ class ipv4_watcher::implementation : public ip_watcher_common<ipv4_watcher::impl
 
 		void init() {
 #ifdef WIN32
-			sock.open(boost::asio::ip::udp::v4());
+			fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 #endif
 #ifdef __linux__
 			struct sockaddr_nl sa;
@@ -588,7 +584,7 @@ class ipv6_watcher::implementation : public ip_watcher_common<ipv6_watcher::impl
 
 		void init() {
 #ifdef WIN32
-			sock.open(boost::asio::ip::udp::v6());
+			fd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP);
 #endif
 #ifdef __linux__
 			struct sockaddr_nl sa;
