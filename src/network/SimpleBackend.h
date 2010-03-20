@@ -179,14 +179,6 @@ class SimpleBackend: public INetModule {
 			}
 		}
 
-		void start_peerfinder(bool enabled)
-		{
-			if (settings->enablepeerfinder != enabled) {
-				settings->enablepeerfinder = enabled;
-				start_peerfinder();
-			}
-		}
-
 		void start_peerfinder()
 		{
 			if (!settings->enablepeerfinder) return;
@@ -720,6 +712,8 @@ class SimpleBackend: public INetModule {
 			lastpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 			prevpeerquery = boost::posix_time::ptime(boost::posix_time::min_date_time);
 			start_peerfinder();
+
+			settings->enablepeerfinder.sigChanged.connect(service.wrap(boost::bind(&SimpleBackend::start_peerfinder, this)));
 		}
 
 		boost::filesystem::path getsharepath(std::string name) {
@@ -756,8 +750,6 @@ class SimpleBackend: public INetModule {
 
 		virtual void notifyAddLocalShare(const LocalShareID& sid);
 		virtual void notifyDelLocalShare(const LocalShareID& sid);
-
-		virtual void doSetPeerfinderEnabled(bool enabled);
 
 		virtual void setModuleID(uint32 mid);
 };

@@ -56,8 +56,6 @@ class HTTPBackend: public INetModule {
 		virtual void notifyAddLocalShare(const LocalShareID& sid);
 		virtual void notifyDelLocalShare(const LocalShareID& sid);
 
-		virtual void doSetPeerfinderEnabled(bool enabled);
-
 		virtual void setModuleID(uint32 mid);
 };
 

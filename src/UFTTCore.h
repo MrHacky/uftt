@@ -139,7 +139,6 @@ class UFTTCore {
 
 
 		// Deprecated but still in use
-		void doSetPeerfinderEnabled(bool enabled);
 		UFTTSettingsRef getSettingsRef();
 
 		// Service getters

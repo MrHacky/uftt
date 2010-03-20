@@ -141,12 +141,6 @@ void UFTTCore::doRefreshShares()
 
 
 // Deprecated but still in use
-void UFTTCore::doSetPeerfinderEnabled(bool enabled)
-{
-	BOOST_FOREACH(INetModuleRef nm, netmodules)
-		nm->doSetPeerfinderEnabled(enabled);
-}
-
 UFTTSettingsRef UFTTCore::getSettingsRef()
 {
 	return settings;

@@ -60,11 +60,6 @@ void SimpleBackend::doManualQuery(const std::string& host)
 	} catch (std::exception& /*e*/) {}
 }
 
-void SimpleBackend::doSetPeerfinderEnabled(bool enabled)
-{
-	service.post(boost::bind(&SimpleBackend::start_peerfinder, this, enabled));
-}
-
 void SimpleBackend::setModuleID(uint32 mid)
 {
 	this->mid = mid;

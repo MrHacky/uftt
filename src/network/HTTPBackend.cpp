@@ -72,10 +72,6 @@ void HTTPBackend::doManualQuery(const std::string& host)
 		service.post(boost::bind(&HTTPBackend::check_for_web_updates, this));
 }
 
-void HTTPBackend::doSetPeerfinderEnabled(bool enabled)
-{
-}
-
 void HTTPBackend::setModuleID(uint32 mid)
 {
 	this->mid = mid;

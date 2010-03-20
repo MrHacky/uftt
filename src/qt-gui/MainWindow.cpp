@@ -642,9 +642,6 @@ void MainWindow::SetBackend(UFTTCore* be)
 		marshaller.wrap(boost::bind(&MainWindow::new_task, this, _1))
 	);
 
-	// TODO: to this in backed and remove doSetPeerfinderEnabled for real
-	settings->enablepeerfinder.sigChanged.connect(marshaller.wrap(boost::bind(&UFTTCore::doSetPeerfinderEnabled, backend, _1)));
-
 	if (backend->error_state == 2) {
 		QMessageBox::critical( 0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
 		throw int(1); // thrown integers will quit application with integer as exit code

@@ -16,8 +16,6 @@ class INetModule {
 		virtual void doManualPublish(const std::string& host) = 0;
 		virtual void doManualQuery(const std::string& host) = 0;
 
-		virtual void doSetPeerfinderEnabled(bool enabled) = 0;
-
 		virtual void notifyAddLocalShare(const LocalShareID& sid) = 0;
 		virtual void notifyDelLocalShare(const LocalShareID& sid) = 0;
 
