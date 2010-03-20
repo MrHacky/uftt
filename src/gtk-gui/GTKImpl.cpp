@@ -155,6 +155,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
 	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
 
+	m_refActionGroup->add(Gtk::Action::create("PopupTasklistExecute", Gtk::Stock::EXECUTE, "Open"),
+	                      boost::bind(&TaskList::execute_selected_tasks, &task_list));
+	m_refActionGroup->add(Gtk::Action::create("PopupTasklistOpenContainingFolder", Gtk::Stock::OPEN, "Open containing folder"),
+	                      boost::bind(&TaskList::open_folder_selected_tasks, &task_list));
+
 
 	m_refUIManager = Gtk::UIManager::create();
 	m_refUIManager->insert_action_group(m_refActionGroup);
@@ -223,6 +228,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <menuitem action='ViewRefreshShareList'/>"
 		"  </popup>"
 		"  <popup name='TaskListSelectionPopup'>"
+		"    <menuitem action='PopupTasklistExecute'/>"
+		"    <menuitem action='PopupTasklistOpenContainingFolder'/>"
+		"    <separator/>"
 		"    <menuitem action='ViewPauseSelectedTasks'/>"
 		"    <menuitem action='ViewResumeSelectedTasks'/>"
 		"    <menuitem action='ViewCancelSelectedTasks'/>"
@@ -230,6 +238,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <menuitem action='ViewClearTaskList'/>"
 		"  </popup>"
 		"  <popup name='TaskListNoSelectionPopup'>"
+		"    <menuitem action='PopupTasklistExecute'/>"
+		"    <menuitem action='PopupTasklistOpenContainingFolder'/>"
+		"    <separator/>"
 		"    <menuitem action='ViewPauseSelectedTasks'/>"
 		"    <menuitem action='ViewResumeSelectedTasks'/>"
 		"    <menuitem action='ViewCancelSelectedTasks'/>"
@@ -252,6 +263,21 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	share_list_alignment.add(share_list_frame);
 	share_list_alignment.set_padding(4, 4, 4, 4);
 
+/*
+	Pango::FontDescription bold_font_description;
+	bold_font_description.set_weight(Pango::WEIGHT_BOLD);
+	Pango::AttrFontDesc afd(Pango::Attribute::create_attr_font_desc(bold_font_description));
+	afd.set_desc(bold_font_description);
+	Pango::AttrList attr_list;
+	attr_list.insert(afd);
+
+	 FIXME: This seems really hacky, is bolding menu/popup entries not
+	        according to the HIG? It does look 'unnatural'...
+	((Gtk::Label*)(((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListSelectionPopup/PopupTasklistExecute"))->get_child()))->set_attributes(attr_list);
+*/
+
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/PopupTasklistExecute"))->set_sensitive(false);
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/PopupTasklistOpenContainingFolder"))->set_sensitive(false);
 	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewCancelSelectedTasks"))->set_sensitive(false);
 	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewResumeSelectedTasks"))->set_sensitive(false);
 	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewPauseSelectedTasks"))->set_sensitive(false);

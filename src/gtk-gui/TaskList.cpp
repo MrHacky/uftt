@@ -1,4 +1,5 @@
 #include "TaskList.h"
+#include "ShowURI.h"
 #include "../util/StrFormat.h"
 #include <boost/foreach.hpp>
 #include <boost/lambda/bind.hpp>
@@ -40,6 +41,7 @@ TaskList::TaskList(UFTTSettingsRef _settings)
 	task_list_treeview.set_enable_search(true);
 	task_list_treeview.set_rubber_banding(true);
 	task_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
+	task_list_treeview.signal_row_activated().connect(boost::bind(&TaskList::execute_selected_tasks, this));
 	task_list_treeview.signal_button_press_event().connect(
 		sigc::mem_fun(this, &TaskList::on_task_list_treeview_signal_button_press_event), false);
 }
@@ -62,6 +64,29 @@ void TaskList::cleanup() {
 	}
 }
 
+void TaskList::execute_selected_tasks() {
+	BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
+		const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
+		if(row[task_list_columns.status] == "Completed") {
+			Gtk::show_uri(Glib::wrap((GdkScreen*)NULL),
+				Glib::filename_to_uri((((TaskInfo)row[task_list_columns.task_info]).path / ((TaskInfo)row[task_list_columns.task_info]).shareinfo.name).string()),
+				GDK_CURRENT_TIME
+			);
+		}
+	}
+}
+
+void TaskList::open_folder_selected_tasks() {
+	BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
+		const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
+		std::cout << "taskinfo.path: '" << ((TaskInfo)row[task_list_columns.task_info]).path << "'" << std::endl;
+		Gtk::show_uri(Glib::wrap((GdkScreen*)NULL),
+			Glib::filename_to_uri(((TaskInfo)row[task_list_columns.task_info]).path.string()),
+			GDK_CURRENT_TIME
+		);
+	}
+}
+
 bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* event) {
 	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
 		Gtk::TreeModel::Path  path;
@@ -74,7 +99,16 @@ bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* e
 				task_list_treeview.get_selection()->select(path);
 			}
 		}
-		if(task_list_treeview.get_selection()->count_selected_rows() > 0) {
+		selection_popup_menu->items()[0].set_sensitive(false); // A bit hacky
+		selection_popup_menu->items()[1].set_sensitive(false);
+		if(task_list_treeview.get_selection()->count_selected_rows() > 0) { // race race ?
+		selection_popup_menu->items()[1].set_sensitive(true);
+			BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
+				const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
+				if(row[task_list_columns.status] == "Completed") {
+					selection_popup_menu->items()[0].set_sensitive(true);
+				}
+			}
 			selection_popup_menu->popup(event->button, event->time);
 		}
 		else {
@@ -91,6 +125,8 @@ void TaskList::set_backend(UFTTCore* _core) {
 }
 
 void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info) {
+	(*i)[task_list_columns.task_info]      = info;
+
 	boost::posix_time::ptime current_time = boost::posix_time::microsec_clock::universal_time();
 	boost::posix_time::time_duration time_elapsed = current_time-info.start_time;
 
@@ -152,6 +188,7 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 
 void TaskList::on_signal_new_task(const TaskInfo& info) {
 	Gtk::TreeModel::iterator i = task_list_liststore->append();
+	(*i)[task_list_columns.task_info]      = info;
 	// Task info (real values only filled in on_signal_task_status)
 	(*i)[task_list_columns.status]         = "Waiting for peer";
 	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
