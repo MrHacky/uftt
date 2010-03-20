@@ -2,21 +2,48 @@
 
 #include "../util/SettingsManager.h"
 
-#include <QCheckBox>
-#include <QLineEdit>
-#include <QTimeEdit>
+#include <QTreeWidgetItem>
+#include <QItemDelegate>
 
 #include <boost/foreach.hpp>
 
+namespace {
+	enum {
+		CN_KEY = 0,
+		CN_CURVALUE,
+		CN_LASTVALUE,
+		CN_DEFAULT,
+	};
+
+	class ItemDelegateEditCollumn : public QItemDelegate
+	{
+		private:
+			QTreeWidget* twparent;
+			int colnum;
+
+		public:
+			ItemDelegateEditCollumn(QTreeWidget* parent_, int colnum_)
+				: QItemDelegate(parent_)
+				, twparent(parent_)
+				, colnum(colnum_)
+			{
+			}
+
+			QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+			{
+				if (index.column() == colnum)
+					return QItemDelegate::createEditor(parent, option, index);
+				twparent->editItem(twparent->topLevelItem(index.row()), colnum);
+				return 0;
+			}
+	};
+}
+
 DialogPreferences::DialogPreferences(QWidget* parent, SettingsManagerBase* settings_)
-	: QDialog(parent)
+	: QDialog(parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 	, settings(settings_)
 {
 	this->setupUi(this);
-
-	listCategories->setCurrentRow(listCategories->currentRow());
-
-	listCategories->hide();
 
 	delete checkAutoClear;
 	delete timeEdit;
@@ -27,6 +54,47 @@ DialogPreferences::DialogPreferences(QWidget* parent, SettingsManagerBase* setti
 	delete checkBox_9;
 
 	scanWidgets(this);
+
+	listAdvancedOptions->setItemDelegate(new ItemDelegateEditCollumn(listAdvancedOptions, CN_CURVALUE));
+	std::vector<std::string> keys = settings->getAllKeys();
+	BOOST_FOREACH(const std::string& s, keys) {
+		if (widgets.count(s) == 0) {
+			QTreeWidgetItem* twi = new QTreeWidgetItem(listAdvancedOptions);
+			twi->setText(CN_KEY,     QString::fromStdString(s));
+			twi->setText(CN_DEFAULT, QString::fromStdString(settings->getInfo(s)->getDefault()));
+			twi->setFlags(twi->flags() | Qt::ItemIsEditable);
+		}
+	}
+
+	listCategories->setCurrentRow(0);
+}
+
+void DialogPreferences::on_listAdvancedOptions_itemChanged(QTreeWidgetItem* item, int col)
+{
+	if (col != CN_CURVALUE) return;
+
+	std::string curval = item->text(CN_CURVALUE).toStdString();
+	bool isvalid = false;
+	try {
+		std::string normval = settings->getVariable(item->text(CN_KEY).toStdString())->isValid(curval);
+		if (curval != normval) {
+			item->setText(CN_CURVALUE, QString::fromStdString(normval));
+			return;
+		}
+		isvalid = true;
+	} catch (...) {};
+
+	bool bold = item->text(CN_CURVALUE) != item->text(CN_DEFAULT);
+	QFont tfont = item->font(CN_DEFAULT);
+	tfont.setBold(bold);
+	item->setFont(CN_CURVALUE, tfont);
+	item->setFont(CN_KEY     , tfont);
+
+	QColor tcolor = item->textColor(CN_DEFAULT);
+	if (!isvalid)
+		tcolor = QColor("red");
+	item->setTextColor(CN_CURVALUE, tcolor);
+	item->setTextColor(CN_KEY     , tcolor);
 }
 
 void DialogPreferences::scanWidgets(QObject* obj)
@@ -88,6 +156,14 @@ void DialogPreferences::loadSettings()
 		d.loadSettings<QTimeEdit>(w);
 		d.loadSettings<QComboBox>(w);
 	}
+
+	for (int i = 0; i < listAdvancedOptions->topLevelItemCount (); ++i) {
+		QTreeWidgetItem* twi = listAdvancedOptions->topLevelItem(i);
+		std::string key = twi->text(CN_KEY).toStdString();
+		QString val = QString::fromStdString(settings->getVariable(key)->getString());
+		twi->setText(CN_CURVALUE,  val);
+		twi->setText(CN_LASTVALUE, val);
+	}
 }
 
 void DialogPreferences::saveSettings()
@@ -98,6 +174,19 @@ void DialogPreferences::saveSettings()
 		d.saveSettings<QLineEdit>(w);
 		d.saveSettings<QTimeEdit>(w);
 		d.saveSettings<QComboBox>(w);
+	}
+
+	for (int i = 0; i < listAdvancedOptions->topLevelItemCount (); ++i) {
+		QTreeWidgetItem* twi = listAdvancedOptions->topLevelItem(i);
+		std::string key = twi->text(CN_KEY).toStdString();
+		if (twi->text(CN_CURVALUE) != twi->text(CN_LASTVALUE)) {
+			std::string val = twi->text(CN_CURVALUE).toStdString();
+			try {
+				settings->getVariable(key)->setString(val);
+				twi->setText(CN_LASTVALUE, QString::fromStdString(val));
+			} catch (...) {
+			}
+		}
 	}
 }
 

@@ -45,6 +45,7 @@ class SettingsVariableBase
 	public:
 		virtual void setString(const std::string& s) = 0;
 		virtual std::string getString() = 0;
+		virtual std::string isValid(const std::string& s) = 0;
 
 		template <typename T>
 		void setValue(const T& t)
@@ -194,6 +195,15 @@ class SettingsVariable: public SettingsVariableBase
 			settingsmanager::tostring(get(), s);
 			return s;
 		}
+
+		virtual std::string isValid(const std::string& s)
+		{
+			T t;
+			settingsmanager::fromstring(s, t);
+			std::string o;
+			settingsmanager::tostring(t, o);
+			return o;
+		}
 };
 
 class SettingsInfo {
@@ -227,6 +237,8 @@ class SettingsManagerBase {
 	public:
 		SettingsInfoRef getInfo(const std::string& key);
 		SettingsVariableBase* getVariable(const std::string& key);
+
+		std::vector<std::string> getAllKeys();
 
 		template<typename T>
 		void registerSettingsVariable(const std::string& key, SettingsVariable<T>& val, SettingsInfoRef sir)

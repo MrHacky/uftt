@@ -122,6 +122,14 @@ SettingsVariableBase* SettingsManagerBase::getVariable(const std::string& key)
 		return m_curvalues[key];
 }
 
+std::vector<std::string> SettingsManagerBase::getAllKeys()
+{
+	std::vector<std::string> ret;
+	typedef std::pair<const std::string, SettingsVariableBase*> pt;
+	BOOST_FOREACH(const pt& p, m_curvalues)
+		ret.push_back(p.first);
+	return ret;
+}
 
 class SettingsInfoImpl: public SettingsInfo {
 	public:

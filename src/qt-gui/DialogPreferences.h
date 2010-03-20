@@ -9,11 +9,6 @@
 
 class SettingsManagerBase;
 
-class QCheckBox;
-class QLineEdit;
-class QTimeEdit;
-class QComboBox;
-
 class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 	Q_OBJECT
 
@@ -44,6 +39,8 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 
 	public Q_SLOTS:
 		void on_buttonBox_clicked(QAbstractButton*);
+		void on_listAdvancedOptions_itemChanged(QTreeWidgetItem*, int);
+
 		int exec();
 };
 
