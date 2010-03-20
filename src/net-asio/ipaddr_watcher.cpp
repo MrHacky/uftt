@@ -407,6 +407,8 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 			C* This() {
 				return (C*)this;
 			}
+
+			bool closed;
 		protected:
 			boost::thread thread;
 			boost::asio::io_service& service;
@@ -421,6 +423,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 		public:
 			ip_watcher_common(boost::asio::io_service& service_)
 			: service(service_)
+			, closed(true)
 #ifdef WIN32
 			, sock(service_)
 #endif
@@ -429,11 +432,13 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 			~ip_watcher_common()
 			{
-				//close();
+				close();
 			}
 
 			void close()
 			{
+				if (closed) return;
+				closed = true;
 				This()->watcher = NULL;
 #ifdef WIN32
 				sock.close();
@@ -441,6 +446,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 #ifdef __linux__
 				::close(fd);
 #endif
+				thread.join();
 			}
 
 			static void checked_invoke_add_addr(boost::shared_ptr<ip_watcher_common<C, T> > this_, T& arg)
@@ -477,8 +483,10 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 			void async_wait(boost::shared_ptr<ip_watcher_common<C, T> > sp)
 			{
+				if (!closed) return;
 				boost::weak_ptr<ip_watcher_common<C, T> > wp(sp);
 
+				closed = false;
 				thread = boost::thread(boost::bind(&C::main, wp)).move();
 			}
 
@@ -493,6 +501,8 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 					while(1) {
 						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
 						if (!this_)
+							return;
+						if (this_->closed)
 							return;
 						this_->newlist(this_);
 #ifdef WIN32
