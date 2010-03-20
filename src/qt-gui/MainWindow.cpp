@@ -251,9 +251,6 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 
 	traymenu = new QMenu("tray menu", this);
 	traymenu->addAction(action_Quit);
-
-	// TODO: to this in backend
-	settings->nickname.sigChanged.connect(marshaller.wrap(boost::bind(&MainWindow::on_buttonRefresh_clicked, this)));
 }
 
 void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
