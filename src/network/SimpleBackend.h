@@ -378,8 +378,11 @@ class SimpleBackend: public INetModule {
 
 			if (!e || udpretries > 0)
 				start_udp_receive(si, recv_buf, recv_peer);
-			else
-				std::cout << "retry limit reached, giving up on receiving udp packets\n";
+			else {
+				std::cout << "retry limit reached, giving up on receiving udp packets temprarily\n";
+				udpretries = 10;
+				asio_timer_oneshot(service, (int)5000, boost::bind(&SimpleBackend::start_udp_receive, this, si, recv_buf, recv_peer));
+			}
 		}
 
 		void send_query(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep) {
