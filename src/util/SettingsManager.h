@@ -275,47 +275,45 @@ class SettingsManager: public SettingsManagerBase
 };
 
 template<class S>
-class SettingsManagerRef: public boost::shared_ptr<SettingsManager<S> >
+class SettingsManagerRef
 {
 	private:
+		boost::shared_ptr<SettingsManager<S> > ref;
+
 		SettingsManagerRef(SettingsManager<S>* s)
-		: boost::shared_ptr<SettingsManager<S> >(s)
+		: ref(s)
 		{
 		}
 
-	SettingsManager<S>* getpt() {
-		return boost::shared_ptr<SettingsManager<S> >::get();
-	}
-
 	public:
+		static SettingsManagerRef<S> create()
+		{
+			return SettingsManagerRef<S>(new SettingsManager<S>());
+		}
+
+		boost::shared_ptr<SettingsManager<S> > get()
+		{
+			return ref;
+		}
+
 		S* operator->()
 		{
-			return &getpt()->s_curvalues;
+			return &get()->s_curvalues;
 		}
 
 		S& operator*()
 		{
-			return getpt()->s_curvalues;
-		}
-
-		static SettingsManagerRef create()
-		{
-			return SettingsManagerRef(new SettingsManager<S>());
+			return get()->s_curvalues;
 		}
 
 		bool load()
 		{
-			return getpt()->load(getpt()->s_curvalues.getSavePath());
+			return get()->load(get()->s_curvalues.getSavePath());
 		}
 
 		bool save()
 		{
-			return getpt()->save(getpt()->s_curvalues.getSavePath());
-		}
-
-		void loadDefaults()
-		{
-			getpt()->loadDefaults();
+			return get()->save(get()->s_curvalues.getSavePath());
 		}
 };
 

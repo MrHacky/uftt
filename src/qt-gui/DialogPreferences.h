@@ -3,6 +3,8 @@
 
 #include "ui_DialogPreferences.h"
 
+#include <boost/shared_ptr.hpp>
+
 #include <map>
 
 #include <QDialog>
@@ -18,7 +20,7 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 		std::map<std::string, QObject*> widgets;
 		typedef std::pair<const std::string, QObject*> wpair;
 
-		SettingsManagerBase* settings;
+		boost::shared_ptr<SettingsManagerBase> settings;
 
 		void scanWidgets(QObject* obj);
 
@@ -35,7 +37,7 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 		void saveSettings(const std::string& key, QComboBox* w);
 
 	public:
-		DialogPreferences(QWidget* parent, SettingsManagerBase* settings_);
+		DialogPreferences(QWidget* parent, boost::shared_ptr<SettingsManagerBase> settings_);
 
 	public Q_SLOTS:
 		void on_buttonBox_clicked(QAbstractButton*);

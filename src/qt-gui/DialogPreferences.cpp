@@ -39,7 +39,7 @@ namespace {
 	};
 }
 
-DialogPreferences::DialogPreferences(QWidget* parent, SettingsManagerBase* settings_)
+DialogPreferences::DialogPreferences(QWidget* parent, boost::shared_ptr<SettingsManagerBase> settings_)
 	: QDialog(parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint)
 	, settings(settings_)
 {
