@@ -20,7 +20,6 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 {
 	set_modal(true);
 	set_title("Preferences");
-	set_default_size(400, 300);
 	set_position(Gtk::WIN_POS_CENTER_ON_PARENT);
 
 	Pango::FontDescription bold_font_description;
@@ -29,7 +28,7 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	afd.set_desc(bold_font_description);
 	Pango::AttrList attr_list;
 	attr_list.insert(afd);
-	
+
 	Gtk::Label*     label;
 	Gtk::Alignment* alignment;
 	Gtk::VBox*      categories;
@@ -69,7 +68,10 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	alignment->add(*options);
 	options->add(enable_download_resume_checkbutton);
 	auto_clear_tasks_spinbutton.set_numeric(false);
+	auto_clear_tasks_spinbutton.set_width_chars(7);
+	auto_clear_tasks_spinbutton.set_alignment(Gtk::ALIGN_RIGHT);
 	option = Gtk::manage(new Gtk::HBox());
+	option->set_spacing(12);
 	option->add(enable_auto_clear_tasks_checkbutton);
 	option->add(auto_clear_tasks_spinbutton);
 	options->add(*option);
