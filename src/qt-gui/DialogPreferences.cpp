@@ -48,10 +48,7 @@ DialogPreferences::DialogPreferences(QWidget* parent, boost::shared_ptr<Settings
 	delete checkAutoClear;
 	delete timeEdit;
 	delete horizontalLayout_5;
-	delete checkBox_4;
-	delete checkBox_5;
 	delete checkBox_6;
-	delete checkBox_9;
 
 	scanWidgets(this);
 

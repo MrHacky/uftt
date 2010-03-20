@@ -42,6 +42,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		uint32 timerid;
 		bool isreallyactive;
+		bool quitting;
+		bool ishiding;
 
 		void timerLostFocus(uint32 tid);
 
@@ -71,6 +73,10 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		~MainWindow();
 
 	public Q_SLOTS:
+		void quit();
+		bool hideToTray();
+		bool showFromTray();
+
 		void do_refresh_shares();
 
 		void on_buttonRefresh_clicked();

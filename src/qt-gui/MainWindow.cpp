@@ -85,6 +85,8 @@ public:
 MainWindow::MainWindow(UFTTSettingsRef settings_)
 : settings(settings_)
 , isreallyactive(false)
+, quitting(false)
+, ishiding(false)
 , timerid(0)
 , dialogPreferences(NULL)
 {
@@ -260,16 +262,10 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 		case QSystemTrayIcon::DoubleClick: {
 			if (settings->traydoubleclick && reason == QSystemTrayIcon::Trigger) return;
 			if (!settings->traydoubleclick && reason == QSystemTrayIcon::DoubleClick) return;
-			if (isreallyactive) {
-				this->setVisible(false);
-				this->isreallyactive = false;
-			} else {
-				if (this->isMinimized()) this->showNormal();
-				this->setVisible(true);
-				this->activateWindow();
-				this->raise();
-			}
-			++timerid;
+			if (isreallyactive)
+				hideToTray();
+			else
+				showFromTray();
 		}; break;
 		case QSystemTrayIcon::Context: {
 			traymenu->exec(QCursor::pos());
@@ -280,11 +276,14 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 
 void MainWindow::onFocusChanged(QWidget* old, QWidget* now)
 {
-	++timerid;
-	if (this->isActiveWindow())
+	std::cout << "focus: " << this->isActiveWindow() << "\n";
+	if (this->isActiveWindow()) {
+		++timerid;
 		isreallyactive = true;
-	else if (isreallyactive)
+	} else if (isreallyactive) {
+		++timerid;
 		asio_timer_oneshot(backend->get_io_service(), 500, boost::bind(&MainWindow::timerLostFocus, this, timerid));
+	}
 }
 
 void MainWindow::timerLostFocus(uint32 tid)
@@ -295,8 +294,19 @@ void MainWindow::timerLostFocus(uint32 tid)
 	}
 }
 
+void MainWindow::quit()
+{
+	quitting = true;
+	close();
+}
+
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
+	if (!quitting && settings->close_to_tray && hideToTray()) {
+		evnt->ignore();
+		return;
+	}
+
 	/* put stuff back into settings */
 	settings->posx = this->pos().x();
 	settings->posy = this->pos().y();
@@ -307,23 +317,48 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
 
 	trayicon->hide();
-
-	// propagate to parent
-	QMainWindow::closeEvent(evnt);
 }
 
 void MainWindow::hideEvent(QHideEvent * evnt)
 {
-	// propagate to parent
-	QMainWindow::hideEvent(evnt);
-
-	this->isreallyactive = false;
-	++timerid;
-
-	if (evnt->type() == QEvent::Hide && this->isMinimized() && trayicon->isVisible()) {
-		// minimize to tray
-		QTimer::singleShot(0, this, SLOT(hide()));
+	if (ishiding) return;
+	if (settings->minimize_to_tray && hideToTray()) {
+		evnt->ignore();
+		return;
 	}
+
+	++timerid;
+	this->isreallyactive = false;
+}
+
+bool MainWindow::hideToTray()
+{
+	trayicon->show();
+	if (!trayicon->isVisible()) return false;
+
+	QTimer::singleShot(0, this, SLOT(hide()));
+	//this->setVisible(false);
+
+	++timerid;
+	this->isreallyactive = false;
+
+	return true;
+}
+
+bool MainWindow::showFromTray()
+{
+	//if (!settings->tray_show_always) trayicon->hide();
+
+	ishiding = true; this->hide(); ishiding = false;
+	if (this->isMinimized()) this->showNormal();
+	this->setVisible(true);
+	this->activateWindow();
+	this->raise();
+
+	++timerid;
+	this->isreallyactive = true;
+
+	return true;
 }
 
 MainWindow::~MainWindow()
@@ -480,10 +515,10 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	twi->setText(TLCN_TIME, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
 	if (total > 0 && total >= tfx && tfx > 0) {
 		twi->setText(TLCN_ETA, QString::fromStdString(
-		boost::posix_time::to_simple_string(
-			boost::posix_time::time_duration(
-				boost::posix_time::seconds(
-					((total-tfx) * elapsed.total_seconds() / tfx)
+			boost::posix_time::to_simple_string(
+				boost::posix_time::time_duration(
+					boost::posix_time::seconds(
+						(total-tfx) * elapsed.total_seconds() / tfx
 					)
 				)
 			)
@@ -723,6 +758,10 @@ void MainWindow::post_show() {
 		marshaller.wrap(boost::bind(&linuxQTextEditScrollFix, debugText))
 	);
 #endif
+	if (settings->start_in_tray)
+		hideToTray();
+	else //if (settings->tray_show_always)
+		trayicon->show();
 }
 
 void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem::path& path)
