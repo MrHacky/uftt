@@ -458,13 +458,13 @@ void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
 
 std::string MainWindow::getDownloadPath()
 {
-	std::string path = settings->dl_path.get().native_directory_string();
+	std::string path = settings->dl_path.get().string();
 	if (!path.empty()) {
 		char c = path[path.size()-1];
 		if (c != '\\' && c != '/')
-			path.push_back('\\');
+			path.push_back('/');
 	}
-	return path;
+	return boost::filesystem::path(path).native_directory_string();
 }
 
 void MainWindow::on_editDownload_textChanged(QString text)
