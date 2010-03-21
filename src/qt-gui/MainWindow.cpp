@@ -182,6 +182,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	if (settings->sizex != 0 && settings->sizey !=0) {
 		this->resize(QSize(settings->sizex, settings->sizey));
 		this->move(QPoint(settings->posx, settings->posy));
+		if (settings->guimaximized) this->setWindowState(this->windowState() | Qt::WindowMaximized);
 	} else
 		this->resize(750, 550);
 
@@ -302,6 +303,27 @@ void MainWindow::quit()
 	close();
 }
 
+void MainWindow::saveGeometry()
+{
+	if (!isMaximized() && !isMinimized()) {
+		settings->posx = this->pos().x();
+		settings->posy = this->pos().y();
+		settings->sizex = this->size().width();
+		settings->sizey = this->size().height();
+	}
+	settings->guimaximized = isMaximized();
+}
+
+void MainWindow::resizeEvent(QResizeEvent* evnt)
+{
+	saveGeometry();
+}
+
+void MainWindow::moveEvent(QMoveEvent* evnt)
+{
+	saveGeometry();
+}
+
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
 	if (!quitting && settings->close_to_tray && hideToTray()) {
@@ -310,11 +332,7 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	}
 
 	/* put stuff back into settings */
-	settings->posx = this->pos().x();
-	settings->posy = this->pos().y();
-	settings->sizex = this->size().width();
-	settings->sizey = this->size().height();
-
+	saveGeometry();
 	QByteArray data = saveState();
 	settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
 

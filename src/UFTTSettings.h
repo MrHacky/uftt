@@ -85,6 +85,7 @@ class UFTTSettings {
 		SettingsVariable<int> posy;
 		SettingsVariable<int> sizex;
 		SettingsVariable<int> sizey;
+		SettingsVariable<bool> guimaximized;
 
 		SettingsVariable<boost::filesystem::path> dl_path;
 		SettingsVariable<bool> autoupdate;

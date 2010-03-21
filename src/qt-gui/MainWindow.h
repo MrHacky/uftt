@@ -54,11 +54,14 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void new_autoupdate(const ShareInfo& info);
 		void download_done(const ShareID& sid);
+		void saveGeometry();
 
 	protected:
 		// overridden events
 		virtual void closeEvent(QCloseEvent* evnt);
 		virtual void changeEvent(QEvent* evnt);
+		virtual void resizeEvent(QResizeEvent* evnt);
+		virtual void moveEvent(QMoveEvent* evnt);
 
 	private Q_SLOTS:
 		void DragStart(QTreeWidgetItem*, int);

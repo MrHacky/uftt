@@ -32,6 +32,7 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("gui.qt.posy" , posy , createSettingsInfo(0));
 	sm->registerSettingsVariable("gui.qt.sizex", sizex, createSettingsInfo(0));
 	sm->registerSettingsVariable("gui.qt.sizey", sizey, createSettingsInfo(0));
+	sm->registerSettingsVariable("gui.qt.maximized", guimaximized, createSettingsInfo(false));
 
 	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, createSettingsInfo(true));
 
