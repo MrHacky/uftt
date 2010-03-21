@@ -19,6 +19,7 @@ class QToggleHeaderAction: public QAction {
 	public:
 		QToggleHeaderAction(QTreeView* view_, const QString& name_, int pos_);
 
+		static void autoSizeHeaders(QTreeView* view);
 		static void addActions(QTreeWidget* widget);
 };
 

@@ -21,6 +21,11 @@ void QToggleHeaderAction::execute(bool checked)
 	else
 		view->hideColumn(pos);
 
+	autoSizeHeaders(view);
+}
+
+void QToggleHeaderAction::autoSizeHeaders(QTreeView* view)
+{
 	// do some advanced collumn resizing
 	int numcols = view->header()->count();
 
