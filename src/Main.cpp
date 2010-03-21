@@ -209,7 +209,7 @@ void calcbuildstring() {
 
 bool waitonexit = false;
 
-int imain( int argc, char **argv )
+int imain(int argc, char **argv)
 {
 	#ifdef ENABLE_QT_GUI
 	LINK_QT_RESOURCE(icons);
@@ -256,7 +256,7 @@ int imain( int argc, char **argv )
 	cout << "Build: " << thebuildstring << '\n';
 
 	try {
-		UFTTCore core(settings);
+		UFTTCore core(settings, argc, argv);
 		gui->bindEvents(&core);
 
 		if (madeConsole)

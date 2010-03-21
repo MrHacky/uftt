@@ -2,7 +2,7 @@
 #define STR_FORMAT_H
 
 #include <string>
-#include <../Types.h>
+#include "../Types.h"
 #include <boost/format.hpp>
 
 /**

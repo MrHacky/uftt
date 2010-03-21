@@ -17,6 +17,8 @@
 
 #include "UFTTSettings.h"
 
+#define UFTT_PORT (47189)
+
 struct LocalShareID {
 	std::string sid;
 };
@@ -101,15 +103,20 @@ class UFTTCore {
 		boost::asio::io_service io_service;
 		services::diskio_service disk_service;
 
+		boost::asio::ip::tcp::acceptor local_listener;
+
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
 		UFTTSettingsRef settings;
 
 		boost::thread servicerunner;
 
+		void handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e);
+		void handle_args(const std::vector<std::string>& args);
+
 		void servicerunfunc();
 	public:
-		UFTTCore(UFTTSettingsRef settings_);
+		UFTTCore(UFTTSettingsRef settings_, int argc, char **argv);
 		~UFTTCore();
 
 		// Local Share management

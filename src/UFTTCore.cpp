@@ -3,22 +3,114 @@
 #include "network/INetModule.h"
 #include "network/NetModuleLinker.h"
 
+#include "util/Filesystem.h"
+#include "util/StrFormat.h"
+
 #include <boost/foreach.hpp>
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
-UFTTCore::UFTTCore(UFTTSettingsRef settings_)
+UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 : settings(settings_)
 , disk_service(io_service)
+, local_listener(io_service)
 , error_state(0)
 {
+	localshares.clear();
+
+	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
+
+	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT+1);
+	try {
+		local_listener.open(boost::asio::ip::tcp::v4());
+		local_listener.bind(local_endpoint);
+		local_listener.listen(16);
+	
+		handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket>(), boost::system::error_code());
+	} catch (std::exception& e) {
+		bool success = false;
+		try {
+			// failed to open listening socket, try to connect to existing uftt process
+			boost::asio::ip::tcp::socket sock(io_service);
+			sock.open(boost::asio::ip::tcp::v4());
+			sock.connect(local_endpoint);
+			std::string s = STRFORMAT("args%c%d%c", (char)0, argc, (char)0);
+			size_t sent = sock.send(boost::asio::buffer(s));
+			if (sent != s.size()) throw std::runtime_error("Send failed");
+			for (size_t i = 0; i < argc; ++i) {
+				s = STRFORMAT("%s%c", argv[i], (char)0);
+				sent = sock.send(boost::asio::buffer(s));
+				if (sent != s.size()) throw std::runtime_error("Send failed");
+			}
+			uint8 ret;
+			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
+			//if (ret != 0) std::runtime_error("Read failed");
+			success = true;
+		} catch (std::exception& e) {
+			std::cout << "Failed to listen and failed to connect" << e.what() << "\n";
+		}
+		if (success) throw 0;
+	}
+
 	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 
-	localshares.clear();
+	std::vector<std::string> v;
+	for(int i = 0; i < argc; ++i)
+		v.push_back(argv[i]);
+	handle_args(v);
+}
 
-	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
+std::string getstr0(boost::asio::ip::tcp::socket& sock)
+{
+	std::string r;
+	char ret;
+	while (true) {
+		boost::asio::read(sock, boost::asio::buffer(&ret, 1));
+		if (ret == 0) return r;
+		r.push_back(ret);
+	}
+}
+
+void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e)
+{
+	if (e) {
+		std::cout << "handle_local_connection: " << e << "\n";
+	}
+
+	if (!e) {
+		boost::shared_ptr<boost::asio::ip::tcp::socket> newsock(new boost::asio::ip::tcp::socket(io_service));
+		local_listener.async_accept(*newsock,
+			boost::bind(&UFTTCore::handle_local_connection, this, newsock, boost::asio::placeholders::error));
+	}
+
+	if (sock && !e) {
+		std::string s;
+		try {
+			std::string r = getstr0(*sock);
+			if (r != "args") return;
+			size_t n = boost::lexical_cast<size_t>(getstr0(*sock));
+			std::vector<std::string> v;
+			for (size_t i = 0; i < n; ++i)
+				v.push_back(getstr0(*sock));
+			uint8 st = 0;
+			handle_args(v);
+			boost::asio::write(*sock, boost::asio::buffer(&st, 1));
+			boost::asio::read(*sock, boost::asio::buffer(&st, 1));
+		} catch (std::exception& ex) {
+			std::cout << "Failed to listen and failed to connect\n";
+		}
+	}
+}
+
+void UFTTCore::handle_args(const std::vector<std::string>& args)
+{
+	if (args.size() == 2) {
+		boost::filesystem::path fp(args[1]);
+		if (!ext::filesystem::exists(args[1])) return;
+		addLocalShare(fp.leaf(), fp);
+	}
 }
 
 UFTTCore::~UFTTCore()

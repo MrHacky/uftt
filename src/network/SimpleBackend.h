@@ -3,8 +3,6 @@
 
 #include "../Types.h"
 
-#define UFTT_PORT (47189)
-
 #include <set>
 
 #include <boost/shared_ptr.hpp>
