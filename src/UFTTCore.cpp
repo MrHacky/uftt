@@ -114,9 +114,9 @@ void UFTTCore::setMainWindowId(const std::string& mwid_)
 
 void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote)
 {
-	if (args.size() == 2) {
-		boost::filesystem::path fp(args[1]);
-		if (!ext::filesystem::exists(args[1])) return;
+	for (size_t i = 1; i < args.size(); ++i) {
+		boost::filesystem::path fp(args[i]);
+		if (!ext::filesystem::exists(fp)) break;
 		addLocalShare(fp.leaf(), fp);
 	}
 
