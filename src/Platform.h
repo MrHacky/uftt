@@ -31,6 +31,8 @@ namespace platform {
 
 	int RunCommand(const std::string& cmd, const std::vector<std::string>* args, const std::string& workdir, int flags);
 
+	void activateWindow(const std::string& wid);
+
 	void setApplicationPath(const boost::filesystem::path& path);
 
 	typedef std::pair<std::string, boost::filesystem::path> spathinfo;

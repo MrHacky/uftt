@@ -57,8 +57,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	protected:
 		// overridden events
-		virtual void closeEvent(QCloseEvent * evnt);
-		virtual void hideEvent(QHideEvent * evnt);
+		virtual void closeEvent(QCloseEvent* evnt);
+		virtual void changeEvent(QEvent* evnt);
 
 	private Q_SLOTS:
 		void DragStart(QTreeWidgetItem*, int);
@@ -108,6 +108,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);
+		void handleGuiCommand(UFTTCore::GuiCommand cmd);
 
 		void new_task(const TaskInfo& info);
 

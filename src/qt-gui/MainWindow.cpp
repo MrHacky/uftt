@@ -284,7 +284,7 @@ void MainWindow::onFocusChanged(QWidget* old, QWidget* now)
 		isreallyactive = true;
 	} else if (isreallyactive) {
 		++timerid;
-		asio_timer_oneshot(backend->get_io_service(), 500, boost::bind(&MainWindow::timerLostFocus, this, timerid));
+		asio_timer_oneshot(backend->get_io_service(), 500, marshaller.wrap(boost::bind(&MainWindow::timerLostFocus, this, timerid)));
 	}
 }
 
@@ -321,13 +321,15 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	trayicon->hide();
 }
 
-void MainWindow::hideEvent(QHideEvent * evnt)
+void MainWindow::changeEvent(QEvent * evnt)
 {
+	if (evnt->type() != QEvent::WindowStateChange) return;
+	if (!isMinimized()) return;
+
+	// This was a hide event
 	if (ishiding) return;
-	if (settings->minimize_to_tray && hideToTray()) {
-		evnt->ignore();
+	if (settings->minimize_to_tray && hideToTray())
 		return;
-	}
 
 	++timerid;
 	this->isreallyactive = false;
@@ -339,7 +341,6 @@ bool MainWindow::hideToTray()
 	if (!trayicon->isVisible()) return false;
 
 	QTimer::singleShot(0, this, SLOT(hide()));
-	//this->setVisible(false);
 
 	++timerid;
 	this->isreallyactive = false;
@@ -351,16 +352,26 @@ bool MainWindow::showFromTray()
 {
 	//if (!settings->tray_show_always) trayicon->hide();
 
-	ishiding = true; this->hide(); ishiding = false;
-	if (this->isMinimized()) this->showNormal();
+	if (!this->isActiveWindow()) {
+		ishiding = true;
+		this->hide();
+		ishiding = false;
+	}
 	this->setVisible(true);
+	if (this->isMinimized()) this->showNormal();
 	this->activateWindow();
+
 	this->raise();
 
 	++timerid;
 	this->isreallyactive = true;
 
 	return true;
+}
+
+void MainWindow::handleGuiCommand(UFTTCore::GuiCommand cmd)
+{
+	if (cmd == UFTTCore::GUI_CMD_SHOW) showFromTray();
 }
 
 MainWindow::~MainWindow()
@@ -673,6 +684,11 @@ void MainWindow::SetBackend(UFTTCore* be)
 	backend->connectSigNewTask(
 		marshaller.wrap(boost::bind(&MainWindow::new_task, this, _1))
 	);
+	backend->connectSigGuiCommand(
+		marshaller.wrap(boost::bind(&MainWindow::handleGuiCommand, this, _1))
+	);
+
+	backend->setMainWindowId(boost::lexical_cast<std::string>(this->winId()));
 
 	if (backend->error_state == 2) {
 		QMessageBox::critical( 0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );

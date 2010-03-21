@@ -98,12 +98,17 @@ struct TaskInfo {
 };
 
 class UFTTCore {
+	public:
+		enum GuiCommand {
+			GUI_CMD_SHOW = 0,
+		};
 	private:
 		// declare these first so they will be destroyed last
 		boost::asio::io_service io_service;
 		services::diskio_service disk_service;
 
 		boost::asio::ip::tcp::acceptor local_listener;
+		std::string mwid;
 
 		std::map<std::string, boost::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
@@ -111,13 +116,18 @@ class UFTTCore {
 
 		boost::thread servicerunner;
 
+		boost::signal<void(GuiCommand)> sigGuiCommand;
 		void handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e);
-		void handle_args(const std::vector<std::string>& args);
+		void handle_args(const std::vector<std::string>& args, bool fromremote);
 
 		void servicerunfunc();
 	public:
 		UFTTCore(UFTTSettingsRef settings_, int argc, char **argv);
 		~UFTTCore();
+
+		// Core->Gui commands
+		void connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb);
+		void setMainWindowId(const std::string& mwid_);
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);

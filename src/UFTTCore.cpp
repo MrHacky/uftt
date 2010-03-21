@@ -10,6 +10,19 @@
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
+namespace {
+	std::string getstr0(boost::asio::ip::tcp::socket& sock)
+	{
+		std::string r;
+		char ret;
+		while (true) {
+			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
+			if (ret == 0) return r;
+			r.push_back(ret);
+		}
+	}
+}
+
 UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 : settings(settings_)
 , disk_service(io_service)
@@ -20,7 +33,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 
-	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT+1);
+	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
 		local_listener.open(boost::asio::ip::tcp::v4());
 		local_listener.bind(local_endpoint);
@@ -34,17 +47,15 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			boost::asio::ip::tcp::socket sock(io_service);
 			sock.open(boost::asio::ip::tcp::v4());
 			sock.connect(local_endpoint);
-			std::string s = STRFORMAT("args%c%d%c", (char)0, argc, (char)0);
-			size_t sent = sock.send(boost::asio::buffer(s));
-			if (sent != s.size()) throw std::runtime_error("Send failed");
-			for (size_t i = 0; i < argc; ++i) {
-				s = STRFORMAT("%s%c", argv[i], (char)0);
-				sent = sock.send(boost::asio::buffer(s));
-				if (sent != s.size()) throw std::runtime_error("Send failed");
-			}
+			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, argc, (char)0)));
+			for (size_t i = 0; i < argc; ++i)
+				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", argv[i], (char)0)));
+
 			uint8 ret;
 			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
-			//if (ret != 0) std::runtime_error("Read failed");
+			if (ret != 0) std::runtime_error("Read failed");
+			std::string wid = getstr0(sock);
+			platform::activateWindow(wid);
 			success = true;
 		} catch (std::exception& e) {
 			std::cout << "Failed to listen and failed to connect" << e.what() << "\n";
@@ -59,18 +70,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 	std::vector<std::string> v;
 	for(int i = 0; i < argc; ++i)
 		v.push_back(argv[i]);
-	handle_args(v);
-}
-
-std::string getstr0(boost::asio::ip::tcp::socket& sock)
-{
-	std::string r;
-	char ret;
-	while (true) {
-		boost::asio::read(sock, boost::asio::buffer(&ret, 1));
-		if (ret == 0) return r;
-		r.push_back(ret);
-	}
+	handle_args(v, false);
 }
 
 void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e)
@@ -87,30 +87,41 @@ void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::s
 
 	if (sock && !e) {
 		std::string s;
+		std::vector<std::string> v;
 		try {
 			std::string r = getstr0(*sock);
 			if (r != "args") return;
 			size_t n = boost::lexical_cast<size_t>(getstr0(*sock));
-			std::vector<std::string> v;
 			for (size_t i = 0; i < n; ++i)
 				v.push_back(getstr0(*sock));
 			uint8 st = 0;
-			handle_args(v);
 			boost::asio::write(*sock, boost::asio::buffer(&st, 1));
-			boost::asio::read(*sock, boost::asio::buffer(&st, 1));
+			boost::asio::write(*sock, boost::asio::buffer(STRFORMAT("%s%c", mwid, (char)0)));
+
+			boost::asio::read(*sock, boost::asio::buffer(&st, 1)); // expected to fail with EOF
 		} catch (std::exception& ex) {
-			std::cout << "Failed to listen and failed to connect\n";
+			std::cout << "handle_local_connection: " << ex.what() << "\n";
 		}
+		if (!v.empty())
+			handle_args(v, true);
 	}
 }
 
-void UFTTCore::handle_args(const std::vector<std::string>& args)
+void UFTTCore::setMainWindowId(const std::string& mwid_)
+{
+	mwid = mwid_;
+}
+
+void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote)
 {
 	if (args.size() == 2) {
 		boost::filesystem::path fp(args[1]);
 		if (!ext::filesystem::exists(args[1])) return;
 		addLocalShare(fp.leaf(), fp);
 	}
+
+	if (fromremote)
+		sigGuiCommand(GUI_CMD_SHOW);
 }
 
 UFTTCore::~UFTTCore()
@@ -123,6 +134,11 @@ UFTTCore::~UFTTCore()
 void UFTTCore::servicerunfunc() {
 	boost::asio::io_service::work wobj(io_service);
 	io_service.run();
+}
+
+void UFTTCore::connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb)
+{
+	sigGuiCommand.connect(cb);
 }
 
 // Local Share management

@@ -113,6 +113,27 @@ namespace platform {
 #endif
 	}
 
+	void activateWindow(const std::string& wid)
+	{
+#ifdef WIN32
+		// wid is a string created by boost::lexical_cast<std::string>(hwnd)
+		// as HWND is a pointer type this will be a hex value
+		// so we'll need to do some manual parsing
+		uintptr_t val = 0;
+		for (size_t i = 0; i < wid.size(); ++i) {
+			char c = wid[i];
+			int cval = 0;
+			if (c >= '0' && c <= '9') cval = c - '0';
+			if (c >= 'a' && c <= 'f') cval = c - 'a' + 10;
+			if (c >= 'A' && c <= 'F') cval = c - 'A' + 10;
+			val <<= 4;
+			val |= cval;
+		}
+		HWND wh = (HWND)val;
+		SetForegroundWindow(wh);
+#endif
+	}
+
 	int RunCommand(const string& cmd, const vector<string>* args, const string& workdir, int flags)
 	{
 #ifdef WIN32
@@ -257,7 +278,7 @@ namespace platform {
 		p = boost::filesystem::path(scan_xdg_user_dirs("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
-		
+
 		p = boost::filesystem::path(_getenv("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
@@ -267,7 +288,7 @@ namespace platform {
 			return p;
 
 		p = boost::filesystem::path(_getenv("HOME"));
-		if(ext::filesystem::exists(p)) 
+		if(ext::filesystem::exists(p))
 			return p;
 
 		/* Should never happen */
@@ -305,7 +326,7 @@ namespace platform {
 		char* name = NULL;
 		if (!name) name = getenv("USER");
 		if (!name) name = getenv("USERNAME");
-		if (!name) name = "uftt-user";
+		if (!name) return "uftt-user";
 		return name;
 	}
 
