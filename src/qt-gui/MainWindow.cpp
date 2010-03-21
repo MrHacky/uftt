@@ -92,6 +92,9 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 {
 	setupUi(this);
 
+	// workaround: setting a stylesheet directly on this QMainWindow messes up collumn widths in QTreeWidgets somehow
+	this->setStyleSheet(centralwidget->styleSheet());
+
 	string stylename = this->style()->metaObject()->className();
 	if (stylename == "QWindowsXPStyle" || stylename == "QWindowsVistaStyle") {
 		// these styles have invisible separators sometimes,
@@ -108,7 +111,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 			"  border-left: 1px solid palette(light);"
 			"  border-right: 2px solid qlineargradient(spread:pad, x1:0, y1:0, x2:1, y2:0, stop:0 palette(dark), stop:0.495 palette(dark), stop:0.505 palette(darker), stop:1 palette(darker));"
 			"}";
-		this->setStyleSheet(QString(sepstyle));
+		this->setStyleSheet(this->styleSheet() + "\n" + QString(sepstyle) + "\n");
 	}
 
 	// setup debug stream
@@ -471,10 +474,8 @@ void MainWindow::on_editDownload_textChanged(QString text)
 {
 	boost::filesystem::path dl_path = text.toStdString();
 	settings->dl_path = dl_path;
-	if (ext::filesystem::exists(dl_path))
-		editDownload->setStyleSheet("");
-	else
-		editDownload->setStyleSheet("* { color: black; background-color: #ffb3b3; }");
+	editDownload->setProperty("isValid", ext::filesystem::exists(dl_path));
+	editDownload->setStyleSheet(editDownload->styleSheet()); // recalculate style
 }
 
 void MainWindow::on_buttonDownload_clicked()

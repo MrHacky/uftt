@@ -14,19 +14,12 @@
    <string>UFTT</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>876</x>
-      <y>9</y>
-      <width>32</width>
-      <height>263</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>!UFTT!</string>
-    </property>
-   </widget>
+   <property name="styleSheet">
+    <string>QLineEdit[isValid=&quot;false&quot;] {
+	color: black;
+	background-color: #ffb3b3;
+}</string>
+   </property>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">

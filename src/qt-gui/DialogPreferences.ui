@@ -19,8 +19,8 @@
 }
 
 QLabel[isHeaderText=&quot;true&quot;] {
-	color: white;
-	background: #0A246A;
+	color: palette(highlighted-text);
+	background: palette(highlight);
 	padding: 1px;
 	font-size: 11pt;
 	font-weight: bold;
