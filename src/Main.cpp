@@ -216,9 +216,11 @@ int imain(int argc, char **argv)
 	#endif
 
 	bool madeConsole = false;
-	if (argc > 1 && !platform::hasConsole()) {
-		madeConsole = platform::newConsole();
-		cout << "new console opened" << endl;
+	if (argc > 1 && string(argv[1]) == "--console") {
+		if (!platform::hasConsole()) madeConsole = platform::newConsole();
+		--argc;
+		argv[1] = argv[0];
+		--argv;
 	}
 
 	if (argc > 5 && string(argv[1]) == "--sign")
