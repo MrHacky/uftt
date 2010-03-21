@@ -276,7 +276,6 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 
 void MainWindow::onFocusChanged(QWidget* old, QWidget* now)
 {
-	std::cout << "focus: " << this->isActiveWindow() << "\n";
 	if (this->isActiveWindow()) {
 		++timerid;
 		isreallyactive = true;
