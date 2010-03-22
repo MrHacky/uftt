@@ -783,7 +783,7 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 #endif
 
 void MainWindow::pre_show() {
-	trayicon->show();
+	//trayicon->show();
 }
 
 void MainWindow::post_show() {
