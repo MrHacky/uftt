@@ -239,6 +239,22 @@ void ShareList::download_selected_shares() {
 	}
 }
 
+void ShareList::remove_selected_shares() {
+	Glib::RefPtr<Gtk::TreeSelection> sel = share_list_treeview.get_selection();
+	BOOST_FOREACH(Gtk::TreeModel::Path p, sel->get_selected_rows()) {
+		const Gtk::TreeModel::Row& row = *(share_list_liststore->get_iter(p));
+		LocalShareID id;
+		ShareID sid = row[share_list_columns.share_id];
+		if(core->getLocalShareID((Glib::ustring)row[share_list_columns.share_name], &id)) {
+			core->delLocalShare(id);
+		}
+	}
+	// FIXME: Should not be neccessary, we should get a notification
+	//        from the core/backend
+	clear();
+	core->doRefreshShares();
+}
+
 void ShareList::clear() {
 	share_list_liststore->clear();
 }

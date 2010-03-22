@@ -109,6 +109,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                      boost::bind(&ShareList::download_selected_shares, &share_list));
 	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download selected _To..."));/*,
 	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
+	m_refActionGroup->add(Gtk::Action::create("FileRemoveShare", Gtk::Stock::REMOVE, "_Remove selected"),
+	                      boost::bind(&ShareList::remove_selected_shares, &share_list));
 	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
@@ -177,6 +179,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"      <menuitem action='FileDownload'/>"
 		"      <menuitem action='FileDownloadTo'/>"
 		"      <separator/>"
+		"      <menuitem action='FileRemoveShare'/>"
+		"      <separator/>"
 		"      <menuitem action='FileQuit'/>"
 		"    </menu>"
 		"    <menu action='EditMenu'>"
@@ -216,6 +220,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <menuitem action='FileDownload'/>"
 		"    <menuitem action='FileDownloadTo'/>"
 		"    <separator/>"
+		"    <menuitem action='FileRemoveShare'/>"
+		"    <separator/>"
 		"    <menuitem action='ViewRefreshShareList'/>"
 		"  </popup>"
 		"  <popup name='ShareListNoSelectionPopup'>"
@@ -224,6 +230,8 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <separator/>"
 		"    <menuitem action='FileDownload'/>"
 		"    <menuitem action='FileDownloadTo'/>"
+		"    <separator/>"
+		"    <menuitem action='FileRemoveShare'/>"
 		"    <separator/>"
 		"    <menuitem action='ViewRefreshShareList'/>"
 		"  </popup>"
@@ -254,6 +262,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownload"))->set_sensitive(false);
 	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownloadTo"))->set_sensitive(false);
+	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileRemoveShare"))->set_sensitive(false);
 	share_list.set_popup_menus(
 		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListSelectionPopup"),
 		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListNoSelectionPopup")

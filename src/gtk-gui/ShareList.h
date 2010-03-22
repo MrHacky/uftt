@@ -14,6 +14,7 @@
 			ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window);
 			void clear();
 			void download_selected_shares();
+			void remove_selected_shares();
 			void set_backend(UFTTCore* _core);
 			void set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu);
 		private:
