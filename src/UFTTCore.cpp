@@ -117,6 +117,7 @@ void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote
 	for (size_t i = 1; i < args.size(); ++i) {
 		boost::filesystem::path fp(args[i]);
 		if (!ext::filesystem::exists(fp)) break;
+		if (fp.leaf() == ".") fp.remove_leaf(); // linux thingy
 		addLocalShare(fp.leaf(), fp);
 	}
 
