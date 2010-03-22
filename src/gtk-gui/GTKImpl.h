@@ -95,6 +95,7 @@
 			void restore_window_size_and_position();
 			void on_view_toolbar_checkmenuitem_signal_toggled();
 			void show_uri(Glib::ustring uri);
+			void handle_uftt_core_gui_command(UFTTCore::GuiCommand cmd);
 	};
 
 #endif

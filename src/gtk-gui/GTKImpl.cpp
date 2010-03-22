@@ -573,6 +573,18 @@ void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
 	}
 }
 
+void UFTTWindow::handle_uftt_core_gui_command(UFTTCore::GuiCommand cmd) {
+	switch(cmd) {
+		case UFTTCore::GUI_CMD_SHOW: {
+			restore_window_size_and_position();
+			present();
+		}; break;
+		default: {
+			std::cout << "WARNING: Unhandled UFTTCore::GuiCommand" << cmd << std::endl;
+		}; break;
+	}
+}
+
 void UFTTWindow::set_backend(UFTTCore* _core) {
 	{
 		// FIXME: We probably want to do this *AFTER* checking for errors/warnings
@@ -581,6 +593,7 @@ void UFTTWindow::set_backend(UFTTCore* _core) {
 		this->core = _core;
 		task_list.set_backend(core);
 		share_list.set_backend(core);
+		core->connectSigGuiCommand(dispatcher.wrap(boost::bind(&UFTTWindow::handle_uftt_core_gui_command, this, _1)));
 	}
 
 	if(_core->error_state == 2) { // FIXME: Magic Constant
