@@ -31,14 +31,12 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 {
 	localshares.clear();
 
-	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
-
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
 		local_listener.open(boost::asio::ip::tcp::v4());
 		local_listener.bind(local_endpoint);
 		local_listener.listen(16);
-	
+
 		handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket>(), boost::system::error_code());
 	} catch (std::exception& e) {
 		bool success = false;
@@ -70,7 +68,10 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 	std::vector<std::string> v;
 	for(int i = 0; i < argc; ++i)
 		v.push_back(argv[i]);
+
 	handle_args(v, false);
+
+	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 }
 
 void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e)
