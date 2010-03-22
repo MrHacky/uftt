@@ -131,6 +131,8 @@ class UFTTCore {
 
 		// Local Share management
 		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
+		bool isLocalShare(const std::string& name);
+		bool getLocalShareID(const std::string& name, LocalShareID* id);
 		void delLocalShare(const LocalShareID& id);
 
 		void connectSigAddLocalShare(const LocalShareInfo& info);

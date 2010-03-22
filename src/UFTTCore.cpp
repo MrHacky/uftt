@@ -156,6 +156,32 @@ void UFTTCore::addLocalShare(const std::string& name, const boost::filesystem::p
 		nm->notifyAddLocalShare(sid);
 }
 
+/**
+ * Checks whether name is a  local share (shared by this UFTT instance)
+ * @param name is a std::string containing the name of a share (ShareInfo.name)
+ * @return (\exists i : i \in localshares : i.name == name)
+ */
+bool UFTTCore::isLocalShare(const std::string& name) {
+	// TODO: locking
+	return localshares.count(name) > 0;
+}
+
+/**
+ * Returns the LocalShareID of name, iff isLocalShare(name)
+ * @param name is a std::string containing the name of a share (ShareInfo.name)
+ * @return true iff a local share with name exists, and id will contain the
+ *         LocalShareID for the share with the given name
+ * @todo Decide if there can be multiple local shares with the same name, but
+ *       having different LocalShareIDs.
+ */
+bool UFTTCore::getLocalShareID(const std::string& name, LocalShareID* id) {
+	if(isLocalShare(name)) {
+		id->sid = name;
+		return true;
+	}
+	return false;
+}
+
 void UFTTCore::delLocalShare(const LocalShareID& id)
 {
 	// TODO: locking
