@@ -107,6 +107,7 @@ class UFTTCore {
 		boost::asio::io_service io_service;
 		services::diskio_service disk_service;
 
+		std::vector<std::string> args;
 		boost::asio::ip::tcp::acceptor local_listener;
 		std::string mwid;
 
@@ -124,6 +125,8 @@ class UFTTCore {
 	public:
 		UFTTCore(UFTTSettingsRef settings_, int argc, char **argv);
 		~UFTTCore();
+
+		void initialize();
 
 		// Core->Gui commands
 		void connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb);

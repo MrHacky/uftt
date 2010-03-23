@@ -253,12 +253,13 @@ int imain(int argc, char **argv)
 		// try legacy settings
 		UFTTSettingsLegacyLoader(settings);
 	};
-	boost::shared_ptr<UFTTGui> gui(UFTTGui::makeGui(argc, argv, settings));
-
-	cout << "Build: " << thebuildstring << '\n';
 
 	try {
+		boost::shared_ptr<UFTTGui> gui;
 		UFTTCore core(settings, argc, argv);
+		gui = UFTTGui::makeGui(argc, argv, settings);
+		core.initialize();
+
 		gui->bindEvents(&core);
 
 		if (madeConsole)

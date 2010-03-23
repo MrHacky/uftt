@@ -29,7 +29,8 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 , local_listener(io_service)
 , error_state(0)
 {
-	localshares.clear();
+	for(int i = 0; i < argc; ++i)
+		args.push_back(argv[i]);
 
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
@@ -45,9 +46,9 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			boost::asio::ip::tcp::socket sock(io_service);
 			sock.open(boost::asio::ip::tcp::v4());
 			sock.connect(local_endpoint);
-			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, argc, (char)0)));
-			for (size_t i = 0; i < argc; ++i)
-				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", argv[i], (char)0)));
+			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, args.size(), (char)0)));
+			for (size_t i = 0; i < args.size(); ++i)
+				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", args[i], (char)0)));
 
 			uint8 ret;
 			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
@@ -60,16 +61,18 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 		}
 		if (success) throw 0;
 	}
+}
+
+void UFTTCore::initialize()
+{
+	localshares.clear();
 
 	netmodules = NetModuleLinker::getNetModuleList(this);
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 
-	std::vector<std::string> v;
-	for(int i = 0; i < argc; ++i)
-		v.push_back(argv[i]);
-
-	handle_args(v, false);
+	handle_args(args, false);
+	args.clear();
 
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 }
