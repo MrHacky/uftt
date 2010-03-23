@@ -115,7 +115,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	}
 
 	// setup debug stream
-	new QDebugStream(std::cout, marshaller.wrap(boost::bind(&QTextEdit::append, debugText, _1)));
+	debugstream = new QDebugStream(std::cout, marshaller.wrap(boost::bind(&QTextEdit::append, debugText, _1)));
 
 	// remove central widget so everything is dockable
 	{
@@ -394,6 +394,7 @@ void MainWindow::handleGuiCommand(UFTTCore::GuiCommand cmd)
 
 MainWindow::~MainWindow()
 {
+	delete debugstream;
 }
 
 void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)

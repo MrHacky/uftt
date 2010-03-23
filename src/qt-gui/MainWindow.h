@@ -18,6 +18,7 @@
 
 class QTreeWidgetItem;
 class QCloseEvent;
+class QDebugStream;
 
 class DialogPreferences;
 
@@ -39,6 +40,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QTreeWidgetItem* ctwi;
 		bool ctwiu;
 		QMarshaller marshaller;
+		QDebugStream* debugstream;
 
 		uint32 timerid;
 		bool isreallyactive;
