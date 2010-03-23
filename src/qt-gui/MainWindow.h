@@ -43,6 +43,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		uint32 timerid;
 		bool isreallyactive;
+		bool isreallyactiveaction;
 		bool quitting;
 		bool ishiding;
 
@@ -83,31 +84,35 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void do_refresh_shares();
 
-		void on_buttonRefresh_clicked();
-		void on_buttonDownload_clicked();
+		void on_actionRefresh_triggered();
+		void on_actionDownload_triggered();
+		void on_actionDownloadTo_triggered();
+		void on_actionUnshare_triggered();
 
-		void on_buttonAdd1_clicked();
-		void on_buttonAdd2_clicked();
-		void on_buttonAdd3_clicked();
+		void on_actionShareFolder_triggered();
+		void on_actionShareFile_triggered();
 
-		void on_buttonBrowse_clicked();
-		void on_buttonManualQuery_clicked();
-		void on_buttonManualPublish_clicked();
+		void on_actionShowHide_triggered();
+
+		void on_actionTaskOpen_triggered();
+		void on_actionTaskOpenContainingFolder_triggered();
+		void on_actionClearCompletedTasks_triggered();
 
 		void on_actionAboutUFTT_triggered();
 		void on_actionAboutQt_triggered();
 
+		void on_actionPreferences_triggered();
 		void on_actionCheckForWebUpdates_triggered();
 
-		void on_buttonClearCompletedTasks_clicked();
+		void on_listShares_itemSelectionChanged();
+		void on_listTasks_itemSelectionChanged();
+		void on_editDownload_textChanged(QString text);
+
 		void on_listBroadcastHosts_itemChanged(QTreeWidgetItem* item, int column);
 
-		void on_actionPreferences_triggered();
-
-		void on_listTasks_itemDoubleClicked(QTreeWidgetItem*, int);
-		void on_listShares_itemActivated(QTreeWidgetItem*, int);
-
-		void on_editDownload_textChanged(QString text);
+		void on_buttonBrowse_clicked();
+		void on_buttonManualQuery_clicked();
+		void on_buttonManualPublish_clicked();
 
 		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);
 	public: // callbacks

@@ -41,8 +41,9 @@
 
 #include "DialogPreferences.h"
 
-// Register ShareID to allow using it inside a QVariant so it can be attached to a tree widget item
+// Register types to allow using them inside a QVariant so they can be attached to a tree widget item
 Q_DECLARE_METATYPE(ShareID);
+Q_DECLARE_METATYPE(boost::filesystem::path);
 
 using namespace std;
 
@@ -52,6 +53,8 @@ enum ShareListColumNames {
 	SLCN_HOST,
 	SLCN_PROTOCOL,
 	SLCN_URL,
+
+	SLDATA_SHAREID = 0,
 };
 
 enum TaskListColumNames {
@@ -65,6 +68,8 @@ enum TaskListColumNames {
 	TLCN_SIZE,
 	TLCN_SPEED,
 	TLCN_QUEUE,
+
+	TLDATA_PATH = 0,
 };
 
 
@@ -82,9 +87,20 @@ public:
     }
 };
 
+class QActionSeparator {
+	public:
+		static QAction* create()
+		{
+			QAction* a = new QAction(NULL);
+			a->setSeparator(true);
+			return a;
+		}
+};
+
 MainWindow::MainWindow(UFTTSettingsRef settings_)
 : settings(settings_)
 , isreallyactive(false)
+, isreallyactiveaction(false)
 , quitting(false)
 , ishiding(false)
 , timerid(0)
@@ -257,8 +273,31 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 
 	{
 		QMenu* traymenu = new QMenu("UFTT Tray Icon Menu", this);
-		traymenu->addAction(action_Quit);
+		traymenu->addAction(actionShowHide);
+		traymenu->addSeparator();
+		traymenu->addAction(actionShareFile);
+		traymenu->addAction(actionShareFolder);
+		traymenu->addSeparator();
+		traymenu->addAction(actionQuit);
+		//traymenu->setDefaultAction(actionShowHide);
 		trayicon->setContextMenu(traymenu);
+	}
+	{
+		listShares->addAction(actionDownload);
+		listShares->addAction(actionDownloadTo);
+		listShares->addAction(QActionSeparator::create());
+		listShares->addAction(actionShareFile);
+		listShares->addAction(actionShareFolder);
+		listShares->addAction(QActionSeparator::create());
+		listShares->addAction(actionUnshare);
+		listShares->addAction(QActionSeparator::create());
+		listShares->addAction(actionRefresh);
+	}
+	{
+		listTasks->addAction(actionTaskOpen);
+		listTasks->addAction(actionTaskOpenContainingFolder);
+		listTasks->addAction(QActionSeparator::create());
+		listTasks->addAction(actionClearCompletedTasks);
 	}
 }
 
@@ -269,13 +308,22 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 		case QSystemTrayIcon::DoubleClick: {
 			if (settings->traydoubleclick && reason == QSystemTrayIcon::Trigger) return;
 			if (!settings->traydoubleclick && reason == QSystemTrayIcon::DoubleClick) return;
-			if (isreallyactive)
-				hideToTray();
-			else
-				showFromTray();
+			isreallyactiveaction = isreallyactive;
+			actionShowHide->trigger();
+		}; break;
+		case QSystemTrayIcon::Context: {
+			isreallyactiveaction = isreallyactive;
 		}; break;
 		default: /* nothing */ ;
 	}
+}
+
+void MainWindow::on_actionShowHide_triggered()
+{
+	if (isreallyactiveaction)
+		hideToTray();
+	else
+		showFromTray();
 }
 
 void MainWindow::onFocusChanged(QWidget* old, QWidget* now)
@@ -370,11 +418,15 @@ bool MainWindow::showFromTray()
 {
 	//if (!settings->tray_show_always) trayicon->hide();
 
+#ifndef Q_WS_WIN
+	// helps when you have multiple desktops
 	if (!this->isActiveWindow()) {
 		ishiding = true;
 		this->hide();
 		ishiding = false;
 	}
+#endif
+
 	this->setVisible(true);
 	if (this->isMinimized()) this->showNormal();
 	this->activateWindow();
@@ -417,7 +469,7 @@ void MainWindow::do_refresh_shares() {
 	backend->doRefreshShares();
 }
 
-void MainWindow::on_buttonRefresh_clicked()
+void MainWindow::on_actionRefresh_triggered()
 {
 	if (!(qApp->keyboardModifiers() & Qt::ShiftModifier)) {
 		listShares->clear();
@@ -470,7 +522,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		rwi->setText(SLCN_HOST, qhost);
 		rwi->setText(SLCN_PROTOCOL, qproto);
 		rwi->setText(SLCN_URL, qurl);
-		rwi->setData(0, Qt::UserRole, QVariant::fromValue(info.id));
+		rwi->setData(SLDATA_SHAREID, Qt::UserRole, QVariant::fromValue(info.id));
 	}
 }
 
@@ -508,7 +560,24 @@ void MainWindow::on_editDownload_textChanged(QString text)
 	editDownload->setStyleSheet(editDownload->styleSheet()); // recalculate style
 }
 
-void MainWindow::on_buttonDownload_clicked()
+void MainWindow::on_listShares_itemSelectionChanged()
+{
+	bool enable = false;
+	bool local = false;
+
+	BOOST_FOREACH(QTreeWidgetItem* rwi, listShares->selectedItems()) {
+		enable = true;
+		if (!local) local = backend->isLocalShare(rwi->text(SLCN_SHARE).toStdString());;
+	}
+
+	actionDownload->setEnabled(enable);
+	actionDownloadTo->setEnabled(enable);
+	actionUnshare->setEnabled(local);
+
+	buttonDownload->setEnabled(enable);
+}
+
+void MainWindow::on_actionDownload_triggered()
 {
 	boost::filesystem::path dlpath = getDownloadPath();
 	if (!ext::filesystem::exists(dlpath)) {
@@ -518,13 +587,50 @@ void MainWindow::on_buttonDownload_clicked()
 	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
 
 	BOOST_FOREACH(QTreeWidgetItem* rwi, selected) {
-		ShareID sid = rwi->data(0, Qt::UserRole).value<ShareID>();
+		ShareID sid = rwi->data(SLDATA_SHAREID, Qt::UserRole).value<ShareID>();
 		if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
 			// evil hax!!!
 			sid.sid[0] = 'x';
 		}
 		backend->startDownload(sid, dlpath);
 	}
+}
+
+void MainWindow::on_actionDownloadTo_triggered()
+{
+	QString directory;
+	directory = QFileDialog::getExistingDirectory(this,
+		tr("Choose download directory"),
+		QString::fromStdString(getDownloadPath()));
+
+	boost::filesystem::path dlpath = directory.toStdString();
+	if (!ext::filesystem::exists(dlpath)) {
+		QMessageBox::information (this, "Download Failed", "Select a valid download directory");
+		return;
+	}
+	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
+
+	BOOST_FOREACH(QTreeWidgetItem* rwi, selected) {
+		ShareID sid = rwi->data(SLDATA_SHAREID, Qt::UserRole).value<ShareID>();
+		if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
+			// evil hax!!!
+			sid.sid[0] = 'x';
+		}
+		backend->startDownload(sid, dlpath);
+	}
+}
+
+void MainWindow::on_actionUnshare_triggered()
+{
+	BOOST_FOREACH(QTreeWidgetItem* rwi, listShares->selectedItems()) {
+		LocalShareID id;
+		if (backend->getLocalShareID(rwi->text(SLCN_SHARE).toStdString(), &id))
+			backend->delLocalShare(id);
+	}
+
+	// FIXME: Should not be neccessary, we should get a notification
+	//        from the core/backend
+	actionRefresh->trigger();
 }
 
 void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptime starttime, const TaskInfo& ti)
@@ -543,6 +649,8 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	twi->setText(TLCN_HOST, QString::fromStdString(ti.shareinfo.host));
 	twi->setText(TLCN_USER, QString::fromStdString(ti.shareinfo.user));
 	twi->setText(TLCN_TIME, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
+	twi->setData(TLDATA_PATH, Qt::UserRole, QVariant::fromValue(ti.path));
+
 	if (total > 0 && total >= tfx && tfx > 0) {
 		twi->setText(TLCN_ETA, QString::fromStdString(
 			boost::posix_time::to_simple_string(
@@ -596,7 +704,7 @@ void MainWindow::onDragMoveTriggered(QDragMoveEvent* evt)
 	QWidget::dragMoveEvent(evt);
 }
 
-void MainWindow::on_buttonAdd1_clicked()
+void MainWindow::on_actionShareFolder_triggered()
 {
 	QString directory;
 	directory = QFileDialog::getExistingDirectory(this,
@@ -606,17 +714,7 @@ void MainWindow::on_buttonAdd1_clicked()
 		this->addLocalShare(directory.toStdString());
 }
 
-void MainWindow::on_buttonAdd2_clicked()
-{
-	QString directory;
-	directory = QFileDialog::getExistingDirectory(this,
-		tr("Choose directory to share"),
-		"",0);
-	if (!directory.isEmpty())
-		this->addLocalShare(directory.toStdString());
-}
-
-void MainWindow::on_buttonAdd3_clicked()
+void MainWindow::on_actionShareFile_triggered()
 {
 	QString directory;
 	directory = QFileDialog::getOpenFileName (this, tr("Choose file to share"),
@@ -761,12 +859,48 @@ void MainWindow::on_actionAboutQt_triggered()
 	QMessageBox::aboutQt(this);
 }
 
-void MainWindow::on_buttonClearCompletedTasks_clicked()
+void MainWindow::on_actionTaskOpen_triggered()
+{
+	QTreeWidgetItem* twi = listTasks->currentItem();
+	boost::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<boost::filesystem::path>();
+	string sharename = twi->text(TLCN_SHARE).toStdString().substr(3);
+	path /= sharename;
+
+	if (ext::filesystem::exists(path))
+		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.native_file_string())));
+}
+
+void MainWindow::on_actionTaskOpenContainingFolder_triggered()
+{
+	QTreeWidgetItem* twi = listTasks->currentItem();
+	boost::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<boost::filesystem::path>();
+
+	if (ext::filesystem::exists(path))
+		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.native_file_string())));
+}
+
+void MainWindow::on_actionClearCompletedTasks_triggered()
 {
 	for(int i = this->listTasks->topLevelItemCount(); i > 0; --i) {
 		QTreeWidgetItem* twi = this->listTasks->topLevelItem(i-1);
 		if (twi->text(TLCN_STATUS) == "Completed")
 			delete twi;
+	}
+}
+
+void MainWindow::on_listTasks_itemSelectionChanged()
+{
+	QTreeWidgetItem* twi = listTasks->currentItem();
+	if (twi) {
+		string sharename = twi->text(TLCN_SHARE).toStdString();
+		bool isupload = (sharename.substr(0,3) == "U: ");
+		bool completed = (twi->text(TLCN_STATUS) == "Completed");
+
+		actionTaskOpenContainingFolder->setEnabled(true);
+		actionTaskOpen->setEnabled(isupload || completed);
+	} else {
+		actionTaskOpenContainingFolder->setEnabled(false);
+		actionTaskOpen->setEnabled(false);
 	}
 }
 
@@ -803,7 +937,7 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 {
 	if (build.find("win32") != string::npos) {
 		if (AutoUpdater::doSelfUpdate(build, path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
-			this->action_Quit->trigger();
+			this->actionQuit->trigger();
 	} else if (build.find("-deb-") != string::npos) {
 		if (AutoUpdater::doSelfUpdate(build, path, "")) {
 			boost::filesystem::path newtarget = path.branch_path() / (build +".deb");
@@ -823,30 +957,6 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 			);
 		}
 	}
-}
-
-void MainWindow::on_listTasks_itemDoubleClicked(QTreeWidgetItem* twi, int col)
-{
-	string text = twi->text(TLCN_SHARE).toStdString();
-	if (text.substr(0,3) != "D: ") return;
-	string name = text.substr(3);
-
-	boost::filesystem::path path = getDownloadPath();
-	path /= name;
-
-	if (ext::filesystem::exists(path)) {
-		string spath;
-		if (boost::filesystem::is_directory(path))
-			spath += path.native_directory_string();
-		else
-			spath += path.native_file_string();
-		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(spath)));
-	}
-}
-
-void MainWindow::on_listShares_itemActivated(QTreeWidgetItem*, int)
-{
-	on_buttonDownload_clicked();
 }
 
 void MainWindow::new_task(const TaskInfo& info)

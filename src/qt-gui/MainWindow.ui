@@ -34,12 +34,18 @@
     <property name="title">
      <string>&amp;File</string>
     </property>
-    <addaction name="action_Quit"/>
+    <addaction name="actionShareFile"/>
+    <addaction name="actionShareFolder"/>
+    <addaction name="separator"/>
+    <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menu_View">
     <property name="title">
      <string>&amp;View</string>
     </property>
+    <addaction name="actionRefresh"/>
+    <addaction name="actionClearCompletedTasks"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menu_Options">
     <property name="title">
@@ -75,6 +81,9 @@
     <layout class="QVBoxLayout">
      <item>
       <widget class="QDragDropTreeWidget" name="listShares">
+       <property name="contextMenuPolicy">
+        <enum>Qt::ActionsContextMenu</enum>
+       </property>
        <property name="selectionMode">
         <enum>QAbstractItemView::ExtendedSelection</enum>
        </property>
@@ -113,7 +122,7 @@
           <string>Refresh</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-refresh.png</normaloff>:/button/button-refresh.png</iconset>
          </property>
         </widget>
@@ -124,7 +133,7 @@
           <string>Add Share (dir)...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-addsharedir.png</normaloff>:/button/button-addsharedir.png</iconset>
          </property>
         </widget>
@@ -142,7 +151,7 @@
           <string>Add Share (file)...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
          </property>
         </widget>
@@ -166,11 +175,14 @@
       <layout class="QHBoxLayout">
        <item>
         <widget class="QPushButton" name="buttonDownload">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Download</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-download.png</normaloff>:/button/button-download.png</iconset>
          </property>
         </widget>
@@ -195,7 +207,7 @@
           <string>Browse...</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-browsedir.png</normaloff>:/button/button-browsedir.png</iconset>
          </property>
         </widget>
@@ -338,6 +350,9 @@
     <layout class="QVBoxLayout">
      <item>
       <widget class="QTreeWidget" name="listTasks">
+       <property name="contextMenuPolicy">
+        <enum>Qt::ActionsContextMenu</enum>
+       </property>
        <column>
         <property name="text">
          <string>Share Name</string>
@@ -398,7 +413,7 @@
           <string>Clear Completed</string>
          </property>
          <property name="icon">
-          <iconset>
+          <iconset resource="Icons/icons.qrc">
            <normaloff>:/button/button-clearcompleted.png</normaloff>:/button/button-clearcompleted.png</iconset>
          </property>
         </widget>
@@ -422,12 +437,15 @@
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
-  <action name="action_Quit">
+  <action name="actionQuit">
    <property name="text">
     <string>&amp;Quit</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+Q</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::QuitRole</enum>
    </property>
   </action>
   <action name="actionCheckForWebUpdates">
@@ -439,10 +457,16 @@
    <property name="text">
     <string>&amp;About UFTT</string>
    </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
   <action name="actionAboutQt">
    <property name="text">
     <string>About &amp;Qt</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::AboutQtRole</enum>
    </property>
   </action>
   <action name="actionPreferences">
@@ -451,6 +475,106 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+P</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::PreferencesRole</enum>
+   </property>
+  </action>
+  <action name="actionShareFile">
+   <property name="icon">
+    <iconset resource="Icons/icons.qrc">
+     <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
+   </property>
+   <property name="text">
+    <string>Share &amp;File...</string>
+   </property>
+  </action>
+  <action name="actionShareFolder">
+   <property name="icon">
+    <iconset resource="Icons/icons.qrc">
+     <normaloff>:/button/button-addsharedir.png</normaloff>:/button/button-addsharedir.png</iconset>
+   </property>
+   <property name="text">
+    <string>Share F&amp;older...</string>
+   </property>
+  </action>
+  <action name="actionDownload">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="Icons/icons.qrc">
+     <normaloff>:/button/button-download.png</normaloff>:/button/button-download.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Download</string>
+   </property>
+   <property name="toolTip">
+    <string>Download</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+D</string>
+   </property>
+  </action>
+  <action name="actionDownloadTo">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="Icons/icons.qrc">
+     <normaloff>:/button/button-download.png</normaloff>:/button/button-download.png</iconset>
+   </property>
+   <property name="text">
+    <string>Download&amp; To...</string>
+   </property>
+  </action>
+  <action name="actionRefresh">
+   <property name="icon">
+    <iconset resource="Icons/icons.qrc">
+     <normaloff>:/button/button-refresh.png</normaloff>:/button/button-refresh.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Refresh Shares</string>
+   </property>
+   <property name="shortcut">
+    <string>F5</string>
+   </property>
+  </action>
+  <action name="actionShowHide">
+   <property name="checkable">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Show/Hide UFTT</string>
+   </property>
+  </action>
+  <action name="actionClearCompletedTasks">
+   <property name="text">
+    <string>Clear Completed Tasks</string>
+   </property>
+  </action>
+  <action name="actionTaskOpen">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionTaskOpenContainingFolder">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Open Containing Folder</string>
+   </property>
+  </action>
+  <action name="actionUnshare">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Remove Share</string>
    </property>
   </action>
  </widget>
@@ -467,10 +591,12 @@
   <tabstop>buttonDownload</tabstop>
   <tabstop>editDownload</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="Icons/icons.qrc"/>
+ </resources>
  <connections>
   <connection>
-   <sender>action_Quit</sender>
+   <sender>actionQuit</sender>
    <signal>triggered()</signal>
    <receiver>MainWindow</receiver>
    <slot>quit()</slot>
@@ -482,6 +608,134 @@
     <hint type="destinationlabel">
      <x>394</x>
      <y>286</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonRefresh</sender>
+   <signal>clicked()</signal>
+   <receiver>actionRefresh</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>47</x>
+     <y>258</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonDownload</sender>
+   <signal>clicked()</signal>
+   <receiver>actionDownload</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>47</x>
+     <y>290</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>listShares</sender>
+   <signal>itemDoubleClicked(QTreeWidgetItem*,int)</signal>
+   <receiver>actionDownload</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>281</x>
+     <y>143</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonAdd1</sender>
+   <signal>clicked()</signal>
+   <receiver>actionShareFolder</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>138</x>
+     <y>258</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonAdd2</sender>
+   <signal>clicked()</signal>
+   <receiver>actionShareFolder</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>237</x>
+     <y>258</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonAdd3</sender>
+   <signal>clicked()</signal>
+   <receiver>actionShareFile</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>338</x>
+     <y>258</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonClearCompletedTasks</sender>
+   <signal>clicked()</signal>
+   <receiver>actionClearCompletedTasks</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>707</x>
+     <y>550</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>listTasks</sender>
+   <signal>itemDoubleClicked(QTreeWidgetItem*,int)</signal>
+   <receiver>actionTaskOpen</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>779</x>
+     <y>439</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
     </hint>
    </hints>
   </connection>
