@@ -42,6 +42,7 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 	public Q_SLOTS:
 		void on_buttonBox_clicked(QAbstractButton*);
 		void on_listAdvancedOptions_itemChanged(QTreeWidgetItem*, int);
+		void on_line_customContextMenuRequested(QPoint);
 
 		int exec();
 };

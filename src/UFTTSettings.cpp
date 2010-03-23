@@ -34,6 +34,8 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("gui.qt.sizey", sizey, createSettingsInfo(0));
 	sm->registerSettingsVariable("gui.qt.maximized", guimaximized, createSettingsInfo(false));
 
+	sm->registerSettingsVariable("gui.qt.showadvancedsettings", showadvancedsettings, createSettingsInfo(false));
+
 	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, createSettingsInfo(true));
 
 	sm->registerSettingsVariable("download.path", dl_path, createSettingsInfo(platform::getDownloadPathDefault()));

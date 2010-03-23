@@ -64,6 +64,11 @@ DialogPreferences::DialogPreferences(QWidget* parent, boost::shared_ptr<Settings
 	}
 
 	listCategories->setCurrentRow(0);
+
+	SettingsVariableBase* sv = settings->getVariable("gui.qt.showadvancedsettings");
+	bool showadvanced = sv->getValue<bool>();
+	if (!showadvanced)
+		delete listCategories->item(listCategories->count()-1);
 }
 
 void DialogPreferences::on_listAdvancedOptions_itemChanged(QTreeWidgetItem* item, int col)
@@ -118,6 +123,20 @@ int DialogPreferences::exec()
 {
 	loadSettings();
 	return QDialog::exec();
+}
+
+void DialogPreferences::on_line_customContextMenuRequested(QPoint)
+{
+	SettingsVariableBase* sv = settings->getVariable("gui.qt.showadvancedsettings");
+	bool showadvanced = sv->getValue<bool>();
+	showadvanced = !showadvanced;
+	sv->setValue<bool>(showadvanced);
+	bool isshowing = listCategories->count() == stackedCategories->count();
+	if (showadvanced == isshowing) return;
+	if (showadvanced)
+		listCategories->addItem("Advanced");
+	else
+		delete listCategories->item(listCategories->count()-1);
 }
 
 class Dispatcher {
