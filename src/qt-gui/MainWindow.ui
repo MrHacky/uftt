@@ -45,9 +45,9 @@
     <property name="title">
      <string>&amp;Options</string>
     </property>
-    <addaction name="actionCheckForWebUpdates"/>
-    <addaction name="separator"/>
     <addaction name="actionPreferences"/>
+    <addaction name="separator"/>
+    <addaction name="actionCheckForWebUpdates"/>
    </widget>
    <widget class="QMenu" name="menu_Help">
     <property name="title">
