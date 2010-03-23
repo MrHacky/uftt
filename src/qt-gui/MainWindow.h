@@ -28,7 +28,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 	private:
 		QSystemTrayIcon* trayicon;
-		QMenu* traymenu;
 		DialogPreferences* dialogPreferences;
 
 		UFTTSettingsRef settings;

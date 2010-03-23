@@ -255,8 +255,11 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 		this->setWindowIcon(*uftticon);
 	}
 
-	traymenu = new QMenu("tray menu", this);
-	traymenu->addAction(action_Quit);
+	{
+		QMenu* traymenu = new QMenu("UFTT Tray Icon Menu", this);
+		traymenu->addAction(action_Quit);
+		trayicon->setContextMenu(traymenu);
+	}
 }
 
 void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason reason)
@@ -270,9 +273,6 @@ void MainWindow::handle_trayicon_activated(QSystemTrayIcon::ActivationReason rea
 				hideToTray();
 			else
 				showFromTray();
-		}; break;
-		case QSystemTrayIcon::Context: {
-			traymenu->exec(QCursor::pos());
 		}; break;
 		default: /* nothing */ ;
 	}
