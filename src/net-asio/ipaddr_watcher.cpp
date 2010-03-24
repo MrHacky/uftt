@@ -523,7 +523,6 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 #endif
 #ifdef __linux__
 						char buffer[1024];
-						recv)
 						int r = recv(this_->fd, buffer, sizeof(buffer), 0);
 						if (r <= 0) {
 							cout << "error: ipv?_watcher: " << errno << '\n';
