@@ -493,7 +493,16 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
 						if (this_)
 							this_->This()->init();
+#ifdef WIN32
+						if (this_->fd == INVALID_SOCKET) {
+#else
+						if (this_->fd == -1) {
+#endif
+							std::cout << "error: ipv?_watcher: no valid socket\n";
+							return;
+						}
 					}
+					int sleep = 0;
 					while(1) {
 						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
 						if (!this_)
@@ -506,14 +515,21 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 						int outBuffer = 0;
 						DWORD outSize = 0;
 						int err = WSAIoctl(this_->fd, SIO_ADDRESS_LIST_CHANGE, &inBuffer, 0, &outBuffer, 0, &outSize, NULL, NULL );
-						if (err < 0)
+						if (err < 0) {
 							cout << "error: ipv?_watcher: " << err << '\n';
+							if (sleep < 60000) sleep += 250;
+							boost::this_thread::sleep(boost::posix_time::milliseconds(sleep));
+						}
 #endif
 #ifdef __linux__
 						char buffer[1024];
-						size_t r = recv(this_->fd, buffer, sizeof(buffer), 0);
-						if (r <= 0)
+						recv)
+						int r = recv(this_->fd, buffer, sizeof(buffer), 0);
+						if (r <= 0) {
 							cout << "error: ipv?_watcher: " << errno << '\n';
+							if (sleep < 60000) sleep += 250;
+							boost::this_thread::sleep(boost::posix_time::milliseconds(sleep));
+						}
 #endif
 					}
 				} catch (std::exception& e) {
