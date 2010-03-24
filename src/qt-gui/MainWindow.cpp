@@ -486,7 +486,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	//if (info.islocal) return;
 	if (info.isupdate) {
 		new_autoupdate(info);
-		return;
+		if (!settings->showautoupdates) return;
 	}
 
 	QString quser  = QString::fromStdString(info.user);
@@ -494,9 +494,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	QString qproto = QString::fromStdString(info.proto);
 	QString qhost  = QString::fromStdString(info.host);
 	QString qurl   = QString::fromStdString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
-	if(quser == "") {
-		quser = "uftt-user";
-	}
+	if (quser == "") quser = (info.isupdate ? "<Update>" : "uftt-user");
 	uint32 version = atoi(info.proto.substr(6).c_str());
 
 	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, Qt::MatchExactly, SLCN_SHARE);

@@ -116,6 +116,8 @@ class UFTTSettings {
 		// the option is disabled.
 		SettingsVariable<boost::posix_time::time_duration> auto_clear_tasks_after;
 
+		SettingsVariable<bool> showautoupdates;
+
 		void registerSettings(SettingsManagerBase* sm);
 		void fixLegacy(std::map<std::string, std::string>& v);
 };
