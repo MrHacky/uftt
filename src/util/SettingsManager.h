@@ -46,6 +46,7 @@ class SettingsVariableBase
 		virtual void setString(const std::string& s) = 0;
 		virtual std::string getString() = 0;
 		virtual std::string isValid(const std::string& s) = 0;
+		virtual void connectChangedBase(const boost::function<void(void)>& f, bool callnow = false) = 0;
 
 		template <typename T>
 		void setValue(const T& t)
@@ -155,6 +156,18 @@ class SettingsVariable: public SettingsVariableBase
 		}
 
 		boost::signal<void(const T& t)> sigChanged;
+
+		void connectChanged(const typename boost::signal<void(const T& t)>::slot_function_type& f, bool callnow = false)
+		{
+			sigChanged.connect(f);
+			if (callnow) f(get());
+		}
+
+		virtual void connectChangedBase(const boost::function<void(void)>& f, bool callnow = false)
+		{
+			sigChanged.connect(boost::bind(f));
+			if (callnow) f();
+		}
 
 		SettingsVariable<T>& operator=(const T& t)
 		{
