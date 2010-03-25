@@ -401,6 +401,12 @@ void MainWindow::changeEvent(QEvent * evnt)
 	this->isreallyactive = false;
 }
 
+void MainWindow::hideEvent(QHideEvent* evnt)
+{
+	++timerid;
+	this->isreallyactive = false;
+}
+
 bool MainWindow::hideToTray()
 {
 	trayicon->show();

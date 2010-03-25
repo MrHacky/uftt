@@ -61,6 +61,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	protected:
 		// overridden events
 		virtual void closeEvent(QCloseEvent* evnt);
+		virtual void hideEvent(QHideEvent* evnt);
 		virtual void changeEvent(QEvent* evnt);
 		virtual void resizeEvent(QResizeEvent* evnt);
 		virtual void moveEvent(QMoveEvent* evnt);
