@@ -3,6 +3,8 @@
 - task management
 
 * Long term, unordered, minor, and subtask features
+- speed up compilation (move as much as possible out of .h files and into .cpp files)
+- use real option parser (base on boost::program_options?)
 - fix progress indicators for resumed downloads
 - automatically resume failed downloads when the connection is restored
 - uniquely identify (parts of) shares somehow
@@ -12,7 +14,6 @@
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
-- show share name for upload tasks
 - allow custom broadcast ip's
 - allow custom broadcast dns names
 - clean up connections when they are done
@@ -32,11 +33,16 @@
 - make bootstrapper universal (detect os, web version)
 - make uftt.dat location changable after initial startup
 - make autoupdate dialog
-- have doubleclick on share popup download dialog asking where to save
 - find uftt.dat in executable directory (again)
 - implement debian/ubuntu .deb autoupdate (again)
+- disable apply button in qt preferences dialog when nothing is changed
+- actually quit when shutting down with close to tray
+- really fix ipv?_watcher shutdown problem (needs some locking?)
+- password protected shares
+- make distinction between release and beta autoupdates
 
 * Already completed features.
+- [DONE] show share name for upload tasks
 - [DONE] show progress for web update tasks
 - [DONE] implement udp hole punching via central web server
 - [DONE] support ipv6 connections/discovery, especially link-local
