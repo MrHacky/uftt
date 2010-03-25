@@ -2,10 +2,26 @@ UFTT udp protocol:
 
 Portnumber: 47189
 	Send any broadcast queries to this port
-	Send only replies from this port
-	Open in reusable mode
+	? Send only replies from this port
+	? Open in reusable mode
 
-query packet (modern):
+
+VV-VV-VV-VV : This represents a version tag, which should be decoded as follows:
+
+01-00-00-00 : Version 1
+02-00-00-00 : Version 2
+03-00-00-00 : Version 3
+AB-CD-00-01 : Version 0xCDAB
+
+Anything not matching this is not a 'normal' UFTT packet:
+UU-UU-UU-02 : Reliable UDP Connection packet
+AB:CD:EF:GH : if (0xGHEFCDAB & 0x030000c0) == 0, its a STUN packet
+
+
+
+*************************
+* Query packet (modern) *
+*************************
 
 Header:
 /------------------------------------------------------\
@@ -15,20 +31,129 @@ Header:
 Followed by X of :
 
 /------------------------------------------------------\
-| u32: Start               | u32:End                   |
+| u32: Start               | u32:End                   |   ( == VersionInfo[X] from now on)
 \------------------------------------------------------/
 
 Where the ranges [Start, End] specify which versions are requested.
 The reply should choose the highest supported and requested version.
 
+Notes:
+- First four bytes are normally the version, but this is always 1 for queries
+
+QueryVersion 1: request v1 shares and v1 builds
+QueryVersion 2: request v1 shares and v1 builds
+QueryVersion 3: request v1 builds
+QueryVersion 4: request v2 shares and v1 builds
+QueryVersion 5: request v3 shares and v1 builds
+
+SENDING:   Fill the VersionInfo with all QueryVersions you are interested in
+           broadcast this to search for shares on the local network
+           send it to a host to ask for its shares
+           
+RECEIVING: Respond with publish packets corresponding to the highest QueryVersions you support
+           
+
+************************
+* Publish share packet *
+************************
+
+/---------------------------------\
+| VV-VV-VV-VV: Version     | 0x02 |
+>--------------------------+------/
+| u8:X | u8[X]: ShareName  |
+\--------------------------/
+
+Followed by (if Version==1, optional)
+
+/--------------------------------------\
+| u8:X | VersionInfo[X]: ShareVersions |
+\--------------------------------------/
+
+Followed by (if Version>=3, or ShareVersions contains 3)
+
+/------------------------\
+| u8:X | u8[X]: Nickname |
+\------------------------/
+
+- T             = Packet Type
+- ShareName     = Name of the share being published
+- ShareVersions = Versions of the share published, if not present only version 'Version' is published
+- Nickname      = Nickname of the user publishing the share
 
 
+SENDING:   When sending this to respond to query packets, don't include ShareVersions but respond just
+           with the shareversion requested in Version
+           When you want to publish a new share, you can broadcast this while including all shareversion
+           you support in ShareVersions
 
-query packet (old):
+RECEIVING: Inform the GUI a new share is available
+
+
+*************************
+* Publish update packet *
+*************************
+
+/---------------------------------\
+| VV-VV-VV-VV: Version     | 0x03 |
+>--------------------------+------/
+| u8:X | u8[X]: BuildName  |
+\--------------------------/
+
+Followed by optional
+
+/------------------------\
+| u8:X | u8[X]: NickName |
+\------------------------/
+
+- Version   = Currently always 1
+- BuildName = Name of the build being published
+- Nickname  = ? Nickname of the user publishing the share
+
+
+SENDING:   Respond with this to query packets asking for updates
+           When you want to publish a new updates, you can broadcast this
+
+RECEIVING: Inform the GUI a new update is available
+
+
+*********************
+* Peer query packet *
+*********************
+
+/---------------------------------\
+| 0x01 | 0x00| 0x00 | 0x00 | 0x04 |
+\---------------------------------/
+
+- Version   = Currently always 1
+
+SENDING:   Send this to hosts discovered by the global peerfinder to verify them
+
+RECEIVING: Reply with a query packet to request their shares
+           Reply with a peer response packed to let them know you exist
+
+
+************************
+* Peer response packet *
+************************
+
+/---------------------------------\
+| VV-VV-VV-VV: Version     | 0x05 |
+\---------------------------------/
+
+- Version   = Currently always 1
+
+SENDING:   Send this in response to a peer query packet
+
+RECEIVING: Reply with a query packet to request their shares
+
+
+**********************
+* Query packet (old) *
+**********************
 
 Header:
 /---------------------------------\
-| 0x01 | 0x00| 0x00 | 0x00 | 0x01 |
+| VV-VV-VV-VV: Version     | 0x01 |
 \---------------------------------/
 
 Followed by an optional
@@ -47,15 +172,9 @@ Followed by Y of (only if above optional(Y) is present)
 | u32: Start               | u32:End                   |
 \------------------------------------------------------/
 
-Where the ranges [Start, End] specify which versions are requested.
-The reply should choose the highest supported and requested version.
+Where the ranges [Start, End] specify which QueryVersions are requested.
+The reply should choose the highest supported and requested QueryVersion.
 
-If any of the optional parts are not present, version 1 should be
+If any of the optional parts are not present, QueryVersion 1 should be
 assumed as the only requested version.
 
-
-
-Version 1 query: request v1 shares and v1 builds
-Version 2 query: request v1 shares and v1 builds
-Version 3 query: request v1 builds
-Version 4 query: request v2 shares and v1 builds
