@@ -22,17 +22,14 @@
 #  include <stdlib.h>
 #  include <iostream>
 #  include <fstream>
-#  include "util/Filesystem.h"
 #endif
 
-
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+
+#include "util/Filesystem.h"
 
 using namespace std;
-
-namespace {
-	boost::filesystem::path ApplicationPath;
-}
 
 namespace platform {
 	bool haveConsole =
@@ -207,17 +204,12 @@ namespace platform {
 	}
 #endif
 
-	void setApplicationPath(const boost::filesystem::path& path)
-	{
-		ApplicationPath = path;
-	}
-
 	spathlist getSettingsPathList() {
 		spathlist result;
 		boost::filesystem::path currentdir(boost::filesystem::current_path<boost::filesystem::path>());
 		result.push_back(spathinfo("Current Directory"      , currentdir / "uftt.dat"));
-		if (!ApplicationPath.empty())
-			result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
+		//if (!ApplicationPath.empty())
+		//	result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
 #ifdef WIN32
 		result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
 		result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
@@ -245,7 +237,7 @@ namespace platform {
 	string scan_xdg_user_dirs(string dirname) {
 		string result;
 		boost::filesystem::path xdgConfigHome(string(_getenv("XDG_CONFIG_HOME")));
-		if(!boost::filesystem::exists(xdgConfigHome))
+		if(!ext::filesystem::exists(xdgConfigHome))
 			xdgConfigHome = boost::filesystem::path(string(_getenv("HOME")) + "/.config");
 		if(ext::filesystem::exists(xdgConfigHome) && boost::filesystem::is_directory(xdgConfigHome)) {
 			boost::filesystem::path file(xdgConfigHome / "user-dirs.dirs");
@@ -330,4 +322,118 @@ namespace platform {
 		return name;
 	}
 
+	bool createLink(const std::string& description, const boost::filesystem::path& source, const boost::filesystem::path& target)
+	{
+		// currently only used on windows
+#ifdef WIN32
+		CoInitialize(NULL);
+
+		bool success = true;
+		IShellLink* isl = NULL;
+		IPersistFile* ipf = NULL;
+		WCHAR wcs[MAX_PATH];
+
+		// Retrieve object pointers and convert source path
+		success = success && SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&isl));
+		success = success && SUCCEEDED(isl->QueryInterface(IID_IPersistFile, (LPVOID*)&ipf));
+		success = success && SUCCEEDED(MultiByteToWideChar(CP_ACP, 0, TEXT(source.native_file_string().c_str()), -1, wcs, MAX_PATH));
+
+		if (success) {
+			// load previous shortcut from disk
+			success = SUCCEEDED(ipf->Load(wcs, STGM_READ));
+			if (success) {
+				// check if existing shortcut points to our target
+				success = success && SUCCEEDED(isl->Resolve(NULL, SLR_NO_UI));
+
+				WIN32_FIND_DATA wfd;
+				char szGotPath[MAX_PATH];
+
+				success = success && SUCCEEDED(isl->GetPath(szGotPath, MAX_PATH, (WIN32_FIND_DATA*)&wfd, 0));
+				success = success && boost::iequals(boost::filesystem::path(szGotPath).string(), target.string());
+			}
+
+			if (!success) {
+				// save shortcut with our target (either failed to load or it did not point to our target)
+				success = true;
+				success = success && SUCCEEDED(isl->SetPath(TEXT(target.native_file_string().c_str())));
+				success = success && SUCCEEDED(isl->SetWorkingDirectory(TEXT(target.branch_path().native_file_string().c_str())));
+				success = success && SUCCEEDED(isl->SetDescription(TEXT(description.c_str())));
+				success = success && SUCCEEDED(ipf->Save(wcs, TRUE));
+			}
+		}
+		if (ipf) ipf->Release();
+		if (isl) isl->Release();
+		CoUninitialize();
+		return success;
+#endif
+		return false;
+	}
+
+	bool createRemoveLink(bool create, std::string name, const std::string& description, const boost::filesystem::path& sourcedir, const boost::filesystem::path& target)
+	{
+		if (!ext::filesystem::exists(sourcedir)) return false;
+#ifdef WIN32
+		name += ".lnk";
+#endif
+		boost::filesystem::path source = sourcedir / name;
+		if (create) {
+			if (!ext::filesystem::exists(target)) return false;
+			return createLink(description, source, target);
+		} else {
+			return boost::filesystem::remove(source);
+		}
+	}
+
+	boost::filesystem::path getApplicationPath()
+	{
+		// currently only used on windows
+#ifdef WIN32
+		// test for unicode support?
+		char module_name[MAX_PATH];
+		GetModuleFileNameA(0, module_name, MAX_PATH);
+		boost::filesystem::path path = module_name;
+		if (!ext::filesystem::exists(path)) path.clear();
+		return path;
+#endif
+		return boost::filesystem::path();
+	}
+
+	bool setSendToUFTTEnabled(bool enabled)
+	{
+		// only makes sense for windows?
+#ifdef WIN32
+		return createRemoveLink(enabled, "UFTT", "Ultimate File Transfer Tool", getFolderLocation(CSIDL_SENDTO), getApplicationPath());
+#endif
+		return false;
+	}
+
+	bool setDesktopShortcutEnabled(bool enabled)
+	{
+#ifdef WIN32
+		return createRemoveLink(enabled, "UFTT", "Ultimate File Transfer Tool", getFolderLocation(CSIDL_DESKTOP), getApplicationPath());
+#endif
+		return false;
+	}
+
+	bool setQuicklaunchShortcutEnabled(bool enabled)
+	{
+#ifdef WIN32
+		return createRemoveLink(enabled, "UFTT", "Ultimate File Transfer Tool", getFolderLocation(CSIDL_APPDATA) / "Microsoft/Internet Explorer/Quick Launch", getApplicationPath());
+#endif
+		return false;
+	}
+
+	bool setStartmenuGroupEnabled(bool enabled)
+	{
+#ifdef WIN32
+		boost::filesystem::path menudir = getFolderLocation(CSIDL_PROGRAMS);
+		if (!ext::filesystem::exists(menudir)) return false;
+		menudir /= "UFTT";
+		if (enabled && !boost::filesystem::create_directory(menudir)) return false;
+		bool ret = createRemoveLink(enabled, "UFTT", "Ultimate File Transfer Tool", menudir, getApplicationPath());
+		if (!enabled) ret = boost::filesystem::remove(menudir) && ret;
+		return ret;
+#endif
+		return false;
+	}
 } // namespace platform

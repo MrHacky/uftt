@@ -33,7 +33,12 @@ namespace platform {
 
 	void activateWindow(const std::string& wid);
 
-	void setApplicationPath(const boost::filesystem::path& path);
+	boost::filesystem::path getApplicationPath();
+
+	bool setSendToUFTTEnabled(bool enabled);
+	bool setDesktopShortcutEnabled(bool enabled);
+	bool setQuicklaunchShortcutEnabled(bool enabled);
+	bool setStartmenuGroupEnabled(bool enabled);
 
 	typedef std::pair<std::string, boost::filesystem::path> spathinfo;
 	typedef std::vector<spathinfo> spathlist;
