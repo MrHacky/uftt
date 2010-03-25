@@ -60,6 +60,11 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("systray.startintray", start_in_tray, createSettingsInfo(false));
 	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, createSettingsInfo(true));
 
+	sm->registerSettingsVariable("system.sendtouftt", uftt_send_to, createSettingsInfo(false));
+	sm->registerSettingsVariable("system.desktopshortcut", uftt_desktop_shortcut, createSettingsInfo(false));
+	sm->registerSettingsVariable("system.quicklaunchshortcut", uftt_quicklaunch_shortcut, createSettingsInfo(false));
+	sm->registerSettingsVariable("system.startmenugroup", uftt_startmenu_group, createSettingsInfo(false));
+
 	sm->registerSettingsVariable("gui.auto_clear_tasks_after", auto_clear_tasks_after, createSettingsInfo(boost::posix_time::seconds(30)));
 
 	sm->registerSettingsVariable("update.showasshares", showautoupdates, createSettingsInfo(false));

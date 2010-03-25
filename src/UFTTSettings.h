@@ -108,6 +108,11 @@ class UFTTSettings {
 		SettingsVariable<bool> close_to_tray;
 		SettingsVariable<bool> start_in_tray;
 
+		SettingsVariable<bool> uftt_send_to;
+		SettingsVariable<bool> uftt_desktop_shortcut;
+		SettingsVariable<bool> uftt_quicklaunch_shortcut;
+		SettingsVariable<bool> uftt_startmenu_group;
+
 		/* Gtk GUI */
 		SettingsVariable<bool> show_toolbar;
 
