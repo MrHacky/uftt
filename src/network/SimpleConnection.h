@@ -93,12 +93,13 @@ class SimpleConnection: public ConnectionBase {
 
 			filesender(services::diskio_service& diskio) : file(diskio) {};
 
-			void init(uint64 offset_ = 0) {
+			boost::system::error_code init(uint64 offset_ = 0) {
 				offset = offset_;
 				fsize = boost::filesystem::file_size(path) - offset;
-				file.open(path, services::diskio_filetype::in);
-				file.fseeka(offset);
+				boost::system::error_code e = file.open(path, services::diskio_filetype::in);
+				if (!e) file.fseeka(offset);
 				hsent = false;
+				return e;
 				//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 			};
 
@@ -993,19 +994,23 @@ class SimpleConnection: public ConnectionBase {
 							uint64 off = qitems.front().poffset;
 							cursendfile.name = qitems[0].path;
 							cursendfile.path = qitems[0].path;
-							cursendfile.init(off);
-							cursendfile.hsent = true;
-							qitems.pop_front();
-							pkt_put_uint32((off == 0) ? CMD_REPLY_FULL_FILE : CMD_REPLY_PARTIAL_FILE, &((*sbuf)[0]));
-							pkt_put_uint32(0, &((*sbuf)[4]));
-							if(ext::filesystem::exists(cursendfile.path)) {
-								pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
+							boost::system::error_code e = cursendfile.init(off);
+							if (!e) {
+								cursendfile.hsent = true;
+								qitems.pop_front();
+								pkt_put_uint32((off == 0) ? CMD_REPLY_FULL_FILE : CMD_REPLY_PARTIAL_FILE, &((*sbuf)[0]));
+								pkt_put_uint32(0, &((*sbuf)[4]));
+								if(ext::filesystem::exists(cursendfile.path)) {
+									pkt_put_uint64(boost::filesystem::file_size(cursendfile.path) - off, &((*sbuf)[8]));
+								}
+								else {
+									pkt_put_uint64(0, &((*sbuf)[8]));
+								}
+								sendqueue.push_back(sbuf);
+								service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
+							} else {
+								disconnect(STRFORMAT("checkwhattosend: failed to open file '%s': %s", cursendfile.path, e.message()));
 							}
-							else {
-								pkt_put_uint64(0, &((*sbuf)[8]));
-							}
-							sendqueue.push_back(sbuf);
-							service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
 						} else if (qtype == QITEM_REQUESTED_FILESIG) {
 							qitems.front().type = QITEM_REQUESTED_FILESIG_BUSY;
 							qitems.front().path = (sharepath / qitems.front().path).native_file_string();
