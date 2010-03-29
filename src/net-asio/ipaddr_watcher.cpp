@@ -22,6 +22,10 @@ extern "C" {
 #  include <net/if.h>
 #  include <net/if_arp.h>
 #endif
+#ifdef __APPLE__
+#  include <sys/socket.h>
+#  include <sys/types.h>
+#endif
 
 using namespace std;
 
@@ -32,7 +36,7 @@ namespace {
 typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 #ifdef WIN32
-	set<addrwbcst> win32_get_ipv4_list()
+	set<addrwbcst> get_ipv4_list()
 	{
 		set<addrwbcst> result;
 		SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -85,7 +89,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 		return result;
 	}
 
-	set<boost::asio::ip::address> win32_get_ipv6_list()
+	set<boost::asio::ip::address> get_ipv6_list()
 	{
 		set<boost::asio::ip::address> result;
 #if defined(SIO_ADDRESS_LIST_QUERY)
@@ -232,7 +236,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 		}
 	}
 
-	set<boost::asio::ip::address> linux_get_ipv6_list()
+	set<boost::asio::ip::address> get_ipv6_list()
 	{
 		set<boost::asio::ip::address> result;
 
@@ -321,8 +325,10 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 		return result;
 	}
+#endif
 
-	set<addrwbcst> linux_get_ipv4_list()
+#if defined(__linux__) || defined(__APPLE__)
+	set<addrwbcst> get_ipv4_list()
 	{
 		set<addrwbcst> result;
 
@@ -341,14 +347,25 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 			close(skfd);
 			return result;
 		}
+
+#ifndef __APPLE__
 		ifr = ifc.ifc_req;
 		for (int i = ifc.ifc_len / sizeof(struct ifreq); --i >= 0; ifr++) {
+#else
+		for (int n = 0; n < ifc.ifc_len; ) {
+			ifr = (struct ifreq*)(((char*)ifc.ifc_req) + n);
+			n += sizeof(ifr->ifr_name);
+			n += (ifr->ifr_addr.sa_len > sizeof(struct sockaddr)
+			    ? ifr->ifr_addr.sa_len : sizeof(struct sockaddr));
+#endif
+
+			if (ifr->ifr_addr.sa_family != AF_INET) continue;
+
 			sockaddr_in * pAddress;
 
 			if (ioctl(skfd, SIOCGIFFLAGS, ifr) != 0) {
-				printf("SIOCGIFFLAGS:Failed \n");
-				close(skfd);
-				return result;
+				printf("SIOCGIFFLAGS:Failed\n");
+				continue;
 			}
 			short flags = ifr->ifr_flags;
 
@@ -358,7 +375,7 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 
 			if (ioctl(skfd, SIOCGIFNETMASK, ifr) != 0) {
 				printf("SIOCGIFNETMASK:Failed \n");
-				return result;
+				continue;
 			}
 
 			boost::asio::ip::address_v4::bytes_type nmaddr;
@@ -380,26 +397,12 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 		return result;
 	}
 #endif
-
-	set<addrwbcst> get_ipv4_list()
-	{
-#ifdef WIN32
-		return win32_get_ipv4_list();
-#endif
-#ifdef __linux__
-		return linux_get_ipv4_list();
-#endif
-	}
-
+#ifdef __APPLE__
 	set<boost::asio::ip::address> get_ipv6_list()
 	{
-#ifdef WIN32
-		return win32_get_ipv6_list();
-#endif
-#ifdef __linux__
-		return linux_get_ipv6_list();
-#endif
+		return set<boost::asio::ip::address>();
 	}
+#endif
 
 	template <class C, typename T>
 	class ip_watcher_common {
@@ -493,10 +496,14 @@ typedef std::pair<boost::asio::ip::address, boost::asio::ip::address> addrwbcst;
 						boost::shared_ptr<ip_watcher_common<C, T> > this_ = wp.lock();
 						if (this_)
 							this_->This()->init();
-#ifdef WIN32
+						this_->newlist(this_);
+
+#if defined(WIN32)
 						if (this_->fd == INVALID_SOCKET) {
-#else
+#elif defined(__linux__)
 						if (this_->fd == -1) {
+#else
+						if (true) {
 #endif
 							std::cout << "error: ipv?_watcher: no valid socket\n";
 							return;
