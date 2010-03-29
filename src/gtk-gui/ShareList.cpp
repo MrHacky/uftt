@@ -18,6 +18,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
   add_share_file_dialog(_parent_window, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
   add_share_folder_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   browse_for_download_destination_path_button("Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  pick_download_destination_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   uimanager_ref(uimanager_ref_)
 {
 	share_list_liststore = Gtk::ListStore::create(share_list_columns);
@@ -177,8 +178,8 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	);
 	action->set_sensitive(false);
 	actiongroup_ref->add(
-		action
-		//boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog)
+		action,
+		boost::bind(&Gtk::Dialog::present, &pick_download_destination_dialog)
 	);
 
 	action = Gtk::Action::create(
@@ -414,10 +415,22 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 	context->drag_finish(true, false, time);
 }
 
+void ShareList::on_pick_download_destination_dialog_button_clicked() {
+	std::string filename = pick_download_destination_dialog.get_filename();
+	if(filename != "") {
+		boost::filesystem::path path = filename;
+		pick_download_destination_dialog.hide();
+		download_selected_shares(path);
+	}
+}
 
 void ShareList::download_selected_shares() {
+	download_selected_shares(settings->dl_path);
+}
+
+void ShareList::download_selected_shares(boost::filesystem::path destination) {
 	//FIXME: Don't forget to test dl_path for validity and writeablity
-	if(!ext::filesystem::exists(settings->dl_path)) {
+	if(!ext::filesystem::exists(destination)) {
 		Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text("The folder you have selected for downloaded shares to be placed in does not appear to exist.\nPlease select another download destination and try again.");
 		dialog.set_transient_for(*(Gtk::Window*)get_toplevel());
@@ -437,7 +450,7 @@ void ShareList::download_selected_shares() {
 				sid.sid[0] = 'x';
 			}
 		}
-		core->startDownload(sid, settings->dl_path);
+		core->startDownload(sid, destination);
 	}
 }
 

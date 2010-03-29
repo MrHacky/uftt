@@ -46,6 +46,7 @@
 			Gtk::VBox                     download_destination_path_vbox;
 			Gtk::Entry                    download_destination_path_entry;
 			Gtk::Label                    download_destination_path_label;
+			Gtk::FileChooserDialog        pick_download_destination_dialog; // Override download destination for single download
 			sigc::connection              add_share_file_dialog_connection;
 			Gtk::FileChooserDialog        add_share_file_dialog;
 			sigc::connection              add_share_folder_dialog_connection;
@@ -62,9 +63,11 @@
 			void on_signal_add_share(const ShareInfo& info);
 			void on_add_share_file_dialog_button_clicked();
 			void on_add_share_folder_dialog_button_clicked();
+			void on_pick_download_destination_dialog_button_clicked();
 			void on_refresh_shares();
 			bool on_share_list_treeview_signal_button_press_event(GdkEventButton* event);
 			void download_selected_shares();
+			void download_selected_shares(boost::filesystem::path destination);
 			void remove_selected_shares();
 	};
 
