@@ -29,53 +29,14 @@ using namespace std;
 
 UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 : settings(_settings),
-  add_share_file_dialog(*this, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
-  add_share_folder_dialog(*this, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
-  refresh_shares_toolbutton(Gtk::Stock::REFRESH),
-  download_shares_toolbutton(Gtk::Stock::GO_DOWN),
-  edit_preferences_toolbutton(Gtk::Stock::PREFERENCES),
-  add_share_file_toolbutton(Gtk::Stock::FILE),
-  add_share_folder_toolbutton(Gtk::Stock::DIRECTORY),
-  share_list(_settings, *this),
+  uimanager_ref(Gtk::UIManager::create()),
+  share_list(_settings, *this, uimanager_ref),
   task_list(_settings),
   uftt_preferences_dialog(_settings)
 {
 	set_title("UFTT");
 	set_default_size(1024, 640);
 	property_visible() = false;
-
-	{
-		Gtk::Button* button;
-		button = add_share_file_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
-		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_file_dialog));
-		button = add_share_file_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
-		button->set_label("_Select");
-		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
-		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
-		button->set_image(*image);
-		add_share_file_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_file, this));
-		add_share_file_dialog.set_transient_for(*this);
-		add_share_file_dialog.set_modal(true);
-#if GTK_CHECK_VERSION(2, 18, 3)
-		add_share_file_dialog.set_create_folders(false);
-#endif
-	}
-	{
-		Gtk::Button* button;
-		button = add_share_folder_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
-		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_folder_dialog));
-		button = add_share_folder_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
-		button->set_label("_Select");
-		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
-		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
-		button->set_image(*image);
-		add_share_folder_dialog_connection = button->signal_clicked().connect(boost::bind(&UFTTWindow::on_add_share_folder, this));
-		add_share_folder_dialog.set_transient_for(*this);
-		add_share_folder_dialog.set_modal(true);
-#if GTK_CHECK_VERSION(2, 18, 3)
-		add_share_folder_dialog.set_create_folders(false);
-#endif
-	}
 
 	statusicon_pixbuf = get_best_uftt_icon_for_size(256, 256);
 	statusicon = Gtk::StatusIcon::create(statusicon_pixbuf);
@@ -96,77 +57,62 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 
 	/* Create actions */
-	m_refActionGroup = Gtk::ActionGroup::create("UFTT");
+	Glib::RefPtr<Gtk::ActionGroup> actiongroup_ref(Gtk::ActionGroup::create("UFTT"));
 	Glib::RefPtr<Gtk::Action> action; // Only used when we need to add an accel_path to a menu-item
 
 	/* File menu */
-	m_refActionGroup->add(Gtk::Action::create("FileMenu", "_File"));
-	m_refActionGroup->add(Gtk::Action::create("FileAddShareFile", Gtk::Stock::FILE, "Share _File..."),
-	                      boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileAddSharefolder", Gtk::Stock::DIRECTORY, "Share F_older..."),
-	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
-	m_refActionGroup->add(Gtk::Action::create("FileDownload", Gtk::Stock::GO_DOWN, "_Download selected"),
-	                      boost::bind(&ShareList::download_selected_shares, &share_list));
-	m_refActionGroup->add(Gtk::Action::create("FileDownloadTo", Gtk::Stock::GO_DOWN, "Download selected _To..."));/*,
-	                      boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));*/
-	m_refActionGroup->add(Gtk::Action::create("FileRemoveShare", Gtk::Stock::REMOVE, "_Remove selected"),
-	                      boost::bind(&ShareList::remove_selected_shares, &share_list));
-	m_refActionGroup->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
+	actiongroup_ref->add(Gtk::Action::create("FileMenu", "_File"));
+	actiongroup_ref->add(Gtk::Action::create("FileQuit", Gtk::Stock::QUIT),
 	                      boost::bind(&UFTTWindow::on_menu_file_quit, this));
 
 	/* Edit Menu */
-	m_refActionGroup->add(Gtk::Action::create("EditMenu", "_Edit"));
+	actiongroup_ref->add(Gtk::Action::create("EditMenu", "_Edit"));
 	action = Gtk::Action::create("EditPreferences", Gtk::Stock::PREFERENCES);
-	m_refActionGroup->add(action, boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
+	actiongroup_ref->add(action, boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Edit/Preferences");
 
 	/* View Menu */
-	m_refActionGroup->add(Gtk::Action::create("ViewMenu", "_View"));
-	action = Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Sharelist");
-	m_refActionGroup->add(action, boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
-	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/RefreshShareList");
-	m_refActionGroup->add(Gtk::Action::create("ViewCancelSelectedTasks",Gtk::Stock::MEDIA_STOP, "_Cancel selected tasks"));
-	m_refActionGroup->add(Gtk::Action::create("ViewResumeSelectedTasks",Gtk::Stock::MEDIA_PLAY, "_Resume selected tasks"));
-	m_refActionGroup->add(Gtk::Action::create("ViewPauseSelectedTasks",Gtk::Stock::MEDIA_PAUSE, "_Pause selected tasks"));
+	actiongroup_ref->add(Gtk::Action::create("ViewMenu", "_View"));
+	actiongroup_ref->add(Gtk::Action::create("ViewCancelSelectedTasks",Gtk::Stock::MEDIA_STOP, "_Cancel selected tasks"));
+	actiongroup_ref->add(Gtk::Action::create("ViewResumeSelectedTasks",Gtk::Stock::MEDIA_PLAY, "_Resume selected tasks"));
+	actiongroup_ref->add(Gtk::Action::create("ViewPauseSelectedTasks",Gtk::Stock::MEDIA_PAUSE, "_Pause selected tasks"));
 	action = Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks");
-	m_refActionGroup->add(action, boost::bind(&TaskList::cleanup, &task_list));
+	actiongroup_ref->add(action, boost::bind(&TaskList::cleanup, &task_list));
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
 
-	m_refActionGroup->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
-	m_refActionGroup->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
+	actiongroup_ref->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
+	actiongroup_ref->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
 	action = Gtk::ToggleAction::create("ViewToolbar", "_Toolbar");
-	m_refActionGroup->add(action, boost::bind(&TaskList::cleanup, &task_list));
+	actiongroup_ref->add(action, boost::bind(&TaskList::cleanup, &task_list));
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/Toolbar");
 
 	/* Help Menu */
-	m_refActionGroup->add(Gtk::Action::create("HelpMenu", "_Help"));
-	m_refActionGroup->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP),
+	actiongroup_ref->add(Gtk::Action::create("HelpMenu", "_Help"));
+	actiongroup_ref->add(Gtk::Action::create("HelpUserManual", Gtk::Stock::HELP),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/UFTTHowto"));
-	m_refActionGroup->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"),
+	actiongroup_ref->add(Gtk::Action::create("HelpFAQ", "_Frequently Asked Questions"),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/wiki/FAQ"));
-	m_refActionGroup->add(Gtk::Action::create("HelpBugs", "Report _Bugs/Patches/Requests"),
+	actiongroup_ref->add(Gtk::Action::create("HelpBugs", "Report _Bugs/Patches/Requests"),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/issues/list"));
-	m_refActionGroup->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"),
+	actiongroup_ref->add(Gtk::Action::create("HelpHomePage", Gtk::Stock::HOME, "UFTT _Home Page"),
 	                      boost::bind(&UFTTWindow::show_uri, this, "http://code.google.com/p/uftt/"));
 
-	m_refActionGroup->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT),
+	actiongroup_ref->add(Gtk::Action::create("HelpAboutUFTT", Gtk::Stock::ABOUT),
 	                      boost::bind(&Gtk::AboutDialog::present, &uftt_about_dialog));//, "About _UFTT"));
-//	m_refActionGroup->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
+//	actiongroup_ref->add(Gtk::Action::create("HelpAboutGTK", Gtk::Stock::ABOUT, "About _GTK")); Win32 only?
 
 	/* Various widgets */
-	m_refActionGroup->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
+	actiongroup_ref->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
 	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
 
-	m_refActionGroup->add(Gtk::Action::create("PopupTasklistExecute", Gtk::Stock::EXECUTE, "Open"),
+	actiongroup_ref->add(Gtk::Action::create("PopupTasklistExecute", Gtk::Stock::EXECUTE, "Open"),
 	                      boost::bind(&TaskList::execute_selected_tasks, &task_list));
-	m_refActionGroup->add(Gtk::Action::create("PopupTasklistOpenContainingFolder", Gtk::Stock::OPEN, "Open containing folder"),
+	actiongroup_ref->add(Gtk::Action::create("PopupTasklistOpenContainingFolder", Gtk::Stock::OPEN, "Open containing folder"),
 	                      boost::bind(&TaskList::open_folder_selected_tasks, &task_list));
 
 
-	m_refUIManager = Gtk::UIManager::create();
-	m_refUIManager->insert_action_group(m_refActionGroup);
-
-	add_accel_group(m_refUIManager->get_accel_group());
+	uimanager_ref->insert_action_group(actiongroup_ref);
+	add_accel_group(uimanager_ref->get_accel_group());
 
 	/* Layout the actions */
 	Glib::ustring ui_info =
@@ -174,17 +120,18 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"  <menubar name='MenuBar'>"
 		"    <menu action='FileMenu'>"
 		"      <menuitem action='FileAddShareFile'/>"
-		"      <menuitem action='FileAddSharefolder'/>"
-		"      <separator/>"
-		"      <menuitem action='FileDownload'/>"
-		"      <menuitem action='FileDownloadTo'/>"
-		"      <separator/>"
-		"      <menuitem action='FileRemoveShare'/>"
+		"      <menuitem action='FileAddShareFolder'/>"
 		"      <separator/>"
 		"      <menuitem action='FileQuit'/>"
 		"    </menu>"
 		"    <menu action='EditMenu'>"
 		"      <menuitem action='EditPreferences'/>"
+		"    </menu>"
+		"    <menu action='ShareMenu'>"
+		"      <menuitem action='ShareDownload'/>"
+		"      <menuitem action='ShareDownloadTo'/>"
+		"      <separator/>"
+		"      <menuitem action='ShareRemoveShare'/>"
 		"    </menu>"
 		"    <menu action='ViewMenu'>"
 		"      <menuitem action='ViewRefreshShareList'/>"
@@ -205,33 +152,31 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 //		"      <menuitem action='HelpAboutGTK'/>" Win32 only
 		"    </menu>"
 		"  </menubar>"
+		"  <toolbar name='Toolbar'>"
+		"    <toolitem action='FileAddShareFile'/>"
+		"    <toolitem action='FileAddShareFolder'/>"
+		"    <separator/>"
+		"    <toolitem action='ViewRefreshShareList'/>"
+		"    <toolitem action='ShareDownload'/>"
+		"    <separator/>"
+		"    <toolitem action='EditPreferences'/>"
+		"  </toolbar>"
 		"  <popup name='StatusIconPopup'>"
 		"    <menuitem action='StatusIconShowUFTT'/>"
 		"    <separator/>"
 		"    <menuitem action='FileAddShareFile'/>"
-		"    <menuitem action='FileAddSharefolder'/>"
+		"    <menuitem action='FileAddShareFolder'/>"
 		"    <separator/>"
 		"    <menuitem action='FileQuit'/>"
 		"  </popup>"
-		"  <popup name='ShareListSelectionPopup'>"
+		"  <popup name='ShareListPopup'>"
 		"    <menuitem action='FileAddShareFile'/>"
-		"    <menuitem action='FileAddSharefolder'/>"
+		"    <menuitem action='FileAddShareFolder'/>"
 		"    <separator/>"
-		"    <menuitem action='FileDownload'/>"
-		"    <menuitem action='FileDownloadTo'/>"
+		"    <menuitem action='ShareDownload'/>"
+		"    <menuitem action='ShareDownloadTo'/>"
 		"    <separator/>"
-		"    <menuitem action='FileRemoveShare'/>"
-		"    <separator/>"
-		"    <menuitem action='ViewRefreshShareList'/>"
-		"  </popup>"
-		"  <popup name='ShareListNoSelectionPopup'>"
-		"    <menuitem action='FileAddShareFile'/>"
-		"    <menuitem action='FileAddSharefolder'/>"
-		"    <separator/>"
-		"    <menuitem action='FileDownload'/>"
-		"    <menuitem action='FileDownloadTo'/>"
-		"    <separator/>"
-		"    <menuitem action='FileRemoveShare'/>"
+		"    <menuitem action='ShareRemoveShare'/>"
 		"    <separator/>"
 		"    <menuitem action='ViewRefreshShareList'/>"
 		"  </popup>"
@@ -256,18 +201,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <menuitem action='ViewClearTaskList'/>"
 		"  </popup>"
 		"</ui>";
+	uimanager_ref->add_ui_from_string(ui_info);
 
-	m_refUIManager->add_ui_from_string(ui_info); //FIXME: This may throw an error if the XML above is not valid
-	menubar_ptr = (Gtk::Menu*)m_refUIManager->get_widget("/MenuBar");
+	menubar_ptr = (Gtk::Menu*)uimanager_ref->get_widget("/MenuBar");
 
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownload"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileDownloadTo"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/ShareListNoSelectionPopup/FileRemoveShare"))->set_sensitive(false);
-	share_list.set_popup_menus(
-		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListSelectionPopup"),
-		(Gtk::Menu*)m_refUIManager->get_widget("/ShareListNoSelectionPopup")
-	);
-	share_list_frame.set_label("Sharelist:");
+	share_list_frame.set_label("Shares:");
 	share_list_frame.add(share_list);
 	share_list_alignment.add(share_list_frame);
 	share_list_alignment.set_padding(4, 4, 4, 4);
@@ -282,19 +220,19 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	 FIXME: This seems really hacky, is bolding menu/popup entries not
 	        according to the HIG? It does look 'unnatural'...
-	((Gtk::Label*)(((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListSelectionPopup/PopupTasklistExecute"))->get_child()))->set_attributes(attr_list);
+	((Gtk::Label*)(((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListSelectionPopup/PopupTasklistExecute"))->get_child()))->set_attributes(attr_list);
 */
 
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/PopupTasklistExecute"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/PopupTasklistOpenContainingFolder"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewCancelSelectedTasks"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewResumeSelectedTasks"))->set_sensitive(false);
-	((Gtk::MenuItem*)m_refUIManager->get_widget("/TaskListNoSelectionPopup/ViewPauseSelectedTasks"))->set_sensitive(false);
+	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/PopupTasklistExecute"))->set_sensitive(false);
+	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/PopupTasklistOpenContainingFolder"))->set_sensitive(false);
+	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewCancelSelectedTasks"))->set_sensitive(false);
+	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewResumeSelectedTasks"))->set_sensitive(false);
+	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewPauseSelectedTasks"))->set_sensitive(false);
 	task_list.set_popup_menus(
-		(Gtk::Menu*)m_refUIManager->get_widget("/TaskListSelectionPopup"),
-		(Gtk::Menu*)m_refUIManager->get_widget("/TaskListNoSelectionPopup")
+		(Gtk::Menu*)uimanager_ref->get_widget("/TaskListSelectionPopup"),
+		(Gtk::Menu*)uimanager_ref->get_widget("/TaskListNoSelectionPopup")
 	);
-	task_list_frame.set_label("Tasklist:");
+	task_list_frame.set_label("Tasks:");
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);
 	task_list_alignment.set_padding(4, 4, 4, 4);
@@ -314,37 +252,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	debug_log_alignment.set_padding(4, 4, 4, 4);
 	main_paned.add(debug_log_alignment);
 	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
-
-	Gtk::SeparatorToolItem* separator;
-	refresh_shares_toolbutton.set_label("Refresh");
-	download_shares_toolbutton.set_label("Download");
-	edit_preferences_toolbutton.set_label("Preferences");
-	add_share_file_toolbutton.set_label("Share file");
-	add_share_folder_toolbutton.set_label("Share folder");
-	download_shares_toolbutton.signal_clicked().connect(boost::bind(&ShareList::download_selected_shares, &share_list));
-	refresh_shares_toolbutton.signal_clicked().connect(boost::bind(&UFTTWindow::on_refresh_shares_toolbutton_clicked, this));
-	add_share_file_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_file_dialog));
-	add_share_folder_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog));
-	edit_preferences_toolbutton.signal_clicked().connect(boost::bind(&Gtk::Dialog::present, &uftt_preferences_dialog));
-	toolbar.append(add_share_file_toolbutton);
-	toolbar.append(add_share_folder_toolbutton);
-	separator = Gtk::manage(new Gtk::SeparatorToolItem());
-	toolbar.append(*separator);
-	toolbar.append(download_shares_toolbutton);
-	toolbar.append(refresh_shares_toolbutton);
-	separator = Gtk::manage(new Gtk::SeparatorToolItem());
-	toolbar.append(*separator);
-	toolbar.append(edit_preferences_toolbutton);
-	menu_main_paned_vbox.pack_start(toolbar, Gtk::PACK_SHRINK);
+	menu_main_paned_vbox.pack_start(*uimanager_ref->get_widget("/Toolbar"), Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
 	menu_main_paned_vbox.show_all();
 	add(menu_main_paned_vbox);
-
-	download_shares_toolbutton.set_tooltip_text("Download selected shares");
-	edit_preferences_toolbutton.set_tooltip_text("Edit Preferences");
-	refresh_shares_toolbutton.set_tooltip_text("Refresh sharelist");
-	add_share_file_toolbutton.set_tooltip_text("Share a single file");
-	add_share_folder_toolbutton.set_tooltip_text("Share a whole folder");
 
 	vector<string> author_list;
 	author_list.push_back("\"CodeAcc\" <http://code.google.com/u/CodeAcc/>");
@@ -387,12 +298,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey( "T").get_key(), Gdk::CONTROL_MASK   , true);
 
 	restore_window_size_and_position();
-	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
+	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)uimanager_ref->get_widget("/MenuBar/ViewMenu/ViewToolbar");
 	mi->signal_toggled().connect(boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
-	toolbar.show_all();
-	toolbar.set_no_show_all(true);
+	uimanager_ref->get_widget("/Toolbar")->show_all();
+	uimanager_ref->get_widget("/Toolbar")->set_no_show_all(true);
 	mi->set_active(settings->show_toolbar);
-	toolbar.property_visible() = settings->show_toolbar;
+	uimanager_ref->get_widget("/Toolbar")->property_visible() = settings->show_toolbar;
 }
 
 void UFTTWindow::on_main_paned_realize() {
@@ -437,9 +348,9 @@ void UFTTWindow::save_window_size_and_position() {
 }
 
 void UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled() {
-	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/MenuBar/ViewMenu/ViewToolbar");
+	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)uimanager_ref->get_widget("/MenuBar/ViewMenu/ViewToolbar");
 	settings->show_toolbar = mi->get_active();
-	toolbar.property_visible() = settings->show_toolbar;
+	uimanager_ref->get_widget("/Toolbar")->property_visible() = settings->show_toolbar;
 }
 
 void UFTTWindow::restore_window_size_and_position() {
@@ -465,7 +376,7 @@ void UFTTWindow::on_statusicon_signal_activate() {
 }
 
 void UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled() {
-	Gtk::CheckMenuItem* m = (Gtk::CheckMenuItem*)m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT");
+	Gtk::CheckMenuItem* m = (Gtk::CheckMenuItem*)uimanager_ref->get_widget("/StatusIconPopup/StatusIconShowUFTT");
 	bool b = m->get_active();
 	if(b && !is_visible()) {
 		show();
@@ -477,8 +388,8 @@ void UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled() {
 }
 
 void UFTTWindow::on_statusicon_signal_popup_menu(guint button, guint32 activate_time) {
-	((Gtk::CheckMenuItem*)(m_refUIManager->get_widget("/StatusIconPopup/StatusIconShowUFTT")))->set_active(property_visible());
-	Gtk::Menu* m = (Gtk::Menu*)(m_refUIManager->get_widget("/StatusIconPopup"));
+	((Gtk::CheckMenuItem*)(uimanager_ref->get_widget("/StatusIconPopup/StatusIconShowUFTT")))->set_active(property_visible());
+	Gtk::Menu* m = (Gtk::Menu*)(uimanager_ref->get_widget("/StatusIconPopup"));
 	statusicon->popup_menu_at_position(*m, button, activate_time);
 }
 
@@ -518,68 +429,8 @@ Glib::RefPtr<Gdk::Pixbuf> UFTTWindow::get_best_uftt_icon_for_size(int x, int y) 
 	return loader->get_pixbuf();
 }
 
-void UFTTWindow::on_add_share_file() {
-	add_share_file_dialog_connection.block();  // Work around some funny Gtk behaviour
-	std::string filename = add_share_file_dialog.get_filename();
-	if(filename != "") {
-		boost::filesystem::path path = filename;
-		if(ext::filesystem::exists(path)) {
-			if(boost::filesystem::is_directory(path)) {
-				add_share_file_dialog.set_current_folder(filename);
-			}
-			else {
-				add_share_file_dialog.hide();
-				core->addLocalShare(path.leaf(), path);
-			}
-		}
-		else {
-			Gtk::MessageDialog dialog(*this, "File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
-			dialog.set_transient_for(add_share_file_dialog);
-			dialog.set_modal(true);
-			dialog.set_secondary_text("The file you have selected to share does not appear to exist.\nPlease verify that the path and filename are correct and try again.");
-			dialog.run();
-		}
-	}
-	add_share_file_dialog_connection.unblock();
-}
-
-void UFTTWindow::on_add_share_folder() {
-	add_share_folder_dialog_connection.block(); // Work around some funny Gtk behaviour
-	std::string filename = add_share_folder_dialog.get_filename();
-	if(filename != "") {
-		boost::filesystem::path path = filename;
-		if(ext::filesystem::exists(path)) {
-			add_share_folder_dialog.hide();
-			core->addLocalShare(path.leaf(), path);
-		}
-		else {
-			Gtk::MessageDialog dialog(*this, "Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
-			dialog.set_transient_for(add_share_folder_dialog);
-			dialog.set_modal(true);
-			dialog.set_secondary_text("The folder you have selected to share does not appear to exist.\nPlease verify that the path and foldername are correct and try again.");
-			dialog.run();
-		}
-	}
-	add_share_folder_dialog_connection.unblock();
-}
-
 void UFTTWindow::refresh_shares() {
 	if(core) core->doRefreshShares();
-}
-
-void UFTTWindow::on_refresh_shares_toolbutton_clicked() {
-	// FIXME: begin QTGui QuirkMode Emulation TM
-	Gdk::ModifierType mask;
-	int x,y;
-	get_window()->get_pointer(x, y, mask);
-	if((mask & Gdk::SHIFT_MASK) != Gdk::SHIFT_MASK) {
-		share_list.clear();
-	}
-	if((mask & Gdk::CONTROL_MASK) != Gdk::CONTROL_MASK) {
-		for(int i=0; i<8; ++i) {
-			Glib::signal_timeout().connect_once(dispatcher.wrap(boost::bind(&UFTTWindow::refresh_shares, this)), i*20);
-		}
-	}
 }
 
 void UFTTWindow::handle_uftt_core_gui_command(UFTTCore::GuiCommand cmd) {

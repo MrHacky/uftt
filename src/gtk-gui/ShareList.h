@@ -6,21 +6,18 @@
 	#include <gtkmm/treeview.h>
 	#include <gtkmm/alignment.h>
 	#include <gtkmm/liststore.h>
+	#include <gtkmm/uimanager.h>
 	#include <gtkmm/scrolledwindow.h>
 	#include <gtkmm/filechooserbutton.h>
 
 	class ShareList : public Gtk::VBox {
 		public:
-			ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window);
-			void clear();
-			void download_selected_shares();
-			void remove_selected_shares();
+			ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Glib::RefPtr<Gtk::UIManager> uimanager_ref_);
 			void set_backend(UFTTCore* _core);
-			void set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu);
+
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;
-			Gtk::Window& parent_window;
 			DispatcherMarshaller dispatcher; // Execute a function in the gui thread
 			class ShareListColumns : public Gtk::TreeModelColumnRecord {
 				public:
@@ -49,17 +46,26 @@
 			Gtk::VBox                     download_destination_path_vbox;
 			Gtk::Entry                    download_destination_path_entry;
 			Gtk::Label                    download_destination_path_label;
+			sigc::connection              add_share_file_dialog_connection;
+			Gtk::FileChooserDialog        add_share_file_dialog;
+			sigc::connection              add_share_folder_dialog_connection;
+			Gtk::FileChooserDialog        add_share_folder_dialog;
 			Gtk::FileChooserButton        browse_for_download_destination_path_button;
-			Gtk::Menu*                    selection_popup_menu;
-			Gtk::Menu*                    no_selection_popup_menu;
+			Glib::RefPtr<Gtk::UIManager>  uimanager_ref;
 
 			// Functions / callbacks
 			sigc::connection on_download_destination_path_entry_signal_changed_connection;
 			void on_download_destination_path_entry_signal_changed();
 			void on_browse_for_download_destination_path_button_signal_current_folder_changed();
 			void on_share_list_treeview_signal_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context, int x, int y, const Gtk::SelectionData& selection_data, guint info, guint time);
+			void on_share_list_treeview_selection_signal_changed();
 			void on_signal_add_share(const ShareInfo& info);
+			void on_add_share_file_dialog_button_clicked();
+			void on_add_share_folder_dialog_button_clicked();
+			void on_refresh_shares();
 			bool on_share_list_treeview_signal_button_press_event(GdkEventButton* event);
+			void download_selected_shares();
+			void remove_selected_shares();
 	};
 
 #endif // SHARE_LIST_H

@@ -7,13 +7,18 @@
 #include <boost/foreach.hpp>
 #include <gtkmm/messagedialog.h>
 #include <gtkmm/treeviewcolumn.h>
+#include <boost/lambda/if.hpp>
+#include <boost/lambda/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 
 using namespace std;
 
-ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
+ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Glib::RefPtr<Gtk::UIManager> _uimanager_ref)
 : settings(_settings),
-  parent_window(_parent_window),
-  browse_for_download_destination_path_button("Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER)
+  add_share_file_dialog(_parent_window, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
+  add_share_folder_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  browse_for_download_destination_path_button("Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
+  uimanager_ref(_uimanager_ref)
 {
 	share_list_liststore = Gtk::ListStore::create(share_list_columns);
 //	share_list_treeview.set_model(SortableTreeDragDest<Gtk::ListStore>::create(share_list_liststore)); // FIXME: Enabling this causes Gtk to give a silly warning
@@ -36,6 +41,9 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 	share_list_treeview.set_enable_search(true);
 	share_list_treeview.set_rubber_banding(true);
 	share_list_treeview.get_selection()->set_mode(Gtk::SELECTION_MULTIPLE);
+	share_list_treeview.get_selection()->signal_changed().connect(
+		boost::bind(&ShareList::on_share_list_treeview_selection_signal_changed, this)
+	);
 	std::list<Gtk::TargetEntry> listTargets;
 	listTargets.push_back( Gtk::TargetEntry("text/uri-list", Gtk::TARGET_OTHER_APP, 0) ); // Last parameter is 'Info', used to distinguish
 	listTargets.push_back( Gtk::TargetEntry("text/plain"   , Gtk::TARGET_OTHER_APP, 1) ); // different types of TargetEntry in the drop handler
@@ -70,15 +78,213 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window)
 
 	this->add(share_list_scrolledwindow);
 	this->pack_start(download_destination_path_alignment, Gtk::PACK_SHRINK);
+
+	{
+		Gtk::Button* button;
+		button = add_share_file_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_file_dialog));
+		button = add_share_file_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+		button->set_label("_Select");
+		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
+		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
+		button->set_image(*image);
+		add_share_file_dialog_connection = button->signal_clicked().connect(boost::bind(&ShareList::on_add_share_file_dialog_button_clicked, this));
+		add_share_file_dialog.set_transient_for(_parent_window);
+		add_share_file_dialog.set_modal(true);
+#if GTK_CHECK_VERSION(2, 18, 3)
+		add_share_file_dialog.set_create_folders(false);
+#endif
+	}
+	{
+		Gtk::Button* button;
+		button = add_share_folder_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &add_share_folder_dialog));
+		button = add_share_folder_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+		button->set_label("_Select");
+		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
+		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
+		button->set_image(*image);
+		add_share_folder_dialog_connection = button->signal_clicked().connect(boost::bind(&ShareList::on_add_share_folder_dialog_button_clicked, this));
+		add_share_folder_dialog.set_transient_for(_parent_window);
+		add_share_folder_dialog.set_modal(true);
+#if GTK_CHECK_VERSION(2, 18, 3)
+		add_share_folder_dialog.set_create_folders(false);
+#endif
+	}
+	{
+		Gtk::Button* button;
+		button = pick_download_destination_dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+		button->signal_clicked().connect(boost::bind(&Gtk::Widget::hide, &pick_download_destination_dialog));
+		button = pick_download_destination_dialog.add_button(Gtk::Stock::OK, Gtk::RESPONSE_OK);
+		button->set_label("_Select");
+		Gtk::Image* image = Gtk::manage(new Gtk::Image()); // FIXME: Verify that this does not leak
+		Gtk::Stock::lookup(Gtk::Stock::OK, Gtk::ICON_SIZE_BUTTON, *image);
+		button->set_image(*image);
+		button->signal_clicked().connect(boost::bind(&ShareList::on_pick_download_destination_dialog_button_clicked, this));
+		pick_download_destination_dialog.set_transient_for(_parent_window);
+		pick_download_destination_dialog.set_modal(true);
+		// Unlike the two dialogs above this *is* allowed to create new folders
+#if GTK_CHECK_VERSION(2, 18, 3)
+		pick_download_destination_dialog.set_create_folders(true);
+#endif
+	}
+
+
+	/* Create actions */
+	Glib::RefPtr<Gtk::ActionGroup> actiongroup_ref(Gtk::ActionGroup::create("UFTT"));
+	Glib::RefPtr<Gtk::Action> action; // Only used when we need to add an accel_path to a menu-item
+
+	/* File menu */
+	actiongroup_ref->add(
+		Gtk::Action::create(
+			"FileAddShareFile",
+			Gtk::Stock::FILE,
+			"Share _File",
+			"Share a single file"
+		),
+		boost::bind(&Gtk::Dialog::present, &add_share_file_dialog)
+	);
+	actiongroup_ref->add(
+		Gtk::Action::create(
+			"FileAddShareFolder",
+			Gtk::Stock::DIRECTORY,
+			"Share F_older",
+			"Share a whole folder"
+		),
+		boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog)
+	);
+
+	/* Share menu */
+	actiongroup_ref->add(Gtk::Action::create("ShareMenu", "_Share"));
+
+	action = Gtk::Action::create(
+		"ShareDownload",
+		Gtk::Stock::GO_DOWN,
+		"_Download Share",
+		"Download the selected shares to the 'Download destination folder'"
+	);
+	action->set_sensitive(false);
+	actiongroup_ref->add(
+		action,
+		boost::bind(&ShareList::download_selected_shares, this)
+	);
+
+	action = Gtk::Action::create(
+		"ShareDownloadTo",
+		Gtk::Stock::GO_DOWN,
+		"Download Share _To",
+		"Download the selected shares to a newly selected folder"
+	);
+	action->set_sensitive(false);
+	actiongroup_ref->add(
+		action
+		//boost::bind(&Gtk::Dialog::present, &add_share_folder_dialog)
+	);
+
+	action = Gtk::Action::create(
+		"ShareRemoveShare",
+		Gtk::Stock::REMOVE,
+		"_Remove Share",
+		"Removes the selected shares from the list of shares"
+	);
+	action->set_sensitive(false);
+	actiongroup_ref->add(
+		action,
+		boost::bind(&ShareList::remove_selected_shares, this)
+	);
+
+	/* View menu */
+	action = Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Shares", "Refresh the list of shares");
+	actiongroup_ref->add(action, boost::bind(&ShareList::on_refresh_shares, this));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/RefreshShareList");
+
+	uimanager_ref->insert_action_group(actiongroup_ref);
+
+	/**
+	 * NOTE: The actual layout for the menu, toolbar items and pop-ups is done
+	 *       in the XML description in UFTTWindow (see GTKImpl.cpp).
+	 */
 }
 
-void ShareList::set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu) {
-	selection_popup_menu    = _selection_popup_menu;
-	no_selection_popup_menu = _no_selection_popup_menu;
+void ShareList::on_refresh_shares() {
+	// FIXME: begin QTGui QuirkMode Emulation TM
+	Gdk::ModifierType mask;
+	int x,y;
+	get_window()->get_pointer(x, y, mask);
+	if((mask & Gdk::SHIFT_MASK) != Gdk::SHIFT_MASK) {
+		share_list_liststore->clear();
+	}
+	if((mask & Gdk::CONTROL_MASK) != Gdk::CONTROL_MASK) {
+		for(int i=0; i<8; ++i) {
+			Glib::signal_timeout().connect_once(
+				dispatcher.wrap(
+					boost::function<void(void)>(
+						boost::lambda::if_then(
+							boost::lambda::var(core),
+							boost::lambda::bind(&UFTTCore::doRefreshShares, core)
+						)
+					)
+				),
+				i*20
+			);
+		}
+	}
+}
+
+void ShareList::on_add_share_file_dialog_button_clicked() {
+	add_share_file_dialog_connection.block();  // Work around some funny Gtk behaviour
+	std::string filename = add_share_file_dialog.get_filename();
+	if(filename != "") {
+		boost::filesystem::path path = filename;
+		if(ext::filesystem::exists(path)) {
+			if(boost::filesystem::is_directory(path)) {
+				add_share_file_dialog.set_current_folder(filename);
+			}
+			else {
+				add_share_file_dialog.hide();
+				core->addLocalShare(path.leaf(), path);
+			}
+		}
+		else {
+			Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "File does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			dialog.set_transient_for(add_share_file_dialog);
+			dialog.set_modal(true);
+			dialog.set_secondary_text("The file you have selected to share does not appear to exist.\nPlease verify that the path and filename are correct and try again.");
+			dialog.run();
+		}
+	}
+	add_share_file_dialog_connection.unblock();
+}
+
+void ShareList::on_add_share_folder_dialog_button_clicked() {
+	add_share_folder_dialog_connection.block(); // Work around some funny Gtk behaviour
+	std::string filename = add_share_folder_dialog.get_filename();
+	if(filename != "") {
+		boost::filesystem::path path = filename;
+		if(ext::filesystem::exists(path)) {
+			add_share_folder_dialog.hide();
+			core->addLocalShare(path.leaf(), path);
+		}
+		else {
+			Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+			dialog.set_transient_for(add_share_folder_dialog);
+			dialog.set_modal(true);
+			dialog.set_secondary_text("The folder you have selected to share does not appear to exist.\nPlease verify that the path and foldername are correct and try again.");
+			dialog.run();
+		}
+	}
+	add_share_folder_dialog_connection.unblock();
+}
+
+void ShareList::on_share_list_treeview_selection_signal_changed() {
+	bool has_selection = share_list_treeview.get_selection()->count_selected_rows() > 0;
+	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownload")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownloadTo")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareRemoveShare")->set_sensitive(has_selection);
 }
 
 bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton* event) {
-	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
 		Gtk::TreeModel::Path  path;
 		Gtk::TreeViewColumn* column;
 		int    cell_x, cell_y;
@@ -89,12 +295,8 @@ bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton*
 				share_list_treeview.get_selection()->select(path);
 			}
 		}
-		if(share_list_treeview.get_selection()->count_selected_rows() > 0) {
-			selection_popup_menu->popup(event->button, event->time);
-		}
-		else {
-			no_selection_popup_menu->popup(event->button, event->time);
-		}
+
+		((Gtk::Menu*)uimanager_ref->get_widget("/ShareListPopup"))->popup(event->button, event->time);
 		return true;
 	}
 	return false;
@@ -177,7 +379,7 @@ vector<std::string> urilist_convert(const std::string urilist) {
 }
 
 void ShareList::on_share_list_treeview_signal_drag_data_received(
-	const Glib::RefPtr<Gdk::DragContext>& context, 
+	const Glib::RefPtr<Gdk::DragContext>& context,
 	int x, int y,
 	const Gtk::SelectionData& selection_data, guint info, guint time)
 {
@@ -216,9 +418,9 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 void ShareList::download_selected_shares() {
 	//FIXME: Don't forget to test dl_path for validity and writeablity
 	if(!ext::filesystem::exists(settings->dl_path)) {
-		Gtk::MessageDialog dialog(parent_window, "Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
+		Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_secondary_text("The folder you have selected for downloaded shares to be placed in does not appear to exist.\nPlease select another download destination and try again.");
-		dialog.set_transient_for(parent_window);
+		dialog.set_transient_for(*(Gtk::Window*)get_toplevel());
 		dialog.set_modal(true);
 		dialog.run();
 		return;
@@ -251,12 +453,8 @@ void ShareList::remove_selected_shares() {
 	}
 	// FIXME: Should not be neccessary, we should get a notification
 	//        from the core/backend
-	clear();
-	core->doRefreshShares();
-}
-
-void ShareList::clear() {
 	share_list_liststore->clear();
+	core->doRefreshShares();
 }
 
 void ShareList::on_signal_add_share(const ShareInfo& info) {

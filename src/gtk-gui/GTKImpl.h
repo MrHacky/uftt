@@ -16,7 +16,6 @@
 	#include <gtkmm/paned.h>
 	#include <gtkmm/frame.h>
 	#include <gtkmm/window.h>
-	#include <gtkmm/toolbar.h>
 	#include <gtkmm/textview.h>
 	#include <gtkmm/alignment.h>
 	#include <gtkmm/uimanager.h>
@@ -43,8 +42,7 @@
 			Glib::RefPtr<Gtk::StatusIcon> statusicon;
 
 			/* Helpers */
-			Glib::RefPtr<Gtk::UIManager>   m_refUIManager;
-			Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+			Glib::RefPtr<Gtk::UIManager>   uimanager_ref;  // NOTE: UIManager is referenced by TaskList and ShareList
 
 			/* Widgets */
 			Gtk::Menu*               menubar_ptr; // Menu is created dynamically using UIManager
@@ -61,18 +59,6 @@
 			Gtk::Alignment           share_list_alignment;
 			Gtk::Alignment           task_list_alignment;
 			Gtk::Alignment           debug_log_alignment;
-			sigc::connection         add_share_file_dialog_connection;
-			Gtk::FileChooserDialog   add_share_file_dialog;
-			sigc::connection         add_share_folder_dialog_connection;
-			Gtk::FileChooserDialog   add_share_folder_dialog;
-			Gtk::FileChooserButton   browse_for_download_destination_path_button;
-			Gtk::Toolbar             toolbar;
-			Gtk::Image               refresh_shares_image;
-			Gtk::ToolButton          download_shares_toolbutton;
-			Gtk::ToolButton          refresh_shares_toolbutton;
-			Gtk::ToolButton          edit_preferences_toolbutton;
-			Gtk::ToolButton          add_share_file_toolbutton;
-			Gtk::ToolButton          add_share_folder_toolbutton;
 			Gtk::AboutDialog         uftt_about_dialog;
 			UFTTPreferencesDialog    uftt_preferences_dialog;
 
@@ -80,8 +66,6 @@
 			void on_menu_file_quit();
 			bool on_delete_event(GdkEventAny* event);
 			void on_refresh_shares_toolbutton_clicked();
-			void on_add_share_file();
-			void on_add_share_folder();
 			void refresh_shares();
 			void on_apply_settings();
 			bool on_statusicon_signal_size_changed(int xy);
