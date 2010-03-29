@@ -7,7 +7,7 @@
 
 using namespace std;
 
-UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings) 
+UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 : settings(_settings),
   enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
   enable_download_resume_checkbutton("Resume _partial downloads", true),
@@ -113,7 +113,7 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	// NOTE: Always apply settings *before* connecting the signals.
 	//       (See documentation on toggled signal)
 	apply_settings();
-	
+
 	#define CONNECT_SIGNAL_HANDLER(widget, signal) \
 		widget.signal_ ## signal().connect( \
 			boost::bind(&UFTTPreferencesDialog::with_enable_apply_button_do, this, \
@@ -192,13 +192,7 @@ void UFTTPreferencesDialog::on_enable_auto_clear_tasks_checkbutton_toggled() {
 }
 
 void UFTTPreferencesDialog::on_username_entry_changed() {
-	// FIXME: Username in sharelist does not (really) update in real-time
-	//        probably requires support from the Core and Settings:
-	//          settings.set_username ->
-	//          sig_username_changed in core ->
-	//          sig_remove_share & sig_add_share in GUI (ShareList).
 	settings->nickname = username_entry.get_text();
-	signal_settings_changed(); // A bit hacky, see note above
 }
 
 void UFTTPreferencesDialog::on_enable_tray_icon_checkbutton_toggled() {

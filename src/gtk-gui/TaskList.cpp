@@ -5,11 +5,14 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/if.hpp>
+#include <gtkmm/stock.h>
 #include <gtkmm/treeviewcolumn.h>
+#include <gtkmm/treerowreference.h>
 #include <limits.h>
 
-TaskList::TaskList(UFTTSettingsRef _settings)
-: settings(_settings)
+TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_)
+: settings(_settings),
+  uimanager_ref(uimanager_ref_)
 {
 	this->add(task_list_treeview);
 	this->set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
@@ -44,11 +47,82 @@ TaskList::TaskList(UFTTSettingsRef _settings)
 	task_list_treeview.signal_row_activated().connect(boost::bind(&TaskList::execute_selected_tasks, this));
 	task_list_treeview.signal_button_press_event().connect(
 		sigc::mem_fun(this, &TaskList::on_task_list_treeview_signal_button_press_event), false);
+
+	/* Create actions */
+	Glib::RefPtr<Gtk::ActionGroup> actiongroup_ref(Gtk::ActionGroup::create("UFTT"));
+	Glib::RefPtr<Gtk::Action> action; // Only used when we need to add an accel_path to a menu-item
+
+	/* View menu */
+	action = Gtk::Action::create("ViewClearTaskList", Gtk::Stock::CLEAR, "_Clear Completed Tasks");
+	action->set_sensitive(false);
+	actiongroup_ref->add(action, boost::bind(&TaskList::cleanup, this));
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
+
+	/* Task menu */
+	actiongroup_ref->add(Gtk::Action::create("TaskMenu", "_Task"));
+
+	action = Gtk::Action::create("TaskPause", Gtk::Stock::MEDIA_PAUSE);
+	action->set_sensitive(false);
+	actiongroup_ref->add(action);
+
+	action = Gtk::Action::create("TaskResume", Gtk::Stock::MEDIA_PLAY,  "_Resume");
+	action->set_sensitive(false);
+	actiongroup_ref->add(action);
+
+	action = Gtk::Action::create("TaskCancel", Gtk::Stock::MEDIA_STOP,  "_Cancel");
+	action->set_sensitive(false);
+	actiongroup_ref->add(action);
+
+	action = Gtk::Action::create(
+		"TaskExecute",
+		Gtk::Stock::EXECUTE,
+		"Open",
+		"Opens the download using the default action"
+	);
+	action->set_sensitive(false);
+	actiongroup_ref->add(
+		action,
+		boost::bind(&TaskList::execute_selected_tasks, this)
+	);
+	action = Gtk::Action::create(
+		"TaskOpenContainingFolder",
+		Gtk::Stock::OPEN,
+		"Open containing folder",
+		"Opens the folder where the task was downloaded to"
+	);
+	action->set_sensitive(false);
+	actiongroup_ref->add(
+		action,
+		boost::bind(&TaskList::open_folder_selected_tasks, this)
+	);
+
+	uimanager_ref->insert_action_group(actiongroup_ref);
+
+	task_list_treeview.get_selection()->signal_changed().connect(
+		boost::bind(&TaskList::on_task_list_treeview_selection_signal_changed, this)
+	);
+
+	task_list_treeview.get_model()->signal_row_inserted().connect(
+		boost::bind(&TaskList::on_task_list_treeview_signal_row_inserted_deleted, this)
+	);
+	task_list_treeview.get_model()->signal_row_deleted().connect(
+		boost::bind(&TaskList::on_task_list_treeview_signal_row_inserted_deleted, this)
+	);
 }
 
-void TaskList::set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu) {
-	selection_popup_menu    = _selection_popup_menu;
-	no_selection_popup_menu = _no_selection_popup_menu;
+void TaskList::on_task_list_treeview_signal_row_inserted_deleted() {
+	uimanager_ref->get_action("/MenuBar/ViewMenu/ViewClearTaskList")->set_sensitive(
+		task_list_treeview.get_model()->children().size() > 0
+	);
+}
+
+void TaskList::on_task_list_treeview_selection_signal_changed() {
+	bool has_selection = task_list_treeview.get_selection()->count_selected_rows() > 0;
+	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskExecute")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskOpenContainingFolder")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskPause")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskResume")->set_sensitive(has_selection);
+	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskCancel")->set_sensitive(has_selection);
 }
 
 void TaskList::cleanup() {
@@ -88,7 +162,7 @@ void TaskList::open_folder_selected_tasks() {
 }
 
 bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* event) {
-	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3) && (selection_popup_menu != NULL) && (no_selection_popup_menu != NULL)) {
+	if((event->type == GDK_BUTTON_PRESS) && (event->button == 3)) {
 		Gtk::TreeModel::Path  path;
 		Gtk::TreeViewColumn* column;
 		int    cell_x, cell_y;
@@ -99,21 +173,8 @@ bool TaskList::on_task_list_treeview_signal_button_press_event(GdkEventButton* e
 				task_list_treeview.get_selection()->select(path);
 			}
 		}
-		selection_popup_menu->items()[0].set_sensitive(false); // A bit hacky
-		selection_popup_menu->items()[1].set_sensitive(false);
-		if(task_list_treeview.get_selection()->count_selected_rows() > 0) { // race race ?
-		selection_popup_menu->items()[1].set_sensitive(true);
-			BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
-				const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
-				if(row[task_list_columns.status] == "Completed") {
-					selection_popup_menu->items()[0].set_sensitive(true);
-				}
-			}
-			selection_popup_menu->popup(event->button, event->time);
-		}
-		else {
-			no_selection_popup_menu->popup(event->button, event->time);
-		}
+
+		((Gtk::Menu*)uimanager_ref->get_widget("/TaskListPopup"))->popup(event->button, event->time);
 		return true;
 	}
 	return false;
@@ -124,7 +185,13 @@ void TaskList::set_backend(UFTTCore* _core) {
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&TaskList::on_signal_new_task, this, _1)));
 }
 
-void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info) {
+void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info) {
+	if(!*rowref) {
+		std::cout << "Warning: BUG in  UFTTCore: calling SigTaskStatus after completion of task!" << std::endl;
+		return;
+	}
+	Gtk::TreeModel::iterator i = task_list_liststore->get_iter(rowref->get_path());
+
 	(*i)[task_list_columns.task_info]      = info;
 
 	boost::posix_time::ptime current_time = boost::posix_time::microsec_clock::universal_time();
@@ -150,27 +217,6 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 		}
 	}
 
-	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
-		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
-		if(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0)) {
-			Glib::signal_timeout().connect_seconds_once(
-				dispatcher.wrap(
-					boost::function<void(void)>(
-						boost::lambda::if_then(
-							boost::lambda::constant(true),
-							boost::lambda::bind(
-								&Gtk::ListStore::erase,
-								task_list_liststore.operator->(),
-								i
-							)
-						)
-					)
-				),
-				settings->auto_clear_tasks_after.get().total_seconds()
-			);
-		}
-	}
-
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
 	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
 	if(time_elapsed.total_seconds() > 0) {
@@ -181,6 +227,38 @@ void TaskList::on_signal_task_status(const Gtk::TreeModel::iterator i, const Tas
 	(*i)[task_list_columns.user_name]      = info.shareinfo.user;
 	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
 	(*i)[task_list_columns.share_name]     = (info.isupload ? "U: " : "D: ") + info.shareinfo.name;
+
+	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
+		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
+		if(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0)) {
+			Glib::signal_timeout().connect_seconds_once(
+				boost::function<void(void)>(
+					boost::lambda::if_then(
+						boost::lambda::bind(
+							&boost::shared_ptr<Gtk::TreeModel::RowReference>::operator*,
+							rowref
+						),
+						boost::lambda::bind(
+							&Gtk::ListStore::erase,
+							task_list_liststore.operator->(),
+							boost::lambda::bind(
+								(Gtk::TreeModel::iterator (Gtk::TreeModel::*)(const Gtk::TreeModel::Path&))(&Gtk::TreeModel::get_iter),
+								task_list_liststore.operator->(),
+								boost::lambda::bind(
+									&Gtk::TreeModel::RowReference::get_path,
+									boost::lambda::bind(
+										&boost::shared_ptr<Gtk::TreeModel::RowReference>::operator*,
+										rowref
+									)
+								)
+							)
+						)
+					)
+				),
+				settings->auto_clear_tasks_after.get().total_seconds()
+			);
+		}
+	} // i may be invalid now
 
 // FIXME: Something with auto-update
 //	if (!info.isupload && info.status == "Completed") {}
@@ -205,10 +283,19 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	(*i)[task_list_columns.protocol]       = info.shareinfo.proto;
 	(*i)[task_list_columns.url]            = STRFORMAT("%s://%s/%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
 
-	// NOTE: Gtk::ListStore guarantees that iterators are valid as long as the
-	// row they reference is valid.
-	// See http://library.gnome.org/devel/gtkmm/unstable/classGtk_1_1TreeIter.html#_details
+	// NOTE:
+	//  1) We use a Gtk::RowReference and not an iterator, because RowReferences
+	//     are better suited for the task at hand. They are designed to remain
+	//     valid as long as the row they reference is present in the Model,
+	//     regardless of wether or not rows are added, removed, reordered etc.
+	//  2) We use a pointer because the RowReference may otherwise get copied
+	//     somewhere along the line (in particular it seems when the bound
+	//     function object is invoked?). This poses a problem because when
+	//     a RowReference has become invalid (e.g. after clear() of the Model)
+	//     and subsequently it's copied it will spew an ugly warning (which)
+	//     we don't want.
+	boost::shared_ptr<Gtk::TreeModel::RowReference> rowref(new Gtk::TreeModel::RowReference(task_list_liststore, Gtk::TreePath(i)));
 	boost::function<void(const TaskInfo&)> handler =
-		dispatcher.wrap(boost::bind(&TaskList::on_signal_task_status, this, i, _1));
+		dispatcher.wrap(boost::bind(&TaskList::on_signal_task_status, this, rowref, _1));
 	core->connectSigTaskStatus(info.id, handler);
 }

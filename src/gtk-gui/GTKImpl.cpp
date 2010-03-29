@@ -31,7 +31,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 : settings(_settings),
   uimanager_ref(Gtk::UIManager::create()),
   share_list(_settings, *this, uimanager_ref),
-  task_list(_settings),
+  task_list(_settings, uimanager_ref),
   uftt_preferences_dialog(_settings)
 {
 	set_title("UFTT");
@@ -73,17 +73,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 	/* View Menu */
 	actiongroup_ref->add(Gtk::Action::create("ViewMenu", "_View"));
-	actiongroup_ref->add(Gtk::Action::create("ViewCancelSelectedTasks",Gtk::Stock::MEDIA_STOP, "_Cancel selected tasks"));
-	actiongroup_ref->add(Gtk::Action::create("ViewResumeSelectedTasks",Gtk::Stock::MEDIA_PLAY, "_Resume selected tasks"));
-	actiongroup_ref->add(Gtk::Action::create("ViewPauseSelectedTasks",Gtk::Stock::MEDIA_PAUSE, "_Pause selected tasks"));
-	action = Gtk::Action::create("ViewClearTaskList",Gtk::Stock::CLEAR, "_Clear Completed Tasks");
-	actiongroup_ref->add(action, boost::bind(&TaskList::cleanup, &task_list));
-	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
-
 	actiongroup_ref->add(Gtk::ToggleAction::create("ViewDebuglog", "_Debuglog"));
 	actiongroup_ref->add(Gtk::ToggleAction::create("ViewManualConnect", "_Manual Connect"));
 	action = Gtk::ToggleAction::create("ViewToolbar", "_Toolbar");
-	actiongroup_ref->add(action, boost::bind(&TaskList::cleanup, &task_list));
+	actiongroup_ref->add(action, boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/Toolbar");
 
 	/* Help Menu */
@@ -104,12 +97,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	/* Various widgets */
 	actiongroup_ref->add(Gtk::ToggleAction::create("StatusIconShowUFTT", "_Show UFTT"),
 	                      boost::bind(&UFTTWindow::on_statusicon_show_uftt_checkmenuitem_toggled, this));
-
-	actiongroup_ref->add(Gtk::Action::create("PopupTasklistExecute", Gtk::Stock::EXECUTE, "Open"),
-	                      boost::bind(&TaskList::execute_selected_tasks, &task_list));
-	actiongroup_ref->add(Gtk::Action::create("PopupTasklistOpenContainingFolder", Gtk::Stock::OPEN, "Open containing folder"),
-	                      boost::bind(&TaskList::open_folder_selected_tasks, &task_list));
-
 
 	uimanager_ref->insert_action_group(actiongroup_ref);
 	add_accel_group(uimanager_ref->get_accel_group());
@@ -132,6 +119,15 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"      <menuitem action='ShareDownloadTo'/>"
 		"      <separator/>"
 		"      <menuitem action='ShareRemoveShare'/>"
+		"    </menu>"
+		"    <menu action='TaskMenu'>"
+		"      <menuitem action='TaskExecute'/>"
+		"      <menuitem action='TaskOpenContainingFolder'/>"
+		"      <separator/>"
+		"      <menuitem action='TaskPause'/>"
+		"      <menuitem action='TaskResume'/>"
+		"      <menuitem action='TaskCancel'/>"
+		"      <separator/>"
 		"    </menu>"
 		"    <menu action='ViewMenu'>"
 		"      <menuitem action='ViewRefreshShareList'/>"
@@ -180,30 +176,18 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"    <separator/>"
 		"    <menuitem action='ViewRefreshShareList'/>"
 		"  </popup>"
-		"  <popup name='TaskListSelectionPopup'>"
-		"    <menuitem action='PopupTasklistExecute'/>"
-		"    <menuitem action='PopupTasklistOpenContainingFolder'/>"
+		"  <popup name='TaskListPopup'>"
+		"    <menuitem action='TaskExecute'/>"
+		"    <menuitem action='TaskOpenContainingFolder'/>"
 		"    <separator/>"
-		"    <menuitem action='ViewPauseSelectedTasks'/>"
-		"    <menuitem action='ViewResumeSelectedTasks'/>"
-		"    <menuitem action='ViewCancelSelectedTasks'/>"
-		"    <separator/>"
-		"    <menuitem action='ViewClearTaskList'/>"
-		"  </popup>"
-		"  <popup name='TaskListNoSelectionPopup'>"
-		"    <menuitem action='PopupTasklistExecute'/>"
-		"    <menuitem action='PopupTasklistOpenContainingFolder'/>"
-		"    <separator/>"
-		"    <menuitem action='ViewPauseSelectedTasks'/>"
-		"    <menuitem action='ViewResumeSelectedTasks'/>"
-		"    <menuitem action='ViewCancelSelectedTasks'/>"
+		"    <menuitem action='TaskPause'/>"
+		"    <menuitem action='TaskResume'/>"
+		"    <menuitem action='TaskCancel'/>"
 		"    <separator/>"
 		"    <menuitem action='ViewClearTaskList'/>"
 		"  </popup>"
 		"</ui>";
 	uimanager_ref->add_ui_from_string(ui_info);
-
-	menubar_ptr = (Gtk::Menu*)uimanager_ref->get_widget("/MenuBar");
 
 	share_list_frame.set_label("Shares:");
 	share_list_frame.add(share_list);
@@ -223,15 +207,6 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	((Gtk::Label*)(((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListSelectionPopup/PopupTasklistExecute"))->get_child()))->set_attributes(attr_list);
 */
 
-	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/PopupTasklistExecute"))->set_sensitive(false);
-	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/PopupTasklistOpenContainingFolder"))->set_sensitive(false);
-	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewCancelSelectedTasks"))->set_sensitive(false);
-	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewResumeSelectedTasks"))->set_sensitive(false);
-	((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListNoSelectionPopup/ViewPauseSelectedTasks"))->set_sensitive(false);
-	task_list.set_popup_menus(
-		(Gtk::Menu*)uimanager_ref->get_widget("/TaskListSelectionPopup"),
-		(Gtk::Menu*)uimanager_ref->get_widget("/TaskListNoSelectionPopup")
-	);
 	task_list_frame.set_label("Tasks:");
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);
@@ -247,11 +222,11 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	debug_log_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 	debug_log_scrolledwindow.add(debug_log_textview);
 	debug_log_frame.add(debug_log_scrolledwindow);
-	debug_log_frame.set_label("Debuglog:");
+	debug_log_frame.set_label("Log:");
 	debug_log_alignment.add(debug_log_frame);
 	debug_log_alignment.set_padding(4, 4, 4, 4);
 	main_paned.add(debug_log_alignment);
-	menu_main_paned_vbox.pack_start(*menubar_ptr, Gtk::PACK_SHRINK);
+	menu_main_paned_vbox.pack_start(*(Gtk::Menu*)uimanager_ref->get_widget("/MenuBar"), Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.pack_start(*uimanager_ref->get_widget("/Toolbar"), Gtk::PACK_SHRINK);
 	menu_main_paned_vbox.add(main_paned);
 	menu_main_paned_vbox.show_all();
@@ -298,11 +273,9 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey( "T").get_key(), Gdk::CONTROL_MASK   , true);
 
 	restore_window_size_and_position();
-	Gtk::CheckMenuItem* mi = (Gtk::CheckMenuItem*)uimanager_ref->get_widget("/MenuBar/ViewMenu/ViewToolbar");
-	mi->signal_toggled().connect(boost::bind(&UFTTWindow::on_view_toolbar_checkmenuitem_signal_toggled, this));
 	uimanager_ref->get_widget("/Toolbar")->show_all();
 	uimanager_ref->get_widget("/Toolbar")->set_no_show_all(true);
-	mi->set_active(settings->show_toolbar);
+	((Gtk::CheckMenuItem*)uimanager_ref->get_widget("/MenuBar/ViewMenu/ViewToolbar"))->set_active(settings->show_toolbar);
 	uimanager_ref->get_widget("/Toolbar")->property_visible() = settings->show_toolbar;
 }
 

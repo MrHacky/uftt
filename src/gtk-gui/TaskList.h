@@ -2,20 +2,16 @@
 	#define TASK_LIST_H
 	#include "../UFTTCore.h"
 	#include "dispatcher_marshaller.h"
+	#include <gtkmm/stock.h>
 	#include <gtkmm/treeview.h>
 	#include <gtkmm/liststore.h>
+	#include <gtkmm/uimanager.h>
 	#include <gtkmm/scrolledwindow.h>
 
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
-			TaskList(UFTTSettingsRef _settings);
-			void cleanup();
-			void execute_selected_tasks();
-			void open_folder_selected_tasks();
-			void on_signal_task_status(const Gtk::TreeModel::iterator i, const TaskInfo& info);
-			void on_signal_new_task(const TaskInfo& info);
+			TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_);
 			void set_backend(UFTTCore* _core);
-			void set_popup_menus(Gtk::Menu* _selection_popup_menu, Gtk::Menu* _no_selection_popup_menu);
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;
@@ -54,12 +50,19 @@
 					Gtk::TreeModelColumn<Glib::ustring> protocol;
 					Gtk::TreeModelColumn<Glib::ustring> url;
 			};
-			TaskListColumns              task_list_columns;
-			Glib::RefPtr<Gtk::ListStore> task_list_liststore;
-			Gtk::TreeView                task_list_treeview;
-			Gtk::Menu*                   selection_popup_menu;
-			Gtk::Menu*                   no_selection_popup_menu;
+			TaskListColumns               task_list_columns;
+			Glib::RefPtr<Gtk::ListStore>  task_list_liststore;
+			Gtk::TreeView                 task_list_treeview;
+			Glib::RefPtr<Gtk::UIManager>  uimanager_ref;
+
 			/* Functions */
+			void on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info);
+			void on_signal_new_task(const TaskInfo& info);
 			bool on_task_list_treeview_signal_button_press_event(GdkEventButton* event);
+			void on_task_list_treeview_selection_signal_changed();
+			void on_task_list_treeview_signal_row_inserted_deleted();
+			void cleanup();
+			void execute_selected_tasks();
+			void open_folder_selected_tasks();
 	};
 #endif // TASK_LIST_H
