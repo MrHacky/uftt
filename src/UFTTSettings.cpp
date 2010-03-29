@@ -67,7 +67,7 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 	sm->registerSettingsVariable("gui.auto_clear_tasks_after", auto_clear_tasks_after, createSettingsInfo(boost::posix_time::seconds(30)));
 
-	sm->registerSettingsVariable("update.showasshares", showautoupdates, createSettingsInfo(false));
+	sm->registerSettingsVariable("update.showshares", showautoupdates, createSettingsInfo(false));
 }
 
 void UFTTSettings::fixLegacy(std::map<std::string, std::string>& v)
