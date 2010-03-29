@@ -76,7 +76,7 @@ class SimpleBackend: public INetModule {
 		boost::asio::ip::tcp::acceptor tcplistener_v4;
 		boost::asio::ip::tcp::acceptor tcplistener_v6;
 		std::vector<ConnectionBaseRef> conlist;
-		int udpretries;
+		int udpfails;
 		uint32 mid;
 
 		ipv4_watcher watcher_v4;
@@ -344,7 +344,7 @@ class SimpleBackend: public INetModule {
 
 		void handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, const boost::system::error_code& e, std::size_t len) {
 			if (!e) {
-				udpretries = 10;
+				if (udpfails > 0) udpfails = 0;
 				if (len >= 4) {
 					uint32 rpver = (recv_buf[0] <<  0) | (recv_buf[1] <<  8) | (recv_buf[2] << 16) | (recv_buf[3] << 24);
 					if ((rpver&0xfffffffc) == 0) {
@@ -359,19 +359,15 @@ class SimpleBackend: public INetModule {
 					}
 				}
 			} else {
-				if (udpretries == 10) {
-					// ignore first message
-				} else
-					std::cout << "udp receive failed: " << e.message() << '\n';
-				--udpretries;
+				++udpfails;
 			}
 
-			if (!e || udpretries > 0)
+			if (!e || udpfails < 512)
 				start_udp_receive(si, recv_buf, recv_peer);
 			else {
 				std::cout << "retry limit reached, giving up on receiving udp packets temprarily\n";
-				udpretries = 10;
-				asio_timer_oneshot(service, (int)5000, boost::bind(&SimpleBackend::start_udp_receive, this, si, recv_buf, recv_peer));
+				udpfails -= 128;
+				asio_timer_oneshot(service, (int)1000, boost::bind(&SimpleBackend::start_udp_receive, this, si, recv_buf, recv_peer));
 			}
 		}
 
@@ -482,7 +478,7 @@ class SimpleBackend: public INetModule {
 		template<typename BUF>
 		void send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
 		{
-			++udpretries;
+			if (udpfails > -512) --udpfails;
 			sock.send_to(
 				buf,
 				ep,
@@ -608,7 +604,7 @@ class SimpleBackend: public INetModule {
 			, tcplistener_v6(core_->get_io_service())
 			, settings(core_->getSettingsRef())
 			, peerfindertimer(core_->get_io_service())
-			, udpretries(10)
+			, udpfails(0)
 			, watcher_v4(core_->get_io_service())
 			, watcher_v6(core_->get_io_service())
 			, udp_sock_v4(core_->get_io_service())
