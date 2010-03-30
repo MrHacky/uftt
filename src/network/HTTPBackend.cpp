@@ -233,6 +233,6 @@ void HTTPBackend::do_connect_sig_task_status(const TaskID& tid, const boost::fun
 {
 	if (tid.cid < tasklist.size() && tasklist[tid.cid]) {
 		tasklist[tid.cid]->sig_progress.connect(cb);
-		tasklist[tid.cid]->sig_progress(tasklist[tid.cid]->info);
+		cb(tasklist[tid.cid]->info);
 	}
 }

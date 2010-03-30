@@ -286,7 +286,7 @@ void SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::func
 {
 	int num = tid.cid;
 	conlist[num]->sig_progress.connect(cb);
-	conlist[num]->sig_progress(conlist[num]->taskinfo);
+	cb(conlist[num]->taskinfo);
 }
 
 void SimpleBackend::stun_new_addr()
