@@ -115,57 +115,15 @@ class SimpleBackend: public INetModule {
 		void handle_rudp_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len);
 		void handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, const boost::system::error_code& e, std::size_t len);
 
+		void send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags = 0);
+		void send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags = 0);
+		void send_udp_packet(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags = 0);
+
 		void send_query(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep);
 		void send_publish(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, const std::string& name, int sharever, bool isbuild = false);
 		void send_publishes(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, int sharever, bool sendbuilds);
 
 		void add_local_share(std::string name);
-
-		template<typename BUF>
-		void send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
-		{
-			if (udpfails > -512) --udpfails;
-			sock.send_to(
-				buf,
-				ep,
-				flags,
-				err);
-		}
-
-		template<typename BUF>
-		void send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
-		{
-			std::cout << "Send udp packet to " << ep;
-			if (boost::asio::buffer_size(buf) >= 5)
-				std::cout << " = " << (int)boost::asio::buffer_cast<const uint8*>(buf)[4];
-			std::cout << " (" << si->is_v4 << ")\n";
-			if (si->is_v4 == ep.address().is_v4())
-				send_udp_packet_to(si->sock, ep, buf, err, flags);
-			else
-				std::cout << "Skipped\n";
-		}
-
-		template<typename BUF>
-		void send_udp_packet(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, BUF buf, boost::system::error_code& err, int flags = 0)
-		{
-			if (!si) { // == uftt_bcst_if
-				typedef std::pair<boost::asio::ip::address, UDPSockInfoRef> sipair;
-				BOOST_FOREACH(sipair sip, udpsocklist) if (sip.second) {
-					send_udp_packet(sip.second, ep, buf, err, flags);
-					if (err)
-						std::cout << "send to (" << ep << ") failed: " << err.message() << '\n';
-				}
-			} else {
-				if (ep == uftt_bcst_ep) {
-					if (!si->is_main)
-						send_udp_packet_to(si, si->bcst_ep, buf, err, flags);
-					else
-						BOOST_FOREACH(const boost::asio::ip::udp::endpoint& fpep, foundpeers)
-							send_udp_packet_to(si, fpep, buf, err, flags);
-				} else
-					send_udp_packet_to(si, ep, buf, err, flags);
-			}
-		}
 
 		void stun_new_addr();
 		void stun_do_check(const boost::system::error_code& e, int retry = 0);

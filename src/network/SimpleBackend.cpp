@@ -508,12 +508,13 @@ void SimpleBackend::start_peerfinder()
 
 	std::cout << "Peer check at: " << my_datetime_to_string(dl) << '\n';
 
-	uint8 udp_send_buf[5];
-	udp_send_buf[0] = (1 >>  0) & 0xff;
-	udp_send_buf[1] = (1 >>  8) & 0xff;
-	udp_send_buf[2] = (1 >> 16) & 0xff;
-	udp_send_buf[3] = (1 >> 24) & 0xff;
-	udp_send_buf[4] = UDPPACK_QUERY_PEER;
+	const uint8 udp_send_buf[5] = {
+		(1 >>  0) & 0xff,
+		(1 >>  8) & 0xff,
+		(1 >> 16) & 0xff,
+		(1 >> 24) & 0xff,
+		UDPPACK_QUERY_PEER
+	};
 
 	std::cout << "Finding peers...\n";
 	boost::system::error_code err;
@@ -634,12 +635,13 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 		}; break;
 		case UDPPACK_QUERY_PEER: { // peerfinder query
 			boost::system::error_code err;
-			uint8 udp_send_buf[5];
-			udp_send_buf[0] = (1 >>  0) & 0xff;
-			udp_send_buf[1] = (1 >>  8) & 0xff;
-			udp_send_buf[2] = (1 >> 16) & 0xff;
-			udp_send_buf[3] = (1 >> 24) & 0xff;
-			udp_send_buf[4] = UDPPACK_REPLY_PEER;
+			const uint8 udp_send_buf[5] = {
+				(1 >>  0) & 0xff,
+				(1 >>  8) & 0xff,
+				(1 >> 16) & 0xff,
+				(1 >> 24) & 0xff,
+				UDPPACK_REPLY_PEER
+			};
 			send_udp_packet(si, *recv_peer, boost::asio::buffer(udp_send_buf), err);
 		};// intentional fallthrough
 		case UDPPACK_REPLY_PEER: { // peerfinder reply
@@ -685,6 +687,49 @@ void SimpleBackend::handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost
 	}
 }
 
+void SimpleBackend::send_udp_packet_to(boost::asio::ip::udp::socket& sock, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags)
+{
+	if (udpfails > -512) --udpfails;
+	sock.send_to(
+		buf,
+		ep,
+		flags,
+		err);
+}
+
+void SimpleBackend::send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags)
+{
+	std::cout << "Send udp packet to " << ep;
+	if (boost::asio::buffer_size(buf) >= 5)
+		std::cout << " = " << (int)boost::asio::buffer_cast<const uint8*>(buf)[4];
+	std::cout << " (" << si->is_v4 << ")\n";
+	if (si->is_v4 == ep.address().is_v4())
+		send_udp_packet_to(si->sock, ep, buf, err, flags);
+	else
+		std::cout << "Skipped\n";
+}
+
+void SimpleBackend::send_udp_packet(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags)
+{
+	if (!si) { // == uftt_bcst_if
+		typedef std::pair<boost::asio::ip::address, UDPSockInfoRef> sipair;
+		BOOST_FOREACH(sipair sip, udpsocklist) if (sip.second) {
+			send_udp_packet(sip.second, ep, buf, err, flags);
+			if (err)
+				std::cout << "send to (" << ep << ") failed: " << err.message() << '\n';
+		}
+	} else {
+		if (ep == uftt_bcst_ep) {
+			if (!si->is_main)
+				send_udp_packet_to(si, si->bcst_ep, buf, err, flags);
+			else
+				BOOST_FOREACH(const boost::asio::ip::udp::endpoint& fpep, foundpeers)
+					send_udp_packet_to(si, fpep, buf, err, flags);
+		} else
+			send_udp_packet_to(si, ep, buf, err, flags);
+	}
+}
+
 void SimpleBackend::send_query(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep)
 {
 	uint8 udp_send_buf[1024];
@@ -714,7 +759,7 @@ void SimpleBackend::send_query(UDPSockInfoRef si, const boost::asio::ip::udp::en
 	}
 
 	boost::system::error_code err;
-	send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
+	send_udp_packet(si, ep, boost::asio::buffer((const uint8*)udp_send_buf, plen), err);
 	if (err)
 		std::cout << "qeury to '" << ep << "' failed: " << err.message() << '\n';
 }
@@ -768,7 +813,7 @@ void SimpleBackend::send_publish(UDPSockInfoRef si, const boost::asio::ip::udp::
 	}
 
 	boost::system::error_code err;
-	send_udp_packet(si, ep, boost::asio::buffer(udp_send_buf, plen), err);
+	send_udp_packet(si, ep, boost::asio::buffer((const uint8*)udp_send_buf, plen), err);
 	if (err)
 		std::cout << "publish of '" << name << "' failed: " << err.message() << '\n';
 }
