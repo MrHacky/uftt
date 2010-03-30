@@ -718,7 +718,11 @@ class SimpleConnection: public ConnectionCommon {
 			taskinfo.transferred                += bytes_transferred; // total
 			bytes_transferred_since_last_update += bytes_transferred; // since last update
 			if(time_elapsed >= boost::posix_time::time_duration(boost::posix_time::milliseconds(200))) { // Update speed estimate 5 times per second
-				taskinfo.speed = (uint64)(((double(taskinfo.speed) * (15.0 - (time_elapsed.total_microseconds()/1000000.0))) + bytes_transferred_since_last_update) / 15.0);
+				double alpha = 0.95;
+				taskinfo.speed = (uint64)(
+					       alpha  * taskinfo.speed +
+					(1.0 - alpha) * ((bytes_transferred_since_last_update*1000000.0) / time_elapsed.total_microseconds())
+				);
 				bytes_transferred_since_last_update = 0;
 				taskinfo.last_progress_report = now;
 			}
