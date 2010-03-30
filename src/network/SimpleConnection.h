@@ -1,6 +1,8 @@
 #ifndef SIMPLE_CONNECTION_H
 #define SIMPLE_CONNECTION_H
 
+#include "ConnectionCommon.h"
+
 #include <set>
 #include <queue>
 #include <fstream>
@@ -22,242 +24,10 @@
 #include "../UFTTCore.h"
 
 #include "../util/StrFormat.h"
-#include "../util/Filesystem.h"
-
-#include "Misc.h"
-
-#include "ConnectionBase.h"
 
 template <typename SockType, typename SockInit>
-class SimpleConnection: public ConnectionBase {
+class SimpleConnection: public ConnectionCommon {
 	private:
-		enum {
-			QITEM_REQUEST_SHARE = 0,
-			QITEM_REQUEST_FILE,
-			QITEM_REQUEST_DIR,
-			QITEM_UNUSED3,
-			QITEM_UNUSED4,
-			QITEM_REQUESTED_FILE,
-			QITEM_REQUESTED_FILESIG,
-			QITEM_REQUESTED_FILESIG_BUSY,
-			QITEM_REQUESTED_PARTFILE,
-			QITEM_UNUSED8, //QITEM_REQUESTED_PARTFILE_BUSY,
-		};
-
-		enum {
-			REQLIST_UNUSED0 = 0,
-			REQLIST_FILE,
-			REQLIST_DIR,
-			REQLIST_UNUSED3, // REQLIST_CDUP
-			REQLIST_ENDOFLIST,
-		};
-
-		enum {
-			CMD_NONE = 0,
-			CMD_OLD_FILE,
-			CMD_OLD_DIR,
-			CMD_OLD_CDUP,
-			CMD_OLD_DONE,
-			CMD_REQUEST_SHARE_DUMP,
-			CMD_REPLY_UNKNOWN_COMMAND,
-			CMD_REQUEST_COMMAND_LIST,
-			CMD_REPLY_COMMAND_LIST,
-			CMD_REQUEST_TREE_LIST,
-			CMD_REPLY_TREE_LIST,
-			CMD_REQUEST_FULL_FILE,
-			CMD_REPLY_FULL_FILE,
-			CMD_DISCONNECT,
-			DEPRECATED_CMD_REQUEST_SIG_FILE,
-			DEPRECATED_CMD_REPLY_SIG_FILE,
-			CMD_REQUEST_PARTIAL_FILE,
-			CMD_REPLY_PARTIAL_FILE,
-			CMD_REQUEST_SIG_FILE,
-			CMD_REPLY_SIG_FILE,
-			END_OF_COMMANDS
-		};
-
-		struct cmdinfo {
-			uint32 cmd;
-			uint32 ver;
-			uint64 len;
-		};
-
-		struct filesender {
-			std::string name;
-			boost::filesystem::path path;
-			services::diskio_filetype file;
-
-			bool hsent;
-			uint64 fsize;
-			uint64 offset;
-
-			filesender(services::diskio_service& diskio) : file(diskio) {};
-
-			boost::system::error_code init(uint64 offset_ = 0) {
-				offset = offset_;
-				fsize = boost::filesystem::file_size(path) - offset;
-				boost::system::error_code e = file.open(path, services::diskio_filetype::in);
-				if (!e) file.fseeka(offset);
-				hsent = false;
-				return e;
-				//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
-			};
-
-			bool getbuf(shared_vec buf) {
-				if (!hsent) {
-					hsent = true;
-					buf->resize(16 + name.size());
-					cmdinfo hdr;
-					hdr.cmd = (offset == 0) ? CMD_OLD_FILE : CMD_REPLY_PARTIAL_FILE;//CMD_REPLY_PARTIAL_FILE; // file
-					hdr.len = fsize;
-					hdr.ver = name.size();
-					memcpy(&(*buf)[0], &hdr, 16);
-					memcpy(&(*buf)[16], name.data(), hdr.ver);
-					//fsize += buf->size();
-					//handler(boost::system::error_code(), buf->size());
-					return true;
-				}
-				return false;
-				//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
-			};
-		};
-
-		struct dirsender {
-			std::string name;
-			boost::filesystem::path path;
-
-			boost::filesystem::directory_iterator curiter;
-			boost::filesystem::directory_iterator enditer;
-
-			bool hsent;
-
-			void init() {
-				curiter = boost::filesystem::directory_iterator(path);
-				hsent = false;
-			};
-
-			bool getbuf(shared_vec buf, boost::filesystem::path& newpath)
-			{
-				if (!hsent) {
-					hsent = true;
-					buf->resize(16 + name.size());
-					cmdinfo hdr;
-					hdr.cmd = CMD_OLD_DIR; // dir
-					hdr.len = 0;
-					hdr.ver = name.size();
-					memcpy(&(*buf)[0], &hdr, 16);
-					memcpy(&(*buf)[16], name.data(), hdr.ver);
-				} else
-					buf->clear();
-
-				if (curiter == enditer) {
-					cmdinfo hdr;
-					hdr.cmd = CMD_OLD_CDUP; // ..
-					hdr.len = 0;
-					hdr.ver = 0;
-					uint32 clen = buf->size();
-					buf->resize(clen+16);
-					memcpy(&(*buf)[clen], &hdr, 16);
-					return true;
-				}
-
-				newpath = curiter->path();
-
-				++curiter;
-				return false;
-			};
-		};
-
-		struct qitem {
-			int type;
-			std::string path;
-			uint64 fsize;
-			uint64 poffset;
-			uint32 psize;
-			std::vector<uint64> pos;
-			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_), poffset(0) {};
-			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_, uint32 psize_) : type(type_), path(path_), fsize(-1), pos(pos_), poffset(0), psize(psize_) {};
-		};
-		std::deque<qitem> qitems;
-
-		struct sigmaker {
-			boost::asio::io_service& service;
-			qitem* item;
-			boost::function<void(shared_vec)> cb;
-
-			sigmaker(boost::asio::io_service& service_) : service(service_) {};
-
-			void main() {
-				size_t bread;
-				using namespace std;
-				// dostuff
-				shared_vec sbuf(new std::vector<uint8>(16));
-
-				pkt_put_uint32(CMD_REPLY_SIG_FILE, &((*sbuf)[0]));
-				pkt_put_uint32(0, &((*sbuf)[4]));
-
-				//pkt_put_vuint32(item->path.size(), *sbuf);
-				//for (uint j = 0; j < item->path.size(); ++j)
-				//	sbuf->push_back(item->path[j]);
-
-				FILE* fd = fopen(item->path.c_str(), "rb");
-				size_t dpos = sbuf->size();
-				sbuf->resize(dpos + (item->pos.size()*item->psize) );
-
-				for (uint i = 0; i < item->pos.size(); ++i) {
-					platform::fseek64a(fd, item->pos[i]);
-					bread = fread(&((*sbuf)[dpos]), 1, item->psize, fd);
-					dpos += item->psize;
-				}
-				pkt_put_uint64(sbuf->size()-16, &((*sbuf)[8]));
-				service.post(boost::bind(cb, sbuf));
-				fclose(fd);
-			}
-		};
-
-		struct sigchecker {
-			boost::asio::io_service& service;
-			qitem* item;
-			boost::function<void(uint64)> cb;
-			std::vector<uint8> data;
-			boost::filesystem::path path;
-			FILE* fd;
-
-			sigchecker(boost::asio::io_service& service_) : service(service_) {};
-
-			uint64 getoffset()
-			{
-				if(!ext::filesystem::exists(path)) {
-					return 0;
-				}
-				size_t bread;
-				using namespace std;
-				uint64 fsize = boost::filesystem::file_size(path);
-
-				uint32 dpos = 0;
-				vector<uint8> buf(item->psize);
-				for (uint i = 0; i < item->pos.size(); ++i) {
-					platform::fseek64a(fd, item->pos[i]);
-					bread = fread(&buf[0], 1, item->psize, fd);
-					if (bread != buf.size())
-						return 0;
-					if (dpos + item->psize > data.size())
-						return 0;
-					for (size_t j = 0; j < item->psize; ++j)
-						if (buf[j] != data[dpos++])
-							return 0;
-				}
-
-				return item->pos.back() + item->psize;
-			}
-
-			void main() {
-				fd = fopen(path.native_file_string().c_str(), "rb");
-				service.post(boost::bind(cb, getoffset()));
-				fclose(fd);
-			}
-		};
-
 		services::diskio_service* gdiskio;
 		SockType socket;
 
@@ -290,7 +60,7 @@ class SimpleConnection: public ConnectionBase {
 		cmdinfo rcmd;
 	public:
 		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
-			: ConnectionBase(service_, core_)
+			: ConnectionCommon(service_, core_)
 			, socket(sockinit_)
 			, progress_timer(service_)
 			, cursendfile(core_->get_disk_service())

@@ -23,6 +23,7 @@ ADD_LIBRARY(uftt-network
 	SimpleTCPConnection.h
 	UDPSemiConnection.h
 	ConnectionBase.h          ConnectionBase.cpp
+	ConnectionCommon.h        ConnectionCommon.cpp
 	NetModuleLinker.h         NetModuleLinker.cpp
 	Misc.h                    Misc.cpp
 	${NETMODULE_SOURCE_FILES} ${LINK_INC_FILE}
