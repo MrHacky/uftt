@@ -32,7 +32,9 @@ class SimpleConnection: public ConnectionCommon {
 		SockType socket;
 
 		std::string sharename;
-		boost::filesystem::path sharepath;
+		boost::filesystem::path writesharepath; // 
+		boost::filesystem::path readsharepath; // sharename is the name of the share we are uploading
+		boost::filesystem::path cwdsharepath;
 
 		filesender cursendfile;
 		std::vector<dirsender> quesenddir;
@@ -58,6 +60,39 @@ class SimpleConnection: public ConnectionCommon {
 		uint64 bytes_transferred_since_last_update;    // Number of bytes transferred since last update (see update_statistics)
 
 		cmdinfo rcmd;
+
+		boost::filesystem::path getReadShareFilePath(std::string pathspec)
+		{
+			std::vector<std::string> elems;
+			boost::split(elems, pathspec, boost::is_any_of("/"));
+			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
+			for (size_t i = 1; i< elems.size(); ++i)
+				if (elems[i] == "..")
+					return boost::filesystem::path(); // not allowed
+			if (elems[0] != sharename) // TODO: allow changing share?
+				return boost::filesystem::path();
+			boost::filesystem::path p = readsharepath;
+			for (size_t i = 1; i< elems.size(); ++i)
+				p /= elems[i];
+			return p;
+		}
+
+		boost::filesystem::path getWriteShareFilePath(std::string pathspec)
+		{
+			std::vector<std::string> elems;
+			boost::split(elems, pathspec, boost::is_any_of("/"));
+			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
+			for (size_t i = 1; i< elems.size(); ++i)
+				if (elems[i] == "..")
+					return boost::filesystem::path(); // not allowed
+			if (elems[0] != sharename)
+				return boost::filesystem::path();
+			boost::filesystem::path p = writesharepath;
+			for (size_t i = 1; i< elems.size(); ++i)
+				p /= elems[i];
+			return p;
+		}
+
 	public:
 		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
 			: ConnectionCommon(service_, core_)
@@ -236,8 +271,8 @@ class SimpleConnection: public ConnectionCommon {
 				}; break;
 				case CMD_OLD_CDUP: { // ..
 					//cout << "got '..'\n";
-					sharepath /= "..";
-					sharepath.normalize();
+					cwdsharepath /= "..";
+					cwdsharepath.normalize();
 					start_receive_command(rbuf);
 				}; break;
 				case CMD_OLD_DONE: { // ..
@@ -247,12 +282,12 @@ class SimpleConnection: public ConnectionCommon {
 				case CMD_REPLY_PARTIAL_FILE: {
 					qitem tqi = qitems.front();
 					qitems.pop_front();
-					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false, tqi.poffset);
+					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, false, tqi.poffset);
 				}; break;
 				case CMD_REPLY_FULL_FILE: {
 					qitem tqi = qitems.front();
 					qitems.pop_front();
-					kickoff_file_write(sharepath / tqi.path, hdr.len, rbuf, false, 0);
+					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, false, 0);
 				}; break;
 				default: {
 					if (lcommands.count(hdr.cmd)) {
@@ -347,7 +382,7 @@ class SimpleConnection: public ConnectionCommon {
 					}; break;
 					case CMD_REQUEST_FULL_FILE: {
 						if (hdr.len < 0xffff) {
-							qitem nqi(QITEM_REQUESTED_FILE, (sharepath / std::string(rbuf->begin(), rbuf->end())).string());
+							qitem nqi(QITEM_REQUESTED_FILE, getReadShareFilePath(std::string(rbuf->begin(), rbuf->end())).string());
 							qitems.push_back(nqi);
 							checkwhattosend();
 							start_receive_command(rbuf);
@@ -378,7 +413,7 @@ class SimpleConnection: public ConnectionCommon {
 						sc->cb = boost::bind(&SimpleConnection::sigcheck_done , this, sc, _1);
 						sc->item = &qitems.front();
 						sc->data = *rbuf;
-						sc->path = sharepath / qitems.front().path;
+						sc->path = getWriteShareFilePath(qitems.front().path);
 						gdiskio->get_work_service().post(boost::bind(&sigchecker::main, sc));
 					}; break;
 					case CMD_REQUEST_PARTIAL_FILE: {
@@ -387,7 +422,7 @@ class SimpleConnection: public ConnectionCommon {
 						std::string name(rbuf->begin()+idx, rbuf->begin()+idx+slen);
 						idx += slen;
 						uint64 poff = pkt_get_vuint64(*rbuf, idx);
-						qitem nqi(QITEM_REQUESTED_FILE, (sharepath / name).string());
+						qitem nqi(QITEM_REQUESTED_FILE, getReadShareFilePath(name).string());
 						nqi.poffset = poff;
 						qitems.push_back(nqi);
 						checkwhattosend();
@@ -444,6 +479,8 @@ class SimpleConnection: public ConnectionCommon {
 				for (uint i = 0; i < nlen; ++i)
 					(*tbuf)[i+16] = sharename[i];
 
+				cwdsharepath = "";
+
 				boost::asio::async_write(socket, GETBUF(tbuf),
 					boost::bind(&SimpleConnection::start_receive_command, this, tbuf, _1));
 			} else {
@@ -457,6 +494,7 @@ class SimpleConnection: public ConnectionCommon {
 			//std::cout << name << '\n';
 			std::vector<std::string> elems;
 			boost::split(elems, name, boost::is_any_of("/"));
+			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
 
 			if (elems.empty()) {
 				disconnect("Root listing unsupported...", true);
@@ -465,8 +503,9 @@ class SimpleConnection: public ConnectionCommon {
 
 			taskinfo.shareinfo.name = elems[0];
 			boost::filesystem::path spath(core->getLocalSharePath(elems[0]));
-			sharepath = spath.branch_path();
-			taskinfo.path = sharepath;
+			readsharepath = spath;
+			sharename = elems[0];
+			taskinfo.path = readsharepath.branch_path(); // TODO
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
 				return;
@@ -564,7 +603,7 @@ class SimpleConnection: public ConnectionCommon {
 						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
 						for (uint i = 0; i < nlen; ++i)
 							qi.path.push_back(tbuf->at(pos++));
-						boost::filesystem::path dp = sharepath / qi.path;
+						boost::filesystem::path dp = getWriteShareFilePath(qi.path);
 						boost::filesystem::create_directory(dp);
 						//qitems.push_front(qi);
 					}; break;
@@ -606,8 +645,9 @@ class SimpleConnection: public ConnectionCommon {
 						qitem& titem = qitems[i];
 						size_t cstart = tbuf->size();
 						tbuf->resize(tbuf->size()+16);
-						if (rresume && ext::filesystem::exists(sharepath / titem.path) && boost::filesystem::file_size(sharepath / titem.path) > 1024*1024) {
-							uint64 fsize = boost::filesystem::file_size(sharepath / titem.path);
+						boost::filesystem::path itempath = getWriteShareFilePath(titem.path);
+						if (rresume && ext::filesystem::exists(itempath) && boost::filesystem::file_size(itempath) > 1024*1024) {
+							uint64 fsize = boost::filesystem::file_size(itempath);
 							std::vector<uint64> pos;
 							uint32 psize;
 							{
@@ -791,7 +831,7 @@ class SimpleConnection: public ConnectionCommon {
 							}
 						} else if (qtype == QITEM_REQUESTED_FILESIG) {
 							qitems.front().type = QITEM_REQUESTED_FILESIG_BUSY;
-							qitems.front().path = (sharepath / qitems.front().path).native_file_string();
+							qitems.front().path = getReadShareFilePath(qitems.front().path).native_file_string();
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
 							sm->cb = boost::bind(&SimpleConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
@@ -841,7 +881,7 @@ class SimpleConnection: public ConnectionCommon {
 				size_t done = 0;
 				while(qbuf && todo > 0) {
 					size_t i = std::min(todo, left);
-					memcpy(&(*tbuf)[done], &(*qbuf)[buffer_position], i);
+					if (i > 0) memcpy(&(*tbuf)[done], &(*qbuf)[buffer_position], i);
 					done += i;
 					todo -= i;
 					left -= i;
@@ -943,9 +983,9 @@ class SimpleConnection: public ConnectionCommon {
 			std::cout << "got share name: " << sharename << '\n';
 			taskinfo.shareinfo.name = sharename;
 			taskinfo.isupload = true;
-			sharepath = core->getLocalSharePath(sharename);
-			taskinfo.path = sharepath.branch_path();
-			if (sharepath == "") {
+			readsharepath = core->getLocalSharePath(sharename);
+			taskinfo.path = readsharepath.branch_path();
+			if (readsharepath == "") {
 				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
 				if (buildfile) {
 					std::cout << "is a build share\n";
@@ -962,11 +1002,11 @@ class SimpleConnection: public ConnectionCommon {
 					boost::asio::async_write(socket, GETBUF(rbuf),
 						boost::bind(&SimpleConnection::sent_autoupdate_header, this, _1, buildfile, rbuf));
 				} else
-					disconnect(STRFORMAT("share does not exist: %s(%s)", sharepath, sharename));
+					disconnect(STRFORMAT("share does not exist: %s(%s)", readsharepath, sharename));
 				return;
 			}
-			std::cout << "got share path: " << sharepath << '\n';
-			sendpath(sharepath, sharename);
+			std::cout << "got share path: " << readsharepath << '\n';
+			sendpath(readsharepath, sharename);
 			checkwhattosend();
 		}
 
@@ -1003,7 +1043,7 @@ class SimpleConnection: public ConnectionCommon {
 		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath, uint32 version)
 		{
 			sharename = name;
-			sharepath = dlpath;
+			writesharepath = dlpath / name;
 
 			shared_vec sbuf(new std::vector<uint8>());
 
@@ -1051,7 +1091,7 @@ class SimpleConnection: public ConnectionCommon {
 			}
 
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
-			boost::filesystem::path path = sharepath / name;
+			boost::filesystem::path path = getWriteShareFilePath((cwdsharepath / name).string());
 
 			kickoff_file_write(path, hdr.len, rbuf, false, 0);
 		}
@@ -1107,8 +1147,8 @@ class SimpleConnection: public ConnectionCommon {
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
 
 			//cout << "got dir '" << name << "'\n";
-			sharepath /= name;
-			boost::filesystem::create_directory(sharepath);
+			cwdsharepath /= name;
+			boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
 			start_receive_command(rbuf);
 		}
 

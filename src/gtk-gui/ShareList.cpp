@@ -245,7 +245,7 @@ void ShareList::on_add_share_file_dialog_button_clicked() {
 			}
 			else {
 				add_share_file_dialog.hide();
-				core->addLocalShare(path.leaf(), path);
+				core->addLocalShare(path);
 			}
 		}
 		else {
@@ -266,7 +266,7 @@ void ShareList::on_add_share_folder_dialog_button_clicked() {
 		boost::filesystem::path path = filename;
 		if(ext::filesystem::exists(path)) {
 			add_share_folder_dialog.hide();
-			core->addLocalShare(path.leaf(), path);
+			core->addLocalShare(path);
 		}
 		else {
 			Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "Folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
@@ -398,17 +398,13 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 					file = file.substr(1);
 				#endif
 				boost::filesystem::path path = file;
-				if (path.leaf() == ".") // linux thingy
-					path.remove_leaf();
-				core->addLocalShare(path.leaf(), path);
+				core->addLocalShare(path);
 			}
 		}; break;
 		case 2:
 		case 1: {
 				boost::filesystem::path path = selection_data.get_data_as_string();
-				if (path.leaf() == ".") // linux thingy
-					path.remove_leaf();
-				core->addLocalShare(path.leaf(), path);
+				core->addLocalShare(path);
 		}; break;
 		default:
 			cout << "Warning: unhandled drop event!" << endl;
