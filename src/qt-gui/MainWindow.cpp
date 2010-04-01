@@ -682,9 +682,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 
 void MainWindow::addLocalShare(std::string url)
 {
-	boost::filesystem::path path = url;
-	if (path.leaf() == ".") path.remove_leaf(); // linux thingy
-	backend->addLocalShare(path.leaf(), path);
+	backend->addLocalShare(url);
 }
 
 void MainWindow::onDropTriggered(QDropEvent* evt)

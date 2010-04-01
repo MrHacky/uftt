@@ -126,8 +126,7 @@ void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote
 	for (size_t i = 1; i < args.size(); ++i) {
 		boost::filesystem::path fp(args[i]);
 		if (!ext::filesystem::exists(fp)) break;
-		if (fp.leaf() == ".") fp.remove_leaf(); // linux thingy
-		addLocalShare(fp.leaf(), fp);
+		addLocalShare(fp);
 	}
 
 	if (fromremote)
@@ -162,6 +161,21 @@ void UFTTCore::addLocalShare(const std::string& name, const boost::filesystem::p
 
 	BOOST_FOREACH(INetModuleRef nm, netmodules)
 		nm->notifyAddLocalShare(sid);
+}
+
+void UFTTCore::addLocalShare(const boost::filesystem::path& path)
+{
+	boost::filesystem::path p = path;
+	while (p.leaf() == ".") p.remove_leaf(); // linux thingy
+	std::string name = p.leaf();
+#ifdef WIN32
+	if (name == "/" && p.string().size() == 3 && p.string()[1] == ':')
+		name = p.string()[0];
+#else
+	if (name == "/" && p.string() == "/")
+		name = "<root>";
+#endif
+	addLocalShare(name, p);
 }
 
 /**
