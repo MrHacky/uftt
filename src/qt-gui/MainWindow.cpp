@@ -236,8 +236,6 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 			settings->dl_path = npath;
 	}
 
-	this->editDownload->setText(QString::fromStdString(settings->dl_path.get().native_directory_string()));
-
 	//connect(listShares, SIGNAL(itemPressed(QTreeWidgetItem*, int)), this, SLOT(DragStart(QTreeWidgetItem*, int)));
 
 	connect(listShares->getDragDropEmitter(), SIGNAL(dragMoveTriggered(QDragMoveEvent*))  , this, SLOT(onDragMoveTriggered(QDragMoveEvent*)));
@@ -253,6 +251,11 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	ctwi->setFlags(ctwi->flags() | Qt::ItemIsEditable);
 	ctwiu = false;
 
+	{
+		comboDownload->setRecentPaths(settings->recentdownloadpaths);
+		comboDownload->addRecentPath(QString::fromStdString(settings->dl_path.get().native_directory_string()));
+		comboDownload->addPath(QString::fromStdString(platform::getDownloadPathDefault().native_directory_string()));
+	}
 	{
 		QIcon* uftticon = new QIcon();
 #ifdef Q_WS_WIN
@@ -383,6 +386,7 @@ void MainWindow::closeEvent(QCloseEvent * evnt)
 	saveGeometry();
 	QByteArray data = saveState();
 	settings->dockinfo = std::vector<uint8>((uint8*)data.data(), (uint8*)data.data()+data.size());
+	settings->recentdownloadpaths = comboDownload->recentPathsStd();
 
 	trayicon->hide();
 }
@@ -556,12 +560,10 @@ std::string MainWindow::getDownloadPath()
 	return boost::filesystem::path(path).native_directory_string();
 }
 
-void MainWindow::on_editDownload_textChanged(QString text)
+void MainWindow::on_comboDownload_currentPathChanged(QString text)
 {
 	boost::filesystem::path dl_path = text.toStdString();
 	settings->dl_path = dl_path;
-	editDownload->setProperty("isValid", ext::filesystem::exists(dl_path));
-	editDownload->setStyleSheet(editDownload->styleSheet()); // recalculate style
 }
 
 void MainWindow::on_listShares_itemSelectionChanged()
@@ -588,8 +590,9 @@ void MainWindow::on_actionDownload_triggered()
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
-	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
+	comboDownload->addRecentPath(comboDownload->currentPath());
 
+	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
 	BOOST_FOREACH(QTreeWidgetItem* rwi, selected) {
 		ShareID sid = rwi->data(SLDATA_SHAREID, Qt::UserRole).value<ShareID>();
 		if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
@@ -612,8 +615,9 @@ void MainWindow::on_actionDownloadTo_triggered()
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory");
 		return;
 	}
-	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
+	comboDownload->addPath(comboDownload->currentPath());
 
+	QList<QTreeWidgetItem*> selected = listShares->selectedItems();
 	BOOST_FOREACH(QTreeWidgetItem* rwi, selected) {
 		ShareID sid = rwi->data(SLDATA_SHAREID, Qt::UserRole).value<ShareID>();
 		if (qApp->keyboardModifiers() & Qt::ShiftModifier) {
@@ -735,7 +739,7 @@ void MainWindow::on_buttonBrowse_clicked()
 		tr("Choose download directory"),
 		QString::fromStdString(getDownloadPath()));
 	if (!directory.isEmpty())
-		this->editDownload->setText(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
+		this->comboDownload->addRecentPath(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
 }
 
 void MainWindow::new_autoupdate(const ShareInfo& info)

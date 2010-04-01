@@ -129,6 +129,8 @@ class UFTTSettings {
 		SettingsVariable<int> sizey;
 		SettingsVariable<bool> guimaximized;
 
+		SettingsVariable<std::vector<std::string> > recentdownloadpaths;
+
 		SettingsVariable<bool> showadvancedsettings;
 
 		SettingsVariable<boost::filesystem::path> dl_path;

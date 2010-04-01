@@ -15,10 +15,7 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <property name="styleSheet">
-    <string>QLineEdit[isValid=&quot;false&quot;] {
-	color: black;
-	background-color: #ffb3b3;
-}</string>
+    <string/>
    </property>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -195,9 +192,21 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="editDownload">
-         <property name="text">
-          <string>C:\temp\</string>
+        <widget class="QPathComboBox" name="comboDownload">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="editable">
+          <bool>true</bool>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToMinimumContentsLength</enum>
+         </property>
+         <property name="frame">
+          <bool>true</bool>
          </property>
         </widget>
        </item>
@@ -584,12 +593,16 @@
    <extends>QTreeWidget</extends>
    <header>QDragDropTreeWidget.h</header>
   </customwidget>
+  <customwidget>
+   <class>QPathComboBox</class>
+   <extends>QComboBox</extends>
+   <header>QPathComboBox.h</header>
+  </customwidget>
  </customwidgets>
  <tabstops>
   <tabstop>listShares</tabstop>
   <tabstop>buttonRefresh</tabstop>
   <tabstop>buttonDownload</tabstop>
-  <tabstop>editDownload</tabstop>
  </tabstops>
  <resources>
   <include location="Icons/icons.qrc"/>

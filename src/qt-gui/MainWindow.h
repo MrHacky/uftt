@@ -107,7 +107,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void on_listShares_itemSelectionChanged();
 		void on_listTasks_itemSelectionChanged();
-		void on_editDownload_textChanged(QString text);
+		void on_comboDownload_currentPathChanged(QString text);
 
 		void on_listBroadcastHosts_itemChanged(QTreeWidgetItem* item, int column);
 

@@ -38,6 +38,8 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, createSettingsInfo(true));
 
+	sm->registerSettingsVariable("gui.recentdownloadpaths", recentdownloadpaths, createSettingsInfo(std::vector<std::string>()));
+
 	sm->registerSettingsVariable("download.path", dl_path, createSettingsInfo(platform::getDownloadPathDefault()));
 	sm->registerSettingsVariable("download.resume", experimentalresume, createSettingsInfo(true));
 

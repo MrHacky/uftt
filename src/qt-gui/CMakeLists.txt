@@ -33,6 +33,7 @@ IF(ENABLE_QT_GUI)
 		MainWindow.cpp
 		QDragDropSignalWidget.cpp
 		QToggleHeaderAction.cpp
+		QPathComboBox.cpp
 		DialogDirectoryChooser.cpp
 		DialogPreferences.cpp
 	)
@@ -50,6 +51,7 @@ IF(ENABLE_QT_GUI)
 		QDragDropTreeWidget.h
 		QDragDropSignalWidget.h
 		QToggleHeaderAction.h
+		QPathComboBox.h
 		QMarshaller.h
 		DialogDirectoryChooser.h
 		DialogPreferences.h
