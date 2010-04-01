@@ -37,7 +37,7 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 		void saveSettings(const std::string& key, QComboBox* w);
 
 	public:
-		DialogPreferences(QWidget* parent, boost::shared_ptr<SettingsManagerBase> settings_);
+		DialogPreferences(boost::shared_ptr<SettingsManagerBase> settings_, QWidget* parent = NULL);
 
 	public Q_SLOTS:
 		void on_buttonBox_clicked(QAbstractButton*);

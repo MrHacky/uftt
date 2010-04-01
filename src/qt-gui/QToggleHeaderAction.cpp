@@ -4,7 +4,7 @@
 #include <QTreeView>
 #include <QTreeWidget>
 
-QToggleHeaderAction::QToggleHeaderAction(QTreeView* view_, const QString& name_, int pos_)
+QToggleHeaderAction::QToggleHeaderAction(const QString& name_, int pos_, QTreeView* view_)
 : view(view_)
 , pos(pos_)
 , QAction(name_, view_)
@@ -66,5 +66,5 @@ void QToggleHeaderAction::addActions(QTreeWidget* widget)
 {
 	widget->header()->setContextMenuPolicy(Qt::ActionsContextMenu);
 	for(int i = 0; i < widget->header()->count(); ++i)
-		widget->header()->addAction(new QToggleHeaderAction(widget, widget->headerItem()->text(i), i));
+		widget->header()->addAction(new QToggleHeaderAction(widget->headerItem()->text(i), i, widget));
 }

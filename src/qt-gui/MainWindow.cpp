@@ -857,7 +857,7 @@ void MainWindow::on_actionAboutUFTT_triggered()
 
 void MainWindow::on_actionPreferences_triggered()
 {
-	if (!dialogPreferences) dialogPreferences = new DialogPreferences(this, settings.get());
+	if (!dialogPreferences) dialogPreferences = new DialogPreferences(settings.get(), this);
 
 	dialogPreferences->exec();
 }

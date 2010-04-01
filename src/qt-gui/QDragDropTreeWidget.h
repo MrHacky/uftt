@@ -6,7 +6,7 @@
 
 class QDragDropTreeWidget: public QDragDropSignalWidget<QTreeWidget> {
 	public:
-		QDragDropTreeWidget(QWidget* parent)
+		QDragDropTreeWidget(QWidget* parent = NULL)
 			: QDragDropSignalWidget<QTreeWidget>(parent) {
 		}
 };
