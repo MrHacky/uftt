@@ -279,9 +279,8 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	(*i)[task_list_columns.speed]          = "Unknown";
 	(*i)[task_list_columns.queue]          = info.queue;
 	// Share info
-	(*i)[task_list_columns.user_name]      = info.shareinfo.user;
+	(*i)[task_list_columns.user_name]      = info.shareinfo.user == "" ? "Anonymous" : info.shareinfo.user;
 	(*i)[task_list_columns.share_name]     = info.shareinfo.name;
-	if(info.shareinfo.name == "") (*i)[task_list_columns.share_name] = "Anonymous";
 	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
 	(*i)[task_list_columns.protocol]       = info.shareinfo.proto;
 	(*i)[task_list_columns.url]            = STRFORMAT("%s://%s/%s", info.shareinfo.proto, info.shareinfo.host, info.shareinfo.name);
