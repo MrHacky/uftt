@@ -14,88 +14,103 @@
 
 
 namespace settingsmanager {
-
 	template <typename T>
-	inline void fromstring(const std::string& in, std::vector<T>& out)
-	{
-		out.clear();
-		std::string sep;
-		sep.push_back(0);
-		std::vector<std::string> values;
-		boost::split(values, in, boost::is_any_of(sep));
-		values.pop_back();
-		out.resize(values.size());
-		for (size_t i = 0; i < values.size(); ++i)
-			fromstring(values[i], out[i]);
-	}
-
-	template <typename T>
-	inline void tostring(const std::vector<T>& in, std::string& out)
-	{
-		out.clear();
-		BOOST_FOREACH(const T& t, in) {
-			std::string s;
-			tostring(t, s);
-			out += s.c_str(); // chop off at first NULL
-			out.push_back(0);
-		}
-	}
-
-	template <>
-	inline void fromstring(const std::string& in, uint8& out)
-	{
-		int v;
-		fromstring(in, v);
-		out = v;
-	}
-
-	template <>
-	inline void tostring(const uint8& in, std::string& out)
-	{
-		int v = in;
-		tostring(v, out);
-	}
-
-	template <>
-	inline void fromstring(const std::string& in, std::vector<uint8>& out)
-	{
-		if (in == "") {
+	struct fromstring_t<std::vector<T> > {
+		static void convert(const std::string& in, std::vector<T>& out)
+		{
 			out.clear();
-		} else {
+			std::string sep;
+			sep.push_back(0);
 			std::vector<std::string> values;
-			boost::split(values, in, boost::is_any_of(","));
+			boost::split(values, in, boost::is_any_of(sep));
+			values.pop_back();
 			out.resize(values.size());
 			for (size_t i = 0; i < values.size(); ++i)
 				fromstring(values[i], out[i]);
 		}
-	}
+	};
 
-	template <>
-	inline void tostring(const std::vector<uint8>& in, std::string& out)
-	{
-		out.clear();
-		if (!in.empty())
-			tostring(in[0], out);
-
-		for (size_t i = 1; i < in.size(); ++i) {
-			std::string t;
-			tostring(in[i], t);
-			out += ",";
-			out += t;
+	template <typename T>
+	struct tostring_t<std::vector<T> > {
+		static void convert(const std::vector<T>& in, std::string& out)
+		{
+			out.clear();
+			BOOST_FOREACH(const T& t, in) {
+				std::string s;
+				tostring(t, s);
+				out += s.c_str(); // chop off at first NULL
+				out.push_back(0);
+			}
 		}
-	}
+	};
 
 	template <>
-	inline void fromstring(const std::string& in, boost::filesystem::path& out)
-	{
-		out = in;
-	}
+	struct fromstring_t<uint8> {
+		static void convert(const std::string& in, uint8& out)
+		{
+			int v;
+			fromstring(in, v);
+			out = v;
+		}
+	};
+
+	template <>
+	struct tostring_t<uint8> {
+		static void convert(const uint8& in, std::string& out)
+		{
+			int v = in;
+			tostring(v, out);
+		}
+	};
+
+	template <>
+	struct fromstring_t<std::vector<uint8> > {
+		static void convert(const std::string& in, std::vector<uint8>& out)
+		{
+			if (in == "") {
+				out.clear();
+			} else {
+				std::vector<std::string> values;
+				boost::split(values, in, boost::is_any_of(","));
+				out.resize(values.size());
+				for (size_t i = 0; i < values.size(); ++i)
+					fromstring(values[i], out[i]);
+			}
+		}
+	};
+
+	template <>
+	struct tostring_t<std::vector<uint8> > {
+		static void convert(const std::vector<uint8>& in, std::string& out)
+		{
+			out.clear();
+			if (!in.empty())
+				tostring(in[0], out);
+
+			for (size_t i = 1; i < in.size(); ++i) {
+				std::string t;
+				tostring(in[i], t);
+				out += ",";
+				out += t;
+			}
+		}
+	};
+
+	template <>
+	struct fromstring_t<boost::filesystem::path> {
+		static void convert(const std::string& in, boost::filesystem::path& out)
+		{
+			out = in;
+		}
+	};
 /*
 	template <>
-	inline void tostring(const boost::filesystem::path& in, std::string& out)
-	{
-		out = in.string();
-	}
+	struct tostring_t<boost::filesystem::path> {
+		static void convert(const boost::filesystem::path& in, std::string& out)
+		{
+			out = in.string();
+		}
+	};
 */
 };
 

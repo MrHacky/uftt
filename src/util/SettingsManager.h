@@ -12,16 +12,35 @@
 #include <map>
 
 namespace settingsmanager {
+	// NOTE: Use class specializations intead of function specializations
+	//       see http://www.gotw.ca/publications/mill17.htm
+
+	template <typename T>
+	struct fromstring_t {
+		static void convert(const std::string& in, T& out)
+		{
+			out = boost::lexical_cast<T>(in);
+		}
+	};
+
+	template <typename T>
+	struct tostring_t {
+		static void convert(const T& in, std::string& out)
+		{
+			out = boost::lexical_cast<std::string>(in);
+		}
+	};
+
 	template <typename T>
 	inline void fromstring(const std::string& in, T& out)
 	{
-		out = boost::lexical_cast<T>(in);
+		fromstring_t<T>::convert(in, out);
 	}
 
 	template <typename T>
 	inline void tostring(const T& in, std::string& out)
 	{
-		out = boost::lexical_cast<std::string>(in);
+		tostring_t<T>::convert(in, out);
 	}
 };
 
