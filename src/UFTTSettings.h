@@ -14,6 +14,33 @@
 
 
 namespace settingsmanager {
+
+	template <typename T>
+	inline void fromstring(const std::string& in, std::vector<T>& out)
+	{
+		out.clear();
+		std::string sep;
+		sep.push_back(0);
+		std::vector<std::string> values;
+		boost::split(values, in, boost::is_any_of(sep));
+		values.pop_back();
+		out.resize(values.size());
+		for (size_t i = 0; i < values.size(); ++i)
+			fromstring(values[i], out[i]);
+	}
+
+	template <typename T>
+	inline void tostring(const std::vector<T>& in, std::string& out)
+	{
+		out.clear();
+		BOOST_FOREACH(const T& t, in) {
+			std::string s;
+			tostring(t, s);
+			out += s.c_str(); // chop off at first NULL
+			out.push_back(0);
+		}
+	}
+
 	template <>
 	inline void fromstring(const std::string& in, uint8& out)
 	{
