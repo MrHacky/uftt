@@ -59,7 +59,9 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
 
 	/* Task menu */
-	actiongroup_ref->add(Gtk::Action::create("TaskMenu", "_Task"));
+	action = Gtk::Action::create("TaskMenu", "_Task");
+	action->set_sensitive(false);
+	actiongroup_ref->add(action);
 
 	action = Gtk::Action::create("TaskPause", Gtk::Stock::MEDIA_PAUSE);
 	action->set_sensitive(false);
@@ -118,6 +120,7 @@ void TaskList::on_task_list_treeview_signal_row_inserted_deleted() {
 
 void TaskList::on_task_list_treeview_selection_signal_changed() {
 	bool has_selection = task_list_treeview.get_selection()->count_selected_rows() > 0;
+	uimanager_ref->get_action("/MenuBar/TaskMenu")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskExecute")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskOpenContainingFolder")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/TaskMenu/TaskPause")->set_sensitive(has_selection);

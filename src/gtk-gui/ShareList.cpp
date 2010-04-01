@@ -156,7 +156,9 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	);
 
 	/* Share menu */
-	actiongroup_ref->add(Gtk::Action::create("ShareMenu", "_Share"));
+	action = Gtk::Action::create("ShareMenu", "_Share");
+	action->set_sensitive(false);
+	actiongroup_ref->add(action);
 
 	action = Gtk::Action::create(
 		"ShareDownload",
@@ -279,6 +281,7 @@ void ShareList::on_add_share_folder_dialog_button_clicked() {
 
 void ShareList::on_share_list_treeview_selection_signal_changed() {
 	bool has_selection = share_list_treeview.get_selection()->count_selected_rows() > 0;
+	uimanager_ref->get_action("/MenuBar/ShareMenu")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownload")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownloadTo")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareRemoveShare")->set_sensitive(has_selection);
