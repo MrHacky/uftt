@@ -74,7 +74,7 @@ class ConnectionCommon: public ConnectionBase {
 
 			filesender(services::diskio_service& diskio);
 
-			boost::system::error_code init(uint64 offset_ = 0);
+			void init(uint64 offset_ = 0);
 
 			bool getbuf(shared_vec buf);
 		};

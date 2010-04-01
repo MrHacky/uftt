@@ -240,7 +240,7 @@ namespace services {
 				return service.get_io_service();
 			}
 
-			boost::system::error_code open(const boost::filesystem::path& path, unsigned int mode = in|out)
+			void open(const boost::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
 			{
 				std::string openmode = "";
 				if (mode&out && mode&create) openmode += "w";
@@ -249,8 +249,21 @@ namespace services {
 				if (!(mode&text)) openmode += "b";
 				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
-					return boost::system::error_code();
-				return ext::posix_error::make_error_code(errno);
+					err = boost::system::error_code();
+				else
+					err = ext::posix_error::make_error_code(errno);
+			}
+
+			void open(const boost::filesystem::path& path, unsigned int mode = in|out)
+			{
+				boost::system::error_code err;
+				open(path, mode, err);
+				if (err) throw boost::system::system_error(err);
+			}
+
+			void open(const boost::filesystem::path& path, boost::system::error_code& err)
+			{
+				open(path, in|out, err);
 			}
 
 			void close() {
@@ -434,7 +447,7 @@ namespace services {
 	inline void diskio_service::helper_open_file<Path, Handler>::operator()()
 	{
 		boost::system::error_code res;
-		res = file.open(path, flags);
+		file.open(path, flags, res);
 		service.dispatch(boost::bind(handler, res));
 	}
 

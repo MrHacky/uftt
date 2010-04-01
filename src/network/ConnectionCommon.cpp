@@ -11,15 +11,13 @@ ConnectionCommon::filesender::filesender(services::diskio_service& diskio)
 {
 }
 
-boost::system::error_code ConnectionCommon::filesender::init(uint64 offset_)
+void ConnectionCommon::filesender::init(uint64 offset_)
 {
 	offset = offset_;
 	fsize = boost::filesystem::file_size(path) - offset;
-	boost::system::error_code e = file.open(path, services::diskio_filetype::in);
-	if (!e) file.fseeka(offset);
+	file.open(path, services::diskio_filetype::in);
+	file.fseeka(offset);
 	hsent = false;
-	return e;
-	//cout << "<init(): " << path << " : " << fsize << " : " << hsent << '\n';
 };
 
 bool ConnectionCommon::filesender::getbuf(shared_vec buf) {

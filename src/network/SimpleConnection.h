@@ -768,8 +768,8 @@ class SimpleConnection: public ConnectionCommon {
 							uint64 off = qitems.front().poffset;
 							cursendfile.name = qitems[0].path;
 							cursendfile.path = qitems[0].path;
-							boost::system::error_code e = cursendfile.init(off);
-							if (!e) {
+							try {
+								cursendfile.init(off);
 								cursendfile.hsent = true;
 								qitems.pop_front();
 								pkt_put_uint32((off == 0) ? CMD_REPLY_FULL_FILE : CMD_REPLY_PARTIAL_FILE, &((*sbuf)[0]));
@@ -782,8 +782,8 @@ class SimpleConnection: public ConnectionCommon {
 								}
 								sendqueue.push_back(sbuf);
 								service.post(boost::bind(&SimpleConnection::checkwhattosend, this, shared_vec()));
-							} else {
-								disconnect(STRFORMAT("checkwhattosend: failed to open file '%s': %s", cursendfile.path, e.message()));
+							} catch (std::exception& e) {
+								disconnect(STRFORMAT("checkwhattosend: failed to open file '%s': %s", cursendfile.path, e.what()));
 							}
 						} else if (qtype == QITEM_REQUESTED_FILESIG) {
 							qitems.front().type = QITEM_REQUESTED_FILESIG_BUSY;
