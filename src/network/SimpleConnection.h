@@ -334,7 +334,11 @@ class SimpleConnection: public ConnectionCommon {
 					case CMD_REQUEST_TREE_LIST: { // request file listing
 						newstyle = true;
 						if (hdr.len < 0xffff) {
-							handle_request_listing(rbuf);
+							try {
+								handle_request_listing(rbuf);
+							} catch (std::exception& e) {
+								disconnect(STRFORMAT("Error during indexing phase: %s", e.what()));
+							}
 						} else
 							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
