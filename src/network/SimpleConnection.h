@@ -229,7 +229,11 @@ class SimpleConnection: public ConnectionCommon {
 				pkt_put_uint32(CMD_DISCONNECT, &((*rbuf)[0]));
 				pkt_put_uint32(0, &((*rbuf)[4]));
 				pkt_put_uint64(0, &((*rbuf)[8]));
-				boost::asio::write(socket, GETBUF(rbuf));
+				try {
+					boost::asio::write(socket, GETBUF(rbuf));
+				} catch (std::exception& e) {
+					// ignore errors, we were disconnecting anyway
+				}
 				disconnect();
 				return;
 			}
