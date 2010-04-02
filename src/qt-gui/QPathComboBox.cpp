@@ -57,10 +57,10 @@ void QPathComboBox::updateValidStatus()
 	bool isvalid = this->completer()->popup()->isVisible()
 	            || ext::filesystem::exists(boost::filesystem::path(currentPath().toStdString()));
 
-	if (isvalid)
-		this->setStyleSheet("");
-	else
-		this->setStyleSheet("* { color: black; background-color: #ffb3b3; }");
+	QPalette pal;
+	if (!isvalid) pal.setColor(QPalette::Base, QColor(0xff, 0xb3, 0xb3));
+	this->setPalette(pal);
+	this->lineEdit()->setPalette(pal);
 }
 
 void QPathComboBox::setRecentPaths(QStringList paths)
