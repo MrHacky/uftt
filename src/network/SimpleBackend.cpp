@@ -50,7 +50,7 @@ SimpleBackend::SimpleBackend(UFTTCore* core_)
 	udp_info_v6 = UDPSockInfoRef(new UDPSockInfo(udp_sock_v6, false));
 	try {
 		udp_sock_v6.open(boost::asio::ip::udp::v6());
-		#ifdef __linux__
+		#if defined(__linux__) || defined(__APPLE__)
 			udp_sock_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
 		#endif
 		udp_sock_v6.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
@@ -101,7 +101,7 @@ SimpleBackend::SimpleBackend(UFTTCore* core_)
 
 	try {
 		tcplistener_v6.open(boost::asio::ip::tcp::v6());
-		#ifdef __linux__
+		#if defined(__linux__) || defined(__APPLE__)
 			tcplistener_v6.set_option(boost::asio::ip::v6_only(true)); // behave more like windows -> less chance for bugs
 		#endif
 		tcplistener_v6.bind(boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v6::any(), UFTT_PORT));
@@ -874,7 +874,7 @@ void SimpleBackend::add_ip_addr_ipv6(boost::asio::ip::address addr) {
 						std::cout << "Warning: failed to join multicast group for " << addr << '\n';
 					else
 				#endif
-				#ifdef __linux__
+				#if defined(__linux__) || defined(__APPLE__)
 					if (e.code().value() == EADDRINUSE)
 						std::cout << "Warning: failed to join multicast group for " << addr << '\n';
 					else
