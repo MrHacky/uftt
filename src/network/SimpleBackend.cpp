@@ -199,6 +199,8 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 	ret.start_time = now;
 	ret.last_progress_report = now;
+	ret.status = "Connecting";
+
 	std::string shareurl = sid.sid;
 
 	ret.shareid = ret.shareinfo.id = sid;
@@ -249,8 +251,10 @@ void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, Connec
 {
 	if (e) {
 		std::cout << "connect failed: " << e.message() << '\n';
+		conn->taskinfo.status = STRFORMAT("Error: Failed to connect: %s", e.message());
 	} else {
 		std::cout << "Connected!\n";
+		conn->taskinfo.status = "Connected";
 		conn->handle_tcp_connect(name, dlpath, version);
 	}
 }
