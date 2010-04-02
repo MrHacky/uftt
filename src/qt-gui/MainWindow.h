@@ -67,7 +67,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		virtual void moveEvent(QMoveEvent* evnt);
 
 	private Q_SLOTS:
-		void DragStart(QTreeWidgetItem*, int);
 		void onDragEnterTriggered(QDragEnterEvent* evt);
 		void onDragMoveTriggered(QDragMoveEvent* evt);
 		void onDropTriggered(QDropEvent* evt);
@@ -116,6 +115,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void on_buttonManualPublish_clicked();
 
 		void handle_trayicon_activated(QSystemTrayIcon::ActivationReason);
+
 	public: // callbacks
 		void addSimpleShare(const ShareInfo& info);
 		void handleGuiCommand(UFTTCore::GuiCommand cmd);

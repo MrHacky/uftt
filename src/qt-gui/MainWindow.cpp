@@ -534,21 +534,6 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	}
 }
 
-void MainWindow::DragStart(QTreeWidgetItem* rwi, int col)
-{
-	if (rwi != NULL && col == 0) {
-		QDrag *drag = new QDrag(this);
-		QMimeData *mimeData = new QMimeData;
-
-		// TODO: figure this out...
-		//mimeData->setText(rwi->text(0));
-		//drag->setMimeData(mimeData);
-		//drag->setPixmap(iconPixmap);
-
-		// Qt::DropAction dropAction = drag->start();
-	}
-}
-
 std::string MainWindow::getDownloadPath()
 {
 	std::string path = settings->dl_path.get().string();
