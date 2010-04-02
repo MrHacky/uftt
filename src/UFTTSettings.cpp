@@ -58,7 +58,7 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 	sm->registerSettingsVariable("systray.showtask", show_task_tray_icon, createSettingsInfo(true));
 	sm->registerSettingsVariable("systray.minimizetotray", minimize_to_tray, createSettingsInfo(true));
-	sm->registerSettingsVariable("systray.closetotray", close_to_tray, createSettingsInfo(true));
+	sm->registerSettingsVariable("systray.closetotray", close_to_tray, createSettingsInfo(false));
 	sm->registerSettingsVariable("systray.startintray", start_in_tray, createSettingsInfo(false));
 	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, createSettingsInfo(true));
 
