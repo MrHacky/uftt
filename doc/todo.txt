@@ -40,6 +40,13 @@
 - really fix ipv?_watcher shutdown problem (needs some locking?)
 - password protected shares
 - make distinction between release and beta autoupdates
+- move bin2c to /tools (and use EXCLUDE_FROM_ALL)
+- implement disable systray option (qt)
+- platform dependant defaults for settings
+- remove 'web updates' settings if not used
+- dont save settings at their default values (so defaults can be changed)
+- add more icons to qt gui
+- implement autoupdate for mac osx
 
 * Already completed features.
 - [DONE] show share name for upload tasks
