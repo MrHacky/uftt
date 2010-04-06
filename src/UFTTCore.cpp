@@ -47,8 +47,15 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			sock.open(boost::asio::ip::tcp::v4());
 			sock.connect(local_endpoint);
 			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, args.size(), (char)0)));
-			for (size_t i = 0; i < args.size(); ++i)
-				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", args[i], (char)0)));
+			for (size_t i = 0; i < args.size(); ++i) {
+				boost::filesystem::path p(
+					boost::filesystem::system_complete(argv[i])
+				);
+				if(!ext::filesystem::exists(p)) {
+					throw std::runtime_error("Error: no such file or directory.");
+				}
+				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", p.string().c_str(), (char)0)));
+			}
 
 			uint8 ret;
 			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
