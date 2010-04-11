@@ -48,8 +48,8 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			sock.connect(local_endpoint);
 			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, args.size(), (char)0)));
 			for (size_t i = 0; i < args.size(); ++i) {
-				boost::filesystem::path p(
-					boost::filesystem::system_complete(argv[i])
+				ext::filesystem::path p(
+					boost::filesystem::system_complete(ext::filesystem::path(argv[i]))
 				);
 				if(!ext::filesystem::exists(p)) {
 					throw std::runtime_error("Error: no such file or directory.");
