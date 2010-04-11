@@ -149,8 +149,8 @@ class SimpleBackend: public INetModule {
 
 		SimpleBackend(UFTTCore* core_);
 
-		void download_share(const ShareID& sid, const boost::filesystem::path& dlpath);
-		void dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, boost::filesystem::path dlpath, uint32 version);
+		void download_share(const ShareID& sid, const ext::filesystem::path& dlpath);
+		void dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, ext::filesystem::path dlpath, uint32 version);
 		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener);
 		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e);
 		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
@@ -166,7 +166,7 @@ class SimpleBackend: public INetModule {
 		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
 		virtual void doRefreshShares();
-		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path);
+		virtual void startDownload(const ShareID& sid, const ext::filesystem::path& path);
 
 		virtual void doManualPublish(const std::string& host);
 		virtual void doManualQuery(const std::string& host);

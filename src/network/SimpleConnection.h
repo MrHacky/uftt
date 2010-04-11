@@ -32,9 +32,9 @@ class SimpleConnection: public ConnectionCommon {
 		SockType socket;
 
 		std::string sharename;
-		boost::filesystem::path writesharepath; // 
-		boost::filesystem::path readsharepath; // sharename is the name of the share we are uploading
-		boost::filesystem::path cwdsharepath;
+		ext::filesystem::path writesharepath; // 
+		ext::filesystem::path readsharepath; // sharename is the name of the share we are uploading
+		ext::filesystem::path cwdsharepath;
 
 		filesender cursendfile;
 		std::vector<dirsender> quesenddir;
@@ -61,33 +61,33 @@ class SimpleConnection: public ConnectionCommon {
 
 		cmdinfo rcmd;
 
-		boost::filesystem::path getReadShareFilePath(std::string pathspec)
+		ext::filesystem::path getReadShareFilePath(std::string pathspec)
 		{
 			std::vector<std::string> elems;
 			boost::split(elems, pathspec, boost::is_any_of("/"));
 			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
 			for (size_t i = 1; i< elems.size(); ++i)
 				if (elems[i] == "..")
-					return boost::filesystem::path(); // not allowed
+					return ext::filesystem::path(); // not allowed
 			if (elems[0] != sharename) // TODO: allow changing share?
-				return boost::filesystem::path();
-			boost::filesystem::path p = readsharepath;
+				return ext::filesystem::path();
+			ext::filesystem::path p = readsharepath;
 			for (size_t i = 1; i< elems.size(); ++i)
 				p /= elems[i];
 			return p;
 		}
 
-		boost::filesystem::path getWriteShareFilePath(std::string pathspec)
+		ext::filesystem::path getWriteShareFilePath(std::string pathspec)
 		{
 			std::vector<std::string> elems;
 			boost::split(elems, pathspec, boost::is_any_of("/"));
 			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
 			for (size_t i = 1; i< elems.size(); ++i)
 				if (elems[i] == "..")
-					return boost::filesystem::path(); // not allowed
+					return ext::filesystem::path(); // not allowed
 			if (elems[0] != sharename)
-				return boost::filesystem::path();
-			boost::filesystem::path p = writesharepath;
+				return ext::filesystem::path();
+			ext::filesystem::path p = writesharepath;
 			for (size_t i = 1; i< elems.size(); ++i)
 				p /= elems[i];
 			return p;
@@ -506,10 +506,11 @@ class SimpleConnection: public ConnectionCommon {
 			}
 
 			taskinfo.shareinfo.name = elems[0];
-			boost::filesystem::path spath(core->getLocalSharePath(elems[0]));
+			ext::filesystem::path spath(core->getLocalSharePath(elems[0]));
 			readsharepath = spath;
 			sharename = elems[0];
 			taskinfo.path = readsharepath.branch_path(); // TODO
+
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
 				return;
@@ -522,8 +523,8 @@ class SimpleConnection: public ConnectionCommon {
 				return;
 			}
 
-			boost::filesystem::path curpath(elems.back());
-			if(ext::filesystem::exists(spath)) {
+			ext::filesystem::path curpath(elems.back());
+			if (ext::filesystem::exists(spath)) {
 				if (boost::filesystem::is_directory(spath)) {
 					//std::cout << "Single directory!\n";
 
@@ -538,19 +539,16 @@ class SimpleConnection: public ConnectionCommon {
 
 					int curlevel = 0;
 					// TODO: move this to a different thread (io thread?)
-					boost::filesystem::recursive_directory_iterator curiter(spath);
-					boost::filesystem::recursive_directory_iterator enditer;
+					ext::filesystem::recursive_directory_iterator curiter(spath);
+					ext::filesystem::recursive_directory_iterator enditer;
 					for (; curiter != enditer; ++curiter) {
+						const ext::filesystem::path& iterpath = *curiter;
 						for (; curlevel > curiter.level(); --curlevel)
 							curpath = curpath.branch_path();
-#if BOOST_VERSION <= 103500
 						curpath /= curiter->leaf();
-#else
-						curpath /= curiter->filename();
-#endif
 						++curlevel;
-						if(ext::filesystem::exists(*curiter)) {
-							if (boost::filesystem::is_directory(*curiter)) {
+						if (ext::filesystem::exists(iterpath)) {
+							if (boost::filesystem::is_directory(iterpath)) {
 								tbuf->push_back(REQLIST_DIR); // dir
 								pkt_put_vuint32(curpath.string().size(), *tbuf);
 								for (uint i = 0; i < curpath.string().size(); ++i)
@@ -558,8 +556,8 @@ class SimpleConnection: public ConnectionCommon {
 								//std::cout << "Directory: " << curpath << '\n';
 							} else {
 								tbuf->push_back(REQLIST_FILE); // file
-								taskinfo.size += boost::filesystem::file_size(*curiter);
-								pkt_put_vuint64(boost::filesystem::file_size(*curiter), *tbuf);
+								taskinfo.size += boost::filesystem::file_size(iterpath);
+								pkt_put_vuint64(boost::filesystem::file_size(iterpath), *tbuf);
 								pkt_put_vuint32(curpath.string().size(), *tbuf);
 								for (uint i = 0; i < curpath.string().size(); ++i)
 									tbuf->push_back(curpath.string()[i]);
@@ -607,7 +605,7 @@ class SimpleConnection: public ConnectionCommon {
 						uint32 nlen = pkt_get_vuint32(*tbuf, pos);
 						for (uint i = 0; i < nlen; ++i)
 							qi.path.push_back(tbuf->at(pos++));
-						boost::filesystem::path dp = getWriteShareFilePath(qi.path);
+						ext::filesystem::path dp = getWriteShareFilePath(qi.path);
 						boost::filesystem::create_directory(dp);
 						//qitems.push_front(qi);
 					}; break;
@@ -649,7 +647,7 @@ class SimpleConnection: public ConnectionCommon {
 						qitem& titem = qitems[i];
 						size_t cstart = tbuf->size();
 						tbuf->resize(tbuf->size()+16);
-						boost::filesystem::path itempath = getWriteShareFilePath(titem.path);
+						ext::filesystem::path itempath = getWriteShareFilePath(titem.path);
 						if (rresume && ext::filesystem::exists(itempath) && boost::filesystem::file_size(itempath) > 1024*1024) {
 							uint64 fsize = boost::filesystem::file_size(itempath);
 							std::vector<uint64> pos;
@@ -717,7 +715,7 @@ class SimpleConnection: public ConnectionCommon {
 				boost::bind(&SimpleConnection::start_receive_command, this, tbuf, _1));
 		}
 
-		void sendpath(boost::filesystem::path path, std::string name = "")
+		void sendpath(ext::filesystem::path path, std::string name = "")
 		{
 			if (name.empty()) name = path.leaf();
 
@@ -835,7 +833,7 @@ class SimpleConnection: public ConnectionCommon {
 							}
 						} else if (qtype == QITEM_REQUESTED_FILESIG) {
 							qitems.front().type = QITEM_REQUESTED_FILESIG_BUSY;
-							qitems.front().path = getReadShareFilePath(qitems.front().path).native_file_string();
+							qitems.front().path = getReadShareFilePath(qitems.front().path).string();
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
 							sm->cb = boost::bind(&SimpleConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
@@ -847,7 +845,7 @@ class SimpleConnection: public ConnectionCommon {
 						}
 					}
 				} else if (!quesenddir.empty()) {
-					boost::filesystem::path newpath;
+					ext::filesystem::path newpath;
 
 					bool dirdone = quesenddir.back().getbuf(sbuf, newpath);
 					if (dirdone) {
@@ -1044,7 +1042,7 @@ class SimpleConnection: public ConnectionCommon {
 			uldone = true;
 		}
 
-		void handle_tcp_connect(std::string name, boost::filesystem::path dlpath, uint32 version)
+		void handle_tcp_connect(std::string name, ext::filesystem::path dlpath, uint32 version)
 		{
 			sharename = name;
 			writesharepath = dlpath / name;
@@ -1095,20 +1093,20 @@ class SimpleConnection: public ConnectionCommon {
 			}
 
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
-			boost::filesystem::path path = getWriteShareFilePath((cwdsharepath / name).string());
+			ext::filesystem::path path = getWriteShareFilePath((cwdsharepath / name).string());
 
 			kickoff_file_write(path, hdr.len, rbuf, false, 0);
 		}
 
 		boost::function<void()> delayed_open_file;
 
-		void delay_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
+		void delay_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
 		{
 			delayed_open_file = boost::function<void()>();
 			kickoff_file_write(path, fsize, rbuf, dataready, offset);
 		}
 
-		void kickoff_file_write(boost::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
+		void kickoff_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
 		{
 			if (delayed_open_file) {
 				std::cout << "error: multiple file opens\n";

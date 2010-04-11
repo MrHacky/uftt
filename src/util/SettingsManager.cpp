@@ -60,13 +60,13 @@ bool SettingsManagerBase::load(std::map<std::string, std::string>& values)
 	return true;
 }
 
-bool SettingsManagerBase::load(const boost::filesystem::path& path)
+bool SettingsManagerBase::load(const ext::filesystem::path& path)
 {
 	bool loaded = false;
 
 	try {
 		std::map<std::string, std::string> s_values;
-		std::ifstream ifs(path.native_file_string().c_str());
+		ext::filesystem::ifstream ifs(path);
 		if (!ifs.is_open()) return false;
 		boost::archive::xml_iarchive ia(ifs);
 		ia & boost::serialization::make_nvp("settingsmap", s_values);
@@ -79,7 +79,7 @@ bool SettingsManagerBase::load(const boost::filesystem::path& path)
 	return loaded;
 }
 
-bool SettingsManagerBase::save(const boost::filesystem::path& path)
+bool SettingsManagerBase::save(const ext::filesystem::path& path)
 {
 	try {
 		std::map<std::string, std::string> s_values;
@@ -90,7 +90,7 @@ bool SettingsManagerBase::save(const boost::filesystem::path& path)
 		}
 
 		boost::filesystem::create_directories(path.branch_path());
-		std::ofstream ofs(path.native_file_string().c_str());
+		ext::filesystem::ofstream ofs(path);
 		if (!ofs.is_open()) return false;
 		boost::archive::xml_oarchive oa(ofs);
 		oa & boost::serialization::make_nvp("settingsmap", s_values);

@@ -9,6 +9,7 @@
 #include <boost/foreach.hpp>
 
 #include "../util/Filesystem.h"
+#include "ExtUTF8.h"
 
 #include <iostream>
 
@@ -55,7 +56,7 @@ void QPathComboBox::onEditTextChanged(QString path)
 void QPathComboBox::updateValidStatus()
 {
 	bool isvalid = this->completer()->popup()->isVisible()
-	            || ext::filesystem::exists(boost::filesystem::path(currentPath().toStdString()));
+	            || ext::filesystem::exists(qext::path::fromQString(currentPath()));
 
 	QPalette pal;
 	if (!isvalid) pal.setColor(QPalette::Base, QColor(0xff, 0xb3, 0xb3));
@@ -86,7 +87,7 @@ void QPathComboBox::setRecentPaths(const std::vector<std::string>& paths)
 	signalblocked = true;
 	this->clear();
 	BOOST_FOREACH(const std::string& s, paths)
-		this->addItem(QString::fromStdString(s));
+		this->addItem(qext::utf8::toQString(s));
 	signalblocked = false;
 }
 
@@ -96,13 +97,14 @@ std::vector<std::string> QPathComboBox::recentPathsStd(size_t max)
 	std::vector<std::string> r;
 	size_t c = count();
 	for (size_t i = 0; i < c && i < max; ++i)
-		r.push_back(this->itemText(i).toStdString());
+		r.push_back(qext::utf8::fromQString(this->itemText(i)));
 	return r;
 }
 
 void QPathComboBox::addRecentPath(QString path)
 {
 	signalblocked = true;
+	path = QDir::toNativeSeparators(path);
 	int idx = this->findText(path, matchflags);
 	bool dosignal = (idx != this->currentIndex());
 	if (idx != -1)
@@ -116,6 +118,7 @@ void QPathComboBox::addRecentPath(QString path)
 void QPathComboBox::addPath(QString path)
 {
 	signalblocked = true;
+	path = QDir::toNativeSeparators(path);
 	if (this->findText(path, matchflags) == -1)
 		this->addItem(path);
 	signalblocked = false;

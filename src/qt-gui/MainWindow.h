@@ -33,7 +33,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		UFTTSettingsRef settings;
 		bool askonupdates;
 		ShareID auto_update_share;
-		boost::filesystem::path auto_update_path;
+		ext::filesystem::path auto_update_path;
 		std::string auto_update_build;
 		UFTTCore* backend;
 		QTreeWidgetItem* ctwi;
@@ -49,10 +49,11 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 
 		void timerLostFocus(uint32 tid);
 
-		void addLocalShare(std::string url);
-		void doSelfUpdate(const std::string& build, const boost::filesystem::path& path);
+		void addLocalShare(QString url);
+		void doSelfUpdate(const std::string& build, const ext::filesystem::path& path);
 
-		std::string getDownloadPath();
+		ext::filesystem::path getDownloadPath();
+		QString getDownloadPathQ();
 
 		void new_autoupdate(const ShareInfo& info);
 		void download_done(const ShareID& sid);

@@ -5,7 +5,7 @@
 #include "Platform.h"
 #include "util/Filesystem.h"
 
-boost::filesystem::path UFTTSettings::getSavePath()
+ext::filesystem::path UFTTSettings::getSavePath()
 {
 	if (path.empty()) {
 		platform::spathlist spl = platform::getSettingsPathList();

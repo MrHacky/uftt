@@ -174,7 +174,7 @@ namespace services {
 			{
 			}
 
-			boost::system::error_code open(const boost::filesystem::path& path, unsigned int mode = in|out)
+			boost::system::error_code open(const ext::filesystem::path& path, unsigned int mode = in|out)
 			{
 				HANDLE whandle = ::CreateFile(
 					TEXT(path.native_file_string().c_str()),
@@ -240,28 +240,29 @@ namespace services {
 				return service.get_io_service();
 			}
 
-			void open(const boost::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
+			void open(const ext::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
 			{
 				std::string openmode = "";
 				if (mode&out && mode&create) openmode += "w";
 				else if (mode&in) openmode += "r";
 				if (mode&in && mode&out) openmode += "+";
 				if (!(mode&text)) openmode += "b";
-				fd = fopen(path.native_file_string().c_str(), openmode.c_str());
+				fd = ext::filesystem::fopen(path, openmode.c_str());
+					//fopen(path.external_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
 					err = boost::system::error_code();
 				else
 					err = ext::posix_error::make_error_code(errno);
 			}
 
-			void open(const boost::filesystem::path& path, unsigned int mode = in|out)
+			void open(const ext::filesystem::path& path, unsigned int mode = in|out)
 			{
 				boost::system::error_code err;
 				open(path, mode, err);
 				if (err) throw boost::system::system_error(err);
 			}
 
-			void open(const boost::filesystem::path& path, boost::system::error_code& err)
+			void open(const ext::filesystem::path& path, boost::system::error_code& err)
 			{
 				open(path, in|out, err);
 			}

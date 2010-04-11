@@ -65,7 +65,7 @@ class ConnectionCommon: public ConnectionBase {
 
 		struct filesender {
 			std::string name;
-			boost::filesystem::path path;
+			ext::filesystem::path path;
 			services::diskio_filetype file;
 
 			bool hsent;
@@ -81,15 +81,15 @@ class ConnectionCommon: public ConnectionBase {
 
 		struct dirsender {
 			std::string name;
-			boost::filesystem::path path;
+			ext::filesystem::path path;
 
-			boost::filesystem::directory_iterator curiter;
-			boost::filesystem::directory_iterator enditer;
+			ext::filesystem::directory_iterator curiter;
+			ext::filesystem::directory_iterator enditer;
 
 			bool hsent;
 
 			void init();
-			bool getbuf(shared_vec buf, boost::filesystem::path& newpath);
+			bool getbuf(shared_vec buf, ext::filesystem::path& newpath);
 		};
 
 		struct qitem {
@@ -119,7 +119,7 @@ class ConnectionCommon: public ConnectionBase {
 			qitem* item;
 			boost::function<void(uint64)> cb;
 			std::vector<uint8> data;
-			boost::filesystem::path path;
+			ext::filesystem::path path;
 			FILE* fd;
 
 			sigchecker(boost::asio::io_service& service_);

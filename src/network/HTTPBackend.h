@@ -31,7 +31,7 @@ class HTTPBackend: public INetModule {
 		void check_for_web_updates();
 		void web_update_page_handler(const boost::system::error_code& err, HTTPTaskRef task, int prog);
 
-		void do_start_download(const ShareID& sid, const boost::filesystem::path& path);
+		void do_start_download(const ShareID& sid, const ext::filesystem::path& path);
 		void handle_download_progress(const boost::system::error_code& err, HTTPTaskRef task, int prog);
 		void handle_file_open_done(const boost::system::error_code& err, HTTPTaskRef task);
 		void handle_file_write_done(const boost::system::error_code& err, HTTPTaskRef task);
@@ -48,7 +48,7 @@ class HTTPBackend: public INetModule {
 		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
 		virtual void doRefreshShares();
-		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path);
+		virtual void startDownload(const ShareID& sid, const ext::filesystem::path& path);
 
 		virtual void doManualPublish(const std::string& host);
 		virtual void doManualQuery(const std::string& host);

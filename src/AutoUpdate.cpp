@@ -159,15 +159,15 @@ namespace {
 
 		void try_compress()
 		{
-			//boost::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
-			boost::filesystem::path upxexe("C:\\Temp\\upx.exe");
-			boost::filesystem::path tempexe("C:\\Temp\\ufft-temp.exe");
+			//ext::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
+			ext::filesystem::path upxexe("C:\\Temp\\upx.exe");
+			ext::filesystem::path tempexe("C:\\Temp\\ufft-temp.exe");
 
 			if (!ext::filesystem::exists(upxexe))
 				return;
 
 			{
-				ofstream wexe(tempexe.native_file_string().c_str(), ios_base::out|ios_base::binary);
+				ext::filesystem::ofstream wexe(tempexe, ios_base::out|ios_base::binary);
 				wexe.write((char*)&((*file)[0]), file->size());
 				if (wexe.fail()) return;
 				wexe.close();
@@ -191,7 +191,7 @@ namespace {
 
 			{
 				shared_vec nvec(new vector<uint8>(nsize));
-				ifstream rexe(tempexe.native_file_string().c_str(), ios_base::in|ios_base::binary);
+				ext::filesystem::ifstream rexe(tempexe, ios_base::in|ios_base::binary);
 				rexe.read((char*)&((*nvec)[0]), nvec->size());
 				if (rexe.fail() || boost::numeric_cast<uint32>(rexe.gcount()) != nsize) return;
 				rexe.close();
@@ -335,7 +335,7 @@ namespace {
 		}
 	};
 
-	void removefile_helper(boost::shared_ptr<boost::asio::deadline_timer> timer, const boost::filesystem::path& target, int retries, const boost::system::error_code& e = boost::system::error_code())
+	void removefile_helper(boost::shared_ptr<boost::asio::deadline_timer> timer, const ext::filesystem::path& target, int retries, const boost::system::error_code& e = boost::system::error_code())
 	{
 		if (e) {
 			cout << "Delete timer error: " << e.message() << '\n';
@@ -362,7 +362,7 @@ namespace {
 	}
 }
 
-int AutoUpdater::replace(const boost::filesystem::path& source, const boost::filesystem::path& target)
+int AutoUpdater::replace(const ext::filesystem::path& source, const ext::filesystem::path& target)
 {
 	boost::uintmax_t todomax = boost::filesystem::file_size(source);
 	cout << "Source size: " << todomax << "\n";
@@ -372,7 +372,7 @@ int AutoUpdater::replace(const boost::filesystem::path& source, const boost::fil
 
 	std::vector<uint8> filedata(todo);
 	{
-		ifstream istr(source.native_file_string().c_str(), ios_base::in|ios_base::binary);
+		ext::filesystem::ifstream istr(source, ios_base::in|ios_base::binary);
 		istr.read((char*)&filedata[0], todo);
 		uint32 read = istr.gcount();
 		if (read != todo)
@@ -386,8 +386,7 @@ int AutoUpdater::replace(const boost::filesystem::path& source, const boost::fil
 		--retries;
 		platform::msSleep((retry_max-retries)*100);
 		{
-			ofstream ostr;
-			ostr.open(target.native_file_string().c_str(), ios_base::trunc|ios_base::out|ios_base::binary);
+			ext::filesystem::ofstream ostr(target, ios_base::trunc|ios_base::out|ios_base::binary);
 			if (ostr.is_open()) {
 				ostr.write((char*)&filedata[0], filedata.size());
 				if (ostr.fail()) {
@@ -418,7 +417,7 @@ int AutoUpdater::replace(const boost::filesystem::path& source, const boost::fil
 	return run;
 }
 
-void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target)
+void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target)
 {
 	boost::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(work_service));
 	removefile_helper(timer, target, retry_max);
@@ -456,7 +455,7 @@ bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& ol
 	return false;
 }
 
-bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath)
+bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target, const ext::filesystem::path& selfpath)
 {
 	try {
 		std::cout << "doSelfUpdate: " << target << '\n';
@@ -467,7 +466,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 			vector<uint8> newfile;
 			uint32 todo = boost::numeric_cast<uint32>(boost::filesystem::file_size(target));
 			newfile.resize(todo);
-			ifstream istr(target.native_file_string().c_str(), ios_base::in|ios_base::binary);
+			ext::filesystem::ifstream istr(target, ios_base::in|ios_base::binary);
 			if (!istr.is_open()) return false;
 			istr.read((char*)&newfile[0], todo);
 			uint32 read = istr.gcount();
@@ -485,13 +484,13 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesy
 				// TODO: key size always 512? actually read from file to find out
 				newfile.resize(newfile.size() - 4 - 4 - 512 - 1 - buildname.size());
 
-				boost::filesystem::path newtarget = target.branch_path() / (buildname +".deb");
+				ext::filesystem::path newtarget = target.branch_path() / (buildname +".deb");
 				if (newtarget == target) {
 					std::cout << "Huh? need different paths!\n";
 					return false;
 				}
 
-				ofstream ostr(newtarget.native_file_string().c_str(), ios_base::out|ios_base::binary);
+				ext::filesystem::ofstream ostr(newtarget, ios_base::out|ios_base::binary);
 				if (!ostr.is_open()) {
 					cout << "Failed to open\n";
 					return false;
@@ -716,10 +715,10 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 	return result;
 }
 
-bool AutoUpdater::doSigning(const boost::filesystem::path& kfpath, const std::string& bstring, const boost::filesystem::path& ifpath, const boost::filesystem::path& ofpath)
+bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::string& bstring, const ext::filesystem::path& ifpath, const ext::filesystem::path& ofpath)
 {
-	ifstream ifile(ifpath.native_file_string().c_str(), ios_base::in|ios_base::binary);
-	ofstream ofile(ofpath.native_file_string().c_str(), ios_base::out|ios_base::binary);
+	ext::filesystem::ifstream ifile(ifpath, ios_base::in|ios_base::binary);
+	ext::filesystem::ofstream ofile(ofpath, ios_base::out|ios_base::binary);
 
 	if (!ifile.is_open() || !ofile.is_open())
 		return false;
@@ -743,7 +742,7 @@ bool AutoUpdater::doSigning(const boost::filesystem::path& kfpath, const std::st
 	RSA* rsapriv = NULL;
 
 	{
-		FILE* privfile = fopen(kfpath.native_file_string().c_str(), "rb");
+		FILE* privfile = ext::filesystem::fopen(kfpath, "rb");
 		if (!privfile)
 			return false;
 		rsapriv = PEM_read_RSAPrivateKey(privfile, NULL, NULL, NULL);
@@ -803,7 +802,7 @@ bool AutoUpdater::doSigning(const boost::filesystem::path& kfpath, const std::st
 	return true;
 }
 
-void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
+void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {
 	try {
 		boost::uintmax_t todomax = boost::filesystem::file_size(target);
@@ -842,13 +841,13 @@ void AutoUpdater::addBuild(std::string name, shared_vec data)
 
 #else//USE_OPENSSL
 
-int AutoUpdater::replace(const boost::filesystem::path& source, const boost::filesystem::path& target)
+int AutoUpdater::replace(const ext::filesystem::path& source, const ext::filesystem::path& target)
 {
 	// TODO: we could enable this even without SSL?
 	return -1;
 }
 
-void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target)
+void AutoUpdater::remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target)
 {
 	// TODO: we could enable this even without SSL?
 }
@@ -858,12 +857,12 @@ bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& ol
 	return false;
 }
 
-bool AutoUpdater::doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath)
+bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target, const ext::filesystem::path& selfpath)
 {
 	return false;
 }
 
-void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded)
+void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {
 }
 
@@ -882,7 +881,7 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 	return std::vector<std::pair<std::string, std::string> >();
 }
 
-bool AutoUpdater::doSigning(const boost::filesystem::path& keyfile, const std::string& build, const boost::filesystem::path& infile, const boost::filesystem::path& outfile)
+bool AutoUpdater::doSigning(const ext::filesystem::path& keyfile, const std::string& build, const ext::filesystem::path& infile, const ext::filesystem::path& outfile)
 {
 	return false;
 }

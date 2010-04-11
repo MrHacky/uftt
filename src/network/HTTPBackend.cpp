@@ -16,7 +16,7 @@ using namespace std;
 class HTTPTask {
 	public:
 		boost::asio::http_request req;
-		boost::filesystem::path path;
+		ext::filesystem::path path;
 		services::diskio_filetype file;
 		TaskInfo info;
 		boost::signal<void(const TaskInfo&)> sig_progress;
@@ -57,7 +57,7 @@ void HTTPBackend::doRefreshShares()
 {
 }
 
-void HTTPBackend::startDownload(const ShareID& sid, const boost::filesystem::path& path)
+void HTTPBackend::startDownload(const ShareID& sid, const ext::filesystem::path& path)
 {
 	service.post(boost::bind(&HTTPBackend::do_start_download, this, sid, path));
 }
@@ -145,7 +145,7 @@ void HTTPBackend::check_update_interval()
 		check_for_web_updates();
 }
 
-void HTTPBackend::do_start_download(const ShareID& sid, const boost::filesystem::path& path)
+void HTTPBackend::do_start_download(const ShareID& sid, const ext::filesystem::path& path)
 {
 	ShareInfo si = shareinfo[sid];
 	if (si.id != sid) {

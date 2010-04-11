@@ -11,21 +11,21 @@
 class AutoUpdater {
 	public: // helper functions for the autoupdate process
 
-		static int replace(const boost::filesystem::path& source, const boost::filesystem::path& target);
+		static int replace(const ext::filesystem::path& source, const ext::filesystem::path& target);
 
-		static void remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target);
+		static void remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target);
 
 		static bool isBuildBetter(const std::string& newstr, const std::string& oldstr);
 
-		static bool doSelfUpdate(const std::string& buildname, const boost::filesystem::path& target, const boost::filesystem::path& selfpath);
+		static bool doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target, const ext::filesystem::path& selfpath);
 
 		static std::vector<std::pair<std::string, std::string> > parseUpdateWebPage(const std::vector<uint8>& webpage);
 
-		static bool doSigning(const boost::filesystem::path& keyfile, const std::string& build, const boost::filesystem::path& infile, const boost::filesystem::path& outfile);
+		static bool doSigning(const ext::filesystem::path& keyfile, const std::string& build, const ext::filesystem::path& infile, const ext::filesystem::path& outfile);
 
 	public: // actual object interface for offering builds for autoupdate
 
-		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const boost::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
+		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
 
 		boost::shared_ptr<std::vector<uint8> > getBuildExecutable(const std::string& buildname) const;
 

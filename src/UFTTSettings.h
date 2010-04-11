@@ -97,16 +97,16 @@ namespace settingsmanager {
 	};
 
 	template <>
-	struct fromstring_t<boost::filesystem::path> {
-		static void convert(const std::string& in, boost::filesystem::path& out)
+	struct fromstring_t<ext::filesystem::path> {
+		static void convert(const std::string& in, ext::filesystem::path& out)
 		{
 			out = in;
 		}
 	};
 /*
 	template <>
-	struct tostring_t<boost::filesystem::path> {
-		static void convert(const boost::filesystem::path& in, std::string& out)
+	struct tostring_t<ext::filesystem::path> {
+		static void convert(const ext::filesystem::path& in, std::string& out)
 		{
 			out = in.string();
 		}
@@ -116,9 +116,9 @@ namespace settingsmanager {
 
 class UFTTSettings {
 	private:
-		boost::filesystem::path path;
+		ext::filesystem::path path;
 	public:
-		boost::filesystem::path getSavePath();
+		ext::filesystem::path getSavePath();
 
 		SettingsVariable<int> version;
 
@@ -133,7 +133,8 @@ class UFTTSettings {
 
 		SettingsVariable<bool> showadvancedsettings;
 
-		SettingsVariable<boost::filesystem::path> dl_path;
+		SettingsVariable<ext::filesystem::path> dl_path;
+		SettingsVariable<ext::filesystem::path> update_path;
 		SettingsVariable<bool> autoupdate;
 		SettingsVariable<bool> experimentalresume;
 		SettingsVariable<bool> traydoubleclick;

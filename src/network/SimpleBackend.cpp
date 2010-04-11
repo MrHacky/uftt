@@ -150,7 +150,7 @@ void SimpleBackend::doRefreshShares()
 	service.post(boost::bind(&SimpleBackend::start_peerfinder, this));
 }
 
-void SimpleBackend::startDownload(const ShareID& sid, const boost::filesystem::path& path)
+void SimpleBackend::startDownload(const ShareID& sid, const ext::filesystem::path& path)
 {
 	service.post(boost::bind(&SimpleBackend::download_share, this, sid, path));
 }
@@ -193,7 +193,7 @@ void SimpleBackend::notifyDelLocalShare(const LocalShareID& sid)
 // start of internal functions
 
 
-void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::path& dlpath)
+void SimpleBackend::download_share(const ShareID& sid, const ext::filesystem::path& dlpath)
 {
 	TaskInfo ret;
 	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
@@ -247,7 +247,7 @@ void SimpleBackend::download_share(const ShareID& sid, const boost::filesystem::
 	sig_new_task(ret);
 }
 
-void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, boost::filesystem::path dlpath, uint32 version)
+void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, ext::filesystem::path dlpath, uint32 version)
 {
 	if (e) {
 		std::cout << "connect failed: " << e.message() << '\n';

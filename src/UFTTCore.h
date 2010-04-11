@@ -12,8 +12,9 @@
 
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include "util/filesystem.h"
 
 #include "UFTTSettings.h"
 
@@ -25,7 +26,7 @@ struct LocalShareID {
 
 struct LocalShareInfo {
 	LocalShareID id;
-	boost::filesystem::path path;
+	ext::filesystem::path path;
 
 };
 
@@ -72,7 +73,7 @@ struct TaskInfo {
 	ShareInfo shareinfo;
 	bool isupload;
 	std::string status;
-	boost::filesystem::path path;   // Path that this Task is being downloaded to / uploaded from
+	ext::filesystem::path path;   // Path that this Task is being downloaded to / uploaded from
 	uint64 transferred;
 	uint64 size;
 	uint32 queue;
@@ -111,7 +112,7 @@ class UFTTCore {
 		boost::asio::ip::tcp::acceptor local_listener;
 		std::string mwid;
 
-		std::map<std::string, boost::filesystem::path> localshares;
+		std::map<std::string, ext::filesystem::path> localshares;
 		std::vector<boost::shared_ptr<class INetModule> > netmodules;
 		UFTTSettingsRef settings;
 
@@ -133,8 +134,8 @@ class UFTTCore {
 		void setMainWindowId(const std::string& mwid_);
 
 		// Local Share management
-		void addLocalShare(const std::string& name, const boost::filesystem::path& path);
-		void addLocalShare(const boost::filesystem::path& path); ///< Determines share name based on the path
+		void addLocalShare(const std::string& name, const ext::filesystem::path& path);
+		void addLocalShare(const ext::filesystem::path& path); ///< Determines share name based on the path
 		bool isLocalShare(const std::string& name);
 		bool getLocalShareID(const std::string& name, LocalShareID* id);
 		void delLocalShare(const LocalShareID& id);
@@ -142,8 +143,8 @@ class UFTTCore {
 		void connectSigAddLocalShare(const LocalShareInfo& info);
 		void connectSigDelLocalShare(const LocalShareID& id);
 
-		boost::filesystem::path getLocalSharePath(const LocalShareID& id);
-		boost::filesystem::path getLocalSharePath(const std::string& id);
+		ext::filesystem::path getLocalSharePath(const LocalShareID& id);
+		ext::filesystem::path getLocalSharePath(const std::string& id);
 
 		std::vector<std::string> getLocalShares();
 
@@ -153,7 +154,7 @@ class UFTTCore {
 		void connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb);
 		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 
-		void startDownload(const ShareID& sid, const boost::filesystem::path& path);
+		void startDownload(const ShareID& sid, const ext::filesystem::path& path);
 
 
 		// Misc network functions

@@ -37,13 +37,13 @@
 
 #include "../Globals.h"
 
-#include "DialogDirectoryChooser.h"
+#include "ExtUTF8.h"
 
 #include "DialogPreferences.h"
 
 // Register types to allow using them inside a QVariant so they can be attached to a tree widget item
 Q_DECLARE_METATYPE(ShareID);
-Q_DECLARE_METATYPE(boost::filesystem::path);
+Q_DECLARE_METATYPE(ext::filesystem::path);
 
 using namespace std;
 
@@ -230,8 +230,8 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 	QToggleHeaderAction::addActions(this->listShares);
 	QToggleHeaderAction::addActions(this->listTasks);
 
-	if (!ext::filesystem::exists(settings->dl_path)) {
-		boost::filesystem::path npath(platform::getDownloadPathDefault());
+	if (!ext::filesystem::exists(settings->dl_path.get())) {
+		ext::filesystem::path npath(platform::getDownloadPathDefault());
 		if (ext::filesystem::exists(npath))
 			settings->dl_path = npath;
 	}
@@ -253,8 +253,8 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 
 	{
 		comboDownload->setRecentPaths(settings->recentdownloadpaths);
-		comboDownload->addRecentPath(QString::fromStdString(settings->dl_path.get().native_directory_string()));
-		comboDownload->addPath(QString::fromStdString(platform::getDownloadPathDefault().native_directory_string()));
+		comboDownload->addRecentPath(qext::path::toQStringDirectory(settings->dl_path.get()));
+		comboDownload->addPath(qext::path::toQStringDirectory(platform::getDownloadPathDefault()));
 	}
 	{
 		QIcon* uftticon = new QIcon();
@@ -499,11 +499,11 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		if (!settings->showautoupdates) return;
 	}
 
-	QString quser  = QString::fromStdString(info.user);
-	QString qshare = QString::fromStdString(info.name);
+	QString quser  = qext::utf8::toQString(info.user);
+	QString qshare = qext::utf8::toQString(info.name);
 	QString qproto = QString::fromStdString(info.proto);
 	QString qhost  = QString::fromStdString(info.host);
-	QString qurl   = QString::fromStdString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
+	QString qurl   = qext::utf8::toQString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
 	if (quser == "") quser = (info.isupdate ? "<Update>" : "uftt-user");
 	uint32 version = atoi(info.proto.substr(6).c_str());
 
@@ -534,7 +534,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	}
 }
 
-std::string MainWindow::getDownloadPath()
+ext::filesystem::path MainWindow::getDownloadPath()
 {
 	std::string path = settings->dl_path.get().string();
 	if (!path.empty()) {
@@ -542,12 +542,17 @@ std::string MainWindow::getDownloadPath()
 		if (c != '\\' && c != '/')
 			path.push_back('/');
 	}
-	return boost::filesystem::path(path).native_directory_string();
+	return ext::filesystem::path(path);
+}
+
+QString MainWindow::getDownloadPathQ()
+{
+	return qext::path::toQStringDirectory(getDownloadPath());
 }
 
 void MainWindow::on_comboDownload_currentPathChanged(QString text)
 {
-	boost::filesystem::path dl_path = text.toStdString();
+	ext::filesystem::path dl_path = qext::path::fromQString(text);
 	settings->dl_path = dl_path;
 }
 
@@ -558,7 +563,7 @@ void MainWindow::on_listShares_itemSelectionChanged()
 
 	BOOST_FOREACH(QTreeWidgetItem* rwi, listShares->selectedItems()) {
 		enable = true;
-		if (!local) local = backend->isLocalShare(rwi->text(SLCN_SHARE).toStdString());;
+		if (!local) local = backend->isLocalShare(qext::utf8::fromQString(rwi->text(SLCN_SHARE)));;
 	}
 
 	actionDownload->setEnabled(enable);
@@ -570,7 +575,7 @@ void MainWindow::on_listShares_itemSelectionChanged()
 
 void MainWindow::on_actionDownload_triggered()
 {
-	boost::filesystem::path dlpath = getDownloadPath();
+	ext::filesystem::path dlpath = getDownloadPath();
 	if (!ext::filesystem::exists(dlpath)) {
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
 		return;
@@ -593,9 +598,9 @@ void MainWindow::on_actionDownloadTo_triggered()
 	QString directory;
 	directory = QFileDialog::getExistingDirectory(this,
 		tr("Choose download directory"),
-		QString::fromStdString(getDownloadPath()));
+		getDownloadPathQ());
 
-	boost::filesystem::path dlpath = directory.toStdString();
+	ext::filesystem::path dlpath = qext::path::fromQString(directory);
 	if (!ext::filesystem::exists(dlpath)) {
 		QMessageBox::information (this, "Download Failed", "Select a valid download directory");
 		return;
@@ -617,7 +622,7 @@ void MainWindow::on_actionUnshare_triggered()
 {
 	BOOST_FOREACH(QTreeWidgetItem* rwi, listShares->selectedItems()) {
 		LocalShareID id;
-		if (backend->getLocalShareID(rwi->text(SLCN_SHARE).toStdString(), &id))
+		if (backend->getLocalShareID(qext::utf8::fromQString(rwi->text(SLCN_SHARE)), &id))
 			backend->delLocalShare(id);
 	}
 
@@ -637,7 +642,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	uint64 total = ti.size;
 
 	std::string type = (ti.isupload ? "U: " : "D: ");
-	twi->setText(TLCN_SHARE, QString::fromStdString(type + ti.shareinfo.name));
+	twi->setText(TLCN_SHARE, qext::utf8::toQString(type + ti.shareinfo.name));
 	twi->setText(TLCN_STATUS, QString::fromStdString(sts));
 	twi->setText(TLCN_HOST, QString::fromStdString(ti.shareinfo.host));
 	twi->setText(TLCN_USER, QString::fromStdString(ti.shareinfo.user));
@@ -665,9 +670,11 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 		download_done(ti.shareid);
 }
 
-void MainWindow::addLocalShare(std::string url)
+void MainWindow::addLocalShare(QString url)
 {
-	backend->addLocalShare(url);
+	if (url.isEmpty()) return;
+	std::string path = qext::utf8::fromQString(url);
+	backend->addLocalShare(path);
 }
 
 void MainWindow::onDropTriggered(QDropEvent* evt)
@@ -675,13 +682,8 @@ void MainWindow::onDropTriggered(QDropEvent* evt)
 	//LOG("try=" << evt->mimeData()->text().toStdString());
 	evt->acceptProposedAction();
 
-	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls()) {
-		string str(url.toLocalFile().toStdString());
-
-		if (!str.empty()) {
-			this->addLocalShare(str);
-		}
-	}
+	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls())
+		this->addLocalShare(url.toLocalFile());
 }
 
 void MainWindow::onDragEnterTriggered(QDragEnterEvent* evt)
@@ -701,8 +703,7 @@ void MainWindow::on_actionShareFolder_triggered()
 	directory = QFileDialog::getExistingDirectory(this,
 		tr("Choose directory to share"),
 		"");
-	if (!directory.isEmpty())
-		this->addLocalShare(directory.toStdString());
+	this->addLocalShare(directory);
 }
 
 void MainWindow::on_actionShareFile_triggered()
@@ -711,8 +712,7 @@ void MainWindow::on_actionShareFile_triggered()
 	directory = QFileDialog::getOpenFileName (this, tr("Choose file to share"),
 		"",
 		tr("any (*)"));
-	if (!directory.isEmpty())
-		this->addLocalShare(directory.toStdString());
+	this->addLocalShare(directory);
 }
 
 void MainWindow::on_buttonBrowse_clicked()
@@ -720,9 +720,9 @@ void MainWindow::on_buttonBrowse_clicked()
 	QString directory;
 	directory = QFileDialog::getExistingDirectory(this,
 		tr("Choose download directory"),
-		QString::fromStdString(getDownloadPath()));
+		getDownloadPathQ());
 	if (!directory.isEmpty())
-		this->comboDownload->addRecentPath(QString::fromStdString(boost::filesystem::path(directory.toStdString()).native_directory_string()));
+		this->comboDownload->addRecentPath(directory);
 }
 
 void MainWindow::new_autoupdate(const ShareInfo& info)
@@ -853,21 +853,24 @@ void MainWindow::on_actionAboutQt_triggered()
 void MainWindow::on_actionTaskOpen_triggered()
 {
 	QTreeWidgetItem* twi = listTasks->currentItem();
-	boost::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<boost::filesystem::path>();
-	string sharename = twi->text(TLCN_SHARE).toStdString().substr(3);
+	ext::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<ext::filesystem::path>();
+	string sharename = qext::utf8::fromQString(twi->text(TLCN_SHARE).mid(3));
 	path /= sharename;
 
 	if (ext::filesystem::exists(path))
-		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.native_file_string())));
+		if (boost::filesystem::is_directory(path))
+			QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringDirectory(path)));
+		else
+			QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringFile(path)));
 }
 
 void MainWindow::on_actionTaskOpenContainingFolder_triggered()
 {
 	QTreeWidgetItem* twi = listTasks->currentItem();
-	boost::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<boost::filesystem::path>();
+	ext::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<ext::filesystem::path>();
 
 	if (ext::filesystem::exists(path))
-		QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(path.native_file_string())));
+		QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringDirectory(path)));
 }
 
 void MainWindow::on_actionClearCompletedTasks_triggered()
@@ -883,7 +886,7 @@ void MainWindow::on_listTasks_itemSelectionChanged()
 {
 	QTreeWidgetItem* twi = listTasks->currentItem();
 	if (twi) {
-		string sharename = twi->text(TLCN_SHARE).toStdString();
+		string sharename = qext::utf8::fromQString(twi->text(TLCN_SHARE));
 		bool isupload = (sharename.substr(0,3) == "U: ");
 		bool completed = (twi->text(TLCN_STATUS) == "Completed");
 
@@ -924,27 +927,26 @@ void MainWindow::post_show() {
 		trayicon->show();
 }
 
-void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem::path& path)
+void MainWindow::doSelfUpdate(const std::string& build, const ext::filesystem::path& path)
 {
 	if (build.find("win32") != string::npos) {
-		if (AutoUpdater::doSelfUpdate(build, path, boost::filesystem::path(QCoreApplication::applicationFilePath().toStdString())))
+		if (AutoUpdater::doSelfUpdate(build, path, qext::path::fromQString(QCoreApplication::applicationFilePath())))
 			this->actionQuit->trigger();
 	} else if (build.find("-deb-") != string::npos) {
 		if (AutoUpdater::doSelfUpdate(build, path, "")) {
-			boost::filesystem::path newtarget = path.branch_path() / (build +".deb");
+			ext::filesystem::path newtarget = path.branch_path() / (build +".deb");
 
-			QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(newtarget.native_file_string())));
+			QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringFile(newtarget)));
 
 			QMessageBox::StandardButton res = QMessageBox::information(this,
 				QString("Auto Update"),
-				QString::fromStdString(string()
+				QString()
 					+ "Downloading and verifying new uftt package succeeded.\r\n"
 					+ "\r\n"
 					+ "The package should be automatically opened now.\r\n"
-					+ "If not, install it manually (" + newtarget.native_file_string() + ")\r\n"
+					+ "If not, install it manually (" + qext::path::toQStringFile(newtarget) + ")\r\n"
 					+ "\r\n"
 					+ "After installing the package, restart uftt to use the new version.\r\n"
-				)
 			);
 		}
 	}
@@ -953,7 +955,7 @@ void MainWindow::doSelfUpdate(const std::string& build, const boost::filesystem:
 void MainWindow::new_task(const TaskInfo& info)
 {
 	QTreeWidgetItem* twi = new QTreeWidgetItem(listTasks);
-	twi->setText(TLCN_SHARE, QString::fromStdString(info.shareinfo.name));
+	twi->setText(TLCN_SHARE, qext::utf8::toQString(info.shareinfo.name));
 
 	boost::posix_time::ptime starttime = boost::posix_time::second_clock::universal_time();
 	boost::function<void(const TaskInfo&)> handler =

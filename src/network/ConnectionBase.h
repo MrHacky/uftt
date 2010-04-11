@@ -21,7 +21,7 @@ class ConnectionBase {
 		boost::signal<void(const TaskInfo&)> sig_progress;
 		TaskInfo taskinfo;
 
-		virtual void handle_tcp_connect(std::string name, boost::filesystem::path dlpath, uint32 version) = 0;
+		virtual void handle_tcp_connect(std::string name, ext::filesystem::path dlpath, uint32 version) = 0;
 };
 typedef boost::shared_ptr<ConnectionBase> ConnectionBaseRef;
 

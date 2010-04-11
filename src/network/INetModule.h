@@ -10,7 +10,7 @@ class INetModule {
 		virtual void connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>&) = 0;
 		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&) = 0;
 
-		virtual void startDownload(const ShareID& sid, const boost::filesystem::path& path) = 0;
+		virtual void startDownload(const ShareID& sid, const ext::filesystem::path& path) = 0;
 
 		virtual void doRefreshShares() = 0;
 		virtual void doManualPublish(const std::string& host) = 0;

@@ -3,13 +3,15 @@
 
 #include <boost/thread.hpp>
 #include <boost/signal.hpp>
+#include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <string>
 #include <vector>
 #include <map>
+
+#include "filesystem.h"
 
 namespace settingsmanager {
 	// NOTE: Use class specializations intead of function specializations
@@ -280,8 +282,8 @@ class SettingsManagerBase {
 		}
 
 		bool load(std::map<std::string, std::string>& values);
-		bool load(const boost::filesystem::path& path);
-		bool save(const boost::filesystem::path& path);
+		bool load(const ext::filesystem::path& path);
+		bool save(const ext::filesystem::path& path);
 
 		virtual void fixLegacy(std::map<std::string, std::string>& values) = 0;
 

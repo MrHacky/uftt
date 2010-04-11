@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <boost/filesystem/path.hpp>
+#include "util/filesystem.h"
 
 #include "Types.h"
 /* file for platform compatibility wrappers */
@@ -33,21 +33,26 @@ namespace platform {
 
 	void activateWindow(const std::string& wid);
 
-	boost::filesystem::path getApplicationPath();
+	ext::filesystem::path getApplicationPath();
 
 	bool setSendToUFTTEnabled(bool enabled);
 	bool setDesktopShortcutEnabled(bool enabled);
 	bool setQuicklaunchShortcutEnabled(bool enabled);
 	bool setStartmenuGroupEnabled(bool enabled);
 
-	typedef std::pair<std::string, boost::filesystem::path> spathinfo;
+	typedef std::pair<std::string, ext::filesystem::path> spathinfo;
 	typedef std::vector<spathinfo> spathlist;
 
 	spathlist getSettingsPathList();
 	spathinfo getSettingsPathDefault();
-	boost::filesystem::path getDownloadPathDefault();
+	ext::filesystem::path getDownloadPathDefault();
 
 	std::string getUserName();
+
+	std::wstring convertUTF8ToUTF16(const std::string& src);
+	std::string convertUTF16ToUTF8(const std::wstring& src);
+	std::string convertUTF8ToLocale(const std::string& src);
+	std::string convertLocaleToUTF8(const std::string& src);
 } // namespace platform
 
 #endif//PLATFORM_H

@@ -7,6 +7,8 @@
 
 #include <boost/foreach.hpp>
 
+#include "ExtUTF8.h"
+
 namespace {
 	enum {
 		CN_KEY = 0,
@@ -219,11 +221,11 @@ void DialogPreferences::saveSettings(const std::string& key, QCheckBox* w)
 // QLineEdit load/save
 void DialogPreferences::loadSettings(const std::string& key, QLineEdit* w)
 {
-	w->setText(QString::fromStdString(settings->getVariable(key)->getValue<std::string>()));
+	w->setText(qext::utf8::toQString(settings->getVariable(key)->getValue<std::string>()));
 }
 void DialogPreferences::saveSettings(const std::string& key, QLineEdit* w)
 {
-	settings->getVariable(key)->setValue<std::string>(w->text().toStdString());
+	settings->getVariable(key)->setValue<std::string>(qext::utf8::fromQString(w->text()));
 }
 
 // QTimeEdit load/save - assumes QTime and boost::posix_time::time_duration have similar text representations

@@ -181,9 +181,9 @@ namespace platform {
 	}
 
 #ifdef WIN32
-	boost::filesystem::path getFolderLocation(int nFolder)
+	ext::filesystem::path getFolderLocation(int nFolder)
 	{
-		boost::filesystem::path retval;
+		ext::filesystem::path retval;
 		PIDLIST_ABSOLUTE pidlist;
 		HRESULT res = SHGetSpecialFolderLocation(
 			NULL,
@@ -206,7 +206,7 @@ namespace platform {
 
 	spathlist getSettingsPathList() {
 		spathlist result;
-		boost::filesystem::path currentdir(boost::filesystem::current_path<boost::filesystem::path>());
+		ext::filesystem::path currentdir(boost::filesystem::current_path<ext::filesystem::path>());
 		result.push_back(spathinfo("Current Directory"      , currentdir / "uftt.dat"));
 		//if (!ApplicationPath.empty())
 		//	result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
@@ -215,7 +215,7 @@ namespace platform {
 		result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
 		result.push_back(spathinfo("Common Application Data", getFolderLocation(CSIDL_COMMON_APPDATA) / "UFTT" / "uftt.dat"));
 #else
-		result.push_back(spathinfo("Home Directory"         , boost::filesystem::path(getenv("HOME")) / ".uftt" / "uftt.dat"));
+		result.push_back(spathinfo("Home Directory"         , ext::filesystem::path(getenv("HOME")) / ".uftt" / "uftt.dat"));
 #endif
 		return result;
 	}
@@ -224,7 +224,7 @@ namespace platform {
 #ifdef WIN32
 		return spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat");
 #else
-		return spathinfo("Home Directory"         , boost::filesystem::path(getenv("HOME")) / ".uftt" / "uftt.dat");
+		return spathinfo("Home Directory"         , ext::filesystem::path(getenv("HOME")) / ".uftt" / "uftt.dat");
 #endif
 	}
 
@@ -236,11 +236,11 @@ namespace platform {
 
 	string scan_xdg_user_dirs(string dirname) {
 		string result;
-		boost::filesystem::path xdgConfigHome(string(_getenv("XDG_CONFIG_HOME")));
+		ext::filesystem::path xdgConfigHome(string(_getenv("XDG_CONFIG_HOME")));
 		if(!ext::filesystem::exists(xdgConfigHome))
-			xdgConfigHome = boost::filesystem::path(string(_getenv("HOME")) + "/.config");
+			xdgConfigHome = ext::filesystem::path(string(_getenv("HOME")) + "/.config");
 		if(ext::filesystem::exists(xdgConfigHome) && boost::filesystem::is_directory(xdgConfigHome)) {
-			boost::filesystem::path file(xdgConfigHome / "user-dirs.dirs");
+			ext::filesystem::path file(xdgConfigHome / "user-dirs.dirs");
 			if(boost::filesystem::is_regular(file)) {
 				ifstream ifs(file.string().c_str(), ios_base::in | ios_base::binary);
 				string line;
@@ -261,32 +261,32 @@ namespace platform {
 	}
 #endif
 
-	boost::filesystem::path getDownloadPathDefault() {
+	ext::filesystem::path getDownloadPathDefault() {
 #ifdef WIN32
 		return getFolderLocation(CSIDL_DESKTOP);
 #else
-		boost::filesystem::path p;
+		ext::filesystem::path p;
 
-		p = boost::filesystem::path(scan_xdg_user_dirs("DESKTOP"));
+		p = ext::filesystem::path(scan_xdg_user_dirs("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = boost::filesystem::path(_getenv("DESKTOP"));
+		p = ext::filesystem::path(_getenv("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = boost::filesystem::path(_getenv("HOME")) / "Desktop";
+		p = ext::filesystem::path(_getenv("HOME")) / "Desktop";
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = boost::filesystem::path(_getenv("HOME"));
+		p = ext::filesystem::path(_getenv("HOME"));
 		if(ext::filesystem::exists(p))
 			return p;
 
 		/* Should never happen */
 		char dirname_template[] = "uftt-XXXXXX";
 		char* dirname = mkdtemp(dirname_template);
-		p = boost::filesystem::path(dirname);
+		p = ext::filesystem::path(dirname);
 		return p;
 #endif
 	}
@@ -322,7 +322,7 @@ namespace platform {
 		return name;
 	}
 
-	bool createLink(const std::string& description, const boost::filesystem::path& source, const boost::filesystem::path& target)
+	bool createLink(const std::string& description, const ext::filesystem::path& source, const ext::filesystem::path& target)
 	{
 		// currently only used on windows
 #ifdef WIN32
@@ -349,7 +349,7 @@ namespace platform {
 				char szGotPath[MAX_PATH];
 
 				success = success && SUCCEEDED(isl->GetPath(szGotPath, MAX_PATH, (WIN32_FIND_DATA*)&wfd, 0));
-				success = success && boost::iequals(boost::filesystem::path(szGotPath).string(), target.string());
+				success = success && boost::iequals(ext::filesystem::path(szGotPath).string(), target.string());
 			}
 
 			if (!success) {
@@ -369,13 +369,13 @@ namespace platform {
 		return false;
 	}
 
-	bool createRemoveLink(bool create, std::string name, const std::string& description, const boost::filesystem::path& sourcedir, const boost::filesystem::path& target)
+	bool createRemoveLink(bool create, std::string name, const std::string& description, const ext::filesystem::path& sourcedir, const ext::filesystem::path& target)
 	{
 		if (!ext::filesystem::exists(sourcedir)) return false;
 #ifdef WIN32
 		name += ".lnk";
 #endif
-		boost::filesystem::path source = sourcedir / name;
+		ext::filesystem::path source = sourcedir / name;
 		if (create) {
 			if (!ext::filesystem::exists(target)) return false;
 			return createLink(description, source, target);
@@ -384,18 +384,18 @@ namespace platform {
 		}
 	}
 
-	boost::filesystem::path getApplicationPath()
+	ext::filesystem::path getApplicationPath()
 	{
 		// currently only used on windows
 #ifdef WIN32
 		// test for unicode support?
 		char module_name[MAX_PATH];
 		GetModuleFileNameA(0, module_name, MAX_PATH);
-		boost::filesystem::path path = module_name;
-		if (!ext::filesystem::exists(path)) path.clear();
+		ext::filesystem::path path = module_name;
+		if (!ext::filesystem::exists(path)) path = "";
 		return path;
 #endif
-		return boost::filesystem::path();
+		return ext::filesystem::path();
 	}
 
 	bool setSendToUFTTEnabled(bool enabled)
@@ -426,7 +426,7 @@ namespace platform {
 	bool setStartmenuGroupEnabled(bool enabled)
 	{
 #ifdef WIN32
-		boost::filesystem::path menudir = getFolderLocation(CSIDL_PROGRAMS);
+		ext::filesystem::path menudir = getFolderLocation(CSIDL_PROGRAMS);
 		if (!ext::filesystem::exists(menudir)) return false;
 		menudir /= "UFTT";
 		if (enabled && !boost::filesystem::create_directory(menudir)) return false;
@@ -435,5 +435,39 @@ namespace platform {
 		return ret;
 #endif
 		return false;
+	}
+
+	std::wstring convertUTF8ToUTF16(const std::string& src)
+	{
+#ifdef WIN32
+		WCHAR wcs[MAX_PATH];
+		if (!SUCCEEDED(MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, wcs, MAX_PATH)))
+			throw std::runtime_error("convertUTF8ToUTF16: MultiByteToWideChar Failed");
+		return std::wstring(wcs);
+#else
+		throw std::runtime_error("convertUTF8ToUTF16: Not implemented");
+#endif
+	}
+
+	std::string convertUTF16ToUTF8(const std::wstring& src)
+	{
+#ifdef WIN32
+		char res[MAX_PATH];
+		if (!SUCCEEDED(WideCharToMultiByte(CP_UTF8, 0, src.c_str(), -1, res, MAX_PATH, NULL, NULL)))
+			throw std::runtime_error("convertUTF8ToUTF16: WideCharToMultiByte Failed");
+		return std::string(res);
+#else
+		throw std::runtime_error("convertUTF8ToUTF16: Not implemented");
+#endif
+	}
+
+	std::string convertUTF8ToLocale(const std::string& src)
+	{
+		throw std::runtime_error("convertUTF8ToLocale: Not implemented");
+	}
+
+	std::string convertLocaleToUTF8(const std::string& src)
+	{
+		throw std::runtime_error("convertLocaleToUTF8: Not implemented");
 	}
 } // namespace platform

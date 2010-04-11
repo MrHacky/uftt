@@ -131,7 +131,7 @@ void UFTTCore::setMainWindowId(const std::string& mwid_)
 void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote)
 {
 	for (size_t i = 1; i < args.size(); ++i) {
-		boost::filesystem::path fp(args[i]);
+		ext::filesystem::path fp(args[i]);
 		if (!ext::filesystem::exists(fp)) break;
 		addLocalShare(fp);
 	}
@@ -158,7 +158,7 @@ void UFTTCore::connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb)
 }
 
 // Local Share management
-void UFTTCore::addLocalShare(const std::string& name, const boost::filesystem::path& path)
+void UFTTCore::addLocalShare(const std::string& name, const ext::filesystem::path& path)
 {
 	// TODO: locking
 	localshares[name] = path;
@@ -170,9 +170,9 @@ void UFTTCore::addLocalShare(const std::string& name, const boost::filesystem::p
 		nm->notifyAddLocalShare(sid);
 }
 
-void UFTTCore::addLocalShare(const boost::filesystem::path& path)
+void UFTTCore::addLocalShare(const ext::filesystem::path& path)
 {
-	boost::filesystem::path p = path;
+	ext::filesystem::path p = path;
 	while (p.leaf() == ".") p.remove_leaf(); // linux thingy
 	std::string name = p.leaf();
 #ifdef WIN32
@@ -230,12 +230,12 @@ void UFTTCore::connectSigDelLocalShare(const LocalShareID& id)
 	// TODO: implement this
 }
 
-boost::filesystem::path UFTTCore::getLocalSharePath(const LocalShareID& id)
+ext::filesystem::path UFTTCore::getLocalSharePath(const LocalShareID& id)
 {
 	return getLocalSharePath(id.sid);
 }
 
-boost::filesystem::path UFTTCore::getLocalSharePath(const std::string& id)
+ext::filesystem::path UFTTCore::getLocalSharePath(const std::string& id)
 {
 	// TODO: locking
 	return localshares[id];
@@ -245,7 +245,7 @@ std::vector<std::string> UFTTCore::getLocalShares()
 {
 	std::vector<std::string> result;
 
-	typedef std::pair<const std::string, boost::filesystem::path> tpair;
+	typedef std::pair<const std::string, ext::filesystem::path> tpair;
 	BOOST_FOREACH(tpair& p, localshares)
 		if (!p.second.empty())
 			result.push_back(p.first);
@@ -278,7 +278,7 @@ void UFTTCore::connectSigTaskStatus(const TaskID& tid, const boost::function<voi
 		netmodules[tid.mid]->connectSigTaskStatus(tid, cb);
 }
 
-void UFTTCore::startDownload(const ShareID& sid, const boost::filesystem::path& path)
+void UFTTCore::startDownload(const ShareID& sid, const ext::filesystem::path& path)
 {
 	if (sid.mid < netmodules.size())
 		netmodules[sid.mid]->startDownload(sid, path);

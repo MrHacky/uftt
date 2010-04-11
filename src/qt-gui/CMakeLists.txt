@@ -48,6 +48,7 @@ IF(ENABLE_QT_GUI)
 		${UI_SRCS}
 		${QRC_SRCS}
 		MainWindow.h
+		ExtUTF8.h
 		QDragDropTreeWidget.h
 		QDragDropSignalWidget.h
 		QToggleHeaderAction.h

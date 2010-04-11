@@ -1,5 +1,7 @@
 #include "DialogDirectoryChooser.h"
 
+#include "ExtUTF8.h"
+
 DialogDirectoryChooser::DialogDirectoryChooser(QWidget* parent)
 	: QDialog(parent)
 {
@@ -9,14 +11,14 @@ DialogDirectoryChooser::DialogDirectoryChooser(QWidget* parent)
 void DialogDirectoryChooser::setPaths(const spathlist& spl) {
 	BOOST_FOREACH(const spathinfo& spi, spl) {
 		QStringList sl;
-		sl << QString::fromStdString(spi.first) << QString::fromStdString(spi.second.native_file_string());
+		sl << QString::fromStdString(spi.first) << qext::path::toQStringDirectory(spi.second);
 		new QTreeWidgetItem(listPaths, sl);
 	}
 	listPaths->resizeColumnToContents(0);
 	listPaths->resizeColumnToContents(1);
 }
 
-boost::filesystem::path DialogDirectoryChooser::getPath()
+ext::filesystem::path DialogDirectoryChooser::getPath()
 {
 	QList<QTreeWidgetItem*> selected = listPaths->selectedItems();
 

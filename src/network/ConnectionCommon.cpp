@@ -41,11 +41,11 @@ bool ConnectionCommon::filesender::getbuf(shared_vec buf) {
 /* dirsender */
 void ConnectionCommon::dirsender::init()
 {
-	curiter = boost::filesystem::directory_iterator(path);
+	curiter = ext::filesystem::directory_iterator(path);
 	hsent = false;
 };
 
-bool ConnectionCommon::dirsender::getbuf(shared_vec buf, boost::filesystem::path& newpath)
+bool ConnectionCommon::dirsender::getbuf(shared_vec buf, ext::filesystem::path& newpath)
 {
 	if (!hsent) {
 		hsent = true;
@@ -95,7 +95,8 @@ void ConnectionCommon::sigmaker::main() {
 	//for (uint j = 0; j < item->path.size(); ++j)
 	//	sbuf->push_back(item->path[j]);
 
-	FILE* fd = fopen(item->path.c_str(), "rb");
+	ext::filesystem::path path(item->path);
+	FILE* fd = ext::filesystem::fopen(path, "rb");
 	size_t dpos = sbuf->size();
 	sbuf->resize(dpos + (item->pos.size()*item->psize) );
 
@@ -142,7 +143,7 @@ uint64 ConnectionCommon::sigchecker::getoffset()
 }
 
 void ConnectionCommon::sigchecker::main() {
-	fd = fopen(path.native_file_string().c_str(), "rb");
+	fd = ext::filesystem::fopen(path, "rb");
 	service.post(boost::bind(cb, getoffset()));
 	fclose(fd);
 }

@@ -49,11 +49,11 @@ class UFTTSettingsLegacy {
 	public:
 		UFTTSettingsLegacy();
 
-		bool load(boost::filesystem::path path_ = "");
+		bool load(ext::filesystem::path path_ = "");
 		bool save();
 
 	public:
-		boost::filesystem::path path;
+		ext::filesystem::path path;
 		bool loaded;
 
 		std::vector<uint8> dockinfo;
@@ -62,7 +62,7 @@ class UFTTSettingsLegacy {
 		int sizex;
 		int sizey;
 
-		boost::filesystem::path dl_path;
+		ext::filesystem::path dl_path;
 		bool autoupdate;
 		bool experimentalresume;
 		bool traydoubleclick;
@@ -139,11 +139,11 @@ class UFTTSettingsLegacy {
 BOOST_CLASS_VERSION(UFTTSettingsLegacy, 14)
 
 ///////////////////////////////////////////////////////////////////////////////
-//  Serialization support for boost::filesystem::path
+//  Serialization support for ext::filesystem::path
 namespace boost { namespace serialization {
 
 	template<class Archive>
-inline void save (Archive & ar, boost::filesystem::path const& p,
+inline void save (Archive & ar, ext::filesystem::path const& p,
     const unsigned int /* file_version */)
 {
     using namespace boost::serialization;
@@ -152,19 +152,19 @@ inline void save (Archive & ar, boost::filesystem::path const& p,
 }
 
 template<class Archive>
-inline void load (Archive & ar, boost::filesystem::path &p,
+inline void load (Archive & ar, ext::filesystem::path &p,
     const unsigned int /* file_version */)
 {
     using namespace boost::serialization;
     std::string path_str;
     ar & make_nvp("path", path_str);
-    p = boost::filesystem::path(path_str);//, boost::filesystem::native);
+    p = ext::filesystem::path(path_str);//, boost::filesystem::native);
 }
 
 // split non-intrusive serialization function member into separate
 // non intrusive save/load member functions
 template<class Archive>
-inline void serialize (Archive & ar, boost::filesystem::path &p,
+inline void serialize (Archive & ar, ext::filesystem::path &p,
     const unsigned int file_version)
 {
     boost::serialization::split_free(ar, p, file_version);
@@ -216,11 +216,11 @@ UFTTSettingsLegacy::UFTTSettingsLegacy()
 	auto_clear_tasks_after = boost::posix_time::seconds(30); // default to clearing tasks after 30 seconds
 }
 
-bool UFTTSettingsLegacy::load(boost::filesystem::path path_)
+bool UFTTSettingsLegacy::load(ext::filesystem::path path_)
 {
 	path = path_;
 	try {
-		std::ifstream ifs(path.native_file_string().c_str());
+		ext::filesystem::ifstream ifs(path);
 		if (!ifs.is_open()) return false;
 		boost::archive::xml_iarchive ia(ifs);
 		ia & NVP("settings", *this);
@@ -236,7 +236,7 @@ bool UFTTSettingsLegacy::save()
 {
 	try {
 		boost::filesystem::create_directories(path.branch_path());
-		std::ofstream ofs(path.native_file_string().c_str());
+		ext::filesystem::ofstream ofs(path);
 		if (!ofs.is_open()) return false;
 		boost::archive::xml_oarchive oa(ofs);
 		oa & NVP("settings", *this);
@@ -259,7 +259,7 @@ namespace {
 
 bool UFTTSettingsLegacyLoader(UFTTSettingsRef sref)
 {
-	boost::filesystem::path path = sref.get()->s_curvalues.getSavePath();
+	ext::filesystem::path path = sref.get()->s_curvalues.getSavePath();
 	if (!ext::filesystem::exists(path)) return false;
 
 	UFTTSettingsLegacy legacy;
