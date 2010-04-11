@@ -29,8 +29,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 , local_listener(io_service)
 , error_state(0)
 {
-	for(int i = 0; i < argc; ++i)
-		args.push_back(argv[i]);
+	args = platform::getUTF8CommandLine(argc, argv);
 
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
@@ -49,7 +48,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, args.size(), (char)0)));
 			for (size_t i = 0; i < args.size(); ++i) {
 				ext::filesystem::path p(
-					boost::filesystem::system_complete(ext::filesystem::path(argv[i]))
+					boost::filesystem::system_complete(ext::filesystem::path(args[i]))
 				);
 				if(!ext::filesystem::exists(p)) {
 					throw std::runtime_error("Error: no such file or directory.");

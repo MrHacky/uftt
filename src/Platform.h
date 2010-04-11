@@ -53,6 +53,8 @@ namespace platform {
 	std::string convertUTF16ToUTF8(const std::wstring& src);
 	std::string convertUTF8ToLocale(const std::string& src);
 	std::string convertLocaleToUTF8(const std::string& src);
+
+	std::vector<std::string> getUTF8CommandLine(int argc, char **argv);
 } // namespace platform
 
 #endif//PLATFORM_H

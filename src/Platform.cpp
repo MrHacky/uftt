@@ -470,4 +470,22 @@ namespace platform {
 	{
 		throw std::runtime_error("convertLocaleToUTF8: Not implemented");
 	}
+
+	std::vector<std::string> getUTF8CommandLine(int argc, char **argv)
+	{
+		std::vector<std::string> res;
+#ifdef WIN32
+		int nArgs = 0;
+		LPWSTR *szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
+		for (int i = 0; i < nArgs; ++i)
+			res.push_back(platform::convertUTF16ToUTF8(szArglist[i]));
+		LocalFree(szArglist);
+#else
+		// assumes argv[i] is already UTF8... (usually true in linux)
+		for (int i = 0; i < argc; ++i)
+			res.push_back(argv[i]);
+#endif
+		return res;
+	}
+
 } // namespace platform
