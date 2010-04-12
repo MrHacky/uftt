@@ -6,7 +6,7 @@
 #include <boost/foreach.hpp>
 #include <vector>
 
-#include "../util/filesystem.h"
+#include "../util/Filesystem.h"
 
 typedef std::pair<std::string, ext::filesystem::path> spathinfo;
 typedef std::vector<spathinfo> spathlist;
