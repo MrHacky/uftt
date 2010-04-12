@@ -333,7 +333,7 @@ class SimpleConnection: public ConnectionCommon {
 						uint32 command = pkt_get_uint32(&((*rbuf)[0]));
 						std::cout << "remote end does not support command: " << command << '\n';
 						// do something depending on state?
-						if (command == 7)
+						if (command == CMD_REQUEST_COMMAND_LIST)
 							got_supported_commands(rbuf);
 						else
 							disconnect(STRFORMAT("Remote does not support command: %d", command));
