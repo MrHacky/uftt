@@ -11,8 +11,10 @@
 		 * the implementation present in Gtk+, as it does not fall back on
 		 * epiphany but rather also tries 'exo-open' and 'xdg-open'.
 		 * If all else fails show_uri throws a Glib::SpawnError.
+		 * @param screen is the Gdk::Screen the uri should appear on.
 		 * @param uri is the URI to be openened. Any URI supported by any of
 		 *        gtk_show_uri, exo-open or xdg-open is supported.
+		 * @param timestamp is a timestamp to aid in focus stealing prevention.
 		 */
 		void show_uri(Glib::RefPtr<Gdk::Screen> screen,
 		              Glib::ustring uri,
