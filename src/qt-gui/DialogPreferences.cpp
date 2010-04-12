@@ -7,7 +7,7 @@
 
 #include <boost/foreach.hpp>
 
-#include "ExtUTF8.h"
+#include "QExtUTF8.h"
 
 namespace {
 	enum {

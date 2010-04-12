@@ -1,5 +1,5 @@
-#ifndef EXT_UTF8_H
-#define EXT_UTF8_H
+#ifndef QEXT_UTF8_H
+#define QEXT_UTF8_H
 
 #include <QString>
 #include "../util/Filesystem.h"
@@ -35,4 +35,4 @@ namespace qext {
 	}
 }
 
-#endif//EXT_UTF8_H
+#endif//QEXT_UTF8_H

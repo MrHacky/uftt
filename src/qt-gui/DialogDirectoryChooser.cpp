@@ -1,6 +1,6 @@
 #include "DialogDirectoryChooser.h"
 
-#include "ExtUTF8.h"
+#include "QExtUTF8.h"
 
 DialogDirectoryChooser::DialogDirectoryChooser(QWidget* parent)
 	: QDialog(parent)

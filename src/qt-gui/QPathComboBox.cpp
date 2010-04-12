@@ -9,7 +9,7 @@
 #include <boost/foreach.hpp>
 
 #include "../util/Filesystem.h"
-#include "ExtUTF8.h"
+#include "QExtUTF8.h"
 
 #include <iostream>
 

@@ -37,7 +37,7 @@
 
 #include "../Globals.h"
 
-#include "ExtUTF8.h"
+#include "QExtUTF8.h"
 
 #include "DialogPreferences.h"
 
