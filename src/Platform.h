@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "util/filesystem.h"
+#include "util/Filesystem.h"
 
 #include "Types.h"
 /* file for platform compatibility wrappers */

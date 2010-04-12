@@ -1,6 +1,7 @@
 #ifndef SHARE_LIST_H
 	#define SHARE_LIST_H
 	#include "../UFTTCore.h"
+	#include "../util/Filesystem.h"
 	#include "dispatcher_marshaller.h"
 	#include <gtkmm/box.h>
 	#include <gtkmm/treeview.h>
@@ -67,7 +68,7 @@
 			void on_refresh_shares();
 			bool on_share_list_treeview_signal_button_press_event(GdkEventButton* event);
 			void download_selected_shares();
-			void download_selected_shares(boost::filesystem::path destination);
+			void download_selected_shares(ext::filesystem::path destination);
 			void remove_selected_shares();
 	};
 

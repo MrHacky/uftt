@@ -14,7 +14,7 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "util/filesystem.h"
+#include "util/Filesystem.h"
 
 #include "UFTTSettings.h"
 

@@ -1,6 +1,7 @@
 #ifndef EXT_FILESYSTEM_H
 #define EXT_FILESYSTEM_H
 
+#include <fstream>
 #include <boost/filesystem.hpp>
 
 // different options for native filesystem format

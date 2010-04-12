@@ -39,12 +39,14 @@ namespace ext {
 				return ::fopen(path.c_str(), mode);
 			}
 
+			#ifdef WIN32
 			template <>
 			inline FILE* utf8_fopen<std::wstring>(const std::wstring& path, const char* mode)
 			{
 				std::string smode(mode);
 				return ::_wfopen(path.c_str(), std::wstring(smode.begin(), smode.end()).c_str());
 			}
+			#endif // WIN32
 		}
 
 		bool exists(const path& ph) {

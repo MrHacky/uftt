@@ -1,6 +1,5 @@
 #include "ShareList.h"
 #include "../util/StrFormat.h"
-#include "../util/Filesystem.h"
 #include <string>
 #include <gdkmm/event.h>
 #include <gtkmm/stock.h>
@@ -62,7 +61,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	on_download_destination_path_entry_signal_changed_connection =
 		download_destination_path_entry.signal_changed().connect(
 			boost::bind(&ShareList::on_download_destination_path_entry_signal_changed, this));
-	download_destination_path_entry.set_text(settings->dl_path.get().native_directory_string());
+	download_destination_path_entry.set_text(ext::filesystem::external_utf8_directory(settings->dl_path));
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
 	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
@@ -238,7 +237,7 @@ void ShareList::on_add_share_file_dialog_button_clicked() {
 	add_share_file_dialog_connection.block();  // Work around some funny Gtk behaviour
 	std::string filename = add_share_file_dialog.get_filename();
 	if(filename != "") {
-		boost::filesystem::path path = filename;
+		ext::filesystem::path path = filename;
 		if(ext::filesystem::exists(path)) {
 			if(boost::filesystem::is_directory(path)) {
 				add_share_file_dialog.set_current_folder(filename);
@@ -263,7 +262,7 @@ void ShareList::on_add_share_folder_dialog_button_clicked() {
 	add_share_folder_dialog_connection.block(); // Work around some funny Gtk behaviour
 	std::string filename = add_share_folder_dialog.get_filename();
 	if(filename != "") {
-		boost::filesystem::path path = filename;
+		ext::filesystem::path path = filename;
 		if(ext::filesystem::exists(path)) {
 			add_share_folder_dialog.hide();
 			core->addLocalShare(path);
@@ -312,7 +311,7 @@ void ShareList::set_backend(UFTTCore* _core) {
 }
 
 void ShareList::on_download_destination_path_entry_signal_changed() {
-	boost::filesystem::path dl_path(download_destination_path_entry.get_text());
+	ext::filesystem::path dl_path(download_destination_path_entry.get_text());
 	while(dl_path.leaf() == ".") dl_path.remove_leaf(); // Remove trailing '/' 's
 
 	settings->dl_path = dl_path;
@@ -330,8 +329,8 @@ void ShareList::on_download_destination_path_entry_signal_changed() {
 }
 
 void ShareList::on_browse_for_download_destination_path_button_signal_current_folder_changed() {
-	boost::filesystem::path pa(download_destination_path_entry.get_text());
-	boost::filesystem::path pb(browse_for_download_destination_path_button.get_current_folder());
+	ext::filesystem::path pa(download_destination_path_entry.get_text());
+	ext::filesystem::path pb(browse_for_download_destination_path_button.get_current_folder());
 	while(pa.leaf() == ".") pa.remove_leaf();
 	while(pb.leaf() == ".") pb.remove_leaf();
 
@@ -397,13 +396,13 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 				#ifdef WIN32
 					file = file.substr(1);
 				#endif
-				boost::filesystem::path path = file;
+				ext::filesystem::path path = file;
 				core->addLocalShare(path);
 			}
 		}; break;
 		case 2:
 		case 1: {
-				boost::filesystem::path path = selection_data.get_data_as_string();
+				ext::filesystem::path path = selection_data.get_data_as_string();
 				core->addLocalShare(path);
 		}; break;
 		default:
@@ -417,7 +416,7 @@ void ShareList::on_share_list_treeview_signal_drag_data_received(
 void ShareList::on_pick_download_destination_dialog_button_clicked() {
 	std::string filename = pick_download_destination_dialog.get_filename();
 	if(filename != "") {
-		boost::filesystem::path path = filename;
+		ext::filesystem::path path = filename;
 		pick_download_destination_dialog.hide();
 		download_selected_shares(path);
 	}

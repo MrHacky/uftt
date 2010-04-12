@@ -3,7 +3,6 @@
 #include "ShowURI.h"
 #include "../Globals.h"
 #include "../util/StrFormat.h"
-#include "../util/Filesystem.h"
 #include "uftt-16x16.png.h"
 //#include "uftt-22x22.png.h" // FIXME: Does not exist (yet)
 #include "uftt-32x32.png.h"

@@ -11,7 +11,7 @@
 #include <vector>
 #include <map>
 
-#include "filesystem.h"
+#include "Filesystem.h"
 
 namespace settingsmanager {
 	// NOTE: Use class specializations intead of function specializations
