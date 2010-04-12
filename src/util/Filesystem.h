@@ -17,11 +17,10 @@
 	#else
 		#define EXT_FILESYSTEM_UTF8_UTF16
 	#endif
-#elif defined(__APPLE__)
-	#define EXT_FILESYSTEM_UTF8_UTF16
 #else
+	// UNIX (or at least linux and mac osx)
 	#define EXT_FILESYSTEM_UTF8_UTF8
-	//#define EXT_FILESYSTEM_UTF8_LOCALE // can/should we detect linux UTF8 support?
+	//#define EXT_FILESYSTEM_UTF8_LOCALE // can/should we detect UTF8 support?
 #endif
 
 namespace ext {

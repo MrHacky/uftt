@@ -30,18 +30,13 @@ namespace ext {
 		}
 
 		namespace {
-			template <typename S>
-			inline FILE* utf8_fopen(const S& path, const char* mode);
-
-			template <>
-			inline FILE* utf8_fopen<std::string>(const std::string& path, const char* mode)
+			inline FILE* utf8_fopen(const std::string& path, const char* mode)
 			{
 				return ::fopen(path.c_str(), mode);
 			}
 
 			#ifdef WIN32
-			template <>
-			inline FILE* utf8_fopen<std::wstring>(const std::wstring& path, const char* mode)
+			inline FILE* utf8_fopen(const std::wstring& path, const char* mode)
 			{
 				std::string smode(mode);
 				return ::_wfopen(path.c_str(), std::wstring(smode.begin(), smode.end()).c_str());
