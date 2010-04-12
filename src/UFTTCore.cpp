@@ -187,7 +187,7 @@ void UFTTCore::addLocalShare(const ext::filesystem::path& path)
 /**
  * Checks whether name is a  local share (shared by this UFTT instance)
  * @param name is a std::string containing the name of a share (ShareInfo.name)
- * @return (\exists i : i \in localshares : i.name == name)
+ * @return (\\exists i : i \\in localshares : i.name == name)
  */
 bool UFTTCore::isLocalShare(const std::string& name) {
 	// TODO: locking
@@ -197,6 +197,8 @@ bool UFTTCore::isLocalShare(const std::string& name) {
 /**
  * Returns the LocalShareID of name, iff isLocalShare(name)
  * @param name is a std::string containing the name of a share (ShareInfo.name)
+ * @param id is a pointer to a LocalShareID which will be filled with the
+ *        LocalShareID of name.
  * @return true iff a local share with name exists, and id will contain the
  *         LocalShareID for the share with the given name
  * @todo Decide if there can be multiple local shares with the same name, but

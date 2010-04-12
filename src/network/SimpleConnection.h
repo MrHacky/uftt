@@ -1156,6 +1156,7 @@ class SimpleConnection: public ConnectionCommon {
 
 		/** handle file receiving
 		 *  @param e    an error occured
+		 *  @param file is the file to write the result to
 		 *  @param done true if file is ready to write (handle_ready_file already fired)
 		 *  @param size amount of bytes left to receive for the file
 		 *  @param wbuf the buffer into which we received the data
@@ -1194,10 +1195,12 @@ class SimpleConnection: public ConnectionCommon {
 
 		/** handle file ready to write
 		 *  @param e       an error occured
+		 *  @param file    is the file to write to
 		 *  @param done    true if there is data ready to write (except if size==0, then we close the file)
 		 *  @param size    amount of bytes left to write for the file
 		 *  @param wbuf    the buffer from where we will write the data
 		 *  @param curbuf  the buffer containing previous data (unused)
+		 *  @param offset  is where in the file to start writing
 		 */
 		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf, uint64 offset)
 		{
