@@ -74,5 +74,4 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 void UFTTSettings::fixLegacy(std::map<std::string, std::string>& v)
 {
-	if (v.count("systray.minimizemode")) v["systray.closetotray"] = v["systray.minimizemode"];
 }
