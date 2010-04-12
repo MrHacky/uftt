@@ -231,7 +231,7 @@ class SimpleConnection: public ConnectionCommon {
 				pkt_put_uint64(0, &((*rbuf)[8]));
 				try {
 					boost::asio::write(socket, GETBUF(rbuf));
-				} catch (std::exception& e) {
+				} catch (std::exception& /*e*/) {
 					// ignore errors, we were disconnecting anyway
 				}
 				disconnect();

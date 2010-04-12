@@ -38,7 +38,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 		local_listener.listen(16);
 
 		handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket>(), boost::system::error_code());
-	} catch (std::exception& e) {
+	} catch (std::exception& /*e*/) {
 		bool success = false;
 		try {
 			// failed to open listening socket, try to connect to existing uftt process
