@@ -2,11 +2,14 @@
 	#define TASK_LIST_H
 	#include "../UFTTCore.h"
 	#include "dispatcher_marshaller.h"
+	#include "Notification.h"
 	#include <gtkmm/stock.h>
 	#include <gtkmm/treeview.h>
 	#include <gtkmm/liststore.h>
 	#include <gtkmm/uimanager.h>
 	#include <gtkmm/scrolledwindow.h>
+	#include <list>
+	#include <boost/date_time/posix_time/posix_time.hpp>
 
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
@@ -54,6 +57,14 @@
 			Glib::RefPtr<Gtk::ListStore>  task_list_liststore;
 			Gtk::TreeView                 task_list_treeview;
 			Glib::RefPtr<Gtk::UIManager>  uimanager_ref;
+
+			// Notification of task completions
+			std::list<TaskInfo> completed_tasks; // A list of tasks completed since the last check
+			void check_completed_tasks();        // A timeout handler to merge tasks which complete within a certain time window of eachother
+			Gtk::Notification notification;
+			boost::posix_time::ptime  last_notification;
+			boost::posix_time::ptime  last_completion;
+			Glib::RefPtr<Gdk::Pixbuf> ufft_icon;
 
 			/* Functions */
 			void on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info);

@@ -1,5 +1,6 @@
 #include "GTKMain.h"
 #include "GTKImpl.h"
+#include "Notification.h"
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 
@@ -15,6 +16,7 @@ class GTKImpl {
 			if(!Glib::thread_supported())
 				Glib::thread_init();
 			// kit and wnd should only be initialized after glib::thread_init()
+			Gtk::Notification::set_application_name("UFTT");
 			kit = shared_ptr<Gtk::Main>(new Gtk::Main(argc, argv));
 			wnd = shared_ptr<UFTTWindow>(new UFTTWindow(settings));
 		};

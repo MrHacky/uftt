@@ -5,14 +5,21 @@
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/lambda/if.hpp>
+#include <boost/lexical_cast.hpp>
 #include <gtkmm/stock.h>
 #include <gtkmm/treeviewcolumn.h>
 #include <gtkmm/treerowreference.h>
+#include "uftt-48x48.png.h"
+#include <gdkmm/pixbufloader.h>
 #include <limits.h>
+#include <gtkmm/window.h>
+
 
 TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_)
 : settings(_settings),
-  uimanager_ref(uimanager_ref_)
+  uimanager_ref(uimanager_ref_),
+  last_completion(boost::posix_time::neg_infin),
+  last_notification(boost::posix_time::neg_infin)
 {
 	this->add(task_list_treeview);
 	this->set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
@@ -47,6 +54,13 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 	task_list_treeview.signal_row_activated().connect(boost::bind(&TaskList::execute_selected_tasks, this));
 	task_list_treeview.signal_button_press_event().connect(
 		sigc::mem_fun(this, &TaskList::on_task_list_treeview_signal_button_press_event), false);
+
+
+	Glib::RefPtr<Gdk::PixbufLoader> loader = Gdk::PixbufLoader::create("png");
+	loader->write(uftt_48x48_png, sizeof(uftt_48x48_png));
+	loader->close();
+	ufft_icon = loader->get_pixbuf();
+
 
 	/* Create actions */
 	Glib::RefPtr<Gtk::ActionGroup> actiongroup_ref(Gtk::ActionGroup::create("UFTT"));
@@ -188,6 +202,81 @@ void TaskList::set_backend(UFTTCore* _core) {
 	core->connectSigNewTask(dispatcher.wrap(boost::bind(&TaskList::on_signal_new_task, this, _1)));
 }
 
+void TaskList::check_completed_tasks() {
+	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+	if(last_completion - last_notification > boost::posix_time::time_duration(boost::posix_time::seconds(5))) {
+		last_notification = now;
+		notification = Gtk::Notification();
+		TaskInfo latest = completed_tasks.back();
+		completed_tasks.clear();
+		completed_tasks.push_back(latest);
+	}
+
+	std::string body = "The following shares have been downloaded:\n";
+	int i = 0;
+	int max = 5;
+	std::string spacer("  -  ");
+	BOOST_FOREACH(TaskInfo& ti, completed_tasks) {
+		body += spacer + ti.shareinfo.name + "\n";
+		if(++i == max && completed_tasks.size() > max) {
+			body += std::string() + spacer + "and " + boost::lexical_cast<std::string>(completed_tasks.size() - max) + " more...";
+			break;
+		}
+	}
+
+	notification.set_summary("Download complete");
+	notification.set_body(body);
+	notification.set_icon(ufft_icon);
+	notification.set_urgency(Gtk::NOTIFY_URGENCY_NORMAL);
+	notification.set_category("transfer.completed");
+	notification.clear_actions();
+
+	// FIXME: This only opens the most recently added share (or it's folder).
+	//        Is this what we want our should we only show this when exactly
+	//        one task has completed? There is a high probability that all
+	//        tasks were downloaded to the same location anyway since they've
+	//        completed so shortly after each other
+	notification.add_action(
+		boost::bind(
+			&Gtk::show_uri,
+			Glib::wrap((GdkScreen*)NULL),
+			Glib::filename_to_uri((completed_tasks.front().path / completed_tasks.front().shareinfo.name).string()),
+			GDK_CURRENT_TIME
+		),
+		"Open"
+	);
+	notification.add_action(
+		dispatcher.wrap(
+			boost::bind(
+				&Gtk::show_uri,
+				Glib::wrap((GdkScreen*)NULL),
+				Glib::filename_to_uri(completed_tasks.front().path.string()),
+				GDK_CURRENT_TIME
+			)
+		),
+		"Open containing folder"
+	);
+	notification.add_action(
+		dispatcher.wrap(
+			boost::bind(
+				&Gtk::Window::present,
+				(Gtk::Window*)get_toplevel()
+			)
+		),
+		"Show UFTT",
+		"default"
+	);
+
+
+	Gtk::Notification::ServerInfo info = Gtk::Notification::get_server_info();
+	std::cerr << "name: " << info.name << std::endl;
+	std::cerr << "spec_version: " << info.spec_version << std::endl;
+	std::cerr << "vendor: " << info.vendor << std::endl;
+	std::cerr << "version: " << info.version << std::endl;
+
+	notification.show();
+}
+
 void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info) {
 	if(!*rowref) {
 		std::cout << "Warning: BUG in  UFTTCore: calling SigTaskStatus after completion of task!" << std::endl;
@@ -231,7 +320,44 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
 	(*i)[task_list_columns.share_name]     = (info.isupload ? "U: " : "D: ") + info.shareinfo.name;
 
-	if(info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
+	if(  info.status != ""
+		&& info.status != "Completed"
+		&& info.status != "Transfering"
+		&& info.status != "Enqueued"
+		&& info.status != "Connected"
+		&& info.status != "Connecting"
+	) {
+		// FIXME: This way we can never be really sure there has been an error,
+		//        taskinfo should have an explicit error field.
+		Gtk::Notification notification;
+		notification.set_summary("Error during transfer");
+		notification.set_body(
+			std::string() + "An error occured while " +
+			(info.isupload ? "uploading" : "downloading") +
+			" \"" + info.shareinfo.name + "\":\n" +
+			info.status
+		);
+		notification.set_icon(ufft_icon);
+		notification.set_urgency(Gtk::NOTIFY_URGENCY_CRITICAL);
+		notification.set_category("transfer.error");
+		notification.add_action(
+			dispatcher.wrap(
+				boost::bind(
+					&Gtk::Window::present,
+					(Gtk::Window*)get_toplevel()
+				)
+			),
+			"Show UFTT",
+			"default"
+		);
+		notification.show();
+	}
+
+	if(!info.isupload && info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
+		completed_tasks.push_back(info);
+		last_completion = boost::posix_time::microsec_clock::universal_time();
+		check_completed_tasks();
+
 		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
 		if(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0)) {
 			Glib::signal_timeout().connect_seconds_once(
