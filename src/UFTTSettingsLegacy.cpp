@@ -259,43 +259,47 @@ namespace {
 
 bool UFTTSettingsLegacyLoader(UFTTSettingsRef sref)
 {
-	ext::filesystem::path path = sref.get()->s_curvalues.getSavePath();
-	if (!ext::filesystem::exists(path)) return false;
+	try {
+		ext::filesystem::path path = sref.get()->s_curvalues.getSavePath();
+		if (!ext::filesystem::exists(path)) return false;
 
-	UFTTSettingsLegacy legacy;
-	legacy.load(path);
-	if (!legacy.loaded) return false;
+		UFTTSettingsLegacy legacy;
+		legacy.load(path);
+		if (!legacy.loaded) return false;
 
-	std::map<std::string, std::string> s_values;
-	s_values["gui.qt.dockinfo"] = getString(legacy.dockinfo);
+		std::map<std::string, std::string> s_values;
+		s_values["gui.qt.dockinfo"] = getString(legacy.dockinfo);
 
-	s_values["gui.qt.posx"] = getString(legacy.posx);
-	s_values["gui.qt.posy"] = getString(legacy.posy);
-	s_values["gui.qt.sizex"] = getString(legacy.sizex);
-	s_values["gui.qt.sizey"] = getString(legacy.sizey);
+		s_values["gui.qt.posx"] = getString(legacy.posx);
+		s_values["gui.qt.posy"] = getString(legacy.posy);
+		s_values["gui.qt.sizex"] = getString(legacy.sizex);
+		s_values["gui.qt.sizey"] = getString(legacy.sizey);
 
-	s_values["gui.gtk.showtoolbar"] = getString(legacy.show_toolbar);
+		s_values["gui.gtk.showtoolbar"] = getString(legacy.show_toolbar);
 
-	s_values["download.path"] = getString(legacy.dl_path);
-	s_values["download.resume"] = getString(legacy.experimentalresume);
+		s_values["download.path"] = getString(legacy.dl_path);
+		s_values["download.resume"] = getString(legacy.experimentalresume);
 
-	s_values["update.frompeers"] = getString(legacy.autoupdate);
-	s_values["update.fromweb"] = getString(legacy.webupdateinterval);
-	s_values["update.lastwebupdate"] = getString(legacy.lastupdate);
+		s_values["update.frompeers"] = getString(legacy.autoupdate);
+		s_values["update.fromweb"] = getString(legacy.webupdateinterval);
+		s_values["update.lastwebupdate"] = getString(legacy.lastupdate);
 
 
-	s_values["sharing.globalannounce"] = getString(legacy.enablepeerfinder);
-	s_values["sharing.nickname"] = getString(legacy.nickname);
+		s_values["sharing.globalannounce"] = getString(legacy.enablepeerfinder);
+		s_values["sharing.nickname"] = getString(legacy.nickname);
 
-	s_values["stun.lastcheck"] = getString(legacy.laststuncheck);
-	s_values["stun.publicip"] = getString(legacy.stunpublicip);
+		s_values["stun.lastcheck"] = getString(legacy.laststuncheck);
+		s_values["stun.publicip"] = getString(legacy.stunpublicip);
 
-	s_values["systray.showtask"] = getString(legacy.show_task_tray_icon);
-	s_values["systray.minimizemode"] = getString(legacy.minimize_to_tray_mode);
-	s_values["systray.startintray"] = getString(legacy.start_in_tray);
-	s_values["systray.doubleclick"] = getString(legacy.traydoubleclick);
+		s_values["systray.showtask"] = getString(legacy.show_task_tray_icon);
+		s_values["systray.minimizemode"] = getString(legacy.minimize_to_tray_mode);
+		s_values["systray.startintray"] = getString(legacy.start_in_tray);
+		s_values["systray.doubleclick"] = getString(legacy.traydoubleclick);
 
-	s_values["gui.auto_clear_tasks_after"] = getString(legacy.auto_clear_tasks_after);
+		s_values["gui.auto_clear_tasks_after"] = getString(legacy.auto_clear_tasks_after);
 
-	return sref.get()->load(s_values);
+		return sref.get()->load(s_values);
+	} catch (...) {
+		return false;
+	}
 }
