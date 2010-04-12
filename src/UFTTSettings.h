@@ -112,6 +112,27 @@ namespace settingsmanager {
 		}
 	};
 */
+
+#ifdef _WIN32_WINDOWS
+	// in win9x boost/locales are buggy so use this workaround
+	template <>
+	struct fromstring_t<boost::posix_time::ptime> {
+		static void convert(const std::string& in, boost::posix_time::ptime& out)
+		{
+			out = boost::posix_time::time_from_string(in);
+		}
+	};
+
+	template <>
+	struct tostring_t<boost::posix_time::ptime> {
+		static void convert(const boost::posix_time::ptime& in, std::string& out)
+		{
+			std::stringstream ss;
+			ss << in.date().year() << "-" << in.date().month() << "-" << in.date().day() << " " << in.time_of_day();
+			out = ss.str();
+		}
+	};
+#endif
 };
 
 class UFTTSettings {
