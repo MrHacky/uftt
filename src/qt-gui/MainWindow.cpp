@@ -505,7 +505,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 	QString qhost  = QString::fromStdString(info.host);
 	QString qurl   = qext::utf8::toQString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
 	if (quser == "") quser = (info.isupdate ? "<Update>" : "uftt-user");
-	uint32 version = atoi(info.proto.substr(6).c_str());
+	uint32 version = info.proto.size() > 6 ? atoi(info.proto.substr(6).c_str()) : 0;
 
 	QList<QTreeWidgetItem*> fres = listShares->findItems(qshare, Qt::MatchExactly, SLCN_SHARE);
 
@@ -514,7 +514,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		if (twi->text(SLCN_HOST) == qhost && twi->text(SLCN_SHARE) == qshare) {
 			found = true;
 			QString qoprot = twi->text(SLCN_PROTOCOL);
-			uint32 over = atoi(qoprot.toStdString().substr(6).c_str());
+			uint32 over = qoprot.size() > 6 ? atoi(qoprot.toStdString().substr(6).c_str()) : 0;
 			if (over <= version) {
 				twi->setText(SLCN_USER, quser);
 				twi->setText(SLCN_PROTOCOL, qproto);
@@ -887,7 +887,7 @@ void MainWindow::on_listTasks_itemSelectionChanged()
 	QTreeWidgetItem* twi = listTasks->currentItem();
 	if (twi) {
 		string sharename = qext::utf8::fromQString(twi->text(TLCN_SHARE));
-		bool isupload = (sharename.substr(0,3) == "U: ");
+		bool isupload = sharename.size() > 3 && (sharename.substr(0,3) == "U: ");
 		bool completed = (twi->text(TLCN_STATUS) == "Completed");
 
 		actionTaskOpenContainingFolder->setEnabled(true);
