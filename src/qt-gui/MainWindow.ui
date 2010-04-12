@@ -125,9 +125,20 @@
         </widget>
        </item>
        <item>
+        <widget class="QPushButton" name="buttonAdd3">
+         <property name="text">
+          <string>Share File...</string>
+         </property>
+         <property name="icon">
+          <iconset resource="Icons/icons.qrc">
+           <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QPushButton" name="buttonAdd1">
          <property name="text">
-          <string>Add Share (dir)...</string>
+          <string>Share Folder...</string>
          </property>
          <property name="icon">
           <iconset resource="Icons/icons.qrc">
@@ -139,17 +150,6 @@
         <widget class="QPushButton" name="buttonAdd2">
          <property name="text">
           <string>Add Share(dir)...</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QPushButton" name="buttonAdd3">
-         <property name="text">
-          <string>Add Share (file)...</string>
-         </property>
-         <property name="icon">
-          <iconset resource="Icons/icons.qrc">
-           <normaloff>:/button/button-addsharefile.png</normaloff>:/button/button-addsharefile.png</iconset>
          </property>
         </widget>
        </item>
