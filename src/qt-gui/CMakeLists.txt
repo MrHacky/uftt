@@ -36,6 +36,7 @@ IF(ENABLE_QT_GUI)
 		QPathComboBox.cpp
 		DialogDirectoryChooser.cpp
 		DialogPreferences.cpp
+		QExtPlatform.cpp
 	)
 
 	QT4_AUTOMOC(${UI_SRCS})
@@ -56,6 +57,7 @@ IF(ENABLE_QT_GUI)
 		QMarshaller.h
 		DialogDirectoryChooser.h
 		DialogPreferences.h
+		QExtPlatform.h
 		QDebugStream.h
 		QtLogger.h
 		QTMain.h

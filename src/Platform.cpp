@@ -24,10 +24,15 @@
 #  include <fstream>
 #endif
 
+#ifdef USE_QEXT_PLATFORM_H
+#  include "qt-gui/QExtPlatform.h"
+#endif
+
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "util/Filesystem.h"
+
 
 using namespace std;
 
@@ -439,7 +444,7 @@ namespace platform {
 
 	std::wstring convertUTF8ToUTF16(const std::string& src)
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
 		WCHAR wcs[MAX_PATH];
 		if (!SUCCEEDED(MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, wcs, MAX_PATH)))
 			throw std::runtime_error("convertUTF8ToUTF16: MultiByteToWideChar Failed");
@@ -451,7 +456,7 @@ namespace platform {
 
 	std::string convertUTF16ToUTF8(const std::wstring& src)
 	{
-#ifdef WIN32
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
 		char res[MAX_PATH];
 		if (!SUCCEEDED(WideCharToMultiByte(CP_UTF8, 0, src.c_str(), -1, res, MAX_PATH, NULL, NULL)))
 			throw std::runtime_error("convertUTF8ToUTF16: WideCharToMultiByte Failed");
@@ -463,12 +468,20 @@ namespace platform {
 
 	std::string convertUTF8ToLocale(const std::string& src)
 	{
+#ifdef USE_QEXT_PLATFORM_H
+		return qext::platform::convertUTF8ToLocale(src);
+#else
 		throw std::runtime_error("convertUTF8ToLocale: Not implemented");
+#endif
 	}
 
 	std::string convertLocaleToUTF8(const std::string& src)
 	{
+#ifdef USE_QEXT_PLATFORM_H
+		return qext::platform::convertLocaleToUTF8(src);
+#else
 		throw std::runtime_error("convertLocaleToUTF8: Not implemented");
+#endif
 	}
 
 	std::vector<std::string> getUTF8CommandLine(int argc, char **argv)

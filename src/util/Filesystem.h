@@ -12,8 +12,7 @@
 
 #if defined(WIN32)
 	#if defined(_WIN32_WINDOWS)
-		//#define EXT_FILESYSTEM_UTF8_LOCALE // not working yet
-		#define EXT_FILESYSTEM_UTF8_UTF8
+		#define EXT_FILESYSTEM_UTF8_LOCALE
 	#else
 		#define EXT_FILESYSTEM_UTF8_UTF16
 	#endif
