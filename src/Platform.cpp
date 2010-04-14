@@ -318,8 +318,31 @@ namespace platform {
 #endif
 	}
 
+#ifdef WIN32
+	std::string convertTStringToUTF8(const char* tstring)
+	{
+		return convertLocaleToUTF8(tstring);
+	}
+
+	std::string convertTStringToUTF8(const wchar_t* tstring)
+	{
+		return convertUTF16ToUTF8(tstring);
+	}
+#endif
+
 	std::string getUserName()
 	{
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
+		wchar_t tname[256];
+		DWORD len = 256;
+		if (GetUserNameW(tname, &len))
+			return convertTStringToUTF8(tname);
+#elif defined(WIN32) && defined(_WIN32_WINDOWS)
+		char tname[256];
+		DWORD len = 256;
+		if (GetUserNameA(tname, &len))
+			return convertTStringToUTF8(tname);
+#endif
 		char* name = NULL;
 		if (!name) name = getenv("USER");
 		if (!name) name = getenv("USERNAME");
