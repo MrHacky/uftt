@@ -487,12 +487,17 @@ namespace platform {
 	std::vector<std::string> getUTF8CommandLine(int argc, char **argv)
 	{
 		std::vector<std::string> res;
-#ifdef WIN32
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
+		// windows nt has api to get unicode command line 
 		int nArgs = 0;
 		LPWSTR *szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 		for (int i = 0; i < nArgs; ++i)
 			res.push_back(platform::convertUTF16ToUTF8(szArglist[i]));
 		LocalFree(szArglist);
+#elif defined(WIN32) && defined(_WIN32_WINDOWS)
+		// windows 9x has argv[i] in the current locale
+		for (int i = 0; i < argc; ++i)
+			res.push_back(convertLocaleToUTF8(argv[i]));
 #else
 		// assumes argv[i] is already UTF8... (usually true in linux)
 		for (int i = 0; i < argc; ++i)
