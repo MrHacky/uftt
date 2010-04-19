@@ -476,7 +476,7 @@ void ShareList::on_signal_add_share(const ShareInfo& info) {
 	uint32 version = atoi(info.proto.substr(6).c_str()); // FIXME: Perhaps put this type of check in the core
 	bool found = false;
 	BOOST_FOREACH(const Gtk::TreeRow& row, share_list_liststore->children()) {
-		if((row[share_list_columns.host_name] == info.host) && (row[share_list_columns.share_name] == info.name)) {
+		if(((std::string)(Glib::ustring)row[share_list_columns.host_name] == info.host) && ((std::string)(Glib::ustring)row[share_list_columns.share_name] == info.name)) {
 			found = true;
 			uint32 over = atoi(((Glib::ustring)row[share_list_columns.protocol]).substr(6).c_str());
 			if(over <= version) {
