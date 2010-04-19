@@ -1,6 +1,7 @@
 * Major features ordered by priority.
 - implement share announcement via reliable transport (tcp), and peer discovery via broadcasts (udp)
 - task management
+- show more information about available shares (especially their size)
 
 * Long term, unordered, minor, and subtask features
 - speed up compilation (move as much as possible out of .h files and into .cpp files)
@@ -9,8 +10,8 @@
 - automatically resume failed downloads when the connection is restored
 - uniquely identify (parts of) shares somehow
 - allow downloading parts of the same share from different sources
-- allow simultanious downloading via broadcast link
-- allow simultanious downloading via chained links
+- allow simultaneous downloading via broadcast link
+- allow simultaneous downloading via chained links
 - optimize receiver with buffer queue
 - allow management of local shares
 - remember local shares
@@ -47,6 +48,14 @@
 - dont save settings at their default values (so defaults can be changed)
 - add more icons to qt gui
 - implement autoupdate for mac osx
+- add a wiki page with screenshot(s)
+- fix uploadspeed calculation
+- replace TaskInfo.status with an enum & message
+- investigate using mmap() and friends
+
+* Misc GUI items
+- Notify on download completion (libnotify?)
+- Update wiki pages to match Help menu (FAQ, Howto, etc)
 
 * Already completed features.
 - [DONE] show share name for upload tasks
