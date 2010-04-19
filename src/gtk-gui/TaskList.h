@@ -61,7 +61,7 @@
 			// Notification of task completions
 			std::list<TaskInfo> completed_tasks; // A list of tasks completed since the last check
 			void check_completed_tasks();        // A timeout handler to merge tasks which complete within a certain time window of eachother
-			Gtk::Notification notification;
+			boost::shared_ptr<Gtk::Notification> notification;
 			boost::posix_time::ptime  last_notification;
 			boost::posix_time::ptime  last_completion;
 			Glib::RefPtr<Gdk::Pixbuf> ufft_icon;

@@ -72,7 +72,7 @@ namespace Gtk {
 	 *         </li>
 	 *       </ul>
 	 */
-	class Notification
+	class Notification // FIXME: public Glib::Object
 	{
 		/* Public static functions */
 		public:
@@ -132,10 +132,10 @@ namespace Gtk {
 			/**
 			 * Creates a new Notification.
 			 */
-			Notification();
+			static boost::shared_ptr<Notification> create();
 
 			/**
-			 * @anchor main_Notification_constructor_description
+			 * @anchor main_notification_constructor_description
 			 * Creates a new Notification.
 			 *
 			 * @anchor notify_summary_description
@@ -166,30 +166,17 @@ namespace Gtk {
 			 *        notification specification).
 			 *        </em>
 			 */
-			Notification(const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			static boost::shared_ptr<Notification> create(const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
 
 			/**
 			 * @param summary is a single line overview of the notification.
 			 * @param body is a multi-line body of text.
 			 * @param icon is the notification icon.
 			 *
-			 * Please refer to the @ref main_Notification_constructor_description for
+			 * Please refer to the @ref main_notification_constructor_description for
 			 * more information on the parameters.
 			 */
-			Notification(const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
-
-			/**
-			 * @param widget is the widget to attach to.
-			 * @param summary is a single line overview of the notification.
-			 * @param body is a multi-line body of text.
-			 * @param icon is the notification icon.
-			 *
-			 * Please refer to the @ref main_Notification_constructor_description for
-			 * more information on the parameters.
-			 *
-			 * @see attach_to(Gtk::Widget& widget)
-			 */
-			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			static boost::shared_ptr<Notification> create(const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 
 			/**
 			 * @param widget is the widget to attach to.
@@ -197,12 +184,25 @@ namespace Gtk {
 			 * @param body is a multi-line body of text.
 			 * @param icon is the notification icon.
 			 *
-			 * Please refer to the @ref main_Notification_constructor_description for
+			 * Please refer to the @ref main_notification_constructor_description for
 			 * more information on the parameters.
 			 *
 			 * @see attach_to(Gtk::Widget& widget)
 			 */
-			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
+			static boost::shared_ptr<Notification> create(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+
+			/**
+			 * @param widget is the widget to attach to.
+			 * @param summary is a single line overview of the notification.
+			 * @param body is a multi-line body of text.
+			 * @param icon is the notification icon.
+			 *
+			 * Please refer to the @ref main_notification_constructor_description for
+			 * more information on the parameters.
+			 *
+			 * @see attach_to(Gtk::Widget& widget)
+			 */
+			static boost::shared_ptr<Notification> create(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 
 			/**
 			 * @param statusicon is the statusicon to attach to.
@@ -210,12 +210,12 @@ namespace Gtk {
 			 * @param body is a multi-line body of text.
 			 * @param icon is the notification icon.
 			 *
-			 * Please refer to the @ref main_Notification_constructor_description for
+			 * Please refer to the @ref main_notification_constructor_description for
 			 * more information on the parameters.
 			 *
 			 * @see attach_to(const Gtk::StatusIcon& statusicon)
 			 */
-			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			static boost::shared_ptr<Notification> create(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
 
 			/**
 			 * @param statusicon is the statusicon to attach to.
@@ -223,12 +223,12 @@ namespace Gtk {
 			 * @param body is a multi-line body of text.
 			 * @param icon is the notification icon.
 			 *
-			 * Please refer to the @ref main_Notification_constructor_description for
+			 * Please refer to the @ref main_notification_constructor_description for
 			 * more information on the parameters.
 			 *
 			 * @see attach_to(const Gtk::StatusIcon& statusicon)
 			 */
-			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
+			static boost::shared_ptr<Notification> create(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 
 
 
@@ -465,6 +465,18 @@ namespace Gtk {
 
 			/* Implementation */
 		private:
+			/* Keep constructors private */
+			Notification();
+			Notification(const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			Notification(const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
+			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
+			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
+			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
+			/* Non-copyable, like Glib::ObjectBase */
+			Notification(const Notification&);
+			Notification& operator=(const Notification&);
+
 			static boost::mutex         n_instances_mutex;
 			static int                  n_instances;
 			static Glib::ustring        application_name;
@@ -472,7 +484,8 @@ namespace Gtk {
 			static void notify_action_callback(NotifyNotification *notification, gchar *action, gpointer user_data);
 			gulong signal_closed_callback_id;
 			static void signal_closed_callback(NotifyNotification* notify_notification, Notification* notification);
-			void check_libnotify_and_initialize();
+			void check_libnotify();
+			void initialize_notification();
 			void reinitialize();
 			void ensure_notify_notification();
 			guint next_action_id;

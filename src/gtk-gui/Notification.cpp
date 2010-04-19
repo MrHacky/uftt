@@ -1,5 +1,6 @@
 #include "Notification.h"
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 
 // NOTE: This namespace trickery is mostly for doxygen's benefit, it easily
 //       gets confused... This is also why we don't do "using namespace Glib;"
@@ -12,7 +13,7 @@ namespace Gtk {
 
 	// keep this here to ensure libnotify global (de)init is called only once
 	// (and from a single thread)
-	Notification global_instance;
+	boost::shared_ptr<Notification> global_instance(Notification::create());
 
 	#ifndef HAVE_LIBNOTIFY
 		// Be compatible when libnotify is not available
@@ -21,66 +22,124 @@ namespace Gtk {
 
 
 // FIXME: CLEAR DEBUGGING MESSAGES
-
 	/******************************
 	 ** Constructors (public)    **
 	 ******************************/
-
-	Notification::Notification() {
-		std::cerr << "constr" << std::endl;
-		check_libnotify_and_initialize();
+	boost::shared_ptr<Notification> Notification::create() {
+		return boost::shared_ptr<Notification>(new Notification());
 	}
 
-	Notification::Notification(const Glib::ustring summary, const Glib::ustring body, const Gtk::StockID icon) {
-		std::cerr << "constr text/stock" << std::endl;
-		check_libnotify_and_initialize();
-		this->summary = summary;
-		this->body    = body;
-		this->icon    = icon;
+	boost::shared_ptr<Notification> Notification::create(const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_) {
+		return boost::shared_ptr<Notification>(new Notification(summary_, body_, icon_));
 	}
 
-	Notification::Notification(const Glib::ustring summary, const Glib::ustring body, const Glib::RefPtr<Gdk::Pixbuf> icon) {
-		std::cerr << "constr text/pixbuf" << std::endl;
-		check_libnotify_and_initialize();
-		this->summary     = summary;
-		this->body        = body;
-		this->icon_pixbuf = icon;
+	boost::shared_ptr<Notification> Notification::create(const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_) {
+		return boost::shared_ptr<Notification>(new Notification(summary_, body_, icon_));
 	}
 
-	Notification::Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body, const Gtk::StockID icon) {
-		std::cerr << "constr widget/stock" << std::endl;
-		check_libnotify_and_initialize();
-		this->attached_widget = widget.gobj();
-		this->summary         = summary;
-		this->body            = body;
-		this->icon           = icon;
+	boost::shared_ptr<Notification> Notification::create(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_) {
+		return boost::shared_ptr<Notification>(new Notification(widget_, summary_, body_, icon_));
 	}
 
-	Notification::Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body, const Glib::RefPtr<Gdk::Pixbuf> icon) {
-		std::cerr << "constr widget/pixbuf" << std::endl;
-		check_libnotify_and_initialize();
-		this->attached_widget = widget.gobj();
-		this->summary         = summary;
-		this->body            = body;
-		this->icon_pixbuf     = icon;
+	boost::shared_ptr<Notification> Notification::create(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_) {
+		return boost::shared_ptr<Notification>(new Notification(widget_, summary_, body_, icon_));
 	}
 
-	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body, const Gtk::StockID icon) {
-		std::cerr << "constr icon/stock" << std::endl;
-		check_libnotify_and_initialize();
-		this->attached_statusicon = statusicon;
-		this->summary             = summary;
-		this->body                = body;
-		this->icon                = icon;
+	boost::shared_ptr<Notification> Notification::create(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_) {
+		return boost::shared_ptr<Notification>(new Notification(statusicon_, summary_, body_, icon_));
 	}
 
-	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body, const Glib::RefPtr<Gdk::Pixbuf> icon) {
-		std::cerr << "constr icon/pixbuf" << std::endl;
-		check_libnotify_and_initialize();
-		this->attached_statusicon = statusicon;
-		this->summary             = summary;
-		this->body                = body;
-		this->icon_pixbuf         = icon;
+	boost::shared_ptr<Notification> Notification::create(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_) {
+		return boost::shared_ptr<Notification>(new Notification(statusicon_, summary_, body_, icon_));
+	}
+
+
+
+	/******************************
+	 ** Constructors (private)   **
+	 ******************************/
+
+	Notification::Notification()
+	: attached_widget(NULL)
+	, notify_notification(NULL)
+	, next_action_id(0)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
+	: attached_widget(NULL)
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
+	: attached_widget(NULL)
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon_pixbuf(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
+	: attached_widget(widget_.gobj())
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
+	: attached_widget(widget_.gobj())
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon_pixbuf(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
+	: attached_widget(NULL)
+	, attached_statusicon(statusicon_)
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
+	}
+
+	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
+	: attached_widget(NULL)
+	, attached_statusicon(statusicon_)
+	, notify_notification(NULL)
+	, next_action_id(0)
+	, summary(summary_)
+	, body(body_)
+	, icon_pixbuf(icon_)
+	{
+		check_libnotify();
+		initialize_notification();
 	}
 
 
@@ -90,8 +149,6 @@ namespace Gtk {
 	 ******************************/
 
 	Notification::~Notification() {
-		std::cerr << "destr" << std::endl;
-
 		if(notify_notification != NULL) {
 			if(g_signal_handler_is_connected(this->notify_notification, this->signal_closed_callback_id))
 				g_signal_handler_disconnect(this->notify_notification, this->signal_closed_callback_id);
@@ -113,10 +170,9 @@ namespace Gtk {
 	 ******************************/
 
 	void Notification::set_application_name(const Glib::ustring application_name) {
-		std::cerr << "setname" << std::endl;
 		boost::mutex::scoped_lock lock(n_instances_mutex);
 		Notification::application_name = application_name;
-		global_instance.reinitialize();
+		global_instance->reinitialize();
 	}
 
 	Glib::ustring Notification::get_application_name() {
@@ -168,8 +224,16 @@ namespace Gtk {
 		set_contents(summary, this->body, this->icon);
 	}
 
+	Glib::ustring Notification::get_summary() const {
+		return summary;
+	}
+
 	void Notification::set_body(const Glib::ustring body) {
 		set_contents(this->summary, body, this->icon);
+	}
+
+	Glib::ustring Notification::get_body() const {
+		return body;
 	}
 
 	void Notification::set_icon(const Gtk::StockID icon) {
@@ -177,8 +241,17 @@ namespace Gtk {
 		set_contents(this->summary, this->body, icon);
 	}
 
+	Glib::RefPtr<Gdk::Pixbuf> Notification::get_icon() const {
+		if(icon_pixbuf)
+			return icon_pixbuf;
+
+		Gtk::Image img;
+		Gtk::IconSize size(Gtk::ICON_SIZE_DIALOG);
+		Gtk::Stock::lookup(icon, size, img);
+		return img.get_pixbuf();
+	}
+
 	void Notification::set_icon(const Glib::RefPtr<Gdk::Pixbuf> icon) {
-		ensure_notify_notification();
 		this->icon = Gtk::StockID();
 		this->icon_pixbuf = icon;
 		notify_notification_set_icon_from_pixbuf(
@@ -200,7 +273,6 @@ namespace Gtk {
 	}
 
 	void Notification::set_contents(const Glib::ustring summary, const Glib::ustring body, const Gtk::StockID icon) {
-		ensure_notify_notification();
 		this->summary = summary;
 		this->body = body;
 		this->icon = icon;
@@ -208,7 +280,7 @@ namespace Gtk {
 			//fixme
 		}
 		notify_notification_update(
-			notify_notification,
+			this->notify_notification,
 			this->summary.c_str(),
 			this->body.size() > 0 ? this->body.c_str()              : NULL,
 			this->icon            ? this->icon.get_string().c_str() : NULL
@@ -216,7 +288,6 @@ namespace Gtk {
 	}
 
 	void Notification::set_urgency(NotifyUrgency urgency) {
-		ensure_notify_notification();
 		this->urgency = urgency;
 		notify_notification_set_urgency(
 			this->notify_notification,
@@ -229,7 +300,6 @@ namespace Gtk {
 	}
 
 	void Notification::show() {
-		ensure_notify_notification();
 		GError* error = NULL;
 		bool shown = notify_notification_show(this->notify_notification, &error);
 		if(error != NULL) {
@@ -308,7 +378,6 @@ namespace Gtk {
 	*/
 
 	void Notification::signal_closed_callback(NotifyNotification* notify_notification, Notification* notification) {
-		std::cerr << "+++ Notification_signal_closed_callback" << std::endl;
 		notification->signal_closed_(notify_notification_get_closed_reason(notify_notification));
 	}
 
@@ -327,6 +396,15 @@ namespace Gtk {
 	*/
 
 	sigc::signal<void, int>& Notification::signal_closed() {
+		// Defer connecting to signal handler until it's actually used
+		if(!g_signal_handler_is_connected(this->notify_notification, this->signal_closed_callback_id)) {
+			this->signal_closed_callback_id = g_signal_connect(
+				G_OBJECT(this->notify_notification),
+				"closed",
+				G_CALLBACK(Notification::signal_closed_callback),
+				this
+			);
+		}
 		return this->signal_closed_;
 	}
 
@@ -335,75 +413,58 @@ namespace Gtk {
 	 ** Private functions        **
 	 ******************************/
 
-	void Notification::ensure_notify_notification() {
-		if(!this->notify_notification) {
-			if(this->summary.length() == 0)
-				this->summary = "Unset";
-			if(this->attached_statusicon) {
-				this->notify_notification = notify_notification_new_with_status_icon(
-					this->summary.c_str(),
-					this->body.size() > 0 ? this->body.c_str()              : NULL,
-					this->icon            ? this->icon.get_string().c_str() : NULL,
-					this->attached_statusicon->gobj()
-				);
+	void Notification::check_libnotify() {
+		{
+			boost::mutex::scoped_lock lock(n_instances_mutex);
+			if(n_instances == 0) {
+				if(notify_is_initted()) {
+					throw Glib::Error(); // FIXME: "libnotitify initialised by outside source"
+				}
+				notify_init(Notification::application_name.c_str());
 			}
-			else {
-				this->notify_notification = notify_notification_new(
-					this->summary.c_str(),
-					this->body.size() > 0 ? this->body.c_str()              : NULL,
-					this->icon            ? this->icon.get_string().c_str() : NULL,
-					this->attached_widget
-				);
-			}
-			if(!this->notify_notification) {
-				throw Glib::Error(); // FIXME: "Error while constructing notification";
-			}
-
-			this->signal_closed_callback_id = g_signal_connect(
-				G_OBJECT(this->notify_notification),
-				"closed",
-				G_CALLBACK(Notification::signal_closed_callback),
-				this
-			);
+			n_instances++;
 		}
 	}
-
-	void Notification::check_libnotify_and_initialize() {
-	//	initialize((GObject*)0xdeadbeef); // Initialize ObjectBase
-		std::cerr << "check" << std::endl;
-		boost::mutex::scoped_lock lock(n_instances_mutex);
-		if(n_instances == 0) {
-			if(notify_is_initted()) {
-				throw Glib::Error(); // FIXME: "libnotitify initialised by outside source"
-			}
-			notify_init(Notification::application_name.c_str());
+	int bla;
+	void Notification::initialize_notification() {
+		if(this->summary == "") {
+			this->summary = "Unset" + boost::lexical_cast<Glib::ustring>(bla++);
 		}
 
-		std::cerr << "init" << std::endl;
-		this->attached_widget     = NULL;
-		this->notify_notification = NULL;
-		this->attached_widget     = NULL;
-		this->notify_notification = NULL;
-		next_action_id = 0;
-		n_instances++;
+		if(this->attached_statusicon) {
+			this->notify_notification = notify_notification_new_with_status_icon(
+				this->summary.c_str(),
+				this->body.size() > 0 ? this->body.c_str()              : NULL,
+				this->icon            ? this->icon.get_string().c_str() : NULL,
+				this->attached_statusicon->gobj()
+			);
+		}
+		else {
+			this->notify_notification = notify_notification_new(
+				this->summary.c_str(),
+				this->body.size() > 0 ? this->body.c_str()              : NULL,
+				this->icon            ? this->icon.get_string().c_str() : NULL,
+				this->attached_widget
+			);
+		}
+		if(!this->notify_notification) {
+			throw Glib::Error(); // FIXME: "Error while constructing notification";
+		}
 	}
 
 	void Notification::reinitialize() {
 		// WARNING:
 		//   only the global instance may be reinitialized, and only
 		//   when the caller holds the instance lock
-		std::cerr << "reinit" << std::endl;
 		if(n_instances > 1) {
 			std::cerr << "error!" << std::endl;
 			throw Glib::Error(); // FIXME: "You should not call set_application_name() while Notifications are still active"
 		}
 		if(notify_is_initted()) {
-			std::cerr << "uninit" << std::endl;
 			notify_uninit();
 		}
-		std::cerr << "init" << std::endl;
 		notify_init(Notification::application_name.c_str());
-		std::cerr << "done" << std::endl;
+
 	}
 
 } // namespace Gtk

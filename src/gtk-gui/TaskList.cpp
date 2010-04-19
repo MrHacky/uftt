@@ -205,8 +205,7 @@ void TaskList::set_backend(UFTTCore* _core) {
 void TaskList::check_completed_tasks() {
 	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 	if(last_completion - last_notification > boost::posix_time::time_duration(boost::posix_time::seconds(5))) {
-		last_notification = now;
-		notification = Gtk::Notification();
+		notification = Gtk::Notification::create();
 		TaskInfo latest = completed_tasks.back();
 		completed_tasks.clear();
 		completed_tasks.push_back(latest);
@@ -224,19 +223,19 @@ void TaskList::check_completed_tasks() {
 		}
 	}
 
-	notification.set_summary("Download complete");
-	notification.set_body(body);
-	notification.set_icon(ufft_icon);
-	notification.set_urgency(Gtk::NOTIFY_URGENCY_NORMAL);
-	notification.set_category("transfer.completed");
-	notification.clear_actions();
+	notification->set_summary("Download complete");
+	notification->set_body(body);
+	notification->set_icon(ufft_icon);
+	notification->set_urgency(Gtk::NOTIFY_URGENCY_NORMAL);
+	notification->set_category("transfer.completed");
+	notification->clear_actions();
 
 	// FIXME: This only opens the most recently added share (or it's folder).
 	//        Is this what we want our should we only show this when exactly
 	//        one task has completed? There is a high probability that all
 	//        tasks were downloaded to the same location anyway since they've
 	//        completed so shortly after each other
-	notification.add_action(
+	notification->add_action(
 		boost::bind(
 			&Gtk::show_uri,
 			Glib::wrap((GdkScreen*)NULL),
@@ -245,7 +244,7 @@ void TaskList::check_completed_tasks() {
 		),
 		"Open"
 	);
-	notification.add_action(
+	notification->add_action(
 		dispatcher.wrap(
 			boost::bind(
 				&Gtk::show_uri,
@@ -256,7 +255,7 @@ void TaskList::check_completed_tasks() {
 		),
 		"Open containing folder"
 	);
-	notification.add_action(
+	notification->add_action(
 		dispatcher.wrap(
 			boost::bind(
 				&Gtk::Window::present,
@@ -274,7 +273,8 @@ void TaskList::check_completed_tasks() {
 	std::cerr << "vendor: " << info.vendor << std::endl;
 	std::cerr << "version: " << info.version << std::endl;
 
-	notification.show();
+	last_notification = now;
+	notification->show();
 }
 
 void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info) {
@@ -329,18 +329,18 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 	) {
 		// FIXME: This way we can never be really sure there has been an error,
 		//        taskinfo should have an explicit error field.
-		Gtk::Notification notification;
-		notification.set_summary("Error during transfer");
-		notification.set_body(
+		boost::shared_ptr<Gtk::Notification> notification = Gtk::Notification::create();
+		notification->set_summary("Error during transfer");
+		notification->set_body(
 			std::string() + "An error occured while " +
 			(info.isupload ? "uploading" : "downloading") +
 			" \"" + info.shareinfo.name + "\":\n" +
 			info.status
 		);
-		notification.set_icon(ufft_icon);
-		notification.set_urgency(Gtk::NOTIFY_URGENCY_CRITICAL);
-		notification.set_category("transfer.error");
-		notification.add_action(
+		notification->set_icon(ufft_icon);
+		notification->set_urgency(Gtk::NOTIFY_URGENCY_CRITICAL);
+		notification->set_category("transfer.error");
+		notification->add_action(
 			dispatcher.wrap(
 				boost::bind(
 					&Gtk::Window::present,
@@ -350,7 +350,7 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 			"Show UFTT",
 			"default"
 		);
-		notification.show();
+		notification->show();
 	}
 
 	if(!info.isupload && info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
