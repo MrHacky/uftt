@@ -426,7 +426,7 @@ void ShareList::download_selected_shares() {
 	download_selected_shares(settings->dl_path);
 }
 
-void ShareList::download_selected_shares(boost::filesystem::path destination) {
+void ShareList::download_selected_shares(ext::filesystem::path destination) {
 	//FIXME: Don't forget to test dl_path for validity and writeablity
 	if(!ext::filesystem::exists(destination)) {
 		Gtk::MessageDialog dialog(*(Gtk::Window*)get_toplevel(), "Download destination folder does not exist", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
