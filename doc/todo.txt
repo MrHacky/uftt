@@ -50,12 +50,12 @@
 - implement autoupdate for mac osx
 - add a wiki page with screenshot(s)
 - fix uploadspeed calculation
-- replace TaskInfo.status with an enum & message
 - investigate using mmap() and friends
 
 * Misc GUI items
 - Notify on download completion (libnotify?)
 - Update wiki pages to match Help menu (FAQ, Howto, etc)
+- Unify 'Share File' and 'Share Folder', and allow multi-select
 
 * Already completed features.
 - [DONE] show share name for upload tasks
