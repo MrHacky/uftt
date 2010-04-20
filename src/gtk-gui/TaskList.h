@@ -23,6 +23,7 @@
 				public:
 					TaskListColumns() {
 						add(status);
+						add(status_string);
 						add(time_elapsed);
 						add(time_remaining);
 						add(transferred);
@@ -37,7 +38,8 @@
 						add(url);
 					}
 
-					Gtk::TreeModelColumn<Glib::ustring> status;
+					Gtk::TreeModelColumn<TaskStatus>    status;
+					Gtk::TreeModelColumn<Glib::ustring> status_string;
 					Gtk::TreeModelColumn<Glib::ustring> time_elapsed;
 					Gtk::TreeModelColumn<Glib::ustring> time_remaining;
 					Gtk::TreeModelColumn<Glib::ustring> transferred;

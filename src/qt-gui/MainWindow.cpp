@@ -637,7 +637,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	boost::posix_time::time_duration elapsed = curtime-starttime;
 
 	uint64 tfx = ti.transferred;
-	std::string sts = ti.status;
+	std::string sts = ti.getTaskStatusString();
 	uint32 queue = ti.queue;
 	uint64 total = ti.size;
 

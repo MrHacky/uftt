@@ -32,7 +32,7 @@ class SimpleConnection: public ConnectionCommon {
 		SockType socket;
 
 		std::string sharename;
-		ext::filesystem::path writesharepath; // 
+		ext::filesystem::path writesharepath; //
 		ext::filesystem::path readsharepath; // sharename is the name of the share we are uploading
 		ext::filesystem::path cwdsharepath;
 
@@ -149,20 +149,21 @@ class SimpleConnection: public ConnectionCommon {
 			} else {
 				taskinfo.queue = sendqueue.size()+open_files;
 				if (error_message != "") {
-					taskinfo.status = std::string() + "Error: " + error_message;
+					taskinfo.error_message = error_message;
+					taskinfo.status = TASK_STATUS_ERROR;
 					disconnect();
 				} else if (dldone && open_files == 0) {
-					taskinfo.status ="Completed";
+					taskinfo.status = TASK_STATUS_COMPLETED;
 					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else if (uldone) { // FIXME: Never triggers?
-					taskinfo.status ="Completed";
+					taskinfo.status = TASK_STATUS_COMPLETED;
 					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else {
-					taskinfo.status ="Transfering";
+					taskinfo.status = TASK_STATUS_TRANSFERING;
 					start_update_progress();
 				}
 				sig_progress(taskinfo);

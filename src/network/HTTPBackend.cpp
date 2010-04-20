@@ -164,7 +164,7 @@ void HTTPBackend::do_start_download(const ShareID& sid, const ext::filesystem::p
 	task->info.isupload = false;
 	task->info.queue = 3;
 	task->info.size = 0;
-	task->info.status = "Downloading";
+	task->info.status = TASK_STATUS_CONNECTING;
 	task->info.transferred = 0;
 
 	task->path = path;
@@ -180,9 +180,11 @@ void HTTPBackend::handle_download_progress(const boost::system::error_code& err,
 	if (prog >= 0) {
 		task->info.transferred += prog;
 		task->info.size = task->req.getTotalSize();
+		task->info.status = TASK_STATUS_TRANSFERING;
 	} else if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
-		task->info.status = STRFORMAT("Failed: %s", err);
+		task->info.error_message = STRFORMAT("Failed: %s", err);
+		task->info.status = TASK_STATUS_ERROR;
 	} else {
 		task->info.size = task->req.getTotalSize();
 		task->info.transferred = task->req.getContent().size();
@@ -204,7 +206,8 @@ void HTTPBackend::handle_file_open_done(const boost::system::error_code& err, HT
 {
 	if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
-		task->info.status = STRFORMAT("Failed: %s", err);
+		task->info.error_message = STRFORMAT("Failed: %s", err);
+		task->info.status = TASK_STATUS_ERROR;
 	} else {
 		task->info.queue = 1;
 		boost::asio::async_write(
@@ -220,10 +223,11 @@ void HTTPBackend::handle_file_write_done(const boost::system::error_code& err,HT
 {
 	if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
-		task->info.status = STRFORMAT("Failed: %s", err);
+		task->info.error_message = STRFORMAT("Failed: %s", err);
+		task->info.status = TASK_STATUS_ERROR;
 	} else {
 		task->info.queue = 0;
-		task->info.status = "Completed";
+		task->info.status = TASK_STATUS_COMPLETED;
 		task->file.close();
 	}
 	task->sig_progress(task->info);

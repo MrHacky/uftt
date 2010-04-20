@@ -67,12 +67,39 @@ struct TaskID {
 	uint32 cid;
 };
 
+enum TaskStatus {
+	TASK_STATUS_ENQUEUED,
+	TASK_STATUS_CONNECTING,
+	TASK_STATUS_CONNECTED,
+	TASK_STATUS_TRANSFERING,
+	TASK_STATUS_COMPLETED,
+	TASK_STATUS_ERROR,
+};
+
 struct TaskInfo {
 	TaskID id;
 	ShareID shareid;
 	ShareInfo shareinfo;
 	bool isupload;
-	std::string status;
+	TaskStatus status;
+	std::string getTaskStatusString() const {
+		switch(status) {
+			case TASK_STATUS_ENQUEUED:
+				return "Enqueued";
+			case TASK_STATUS_CONNECTING:
+				return "Connecting";
+			case TASK_STATUS_CONNECTED:
+				return "Connected";
+			case TASK_STATUS_TRANSFERING:
+				return "Transferring";
+			case TASK_STATUS_COMPLETED:
+				return "Completed";
+			case TASK_STATUS_ERROR:
+				return "Error: " + error_message;
+		}
+		return "Invalid";
+	};
+	std::string error_message;
 	ext::filesystem::path path;   // Path that this Task is being downloaded to / uploaded from
 	uint64 transferred;
 	uint64 size;

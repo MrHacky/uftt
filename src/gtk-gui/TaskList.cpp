@@ -27,7 +27,7 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 //	task_list_treeview.set_model(SortableTreeDragDest<Gtk::ListStore>::create(task_list_liststore)); // FIXME: Enabling this causes Gtk to give a silly warning
 	task_list_treeview.set_model(task_list_liststore);
 	#define ADD_TV_COL_SORTABLE(tv, title, column) (tv).get_column((tv).append_column((title), (column)) - 1)->set_sort_column((column));
-	ADD_TV_COL_SORTABLE(task_list_treeview, "Status"        , task_list_columns.status);
+	ADD_TV_COL_SORTABLE(task_list_treeview, "Status"        , task_list_columns.status_string);
 	ADD_TV_COL_SORTABLE(task_list_treeview, "Time Elapsed"  , task_list_columns.time_elapsed);
 	ADD_TV_COL_SORTABLE(task_list_treeview, "Time Remaining", task_list_columns.time_remaining);
 	ADD_TV_COL_SORTABLE(task_list_treeview, "Transferred"   , task_list_columns.transferred);
@@ -145,8 +145,8 @@ void TaskList::on_task_list_treeview_selection_signal_changed() {
 void TaskList::cleanup() {
 	Gtk::TreeIter i = task_list_liststore->children().begin();
 	while(i != task_list_liststore->children().end()) {
-		std::string status = i->get_value(task_list_columns.status);
-		if( status == "Completed" || status.substr(0, 5) == "Error") {
+		TaskStatus status = i->get_value(task_list_columns.status);
+		if(status == TASK_STATUS_COMPLETED || status == TASK_STATUS_ERROR) {
 			i = task_list_liststore->erase(i);
 		}
 		else {
@@ -158,7 +158,7 @@ void TaskList::cleanup() {
 void TaskList::execute_selected_tasks() {
 	BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
 		const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
-		if(row[task_list_columns.status] == "Completed") {
+		if(row[task_list_columns.status] == TASK_STATUS_COMPLETED) {
 			Gtk::show_uri(Glib::wrap((GdkScreen*)NULL),
 				Glib::filename_to_uri((((TaskInfo)row[task_list_columns.task_info]).path / ((TaskInfo)row[task_list_columns.task_info]).shareinfo.name).string()),
 				GDK_CURRENT_TIME
@@ -290,6 +290,7 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 	boost::posix_time::time_duration time_elapsed = current_time-info.start_time;
 
 	(*i)[task_list_columns.status]         = info.status;
+	(*i)[task_list_columns.status_string]  = info.getTaskStatusString();
 	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::seconds(time_elapsed.total_seconds()));
 
 	(*i)[task_list_columns.time_remaining] = "Unknown";
@@ -320,22 +321,14 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 	(*i)[task_list_columns.host_name]      = info.shareinfo.host;
 	(*i)[task_list_columns.share_name]     = (info.isupload ? "U: " : "D: ") + info.shareinfo.name;
 
-	if(  info.status != ""
-		&& info.status != "Completed"
-		&& info.status != "Transfering"
-		&& info.status != "Enqueued"
-		&& info.status != "Connected"
-		&& info.status != "Connecting"
-	) {
-		// FIXME: This way we can never be really sure there has been an error,
-		//        taskinfo should have an explicit error field.
+	if(info.status == TASK_STATUS_ERROR) {
 		boost::shared_ptr<Gtk::Notification> notification = Gtk::Notification::create();
 		notification->set_summary("Error during transfer");
 		notification->set_body(
 			std::string() + "An error occured while " +
 			(info.isupload ? "uploading" : "downloading") +
 			" \"" + info.shareinfo.name + "\":\n" +
-			info.status
+			info.error_message
 		);
 		notification->set_icon(ufft_icon);
 		notification->set_urgency(Gtk::NOTIFY_URGENCY_CRITICAL);
@@ -353,7 +346,7 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 		notification->show();
 	}
 
-	if(!info.isupload && info.status == "Completed") { // Transfer done, explicitly set ETA to 00:00:00
+	if(!info.isupload && info.status == TASK_STATUS_COMPLETED) { // Transfer done, explicitly set ETA to 00:00:00
 		completed_tasks.push_back(info);
 		last_completion = boost::posix_time::microsec_clock::universal_time();
 		check_completed_tasks();
@@ -397,7 +390,8 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	Gtk::TreeModel::iterator i = task_list_liststore->append();
 	(*i)[task_list_columns.task_info]      = info;
 	// Task info (real values only filled in on_signal_task_status)
-	(*i)[task_list_columns.status]         = "Waiting for peer";
+	(*i)[task_list_columns.status]         = info.status;
+	(*i)[task_list_columns.status_string]  = "Waiting for peer";
 	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
 	(*i)[task_list_columns.time_remaining] = "Unknown";
 	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
