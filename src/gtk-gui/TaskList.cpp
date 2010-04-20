@@ -266,13 +266,6 @@ void TaskList::check_completed_tasks() {
 		"default"
 	);
 
-
-	Gtk::Notification::ServerInfo info = Gtk::Notification::get_server_info();
-	std::cerr << "name: " << info.name << std::endl;
-	std::cerr << "spec_version: " << info.spec_version << std::endl;
-	std::cerr << "vendor: " << info.vendor << std::endl;
-	std::cerr << "version: " << info.version << std::endl;
-
 	last_notification = now;
 	notification->show();
 }
