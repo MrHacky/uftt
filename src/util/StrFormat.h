@@ -41,7 +41,29 @@ namespace StrFormat {
 		};
 	} // namespace detail
 
-	inline std::string bytes(uint64 n, bool kibi = false)
+	/**
+	 * Formats an integer representing a number of bytes as a string
+	 * suitable for display. E.g. the value '1331695' can formatted as
+	 * '1.27 MiB'. By default the formatting tries to use 3 significant
+	 * digits whenever possible. This also means that prefixes will
+	 * be used for values which would require 4 digits to represent,
+	 * in particular a value of 1001 will be formatted as '0.97 KiB'.
+	 * @param n is the number of bytes.
+	 * @param kibi indicates whether or not to use the correct SI prefixes
+	 *        when displaying values greater than 999 bytes. This does
+	 *        <emph>not</emph> affect the calculated value, the calculation
+	 *        always calculates a binary prefix (i.e. the calculation is
+	 *        always performed in base 2, dividing by 1024).
+	 * @param narrow_fmt indicates that only the minimum of information
+	 *        should be included in the output string. In particular any
+	 *        whitespace between the calculated value and the prefix, as
+	 *        well as the trailing 'B' are omitted. This output format is
+	 *        useful when the available display space for your string is
+	 *        extremely limited, such as for example when the string is to
+	 *        be displayed in the titlebar or on a tooltip.
+	 * @return the formatted string.
+	 */
+	inline std::string bytes(uint64 n, bool kibi = false, bool narrow_fmt = false)
 	{
 		static const char* size_suffix[] =
 		{
@@ -53,7 +75,8 @@ namespace StrFormat {
 			"P",
 			"?"
 		};
-		const int maxsuf = (sizeof(size_suffix) / sizeof(size_suffix[0])) - 1;
+		static const int maxsuf = (sizeof(size_suffix) / sizeof(size_suffix[0])) - 1;
+		const char* fmt_string = narrow_fmt ? "%%.%df%%s%s" : "%%.%df %%s%sB";
 
 		int suf;
 		double size = (double)n;
@@ -61,7 +84,7 @@ namespace StrFormat {
 			size /= 1024.0;
 		suf = std::min(maxsuf, suf);
 		int decs = (2 - (size >= 10.0) - (size >= 100.0)) * (suf > 0);
-		std::string fstr = STRFORMAT("%%.%df %%s%sB", decs, kibi ? "i" : "");
+		std::string fstr = STRFORMAT(fmt_string, decs, (kibi && suf > 0) ? "i" : "");
 		return STRFORMAT(fstr, (float)size, size_suffix[suf]);
 	};
 
