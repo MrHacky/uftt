@@ -10,11 +10,14 @@
 	#include <gtkmm/scrolledwindow.h>
 	#include <list>
 	#include <boost/date_time/posix_time/posix_time.hpp>
+	#include <boost/signals.hpp>
 
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
 			TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_);
 			void set_backend(UFTTCore* _core);
+			// nr downloads, downloadspeed, nr uploads, upload speed
+			boost::signal<void(uint32, uint32, uint32, uint32)> signal_status;
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;
@@ -67,6 +70,9 @@
 			boost::posix_time::ptime  last_notification;
 			boost::posix_time::ptime  last_completion;
 			Glib::RefPtr<Gdk::Pixbuf> ufft_icon;
+
+			// Cumulative task status
+			boost::posix_time::ptime last_status_update;
 
 			/* Functions */
 			void on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info);

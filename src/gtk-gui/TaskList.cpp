@@ -19,7 +19,8 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 : settings(_settings),
   uimanager_ref(uimanager_ref_),
   last_completion(boost::posix_time::neg_infin),
-  last_notification(boost::posix_time::neg_infin)
+  last_notification(boost::posix_time::neg_infin),
+  last_status_update(boost::posix_time::neg_infin)
 {
 	this->add(task_list_treeview);
 	this->set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
@@ -377,6 +378,30 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 			);
 		}
 	} // i may be invalid now
+
+
+	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
+	if(((now - last_status_update) >= boost::posix_time::time_duration(boost::posix_time::milliseconds(250))) || (info.status == TASK_STATUS_COMPLETED || (info.status == TASK_STATUS_ERROR))) {
+		uint32 nr_downloads = 0;
+		uint32 download_speed = 0;
+		uint32 nr_uploads = 0;
+		uint32 upload_speed = 0;
+		BOOST_FOREACH(Gtk::TreeIter i, task_list_liststore->children()) {
+			TaskInfo ti = i->get_value(task_list_columns.task_info);
+			if(ti.status == TASK_STATUS_TRANSFERRING) {
+				if(ti.isupload) {
+					nr_uploads++;
+					upload_speed += ti.speed;
+				}
+				else {
+					nr_downloads++;
+					download_speed += ti.speed;
+				}
+			}
+		}
+		last_status_update = now;
+		signal_status(nr_downloads, download_speed, nr_uploads, upload_speed);
+	}
 
 // FIXME: Something with auto-update
 //	if (!info.isupload && info.status == "Completed") {}

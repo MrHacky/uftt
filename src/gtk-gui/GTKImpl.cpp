@@ -26,6 +26,9 @@
 
 using namespace std;
 
+#define UFTT_TITLE_BASE   "gUFTT"
+#define UFTT_TOOLTIP_BASE "The Ultimate File Transfer Tool"
+
 UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 : settings(_settings),
   uimanager_ref(Gtk::UIManager::create()),
@@ -33,19 +36,25 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
   task_list(_settings, uimanager_ref),
   uftt_preferences_dialog(_settings)
 {
-	set_title("UFTT");
+	set_title(UFTT_TITLE_BASE);
 	set_default_size(1024, 640);
 	property_visible() = false;
 
 	statusicon_pixbuf = get_best_uftt_icon_for_size(256, 256);
 	statusicon = Gtk::StatusIcon::create(statusicon_pixbuf);
 	set_default_icon(statusicon_pixbuf);
-	statusicon->set_tooltip("UFTT\nThe Ultimate File Transfer Tool");
+	statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
 	statusicon->set_visible(false);
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
 	statusicon->signal_size_changed().connect(slot);
 	statusicon->signal_popup_menu().connect(boost::bind(&UFTTWindow::on_statusicon_signal_popup_menu, this, _1, _2));
 	statusicon->signal_activate().connect(boost::bind(&UFTTWindow::on_statusicon_signal_activate, this));
+
+	task_list.signal_status.connect(
+		dispatcher.wrap(
+			boost::bind(&UFTTWindow::on_signal_task_status, this, _1, _2, _3, _4)
+		)
+	);
 
 	std::vector<Glib::RefPtr<Gdk::Pixbuf> > icon_list;
 	icon_list.push_back(get_best_uftt_icon_for_size(16, 16));
@@ -280,6 +289,31 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 
 void UFTTWindow::on_main_paned_realize() {
 	main_paned.set_position(main_paned.get_width()*5/8);
+}
+
+void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_speed, uint32 nr_uploads, uint32 upload_speed) {
+	if(nr_downloads + nr_uploads > 0) {
+		set_title(
+			STRFORMAT(
+				"D:%s U:%s - "UFTT_TITLE_BASE,
+				StrFormat::bytes(download_speed, false, true),
+				StrFormat::bytes(upload_speed, false, true)
+			)
+		);
+		statusicon->set_tooltip(
+			STRFORMAT(
+				UFTT_TITLE_BASE"\n%i downloading, %i uploading\n%s down, %s up",
+				nr_downloads,
+				nr_uploads,
+				StrFormat::bytes(download_speed, true),
+				StrFormat::bytes(upload_speed, true)
+			)
+		);
+	}
+	else {
+		set_title(UFTT_TITLE_BASE);
+		statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
+	}
 }
 
 void UFTTWindow::on_share_task_list_vpaned_realize() {
