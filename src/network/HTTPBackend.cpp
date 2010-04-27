@@ -181,7 +181,7 @@ void HTTPBackend::handle_download_progress(const boost::system::error_code& err,
 	if (prog >= 0) {
 		task->info.transferred += prog;
 		task->info.size = task->req.getTotalSize();
-		task->info.status = TASK_STATUS_TRANSFERING;
+		task->info.status = TASK_STATUS_TRANSFERRING;
 	} else if (err) {
 		std::cout << "Failed to download web update: " << err << '\n';
 		task->info.error_message = STRFORMAT("Failed: %s", err);

@@ -71,7 +71,7 @@ enum TaskStatus {
 	TASK_STATUS_ENQUEUED,
 	TASK_STATUS_CONNECTING,
 	TASK_STATUS_CONNECTED,
-	TASK_STATUS_TRANSFERING,
+	TASK_STATUS_TRANSFERRING,
 	TASK_STATUS_COMPLETED,
 	TASK_STATUS_ERROR,
 };
@@ -90,7 +90,7 @@ struct TaskInfo {
 				return "Connecting";
 			case TASK_STATUS_CONNECTED:
 				return "Connected";
-			case TASK_STATUS_TRANSFERING:
+			case TASK_STATUS_TRANSFERRING:
 				return "Transferring";
 			case TASK_STATUS_COMPLETED:
 				return "Completed";

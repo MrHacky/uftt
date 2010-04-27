@@ -163,7 +163,7 @@ class SimpleConnection: public ConnectionCommon {
 					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else {
-					taskinfo.status = TASK_STATUS_TRANSFERING;
+					taskinfo.status = TASK_STATUS_TRANSFERRING;
 					start_update_progress();
 				}
 				sig_progress(taskinfo);
