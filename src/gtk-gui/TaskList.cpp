@@ -304,10 +304,10 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 		}
 	}
 
-	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
-	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
+	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred, true);
+	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size, true);
 	if(time_elapsed.total_seconds() > 0) {
-		(*i)[task_list_columns.speed] = STRFORMAT("%s/s", StrFormat::bytes(info.speed));
+		(*i)[task_list_columns.speed] = STRFORMAT("%s/s", StrFormat::bytes(info.speed, true));
 	}
 	(*i)[task_list_columns.queue]          = info.queue;
 	// Share info
@@ -390,8 +390,8 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	(*i)[task_list_columns.status_string]  = "Waiting for peer";
 	(*i)[task_list_columns.time_elapsed]   = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
 	(*i)[task_list_columns.time_remaining] = "Unknown";
-	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred);
-	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size);
+	(*i)[task_list_columns.transferred]    = StrFormat::bytes(info.transferred, true);
+	(*i)[task_list_columns.total_size]     = StrFormat::bytes(info.size, true);
 	(*i)[task_list_columns.speed]          = "Unknown";
 	(*i)[task_list_columns.queue]          = info.queue;
 	// Share info
