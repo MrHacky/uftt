@@ -32,7 +32,7 @@
 #include <boost/algorithm/string.hpp>
 
 #include "util/Filesystem.h"
-
+#include <boost/utility/binary.hpp>
 
 using namespace std;
 
@@ -507,11 +507,59 @@ namespace platform {
 #endif
 	}
 
+	std::string makeValidUTF8(const std::string& src)
+	{
+		std::string ret;
+		size_t i = 0;
+		char c;
+		while(i < src.size()) {
+			size_t start = i;
+			c = src[i];
+			if((c & BOOST_BINARY(1000 0000)) != 0) { // Not US-ASCII
+				uint32_t code_point = 0;
+				int expected = 0;
+				if((c & BOOST_BINARY(1110 0000)) == BOOST_BINARY(1100 0000)) { // start of a 2-byte sequence
+					code_point = c & BOOST_BINARY(0001 1111);
+					expected = 2;
+				} else
+				if((c & BOOST_BINARY(1111 0000)) == BOOST_BINARY(1110 0000)) { // start of a 3-byte sequence
+					code_point = c & BOOST_BINARY(0000 1111);
+					expected = 3;
+				} else
+				if((c & BOOST_BINARY(1111 1000)) == BOOST_BINARY(1111 0000)) { // start of a 4-byte sequence
+					code_point = c & BOOST_BINARY(0000 0111);
+					expected = 4;
+				}
+				else {
+					expected = 0;
+				}
+				++i;
+				while(i < src.size() && ((src[i] & BOOST_BINARY(1100 0000)) == BOOST_BINARY(1000 0000))) {
+					code_point = code_point << 6 | (src[i] & BOOST_BINARY(0011 1111));
+					++i;
+					if(expected>0)
+						--expected;
+				}
+				if((expected != 1) || (code_point < 128) || (code_point > 0x10ffff)) { // invalid code_point
+					ret += "\xC2\xBF"; // U+00BF (upside-down question mark)
+				}
+				else {
+					ret += src.substr(start, i);
+				}
+			}
+			else {
+				ret += src[i];
+			}
+			++i;
+		}
+		return ret;
+	}
+
 	std::vector<std::string> getUTF8CommandLine(int argc, char **argv)
 	{
 		std::vector<std::string> res;
 #if defined(WIN32) && !defined(_WIN32_WINDOWS)
-		// windows nt has api to get unicode command line 
+		// windows nt has api to get unicode command line
 		int nArgs = 0;
 		LPWSTR *szArglist = CommandLineToArgvW(GetCommandLineW(), &nArgs);
 		for (int i = 0; i < nArgs; ++i)

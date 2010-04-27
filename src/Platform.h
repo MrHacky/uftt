@@ -54,6 +54,15 @@ namespace platform {
 	std::string convertUTF8ToLocale(const std::string& src);
 	std::string convertLocaleToUTF8(const std::string& src);
 
+	/**
+	 * Converts a string which may or may not be in UTF8 to a valid UTF8
+	 * string by replacing invalid UTF8 codes with U+00BF.
+	 * @param src is the input string.
+	 * @return the input string, with all invalid UTF8 encodings replaced by U+00BF.
+	 * @note This function may alter the length (number of bytes) of the input string.
+	 */
+	std::string makeValidUTF8(const std::string& src);
+
 	std::vector<std::string> getUTF8CommandLine(int argc, char **argv);
 } // namespace platform
 
