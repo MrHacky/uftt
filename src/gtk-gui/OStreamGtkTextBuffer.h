@@ -7,6 +7,7 @@
 	#include <boost/function.hpp>
 	#include <gtkmm/textbuffer.h>
 	#include "dispatcher_marshaller.h"
+	#include "../Platform.h"
 
 class OStreamGtkTextBuffer : public std::basic_streambuf<char>, public Gtk::TextBuffer {
 	public:
@@ -41,7 +42,7 @@ class OStreamGtkTextBuffer : public std::basic_streambuf<char>, public Gtk::Text
 	private:
 		void _append(const std::string str) {
 			Gtk::TextBuffer::iterator end = this->end();
-			insert(end, str);
+			insert(end, platform::makeValidUTF8(str));
 		}
 		std::string          current_line;
 		std::ostream&        src_stream;
