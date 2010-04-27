@@ -267,7 +267,9 @@ void TaskList::check_completed_tasks() {
 	);
 
 	last_notification = now;
-	notification->show();
+	try{
+		notification->show();
+	} catch(Glib::Error /*e*/) {/* silently fail */}
 }
 
 void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info) {
@@ -336,7 +338,9 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 			"Show UFTT",
 			"default"
 		);
-		notification->show();
+		try {
+			notification->show();
+		} catch(Glib::Error /*e*/) {/* silently fail */}
 	}
 
 	if(!info.isupload && info.status == TASK_STATUS_COMPLETED) { // Transfer done, explicitly set ETA to 00:00:00
