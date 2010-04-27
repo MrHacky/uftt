@@ -425,10 +425,10 @@ namespace Gtk {
 			n_instances++;
 		}
 	}
-	int bla;
+
 	void Notification::initialize_notification() {
 		if(this->summary == "") {
-			this->summary = "Unset" + boost::lexical_cast<Glib::ustring>(bla++);
+			this->summary = application_name + " says hi!";
 		}
 
 		if(this->attached_statusicon) {
