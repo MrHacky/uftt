@@ -204,7 +204,7 @@ void TaskList::set_backend(UFTTCore* _core) {
 
 void TaskList::check_completed_tasks() {
 	boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
-	if(last_completion - last_notification > boost::posix_time::time_duration(boost::posix_time::seconds(5))) {
+	if(last_completion - last_notification > boost::posix_time::time_duration(boost::posix_time::seconds(10))) {
 		notification = Gtk::Notification::create();
 		TaskInfo latest = completed_tasks.back();
 		completed_tasks.clear();
