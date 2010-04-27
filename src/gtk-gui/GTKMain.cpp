@@ -15,8 +15,13 @@ class GTKImpl {
 		{
 			if(!Glib::thread_supported())
 				Glib::thread_init();
-			// kit and wnd should only be initialized after glib::thread_init()
+
+			// This may throw, but that is indicative of a serious bug in either
+			// guftt OR Notification (i.e. must not happen), so we shouldn't catch
+			// but rather fix the cause of the crash.
 			Gtk::Notification::set_application_name("UFTT");
+
+			// kit and wnd should only be initialized after glib::thread_init()
 			kit = shared_ptr<Gtk::Main>(new Gtk::Main(argc, argv));
 			wnd = shared_ptr<UFTTWindow>(new UFTTWindow(settings));
 		};
