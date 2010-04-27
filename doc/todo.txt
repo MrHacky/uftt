@@ -51,11 +51,15 @@
 - add a wiki page with screenshot(s)
 - fix uploadspeed calculation
 - investigate using mmap() and friends
+- Improve handling of invalid UTF8 strings (filenames, usernames, etc)
 
 * Misc GUI items
 - Notify on download completion (libnotify?)
 - Update wiki pages to match Help menu (FAQ, Howto, etc)
 - Unify 'Share File' and 'Share Folder', and allow multi-select
+- Mark notifications as a new feature
+- Show transfer speeds / nr. up-/downloads in titlebar
+- Show transfer speeds / nr. up-/downloads on mouse-over of status icon
 
 * Already completed features.
 - [DONE] show share name for upload tasks
@@ -93,4 +97,3 @@
 - [DONE] refactor console, to always show in debug mode, and in release mode when we have something to say
 - [DONE] show task list with download status
 - [DONE] show download tasks in task list
-
