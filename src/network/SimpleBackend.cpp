@@ -216,7 +216,7 @@ void SimpleBackend::download_share(const ShareID& sid, const ext::filesystem::pa
 	std::string host = shareurl.substr(0, slashpos);
 	std::string share = shareurl.substr(slashpos+1);
 
-	ret.shareinfo.name = share;
+	ret.shareinfo.name = platform::makeValidUTF8(share);
 	ret.shareinfo.host = host;
 	ret.shareinfo.proto = proto;
 	ret.isupload = false;
@@ -606,7 +606,7 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 						std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
 						std::string surl = STRFORMAT("uftt-v%d://%s/%s", sver, *recv_peer, sname);
 						ShareInfo sinfo;
-						sinfo.name = sname;
+						sinfo.name = platform::makeValidUTF8(sname);
 						sinfo.proto = STRFORMAT("uftt-v%d", sver);
 						sinfo.host = STRFORMAT("%s", *recv_peer);
 						sinfo.id.sid = surl;
@@ -628,7 +628,7 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 					std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
 					std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, *recv_peer, sname);;
 					ShareInfo sinfo;
-					sinfo.name = sname;
+					sinfo.name = platform::makeValidUTF8(sname);
 					sinfo.proto = STRFORMAT("uftt-v%d", 1);
 					sinfo.host = STRFORMAT("%s", *recv_peer);
 					sinfo.id.sid = surl;

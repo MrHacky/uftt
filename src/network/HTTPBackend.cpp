@@ -10,6 +10,7 @@ REGISTER_NETMODULE_CLASS(HTTPBackend);
 #include "../util/asio_timer_oneshot.h"
 
 #include "../Globals.h"
+#include "../Platform.h"
 
 using namespace std;
 
@@ -113,7 +114,7 @@ void HTTPBackend::web_update_page_handler(const boost::system::error_code& err, 
 			si.id.mid = mid;
 			si.id.sid = builds[i].second;
 			si.host = builds[i].second;
-			si.name = builds[i].first;
+			si.name = platform::makeValidUTF8(builds[i].first);
 			si.isupdate = true;
 			si.proto = "http";
 			si.user = "webupdate";

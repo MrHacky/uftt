@@ -506,7 +506,7 @@ class SimpleConnection: public ConnectionCommon {
 				return;
 			}
 
-			taskinfo.shareinfo.name = elems[0];
+			taskinfo.shareinfo.name = platform::makeValidUTF8(elems[0]);
 			ext::filesystem::path spath(core->getLocalSharePath(elems[0]));
 			readsharepath = spath;
 			sharename = elems[0];
@@ -984,7 +984,7 @@ class SimpleConnection: public ConnectionCommon {
 		void got_share_name(shared_vec rbuf)
 		{
 			std::cout << "got share name: " << sharename << '\n';
-			taskinfo.shareinfo.name = sharename;
+			taskinfo.shareinfo.name = platform::makeValidUTF8(sharename);
 			taskinfo.isupload = true;
 			readsharepath = core->getLocalSharePath(sharename);
 			taskinfo.path = readsharepath.branch_path();
