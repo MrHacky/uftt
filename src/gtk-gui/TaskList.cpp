@@ -170,7 +170,6 @@ void TaskList::execute_selected_tasks() {
 void TaskList::open_folder_selected_tasks() {
 	BOOST_FOREACH(Gtk::TreeModel::Path p, task_list_treeview.get_selection()->get_selected_rows()) {
 		const Gtk::TreeModel::Row& row = *(task_list_liststore->get_iter(p));
-		std::cout << "taskinfo.path: '" << ((TaskInfo)row[task_list_columns.task_info]).path << "'" << std::endl;
 		Gtk::show_uri(Glib::wrap((GdkScreen*)NULL),
 			Glib::filename_to_uri(((TaskInfo)row[task_list_columns.task_info]).path.string()),
 			GDK_CURRENT_TIME
