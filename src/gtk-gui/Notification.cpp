@@ -303,7 +303,7 @@ namespace Gtk {
 		GError* error = NULL;
 		bool shown = notify_notification_show(this->notify_notification, &error);
 		if(error != NULL) {
-			throw Glib::Error(error);
+			Glib::Error::throw_exception(error);
 		}
 		if(!shown) {
 			throw Glib::Error();
