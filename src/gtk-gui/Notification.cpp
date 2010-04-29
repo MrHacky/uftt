@@ -378,7 +378,7 @@ namespace Gtk {
 	*/
 
 	void Notification::signal_closed_callback(NotifyNotification* notify_notification, Notification* notification) {
-		notification->signal_closed_(notify_notification_get_closed_reason(notify_notification));
+		notification->signal_closed_((Gtk::Notification::ClosedReason)notify_notification_get_closed_reason(notify_notification));
 	}
 
 	/* Leave this here in case we want to try Glib::SignalProxy again someday
@@ -395,7 +395,7 @@ namespace Gtk {
 	}
 	*/
 
-	sigc::signal<void, int>& Notification::signal_closed() {
+	sigc::signal<void, Gtk::Notification::ClosedReason>& Notification::signal_closed() {
 		// Defer connecting to signal handler until it's actually used
 		if(!g_signal_handler_is_connected(this->notify_notification, this->signal_closed_callback_id)) {
 			this->signal_closed_callback_id = g_signal_connect(

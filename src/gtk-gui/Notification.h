@@ -439,6 +439,41 @@ namespace Gtk {
 			 */
 			void clear_actions();
 
+			/**
+			 * Possible reasons for closing a Notification.
+			 * @note It appears that on some notification servers (in particular on
+			 *       the notifications daemon of the Galago project, version 0.4.0)
+			 *       NOTIFICATION_CLOSED_DISMISSED is only be emitted when the user
+			 *       dismisses the Notification by clicking in the body area of the
+			 *       window (action "default"), <emph>not</emph> when clicking the
+			 *       window's close button. Clicking the close button is interpreted
+			 *       as letting the notification expire (NOTIFICATION_CLOSED_EXPIRED).
+			 */
+			typedef enum {
+				NOTIFICATION_CLOSED_INVALID = 0,
+				NOTIFICATION_CLOSED_EXPIRED = 1,
+				NOTIFICATION_CLOSED_DISMISSED = 2,
+				NOTIFICATION_CLOSED_PROGRAMMATICALY = 3,
+				NOTIFICATION_CLOSED_RESERVED = 4
+			} ClosedReason;
+
+			/**
+			 * Adds the ability to receive a signal upon the closing of the
+			 * notification. A notification may be closed for a number of reasons,
+			 * for example it may be closed by the user or simply time-out. All
+			 * available return values are listed in ClosedReason.
+			 *
+			 * Prototype:
+			 * void on_my_signal_closed(ClosedReason reason);
+			 *
+			 * @note If you are interested only in the case where a user has
+			 *       actively closed the notification by clicking the window body
+			 *       (and <emph>not</emph> the window's close button), you could
+			 *       also use add_action() with "default" as the identifier.
+			 */
+			sigc::signal<void,ClosedReason>& signal_closed();
+
+			private:
 			// NOTE: We've tried using Glib::SignalProxy here, but unfortunately
 			//       couldn't get to work for a variety of reasons, including, but not
 			//       limited to:
@@ -454,14 +489,7 @@ namespace Gtk {
 			//       So we provide our own function which is somewhat syntax
 			//       compatible with Glib::SignalProxy1 in usage.
 			//Glib::SignalProxy1<void,int> signal_closed();
-			private:
-			sigc::signal<void,int> signal_closed_;
-			public:
-
-			/**
-			 * You probably want to use add_action() with "default" as identifier.
-			 */
-			sigc::signal<void,int>& signal_closed();
+			sigc::signal<void,ClosedReason> signal_closed_;
 
 			/* Implementation */
 		private:
