@@ -42,6 +42,10 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 
 	sm->registerSettingsVariable("download.path", dl_path, createSettingsInfo(platform::getDownloadPathDefault()));
 	sm->registerSettingsVariable("download.resume", experimentalresume, createSettingsInfo(true));
+	sm->registerSettingsVariable("download.notification_on_completion", notification_on_completion, createSettingsInfo(true));
+	sm->registerSettingsVariable("download.blink_statusicon_on_completion", blink_statusicon_on_completion, createSettingsInfo(true));
+	sm->registerSettingsVariable("download.show_speeds_in_titlebar", show_speeds_in_titlebar, createSettingsInfo(true));
+	sm->registerSettingsVariable("download.show_speeds_in_statusicon_tooltip", show_speeds_in_statusicon_tooltip, createSettingsInfo(true));
 
 	sm->registerSettingsVariable("update.frompeers", autoupdate, createSettingsInfo(true));
 	sm->registerSettingsVariable("update.fromweb", webupdateinterval, createSettingsInfo(2,

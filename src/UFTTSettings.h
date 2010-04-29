@@ -179,6 +179,11 @@ class UFTTSettings {
 		SettingsVariable<bool> uftt_quicklaunch_shortcut;
 		SettingsVariable<bool> uftt_startmenu_group;
 
+		SettingsVariable<bool> notification_on_completion;
+		SettingsVariable<bool> blink_statusicon_on_completion;
+		SettingsVariable<bool> show_speeds_in_titlebar;
+		SettingsVariable<bool> show_speeds_in_statusicon_tooltip;
+
 		/* Gtk GUI */
 		SettingsVariable<bool> show_toolbar;
 
