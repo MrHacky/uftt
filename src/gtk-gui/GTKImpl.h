@@ -82,6 +82,8 @@
 			void handle_uftt_core_gui_command(UFTTCore::GuiCommand cmd);
 
 			void on_signal_task_status(uint32 nr_downloads, uint32 download_speed, uint32 nr_uploads, uint32 upload_speed);
+			void on_signal_task_completed(bool user_acknowledged_completion);
+			bool on_signal_focus_in_event(GdkEventFocus* event);
 	};
 
 #endif

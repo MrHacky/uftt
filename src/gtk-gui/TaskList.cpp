@@ -265,11 +265,22 @@ void TaskList::check_completed_tasks() {
 		"Show UFTT",
 		"default"
 	);
+	notification->signal_closed().connect(
+		dispatcher.wrap(
+			boost::bind(&TaskList::on_notification_signal_closed, this, _1)
+		)
+	);
 
 	last_notification = now;
 	try{
-		notification->show();
+		if(settings->notification_on_completion) {
+			notification->show();
+		}
 	} catch(Glib::Error /*e*/) {/* silently fail */}
+}
+
+void TaskList::on_notification_signal_closed(Gtk::Notification::ClosedReason reason) {
+	signal_task_completed(reason == Gtk::Notification::NOTIFICATION_CLOSED_DISMISSED);
 }
 
 void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::RowReference> rowref, const TaskInfo& info) {
@@ -347,6 +358,7 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 		completed_tasks.push_back(info);
 		last_completion = boost::posix_time::microsec_clock::universal_time();
 		check_completed_tasks();
+		signal_task_completed(false);
 
 		(*i)[task_list_columns.time_remaining] = boost::posix_time::to_simple_string(boost::posix_time::time_duration(boost::posix_time::seconds(0)));
 		if(settings->auto_clear_tasks_after >= boost::posix_time::seconds(0)) {

@@ -18,6 +18,7 @@
 			void set_backend(UFTTCore* _core);
 			// nr downloads, downloadspeed, nr uploads, upload speed
 			boost::signal<void(uint32, uint32, uint32, uint32)> signal_status;
+			boost::signal<void(bool)> signal_task_completed;
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;
@@ -70,6 +71,7 @@
 			boost::posix_time::ptime  last_notification;
 			boost::posix_time::ptime  last_completion;
 			Glib::RefPtr<Gdk::Pixbuf> ufft_icon;
+			void on_notification_signal_closed(Gtk::Notification::ClosedReason reason);
 
 			// Cumulative task status
 			boost::posix_time::ptime last_status_update;

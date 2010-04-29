@@ -45,8 +45,10 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	set_default_icon(statusicon_pixbuf);
 	statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
 	statusicon->set_visible(false);
+	{
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
 	statusicon->signal_size_changed().connect(slot);
+	}
 	statusicon->signal_popup_menu().connect(boost::bind(&UFTTWindow::on_statusicon_signal_popup_menu, this, _1, _2));
 	statusicon->signal_activate().connect(boost::bind(&UFTTWindow::on_statusicon_signal_activate, this));
 
@@ -55,6 +57,15 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 			boost::bind(&UFTTWindow::on_signal_task_status, this, _1, _2, _3, _4)
 		)
 	);
+	task_list.signal_task_completed.connect(
+		dispatcher.wrap(
+			boost::bind(&UFTTWindow::on_signal_task_completed, this, _1)
+		)
+	);
+	{
+	sigc::slot<bool, GdkEventFocus*> slot = sigc::mem_fun(*this, &UFTTWindow::on_signal_focus_in_event);
+	signal_focus_in_event().connect(slot);
+	}
 
 	std::vector<Glib::RefPtr<Gdk::Pixbuf> > icon_list;
 	icon_list.push_back(get_best_uftt_icon_for_size(16, 16));
@@ -291,8 +302,13 @@ void UFTTWindow::on_main_paned_realize() {
 	main_paned.set_position(main_paned.get_width()*5/8);
 }
 
+bool UFTTWindow::on_signal_focus_in_event(GdkEventFocus* event) {
+	statusicon->set_blinking(false);
+	return true;
+}
+
 void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_speed, uint32 nr_uploads, uint32 upload_speed) {
-	if(nr_downloads + nr_uploads > 0) {
+	if(nr_downloads + nr_uploads > 0 && settings->show_speeds_in_titlebar) {
 		set_title(
 			STRFORMAT(
 				"D:%s U:%s - "UFTT_TITLE_BASE,
@@ -300,6 +316,12 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 				StrFormat::bytes(upload_speed, false, true)
 			)
 		);
+	}
+	else {
+		set_title(UFTT_TITLE_BASE);
+	}
+
+	if(nr_downloads + nr_uploads > 0 && settings->show_task_tray_icon && settings->show_speeds_in_statusicon_tooltip) {
 		statusicon->set_tooltip(
 			STRFORMAT(
 				UFTT_TITLE_BASE"\n%i downloading, %i uploading\n%s down, %s up",
@@ -311,9 +333,16 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 		);
 	}
 	else {
-		set_title(UFTT_TITLE_BASE);
 		statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
 	}
+}
+
+void UFTTWindow::on_signal_task_completed(bool user_acknowledged_completion) {
+	statusicon->set_blinking(
+		   !property_has_toplevel_focus()
+		&& !user_acknowledged_completion
+		&& settings->blink_statusicon_on_completion
+	);
 }
 
 void UFTTWindow::on_share_task_list_vpaned_realize() {
@@ -322,6 +351,12 @@ void UFTTWindow::on_share_task_list_vpaned_realize() {
 
 void UFTTWindow::on_apply_settings() {
 	statusicon->set_visible(settings->show_task_tray_icon);
+	if(!settings->show_speeds_in_titlebar) {
+		set_title(UFTT_TITLE_BASE);
+	}
+	if(!settings->show_task_tray_icon || !settings->show_speeds_in_statusicon_tooltip) {
+		statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
+	}
 
 	//TODO: Rebroadcast sharelist (needs backend support)
 	//      (re-add every share with new nickname)
