@@ -68,6 +68,7 @@ struct TaskID {
 };
 
 enum TaskStatus {
+	TASK_STATUS_INITIAL,
 	TASK_STATUS_ENQUEUED,
 	TASK_STATUS_CONNECTING,
 	TASK_STATUS_CONNECTED,
@@ -84,6 +85,8 @@ struct TaskInfo {
 	TaskStatus status;
 	std::string getTaskStatusString() const {
 		switch(status) {
+			case TASK_STATUS_INITIAL:
+				return "Initializing";
 			case TASK_STATUS_ENQUEUED:
 				return "Enqueued";
 			case TASK_STATUS_CONNECTING:
@@ -121,6 +124,7 @@ struct TaskInfo {
 	, last_rtt_update(boost::posix_time::not_a_date_time)
 	, rtt(boost::posix_time::seconds(-1))
 	, speed(0)
+	, status(TASK_STATUS_INITIAL)
 	{
 	};
 };
