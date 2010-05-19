@@ -1,6 +1,6 @@
 #include "../Types.h"
 
-
+#if 0
 #include "../net-asio/asio_ipx.h"
 #include "../net-asio/asio_file_stream.h"
 #include "../net-asio/ipx_conn.h"
@@ -253,10 +253,13 @@ int imain( int argc, char **argv )
 	return 0;
 }
 
+#endif
 int main( int argc, char **argv ) {
+#if 0
 	try {
 		return imain(argc, argv);
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	}
+#endif
 }
