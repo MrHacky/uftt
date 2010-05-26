@@ -52,6 +52,7 @@
 - fix uploadspeed calculation
 - investigate using mmap() and friends
 - Improve handling of invalid UTF8 strings (filenames, usernames, etc)
+- Transferring files does not preserve file permissions (in particular the executable is not preserved)
 
 * Misc GUI items
 - Notify on download completion (libnotify?)
