@@ -37,9 +37,13 @@ ADD_EXECUTABLE(bench5
 	Bench5.cpp
 	../Types.h
 	../Logger.h
+	../net-asio/asio_file_stream.cpp
+	../util/Filesystem.cpp
+	../Platform.cpp
 )
 
 TARGET_LINK_LIBRARIES(bench5
 	${BOOST_SYSTEM_LIBRARY}
 	${BOOST_THREAD_LIBRARY}
+	${BOOST_FILESYSTEM_LIBRARY}
 )
