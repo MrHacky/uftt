@@ -42,20 +42,24 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 		bool success = false;
 		try {
 			// failed to open listening socket, try to connect to existing uftt process
-			boost::asio::ip::tcp::socket sock(io_service);
-			sock.open(boost::asio::ip::tcp::v4());
-			sock.connect(local_endpoint);
-			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, args.size(), (char)0)));
-			for (size_t i = 0; i < args.size(); ++i) {
+			std::string file_list = STRFORMAT("argv[0]%c", (char)0);
+			size_t      file_count = 1;
+			for (size_t i = 1; i < args.size(); ++i) {
 				ext::filesystem::path p(
 					boost::filesystem::system_complete(ext::filesystem::path(args[i]))
 				);
-				if(!ext::filesystem::exists(p)) {
-					throw std::runtime_error("Error: no such file or directory.");
+				if (ext::filesystem::exists(p)) {
+					file_list += STRFORMAT("%s%c", p.string(), (char)0);
+					++file_count;
+				} else {
+					std::cout << STRFORMAT("%s: %s: No such file or directory.", args[0], args[i]) << std::endl;
 				}
-				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%s%c", p.string().c_str(), (char)0)));
 			}
-
+			boost::asio::ip::tcp::socket sock(io_service);
+			sock.open(boost::asio::ip::tcp::v4());
+			sock.connect(local_endpoint);
+			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, file_count, (char)0)));
+			boost::asio::write(sock, boost::asio::buffer(file_list));
 			uint8 ret;
 			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
 			if (ret != 0) std::runtime_error("Read failed");
@@ -63,7 +67,7 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			platform::activateWindow(wid);
 			success = true;
 		} catch (std::exception& e) {
-			std::cout << "Failed to listen and failed to connect" << e.what() << "\n";
+			std::cout << "Failed to listen and failed to connect: " << e.what() << std::endl;
 		}
 		if (success) throw 0;
 	}
