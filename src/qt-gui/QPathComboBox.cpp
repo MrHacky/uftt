@@ -55,8 +55,9 @@ void QPathComboBox::onEditTextChanged(QString path)
 
 void QPathComboBox::updateValidStatus()
 {
+	ext::filesystem::path cpath = qext::path::fromQString(currentPath());
 	bool isvalid = this->completer()->popup()->isVisible()
-	            || ext::filesystem::exists(qext::path::fromQString(currentPath()));
+	            || (ext::filesystem::exists(cpath) && boost::filesystem::is_directory(cpath));
 
 	QPalette pal;
 	if (!isvalid) pal.setColor(QPalette::Base, QColor(0xff, 0xb3, 0xb3));
