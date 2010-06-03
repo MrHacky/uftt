@@ -56,7 +56,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		QString getDownloadPathQ();
 
 		void new_autoupdate(const ShareInfo& info);
-		void download_done(const ShareID& sid);
+		void download_done(const TaskInfo& ti);
 		void saveGeometry();
 
 	protected:

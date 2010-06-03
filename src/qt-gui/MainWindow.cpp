@@ -641,6 +641,18 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	uint32 queue = ti.queue;
 	uint64 total = ti.size;
 
+	if (ti.status == TASK_STATUS_ERROR) {
+		if (!ti.isupload || false /* show upload failures */) {
+			trayicon->showMessage(
+				QString() + (ti.isupload ? "Upload" : "Download") + " Failed",
+				QString() + "An error occured during transfer of '" +
+					qext::utf8::toQString(ti.shareinfo.name) + "':\n" +
+					QString::fromStdString(sts),
+					QSystemTrayIcon::Critical
+			);
+		}
+	}
+
 	std::string type = (ti.isupload ? "U: " : "D: ");
 	twi->setText(TLCN_SHARE, qext::utf8::toQString(type + ti.shareinfo.name));
 	twi->setText(TLCN_STATUS, QString::fromStdString(sts));
@@ -667,7 +679,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	}
 	twi->setText(TLCN_QUEUE, QString::fromStdString(STRFORMAT("%d", queue)));
 	if (!ti.isupload && sts == "Completed")
-		download_done(ti.shareid);
+		download_done(ti);
 }
 
 void MainWindow::addLocalShare(QString url)
@@ -767,10 +779,11 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 	backend->startDownload(auto_update_share, auto_update_path);
 }
 
-void MainWindow::download_done(const ShareID& sid)
+void MainWindow::download_done(const TaskInfo& ti)
 {
+	trayicon->showMessage("Download Completed", qext::utf8::toQString(ti.shareinfo.name));
 	//cout << "download complete: " << sid.name << " (" << sid.host << ")\n";
-	if (sid == auto_update_share) {
+	if (ti.shareid == auto_update_share) {
 		std::string bname = auto_update_build;
 		string fname = bname;
 		if (bname.find("win32") != string::npos) fname += ".exe";
