@@ -516,7 +516,7 @@ namespace platform {
 			size_t start = i;
 			c = src[i];
 			if((c & BOOST_BINARY(1000 0000)) != 0) { // Not US-ASCII
-				uint32_t code_point = 0;
+				uint32 code_point = 0;
 				int expected = 0;
 				if((c & BOOST_BINARY(1110 0000)) == BOOST_BINARY(1100 0000)) { // start of a 2-byte sequence
 					code_point = c & BOOST_BINARY(0001 1111);
