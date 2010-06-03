@@ -26,6 +26,7 @@ SimpleBackend::SimpleBackend(UFTTCore* core_)
 	, stun_timer(core_->get_io_service())
 	, stun_timer2(core_->get_io_service())
 	, stun_server_found(false)
+	, clearpeers(false)
 	, stun_retries(0)
 {
 	bool workv4 = false;
@@ -460,7 +461,11 @@ void SimpleBackend::handle_peerfinder_query(const boost::system::error_code& e, 
 
 			std::set<boost::asio::ip::address> addrs;
 
-			trypeers.clear();
+			if (clearpeers) {
+				trypeers.clear();
+				clearpeers = false;
+			}
+
 			BOOST_FOREACH(const std::string& line, lines) {
 				std::vector<std::string> cols;
 				boost::split(cols, line, boost::is_any_of("\t"));
@@ -485,15 +490,17 @@ void SimpleBackend::handle_peerfinder_timer(const boost::system::error_code& e)
 			prevpeerquery = lastpeerquery;
 			lastpeerquery = boost::posix_time::second_clock::universal_time();
 
-			std::string url;
-			//url = "http://hackykid.heliohost.org/site/bootstrap.php";
-			url = "http://hackykid.awardspace.com/site/bootstrap.php";
-			url += "?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd";
-			url += STRFORMAT("&ip=%s", stun_endpoint.address());
-			url += STRFORMAT("&port=%d", stun_endpoint.port());
-
-			boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service));
-			request->async_http_request(url, boost::bind(&SimpleBackend::handle_peerfinder_query, this, _2, request, _1));
+			clearpeers = true; // new round of request, clear trypeers once
+			std::vector<std::string> urlbases;
+			urlbases.push_back("http://hackykid.heliohost.org/site/bootstrap.php");
+			urlbases.push_back("http://servertje.info.tm:40080/uftt/bootstrap.php");
+			BOOST_FOREACH(std::string url, urlbases) {
+				url += "?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd";
+				url += STRFORMAT("&ip=%s", stun_endpoint.address());
+				url += STRFORMAT("&port=%d", stun_endpoint.port());
+				boost::shared_ptr<boost::asio::http_request> request(new boost::asio::http_request(service));
+				request->async_http_request(url, boost::bind(&SimpleBackend::handle_peerfinder_query, this, _2, request, _1));
+			}
 		}
 	}
 }

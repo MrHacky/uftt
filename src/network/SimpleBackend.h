@@ -91,6 +91,8 @@ class SimpleBackend: public INetModule {
 
 		std::set<boost::asio::ip::udp::endpoint> foundpeers;
 		std::set<boost::asio::ip::udp::endpoint> trypeers;
+		bool clearpeers;
+
 		boost::asio::deadline_timer peerfindertimer;
 		boost::posix_time::ptime lastpeerquery;
 		boost::posix_time::ptime prevpeerquery;
