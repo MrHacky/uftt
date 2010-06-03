@@ -576,7 +576,7 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 
 			std::set<uint32> versions = parseVersions(recv_buf, vstart, len);
 
-						 if (versions.count(5)) {
+			       if (versions.count(5)) {
 				send_publishes(si, *recv_peer, 3, true);
 			} else if (versions.count(4)) {
 				send_publishes(si, *recv_peer, 2, true);

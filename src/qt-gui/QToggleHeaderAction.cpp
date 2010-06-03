@@ -5,9 +5,9 @@
 #include <QTreeWidget>
 
 QToggleHeaderAction::QToggleHeaderAction(const QString& name_, int pos_, QTreeView* view_)
-: view(view_)
+: QAction(name_, view_)
 , pos(pos_)
-, QAction(name_, view_)
+, view(view_)
 {
 	QObject::connect(this, SIGNAL(triggered(bool)), this, SLOT(execute(bool)));
 	this->setCheckable(true);

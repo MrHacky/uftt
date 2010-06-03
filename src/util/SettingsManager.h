@@ -53,6 +53,7 @@ class SettingsVariableBase
 
 		SettingsVariableBase& operator=(const SettingsVariableBase& svb)
 		{
+			return (*this);
 		}
 
 		SettingsVariableBase(const SettingsVariableBase& svb)
