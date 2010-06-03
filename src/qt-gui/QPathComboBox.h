@@ -39,4 +39,4 @@ class QPathComboBox: public QComboBox {
 		Qt::MatchFlags matchflags;
 };
 
-#endif Q_PATH_COMBOBOX_H
+#endif//Q_PATH_COMBOBOX_H
