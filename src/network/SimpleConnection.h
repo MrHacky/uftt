@@ -775,14 +775,37 @@ class SimpleConnection: public ConnectionCommon {
 			}
 		}
 
-		void handle_sent_buffer(const boost::system::error_code& e, size_t len, shared_vec sbuf) {
+		void handle_sent_buffer(const boost::system::error_code& e, size_t ofs, size_t len, shared_vec sbuf) {
 			if (e) {
 				disconnect(STRFORMAT("handle_sent_buffer: %s", e.message()));
 				return;
 			}
 			issending = false;
-			update_statistics(sbuf->size());
-			checkwhattosend(sbuf);
+			update_statistics(len);
+			size_t bufsize = sbuf->size();
+			ofs += len;
+			if (ofs == bufsize) {
+				checkwhattosend(sbuf);
+				return;
+			}
+
+			// need to send another chunk of the current buffer
+
+			size_t target_speed = 1024*1024*8; // default to 8MB per buffer
+			// we aim for 1/4 of the current bps, so 4 updates per second
+			if (taskinfo.speed / 4 <= std::numeric_limits<size_t>::max()) {
+				target_speed = (size_t)(taskinfo.speed / 4);
+			}
+			size_t todo = target_speed;
+			todo = std::min(todo, (size_t)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
+			todo = std::max(todo, (size_t)1024*1); // But transfer at least 1KB
+			todo = std::min(todo, bufsize - ofs); // limited by whats left in the current buffer
+
+			issending = true;
+			uint8* bufstart = &((*sbuf)[0]);
+			boost::asio::async_write(socket, boost::asio::buffer(bufstart + ofs, todo),
+				boost::bind(&SimpleConnection::handle_sent_buffer, this, _1, ofs, _2, sbuf));
+
 		}
 
 		void checkwhattosend(shared_vec sbuf = shared_vec()) {
@@ -869,41 +892,9 @@ class SimpleConnection: public ConnectionCommon {
 				}
 			} // fi (sendqueue.size() < 25)
 			if (sendqueue.size() > 0 && !issending) {
-				size_t target_speed = 1024*1024*8; // default to 8MB per buffer
-				// we aim for 1/4 of the current bps, so 4 updates per second
-				if(taskinfo.speed >> 2 <= std::numeric_limits<size_t>::max()) {
-					target_speed = (size_t)(taskinfo.speed >> 2);
-				}
-				size_t todo = target_speed;
-				todo = std::min(todo, (size_t)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
-				todo = std::max(todo, (size_t)1024*1); // But transfer at least 1KB
-				shared_vec qbuf = sendqueue.front();
-				shared_vec tbuf = shared_vec(new std::vector<uint8>(todo));
-				size_t left = qbuf->size() - buffer_position;
-
-				size_t done = 0;
-				while(qbuf && todo > 0) {
-					size_t i = std::min(todo, left);
-					if (i > 0) memcpy(&(*tbuf)[done], &(*qbuf)[buffer_position], i);
-					done += i;
-					todo -= i;
-					left -= i;
-					buffer_position += i;
-					if(left == 0) { // We've emptied the current buffer, move to the next
-						sendqueue.pop_front();
-						buffer_position = 0;
-						qbuf.reset();
-						if(sendqueue.size() > 0) {
-							qbuf = sendqueue.front();
-							left = qbuf->size();
-						}
-					}
-				}
-				tbuf->resize(done);
-
-				issending = true;
-				boost::asio::async_write(socket, GETBUF(tbuf),
-					boost::bind(&SimpleConnection::handle_sent_buffer, this, _1, _2, tbuf));
+				// actually initiates sending
+				handle_sent_buffer(boost::system::error_code(), 0, 0, sendqueue.front());
+				sendqueue.pop_front();
 			}
 			if (sendqueue.size() == 0 && donesend && !issending)
 				handle_sent_everything();
