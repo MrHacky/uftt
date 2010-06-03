@@ -241,7 +241,7 @@ void SimpleBackend::download_share(const ShareID& sid, const ext::filesystem::pa
 		newconn->taskinfo = ret;
 
 		boost::asio::ip::udp::endpoint udpep(tcpep.address(), tcpep.port());
-		newconn->getSocket().async_connect(udpep, boost::bind(&SimpleBackend::dl_connect_handle, this, _1, newconn, share, dlpath, version));
+		newconn->getSocket().async_connect(udpep, boost::bind(&SimpleBackend::dl_connect_handle, this, boost::asio::placeholders::error	, newconn, share, dlpath, version));
 	}
 
 	sig_new_task(ret);
