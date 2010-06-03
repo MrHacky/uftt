@@ -256,6 +256,7 @@ void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, Connec
 	} else {
 		std::cout << "Connected!\n";
 		conn->taskinfo.status = TASK_STATUS_CONNECTED;
+		conn->sig_progress(conn->taskinfo);
 		conn->handle_tcp_connect(name, dlpath, version);
 	}
 }
