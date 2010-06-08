@@ -492,7 +492,8 @@ void SimpleBackend::handle_peerfinder_timer(const boost::system::error_code& e)
 
 			clearpeers = true; // new round of request, clear trypeers once
 			std::vector<std::string> urlbases;
-			urlbases.push_back("http://hackykid.heliohost.org/site/bootstrap.php");
+			//urlbases.push_back("http://hackykid.heliohost.org/site/bootstrap.php");
+			urlbases.push_back("http://hackykid.awardspace.com/site/bootstrap.php");
 			urlbases.push_back("http://servertje.info.tm:40080/uftt/bootstrap.php");
 			BOOST_FOREACH(std::string url, urlbases) {
 				url += "?reg=1&type=simple&class=1wdvhi09ehvnazmq23jd";
