@@ -57,6 +57,10 @@ int GTKMain::run() {
 	return 0;
 }
 
+const boost::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
+	return boost::shared_ptr<GTKMain>(new GTKMain(argc, argv, settings));
+}
+
 #ifndef DEBUG
 	#ifdef WIN32
 		// This is an ugly hack, but guftt won't link otherwise.

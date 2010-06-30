@@ -46,3 +46,14 @@ int QTMain::run()
 	impl->wnd.post_show();
 	return impl->app.exec();
 }
+
+#define LINK_QT_RESOURCE(name) \
+	do { \
+		extern int qInitResources_ ## name (); \
+		qInitResources_ ## name (); \
+	} while (0)
+
+const boost::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
+	LINK_QT_RESOURCE(icons);
+	return boost::shared_ptr<UFTTGui>(new QTMain(argc, argv, settings));
+}

@@ -36,12 +36,6 @@ boost::rand48 rng;
 #define BUFSIZE (1024*1024*16)
 std::vector<uint8*> testbuffers;
 
-#define LINK_QT_RESOURCE(name) \
-	do { \
-		extern int qInitResources_ ## name (); \
-		qInitResources_ ## name (); \
-	} while (0)
-
 			struct settrue {
 				bool* value;
 				settrue(bool* value_) : value(value_) {};
@@ -211,9 +205,6 @@ bool waitonexit = false;
 
 int imain(int argc, char **argv)
 {
-	#ifdef ENABLE_QT_GUI
-	LINK_QT_RESOURCE(icons);
-	#endif
 
 	bool madeConsole = false;
 	if (argc > 1 && string(argv[1]) == "--console") {
