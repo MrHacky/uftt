@@ -20,33 +20,26 @@ IF(UNIX)
 	SUBDIRS(linux)
 ENDIF()
 
-SET(BUILDVER_FILE
-	"${PROJECT_BINARY_DIR}/BuildVersion.h"
-)
-
-INCLUDE_DIRECTORIES("${PROJECT_BINARY_DIR}")
-
 SET(BVERMAJOR "0" CACHE STRING "Major version")
 SET(BVERMINOR "0" CACHE STRING "Minor version")
 SET(BVERPATCH "0" CACHE STRING "Patch version")
 SET(BVEREXTRA "" CACHE STRING "Extra version id")
 
-file(WRITE "${BUILDVER_FILE}" "// generated version file\n")
+SET(BUILDVER_FILE "${CMAKE_CURRENT_BINARY_DIR}/BuildVersion.h")
+file(WRITE  "${BUILDVER_FILE}" "// generated version file\n")
 file(APPEND "${BUILDVER_FILE}" "#define VERSION_MAJOR_STRING \"${BVERMAJOR}\"\n")
 file(APPEND "${BUILDVER_FILE}" "#define VERSION_MINOR_STRING \"${BVERMINOR}\"\n")
 file(APPEND "${BUILDVER_FILE}" "#define VERSION_PATCH_STRING \"${BVERPATCH}\"\n")
-IF(BVEREXTRA)
-	file(APPEND "${BUILDVER_FILE}" "#define BUILD_STRING_EXTRA \"${BVEREXTRA}\"\n")
-ENDIF()
+file(APPEND "${BUILDVER_FILE}" "#define VERSION_EXTRA_STRING \"${BVEREXTRA}\"\n")
 
 SET(UFTT_SOURCES
 	Main.cpp
 
 	Types.h
 	Globals.h
-	BuildString.h
+	UFTTGui.h
+	BuildString.h         BuildString.cpp
 	UFTTCore.h            UFTTCore.cpp
-	UFTTGui.h             UFTTGui.cpp
 	UFTTSettings.h        UFTTSettings.cpp
 	UFTTSettingsLegacy.h  UFTTSettingsLegacy.cpp
 	UFTTStatus.h          #UFTTStatus.cpp
@@ -54,7 +47,12 @@ SET(UFTT_SOURCES
 	Platform.h            Platform.cpp
 )
 
+ADD_LIBRARY(uftt-core
+	${UFTT_SOURCES}
+)
+
 SET(UFTT_LIBRARIES
+	uftt-core
 	uftt-network
 	lib-net-asio
 	lib-util
@@ -68,7 +66,7 @@ ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
 	COMMAND "${CMAKE_COMMAND}"
 	ARGS -E copy "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp" "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
 	COMMENT "VersionTarget"
-	DEPENDS ${UFTT_SOURCES} ${UFTT_LIBRARIES}
+	DEPENDS ${UFTT_LIBRARIES}
 	)
 
 if(OPENSSL_FOUND AND NOT APPLE)
@@ -102,7 +100,7 @@ IF(ENABLE_QT_GUI)
 	SET(MACOSX_BUNDLE_SHORT_VERSION_STRING "0.0.1a")
 	SET(MACOSX_BUNDLE_LONG_VERSION_STRING "0.0.1 - alpha")
 
-	ADD_EXECUTABLE(uftt MACOSX_BUNDLE ${UFTT_SOURCES} ${ICON_FILE} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
+	ADD_EXECUTABLE(uftt MACOSX_BUNDLE ${ICON_FILE} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
 
 	IF(MSVC)
 		SET_TARGET_PROPERTIES(uftt PROPERTIES
@@ -132,7 +130,7 @@ IF(ENABLE_GTK_GUI)
 	SET(UFTT_GTK_LIBRARIES uftt-gtk)
 	SET(EXECUTABLE_TARGETS ${EXECUTABLE_TARGETS} guftt)
 
-	ADD_EXECUTABLE(guftt ${UFTT_SOURCES} ${ICON_FILE} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
+	ADD_EXECUTABLE(guftt ${ICON_FILE} "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp")
 
 	IF(MSVC)
 		SET_TARGET_PROPERTIES(guftt PROPERTIES

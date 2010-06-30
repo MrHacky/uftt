@@ -9,7 +9,6 @@
 
 /*** evil globals here, TODO: remove them all! ***/
 extern AutoUpdater updateProvider;
-extern std::string thebuildstring;
 extern boost::rand48 rng;
 
 #endif//GLOBALS_H

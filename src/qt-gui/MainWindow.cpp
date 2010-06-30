@@ -35,7 +35,7 @@
 #include "../util/Filesystem.h"
 #include "../util/asio_timer_oneshot.h"
 
-#include "../Globals.h"
+#include "../BuildString.h"
 
 #include "QExtUTF8.h"
 
@@ -745,7 +745,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 	if (!fromweb && !settings->autoupdate)
 		return;
 
-	if (!AutoUpdater::isBuildBetter(build, thebuildstring)) {
+	if (!AutoUpdater::isBuildBetter(build, get_build_string())) {
 		cout << "ignoring update: " << build << " @ " << info.host << '\n';
 		return;
 	}
@@ -845,7 +845,7 @@ void MainWindow::on_actionAboutUFTT_triggered()
 	QMessageBox::about( this, "About UFTT", QString() +
 		"<h3>UFTT - Ultimate File Transfer Tool</h3>" +
 		"<p>A simple no-nonsense tool for transferring files</p>" +
-		"<p>Build number: " + QString::fromStdString(thebuildstring) + "</p>" +
+		"<p>Build number: " + QString::fromStdString(get_build_string()) + "</p>" +
 		//"Copyright 1991-2003 Such-and-such. "
 		//"Licenced under GPL\n\n"
 		"<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );

@@ -1,7 +1,7 @@
 #include "GTKImpl.h"
 #include "OStreamGtkTextBuffer.h"
 #include "ShowURI.h"
-#include "../Globals.h"
+#include "../BuildString.h"
 #include "../util/StrFormat.h"
 #include "uftt-16x16.png.h"
 //#include "uftt-22x22.png.h" // FIXME: Does not exist (yet)
@@ -273,7 +273,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	                              "59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n");
 	uftt_about_dialog.set_logo(Glib::RefPtr<Gdk::Pixbuf>()); // empty RefPtr, so uses default icon
 	uftt_about_dialog.set_program_name("UFTT");
-	uftt_about_dialog.set_version(thebuildstring);
+	uftt_about_dialog.set_version(get_build_string());
 	uftt_about_dialog.set_website("http://code.google.com/p/uftt/");
 	uftt_about_dialog.signal_response().connect(boost::bind(&Gtk::AboutDialog::hide, &uftt_about_dialog));
 	uftt_about_dialog.set_transient_for(*this);

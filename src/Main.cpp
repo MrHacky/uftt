@@ -27,7 +27,6 @@ extern "C" void tss_cleanup_implemented(void){}
 using namespace std;
 
 // evil global variables
-std::string thebuildstring;
 shared_vec exefile;
 bool hassignedbuild(false);
 AutoUpdater updateProvider;
@@ -165,42 +164,6 @@ int runtest() {
 	}
 }
 
-void calcbuildstring() {
-	try {
-		thebuildstring = string(BUILD_STRING);
-		stringstream sstamp;
-
-		int month, day, year;
-		{
-			char* temp = build_string_macro_date;
-
-			// ANSI C Standard month names
-			const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-			year = atoi(temp + 7);
-			*(temp + 6) = 0;
-			day = atoi(temp + 4);
-			*(temp + 3) = 0;
-			for (month = 0; month < 12; ++month)
-				if (!strcmp(temp, months[month]))
-					break;
-			++month;
-		}
-
-		string tstamp(build_string_macro_time);
-		BOOST_FOREACH(char& chr, tstamp)
-			if (chr == ':') chr = '_';
-
-		sstamp << year << '_' << month << '_' << day << '_' << tstamp;
-
-		size_t pos = thebuildstring.find("<TIMESTAMP>");
-		if (pos != string::npos) {
-			thebuildstring.erase(pos, strlen("<TIMESTAMP>"));
-			thebuildstring.insert(pos, sstamp.str());
-		}
-	} catch (...) {
-	}
-}
-
 bool waitonexit = false;
 
 int imain(int argc, char **argv)
@@ -216,8 +179,6 @@ int imain(int argc, char **argv)
 
 	if (argc > 5 && string(argv[1]) == "--sign")
 		return AutoUpdater::doSigning(argv[2], argv[3], argv[4], argv[5]) ? 0 : 1;
-
-	calcbuildstring();
 
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
@@ -261,7 +222,7 @@ int imain(int argc, char **argv)
 		boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
 
 		// kick off some async tasks (which hijack the disk io thread)
-		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], thebuildstring, true);
+		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], get_build_string(), true);
 		if (!extrabuildname.empty())
 			updateProvider.checkfile(core.get_disk_service(), run_service, work_service, extrabuildpath, extrabuildname, true);
 		if (argc > 2 && string(argv[1]) == "--delete")
