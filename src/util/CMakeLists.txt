@@ -8,6 +8,6 @@ ADD_LIBRARY(lib-util
 	StrFormat.h
 )
 
-ADD_EXECUTABLE(bin2c
+ADD_EXECUTABLE(bin2c EXCLUDE_FROM_ALL
 	bin2c.cpp
 )
