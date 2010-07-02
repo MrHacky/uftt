@@ -34,7 +34,7 @@ class SimpleConnection: public ConnectionCommon {
 		std::string sharename;
 		ext::filesystem::path writesharepath; //
 		ext::filesystem::path readsharepath; // sharename is the name of the share we are uploading
-		ext::filesystem::path cwdsharepath;
+		ext::filesystem::path cwdsharepath; // for old style connections
 
 		filesender cursendfile;
 		std::vector<dirsender> quesenddir;
@@ -61,12 +61,17 @@ class SimpleConnection: public ConnectionCommon {
 
 		cmdinfo rcmd;
 
+		std::vector<std::string> getPathElems(const std::string& path) {
+			std::vector<std::string> elems;
+			boost::split(elems, path, boost::is_any_of("/"));
+			elems.erase(std::remove_if(elems.begin(), elems.end(), mem_fun_ref(&std::string::empty)), elems.end());
+			return elems;
+		}
+
 		ext::filesystem::path getReadShareFilePath(std::string pathspec)
 		{
-			std::vector<std::string> elems;
-			boost::split(elems, pathspec, boost::is_any_of("/"));
-			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
-			for (size_t i = 1; i< elems.size(); ++i)
+			std::vector<std::string> elems = getPathElems(pathspec);
+			for (size_t i = 0; i < elems.size(); ++i)
 				if (elems[i] == "..")
 					return ext::filesystem::path(); // not allowed
 			if (elems[0] != sharename) // TODO: allow changing share?
@@ -79,10 +84,8 @@ class SimpleConnection: public ConnectionCommon {
 
 		ext::filesystem::path getWriteShareFilePath(std::string pathspec)
 		{
-			std::vector<std::string> elems;
-			boost::split(elems, pathspec, boost::is_any_of("/"));
-			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
-			for (size_t i = 1; i< elems.size(); ++i)
+			std::vector<std::string> elems = getPathElems(pathspec);
+			for (size_t i = 0; i < elems.size(); ++i)
 				if (elems[i] == "..")
 					return ext::filesystem::path(); // not allowed
 			if (elems[0] != sharename)
@@ -197,7 +200,8 @@ class SimpleConnection: public ConnectionCommon {
 
 			if (protver == 1) {
 				boost::asio::async_read(socket, GETBUF(rbuf),
-				boost::bind(&SimpleConnection::handle_recv_namelen, this, _1, rbuf));
+					boost::bind(&SimpleConnection::handle_recv_namelen, this, _1, rbuf)
+				);
 			} else if (protver == 2) {
 				rbuf->resize(16 + 8*lcommands.size());
 				pkt_put_uint32(CMD_REQUEST_COMMAND_LIST, &((*rbuf)[0]));
@@ -471,6 +475,8 @@ class SimpleConnection: public ConnectionCommon {
 			} else if (rcommands.count(CMD_REQUEST_TREE_LIST) && rcommands.count(CMD_REPLY_FULL_FILE) && rcommands.count(CMD_DISCONNECT)) {
 				// future type connection (with resume)
 				qitems.push_back(qitem(QITEM_REQUEST_SHARE, sharename, 0));
+				sharename = getPathElems(sharename).back();
+
 				rresume = core->getSettingsRef()->experimentalresume && rcommands.count(CMD_REQUEST_SIG_FILE) && rcommands.count(CMD_REQUEST_PARTIAL_FILE);
 				handle_qitems(tbuf);
 			} else if (rcommands.count(CMD_REQUEST_SHARE_DUMP)) {
@@ -497,20 +503,27 @@ class SimpleConnection: public ConnectionCommon {
 		{
 			std::string name(tbuf->begin(), tbuf->end());
 			//std::cout << name << '\n';
-			std::vector<std::string> elems;
-			boost::split(elems, name, boost::is_any_of("/"));
-			elems.erase(std::remove_if(elems.begin(), elems.end(),mem_fun_ref(&std::string::empty)), elems.end());
+			std::vector<std::string> elems = getPathElems(name);
 
 			if (elems.empty()) {
 				disconnect("Root listing unsupported...", true);
 				return;
 			}
 
-			taskinfo.shareinfo.name = platform::makeValidUTF8(elems[0]);
+			taskinfo.shareinfo.name = platform::makeValidUTF8(name);
 			ext::filesystem::path spath(core->getLocalSharePath(elems[0]));
-			readsharepath = spath;
-			sharename = elems[0];
-			taskinfo.path = readsharepath.branch_path(); // TODO
+			if (spath.empty() && elems.size() == 2 && elems[0] == AutoUpdaterTag) {
+				spath = updateProvider.getUpdateFilepath(elems[1]);
+				readsharepath = spath;
+				sharename = elems[1];
+				taskinfo.path = spath;
+				elems[0] = elems[1];
+				elems.resize(1);
+			} else {
+				readsharepath = spath;
+				sharename = elems[0];
+				taskinfo.path = readsharepath.branch_path(); // TODO
+			}
 
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
 				disconnect("Invalid share requested.", true);
@@ -980,7 +993,7 @@ class SimpleConnection: public ConnectionCommon {
 			readsharepath = core->getLocalSharePath(sharename);
 			taskinfo.path = readsharepath.branch_path();
 			if (readsharepath == "") {
-				shared_vec buildfile = updateProvider.getBuildExecutable(sharename);
+				shared_vec buildfile = updateProvider.getUpdateBuffer(sharename);
 				if (buildfile) {
 					std::cout << "is a build share\n";
 					std::string name = sharename;
@@ -1037,7 +1050,7 @@ class SimpleConnection: public ConnectionCommon {
 		void handle_tcp_connect(std::string name, ext::filesystem::path dlpath, uint32 version)
 		{
 			sharename = name;
-			writesharepath = dlpath / name;
+			writesharepath = dlpath / getPathElems(sharename).back();
 
 			shared_vec sbuf(new std::vector<uint8>());
 

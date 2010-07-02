@@ -817,7 +817,13 @@ void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio:
 	}
 }
 
-boost::shared_ptr<std::vector<uint8> > AutoUpdater::getBuildExecutable(const std::string& buildname) const
+ext::filesystem::path AutoUpdater::getUpdateFilepath(const std::string& buildname) const
+{
+	// TODO: implement
+	return "";
+}
+
+boost::shared_ptr<std::vector<uint8> > AutoUpdater::getUpdateBuffer(const std::string& buildname) const
 {
 	std::map<std::string, boost::shared_ptr<std::vector<uint8> > >::const_iterator iter;
 	iter = filedata.find(buildname);

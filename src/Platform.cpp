@@ -548,7 +548,8 @@ namespace platform {
 				}
 			}
 			else {
-				ret += src[i];
+				if (src[i] != 0) // clean up autoupdate shares
+					ret += src[i];
 			}
 			++i;
 		}

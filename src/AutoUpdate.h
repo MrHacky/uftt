@@ -8,6 +8,9 @@
 #include <boost/signal.hpp>
 #include "net-asio/asio_file_stream.h"
 
+static const char AutoUpdaterTagData[] = "[\000uftt\000-\000update\000]";
+static const std::string AutoUpdaterTag(AutoUpdaterTagData, AutoUpdaterTagData + sizeof(AutoUpdaterTagData));
+
 class AutoUpdater {
 	public: // helper functions for the autoupdate process
 
@@ -27,7 +30,8 @@ class AutoUpdater {
 
 		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
 
-		boost::shared_ptr<std::vector<uint8> > getBuildExecutable(const std::string& buildname) const;
+		boost::shared_ptr<std::vector<uint8> > getUpdateBuffer(const std::string& buildname) const;
+		ext::filesystem::path getUpdateFilepath(const std::string& buildname) const;
 
 		const std::vector<std::string>& getAvailableBuilds() const;
 
