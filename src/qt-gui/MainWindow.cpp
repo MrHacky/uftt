@@ -76,15 +76,15 @@ enum TaskListColumNames {
 class MyItemDelegate : public QItemDelegate
 {
 public:
-    MyItemDelegate(QObject* parent = 0) : QItemDelegate(parent) {}
+	MyItemDelegate(QObject* parent = 0) : QItemDelegate(parent) {}
 
-    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
-    {
-        // allow only specific column to be edited, first column in this example
-        if (index.column() == 0)
-            return QItemDelegate::createEditor(parent, option, index);
-        return 0;
-    }
+	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+	{
+		// allow only first column to be edited
+		if (index.column() == 0)
+			return QItemDelegate::createEditor(parent, option, index);
+		return 0;
+	}
 };
 
 class QActionSeparator {
