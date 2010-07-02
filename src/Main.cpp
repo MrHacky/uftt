@@ -221,9 +221,9 @@ int imain(int argc, char **argv)
 		boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
 
 		// kick off some async tasks (which hijack the disk io thread)
-		updateProvider.checkfile(core.get_disk_service(), run_service, work_service, argv[0], get_build_string(), true);
+		updateProvider.checkfile(run_service, argv[0], get_build_string(), true);
 		if (!extrabuildname.empty())
-			updateProvider.checkfile(core.get_disk_service(), run_service, work_service, extrabuildpath, extrabuildname, true);
+			updateProvider.checkfile(run_service, extrabuildpath, extrabuildname, true);
 		if (argc > 2 && string(argv[1]) == "--delete")
 			AutoUpdater::remove(run_service, work_service, argv[2]);
 

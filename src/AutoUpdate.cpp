@@ -157,7 +157,7 @@ namespace {
 				trycompress = false;
 		}
 
-		void try_compress()
+		static void try_compress(shared_vec file)
 		{
 			//ext::filesystem::path upxexe("D:\\Cygwin\\home\\bin\\upx.exe");
 			ext::filesystem::path upxexe("C:\\Temp\\upx.exe");
@@ -202,7 +202,14 @@ namespace {
 
 		};
 
-		void operator()() {
+
+		void operator()()
+		{
+			service.post(boost::bind(handler, doCheck(file, bstring, signifneeded, trycompress)));
+		}
+
+		static bool doCheck(shared_vec file, const std::string bstring, bool signifneeded = false, bool trycompress = false)
+		{
 			bool hassignedbuild = false;
 
 			RSA* rsapub = NULL;// = RSA_generate_key(4096, 65537, NULL, NULL);
@@ -232,7 +239,7 @@ namespace {
 				// it's not signed, but we have access to a private key
 				// so we can sign it ourselves!
 
-				if (trycompress) try_compress();
+				if (trycompress) try_compress(file);
 
 				// first append buildstring
 				for (uint i = 0; i < bstring.size(); ++i)
@@ -281,57 +288,47 @@ namespace {
 			} else
 				cout << "no! this is not a signed binary!\n";
 
-			service.post(boost::bind(handler, hassignedbuild));
+			return hassignedbuild;
 		}
 	};
 
 	struct checkfile_helper {
 		AutoUpdater* updater;
-		services::diskio_filetype file;
-		boost::shared_ptr<std::vector<uint8> > filedata;
+		boost::function<void(std::string, ext::filesystem::path, size_t, std::vector<uint8>)> cb_add;
+
+		ext::filesystem::path file;
 		std::string buildstring;
 		bool signifneeded;
-		services::diskio_service& disk_service;
-		boost::function<void(string,shared_vec)> cb_add;
-		checkfile_helper(AutoUpdater* updater_, services::diskio_service& disk_service_, size_t len, const std::string& bstring, bool signifneeded_)
-			: updater(updater_), file(disk_service_), filedata(new std::vector<uint8>(len)), buildstring(bstring), signifneeded(signifneeded_), disk_service(disk_service_)
+
+		checkfile_helper(AutoUpdater* updater_, ext::filesystem::path file_, const std::string& buildstring_, bool signifneeded_)
+			: updater(updater_), file(file_), buildstring(buildstring_), signifneeded(signifneeded_)
 		{
 		}
 
-		static void open_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e) {
-			helper->open_handler(helper, e, true);
-		}
-
-		static void open_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e, bool trycompress)
+		void operator()()
 		{
-			if (e) {
-				cout << "Failed to open file\n";
-				return;
+			try {
+				size_t size = boost::numeric_cast<uint32>(boost::filesystem::file_size(file));
+				shared_vec filevec(new std::vector<uint8>(size));
+
+				ext::filesystem::ifstream istr(file, ios_base::in|ios_base::binary);
+				if (!istr.is_open()) return;
+
+				istr.read((char*)&(*filevec)[0], size);
+				uint32 read = istr.gcount();
+				if (read != size) return;
+
+				bool ok = SignatureChecker::doCheck(filevec, buildstring, signifneeded, signifneeded);
+				size_t dsize = filevec->size();
+				if (dsize > 1024*4)
+					dsize -= 1024*4;
+				else
+					dsize = 0;
+				filevec->erase(filevec->begin(), filevec->begin() + dsize);
+				if (ok)
+					cb_add(buildstring, file, size, *filevec);
+			} catch (...) {
 			}
-			boost::asio::async_read(helper->file, GETBUF(helper->filedata),
-				boost::bind(&checkfile_helper::read_handler, helper, _1, _2, trycompress));
-		}
-
-		static void read_handler(boost::shared_ptr<checkfile_helper> helper, const boost::system::error_code& e, size_t len, bool trycompress)
-		{
-			if (e) {
-				cout << "Failed to read file\n";
-				return;
-			}
-			boost::shared_ptr<boost::thread> thread(new boost::thread());
-			*thread = boost::thread(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
-				boost::bind(&checkfile_helper::sign_handler, helper, thread, _1), helper->signifneeded, trycompress)).move();
-			//helper->disk_service.get_work_service().post(SignatureChecker(helper->disk_service.get_io_service(), helper->filedata, helper->buildstring,
-			//	boost::bind(&checkfile_helper::sign_handler, helper, thread, _1), helper->signifneeded, trycompress));
-		}
-
-		static void sign_handler(boost::shared_ptr<checkfile_helper> helper, boost::shared_ptr<boost::thread> thread, bool issigned)
-		{
-			if (issigned) {
-				cout << "Signed: Yes\n";
-				helper->cb_add(helper->buildstring, helper->filedata);
-			} else
-				cout << "Signed: No\n";
 		}
 	};
 
@@ -802,35 +799,50 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 	return true;
 }
 
-void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
+void AutoUpdater::checkfile(boost::asio::io_service& service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {
-	try {
-		boost::uintmax_t todomax = boost::filesystem::file_size(target);
-		cout << "Checking '" << target << "' for signiature (size=" << todomax << ")\n";
-		uint32 todo = boost::numeric_cast<uint32>(todomax); // throws when out of range
-		boost::shared_ptr<checkfile_helper> helper(new checkfile_helper(this, disk_service, todo, bstring, signifneeded));
-		helper->cb_add = boost::bind(&AutoUpdater::addBuild, this, _1, _2);
-		disk_service.async_open_file(target, services::diskio_filetype::in, helper->file,
-			boost::bind(&checkfile_helper::open_handler, helper, boost::asio::placeholders::error));
-	} catch (std::exception& e) {
-		cout << "Checking failed: " << e.what() << '\n';
-	}
+	checkfile_helper helper(this, target, bstring, signifneeded);
+	helper.cb_add = service.wrap(boost::bind(&AutoUpdater::addBuild, this, _1, _2, _3, _4));
+	boost::thread thrd(helper);
 }
 
 ext::filesystem::path AutoUpdater::getUpdateFilepath(const std::string& buildname) const
 {
-	// TODO: implement
-	return "";
+	std::map<std::string, boost::shared_ptr<buildinfo> >::const_iterator iter;
+	iter = filedata.find(buildname);
+	if (iter == filedata.end())
+		return "";
+
+	boost::shared_ptr<std::vector<uint8> > buf = getUpdateBuffer(buildname);
+	if (!buf) return "";
+	return iter->second->path;
 }
 
 boost::shared_ptr<std::vector<uint8> > AutoUpdater::getUpdateBuffer(const std::string& buildname) const
 {
-	std::map<std::string, boost::shared_ptr<std::vector<uint8> > >::const_iterator iter;
+	boost::shared_ptr<std::vector<uint8> > null;
+
+	std::map<std::string, boost::shared_ptr<buildinfo> >::const_iterator iter;
 	iter = filedata.find(buildname);
 	if (iter == filedata.end())
-		return boost::shared_ptr<std::vector<uint8> >(); // NULL
-	else
-		return iter->second;
+		return null;
+
+	try {
+		boost::shared_ptr<buildinfo> info = iter->second;
+		uint64 size = boost::filesystem::file_size(info->path);
+		if (size != info->len) return null;
+		ext::filesystem::ifstream ifs(info->path, ios_base::in|ios_base::binary);
+		boost::shared_ptr<std::vector<uint8> > res(new std::vector<uint8>(info->len));
+		ifs.read((char*)&(*res)[0], info->len);
+		if (ifs.gcount() != info->len) return null;
+		if (info->len <= info->sig.size()) return null;
+		for (size_t i = 0; i < info->sig.size(); ++i)
+			if (info->sig[i] != (*res)[i + res->size() - info->sig.size()])
+				return null;
+		return res;
+	} catch (std::exception& /*e*/) {
+		return null;
+	}
 }
 
 const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
@@ -838,11 +850,20 @@ const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
 	return buildstrings;
 }
 
-void AutoUpdater::addBuild(std::string name, shared_vec data)
+void AutoUpdater::addBuild(const std::string& build, boost::shared_ptr<buildinfo> info)
 {
-	buildstrings.push_back(name);
-	filedata[name] = data;
-	newbuild(name);
+	buildstrings.push_back(build);
+	filedata[build] = info;
+	newbuild(build);
+}
+
+void AutoUpdater::addBuild(const std::string& build, const ext::filesystem::path& path, size_t len, const std::vector<uint8>& sig)
+{
+	boost::shared_ptr<buildinfo> info(new buildinfo());
+	info->path = path;
+	info->len = len;
+	info->sig = sig;
+	addBuild(build, info);
 }
 
 #else//USE_OPENSSL

@@ -28,7 +28,7 @@ class AutoUpdater {
 
 	public: // actual object interface for offering builds for autoupdate
 
-		void checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
+		void checkfile(boost::asio::io_service& service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded = false);
 
 		boost::shared_ptr<std::vector<uint8> > getUpdateBuffer(const std::string& buildname) const;
 		ext::filesystem::path getUpdateFilepath(const std::string& buildname) const;
@@ -38,10 +38,16 @@ class AutoUpdater {
 		boost::signal<void(std::string)> newbuild;
 
 	private:
-		void addBuild(std::string, shared_vec data);
+		struct buildinfo {
+			ext::filesystem::path path;
+			size_t len;
+			std::vector<uint8> sig;
+		};
+		void addBuild(const std::string& build, boost::shared_ptr<buildinfo> info);
+		void addBuild(const std::string& build, const ext::filesystem::path& path, size_t len, const std::vector<uint8>& sig);
 
 		std::vector<std::string> buildstrings;
-		std::map<std::string, boost::shared_ptr<std::vector<uint8> > > filedata;
+		std::map<std::string, boost::shared_ptr<buildinfo> > filedata;
 };
 
 #endif//AUTO_UPDATE_H
