@@ -183,7 +183,7 @@ void UFTTCore::addLocalShare(const ext::filesystem::path& path)
 		name = p.string()[0];
 #else
 	if (name == "/" && p.string() == "/")
-		name = "<root>";
+		name = "[root]";
 #endif
 	addLocalShare(name, p);
 }
