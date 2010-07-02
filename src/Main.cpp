@@ -172,9 +172,8 @@ int imain(int argc, char **argv)
 	bool madeConsole = false;
 	if (argc > 1 && string(argv[1]) == "--console") {
 		if (!platform::hasConsole()) madeConsole = platform::newConsole();
-		--argc;
 		argv[1] = argv[0];
-		--argv;
+		--argc; ++argv;
 	}
 
 	if (argc > 5 && string(argv[1]) == "--sign")
