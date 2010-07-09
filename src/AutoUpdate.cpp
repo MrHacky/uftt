@@ -8,7 +8,12 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
 
+#include <boost/random/variate_generator.hpp>
+#include <boost/random/linear_congruential.hpp>
+#include <boost/random/uniform_smallint.hpp>
+
 #include "Platform.h"
+#include "Globals.h"
 
 #include <iostream>
 #include <fstream>
@@ -455,12 +460,26 @@ bool AutoUpdater::isBuildBetter(const std::string& newstr, const std::string& ol
 	return false;
 }
 
-bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target, const ext::filesystem::path& selfpath)
+bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target_, const ext::filesystem::path& selfpath)
 {
 	try {
+		ext::filesystem::path target = target_;
 		std::cout << "doSelfUpdate: " << target << '\n';
 		if (!ext::filesystem::exists(target))
 			return false;
+
+		if (buildname.find("-win32.") != std::string::npos) {
+			boost::uniform_smallint<> distr(0, 9);
+			boost::variate_generator<boost::rand48&, boost::uniform_smallint<> > rand(rng, distr);
+			ext::filesystem::path newtarget = target;//.string() + '.' + boost::lexical_cast<std::string>(rand()) + ".exe";
+			do {
+				char n = '0' + rand();
+				newtarget = newtarget.string() + '.' + n + ".exe";
+			} while (boost::filesystem::exists(newtarget));
+			boost::filesystem::rename(target, newtarget);
+			if (!boost::filesystem::exists(newtarget)) return false;
+			target = newtarget;
+		}
 
 		{
 			vector<uint8> newfile;

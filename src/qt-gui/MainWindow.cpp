@@ -777,6 +777,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 	auto_update_build = build;
 
 	backend->startDownload(auto_update_share, auto_update_path);
+	auto_update_path /= build;
 }
 
 void MainWindow::download_done(const TaskInfo& ti)
@@ -784,14 +785,8 @@ void MainWindow::download_done(const TaskInfo& ti)
 	trayicon->showMessage("Download Completed", qext::utf8::toQString(ti.shareinfo.name));
 	//cout << "download complete: " << sid.name << " (" << sid.host << ")\n";
 	if (ti.shareid == auto_update_share) {
-		std::string bname = auto_update_build;
-		string fname = bname;
-		if (bname.find("win32") != string::npos) fname += ".exe";
-		if (bname.find("-deb-") != string::npos) fname += ".deb.signed";
-		auto_update_path /= fname;
 		cout << "autoupdate: " << auto_update_path << "!\n";
-
-		this->doSelfUpdate(bname, auto_update_path);
+		this->doSelfUpdate(auto_update_build, auto_update_path);
 	}
 }
 

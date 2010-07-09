@@ -635,10 +635,10 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 				uint32 slen = recv_buf[5];
 				if (len >= slen+6) {
 					std::string sname((char*)recv_buf+6, (char*)recv_buf+6+slen);
-					std::string surl = STRFORMAT("uftt-v%d://%s/%s", 1, *recv_peer, sname);;
+					std::string surl = STRFORMAT("uftt-v%d://%s/%s/%s", 2, *recv_peer, AutoUpdaterTag, sname);;
 					ShareInfo sinfo;
 					sinfo.name = platform::makeValidUTF8(sname);
-					sinfo.proto = STRFORMAT("uftt-v%d", 1);
+					sinfo.proto = STRFORMAT("uftt-v%d", 2); // from now on autoupdates use the new protocol
 					sinfo.host = STRFORMAT("%s", *recv_peer);
 					sinfo.id.sid = surl;
 					sinfo.id.mid = mid;
