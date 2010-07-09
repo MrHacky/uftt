@@ -1,6 +1,6 @@
 <?php
 
-require("../../php/sqlinfo.php");
+require("sqlinfo.php");
 
 $reg = ($_REQUEST['reg'] == '1');
 $dbg = ($_REQUEST['dbg'] == '1');
@@ -49,7 +49,7 @@ $result = mysql_query($query);
 echo '*S*T*A*R*T*';
 echo chr(13);
 
-while($row = mysql_fetch_array($result, MYSQL_ASSOC))
+while ($row = mysql_fetch_array($result, MYSQL_ASSOC))
 {
 	//echo expand($row);
 	if ($dbg) echo $row['id'] . chr(9);
