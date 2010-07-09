@@ -620,7 +620,7 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 						sinfo.host = STRFORMAT("%s", *recv_peer);
 						sinfo.id.sid = surl;
 						sinfo.id.mid = mid;
-						if(versions.count(3)) { // Version 3 added support for usernames (nicknames)
+						if (versions.count(3)) { // Version 3 added support for usernames (nicknames)
 							int nickname_length = recv_buf[slen + 6 + vlen];
 							std::string nickname((char*)recv_buf + 6 + slen + 1 + vlen, (char*)recv_buf + 6 + slen + 1 + vlen + nickname_length);
 							sinfo.user = nickname;
@@ -692,9 +692,9 @@ void SimpleBackend::handle_udp_receive(UDPSockInfoRef si, uint8* recv_buf, boost
 		++udpfails;
 	}
 
-	if (!e || udpfails < 512)
+	if (!e || udpfails < 512) {
 		start_udp_receive(si, recv_buf, recv_peer);
-	else {
+	} else {
 		std::cout << "retry limit reached, giving up on receiving udp packets temprarily\n";
 		udpfails -= 128;
 		asio_timer_oneshot(service, (int)1000, boost::bind(&SimpleBackend::start_udp_receive, this, si, recv_buf, recv_peer));
@@ -783,7 +783,7 @@ void SimpleBackend::send_query(UDPSockInfoRef si, const boost::asio::ip::udp::en
  * Note, there is a trick implemented here to also support older versions of the protocol.
  * The trick is that we reuse the version number 1. This is because in version 1 uftt did
  * not include backward/forward version info. So we send the packet as version 1 and add
- * the extend info at the end. Old version will ignore the extra data while new versions
+ * the extended info at the end. Old versions will ignore the extra data while new versions
  * will parse this and everything works properly
  **/
 void SimpleBackend::send_publish(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, const std::string& name, int sharever, bool isbuild)
@@ -817,7 +817,7 @@ void SimpleBackend::send_publish(UDPSockInfoRef si, const boost::asio::ip::udp::
 		}
 	}
 
-	if(sharever == 1 || sharever >= 3) { // Version 3 added support for usernames (nicknames)
+	if (sharever == 1 || sharever >= 3) { // Version 3 added support for usernames (nicknames)
 		#undef min
 		std::string nickname = settings->nickname;
 		int nickname_length = std::min((size_t)255, nickname.size());
