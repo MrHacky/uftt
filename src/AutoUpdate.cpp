@@ -105,6 +105,9 @@ namespace {
 		for (int i = 0; i < 4; ++i)
 			sigsize |= file[file.size()-8+i] << (i*8);
 
+		if (sigsize < 512)
+			return false;
+
 		if (file.size() < (sigsize*2)+8)
 			return false;
 
