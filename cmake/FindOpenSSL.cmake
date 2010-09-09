@@ -17,6 +17,13 @@ Find_Library(OPENSSL_LIBRARY
 	${OPENSSL_EXTRALIB_LIBRARY_PATHS}
 )
 
+# Also requires 'libcrypto' when using -Wl,--as-needed
+Find_Library(CRYPTO_LIBRARY
+	crypto
+	/usr/lib /usr/local/lib
+	${OPENSSL_EXTRALIB_LIBRARY_PATHS}
+)
+
 # win32 only, no idea.... we just use it whenever we find it
 Find_Library(EAY32_LIBRARY
 	eay32
@@ -25,6 +32,12 @@ Find_Library(EAY32_LIBRARY
 )
 
 IF(OPENSSL_INCLUDE_DIR AND OPENSSL_LIBRARY)
+	IF(CRYPTO_LIBRARY)
+		SET(OPENSSL_LIBRARY
+			"${OPENSSL_LIBRARY}"
+			"${CRYPTO_LIBRARY}"
+		)
+	ENDIF(CRYPTO_LIBRARY)
 	IF(EAY32_LIBRARY)
 		SET(OPENSSL_LIBRARY
 			"${OPENSSL_LIBRARY}"
