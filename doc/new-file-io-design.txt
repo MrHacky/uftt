@@ -1,0 +1,13 @@
+User Thread --------------------------------------------------------------
+                 FRM       FR                         rel            /
+                  \       /  \         /  \              \          /
+                   \     /    \BUF    /    BUF-----|      \|---    /
+                    \   /      \     /                     .   \  /
+IO Fread thread ----------------------------------------------------------
+
+User thread tries to acquire buffer, if it fail puts request on a queue
+on a buffer release this queue is checked for requests that can be satisfied
+
+IO fread thread is invoked only after a buffer is acquired
+
+buffer released should always come from the same thread as requests

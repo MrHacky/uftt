@@ -38,11 +38,15 @@ SET(UFTT_SOURCES
 	Types.h
 	Globals.h
 	UFTTGui.h
+	UFTTStatus.h          #UFTTStatus.cpp
+	IFileReader.h
+	IMemoryBuffer.h
+	FReadFileReader.h     FReadFileReader.cpp
+	FReadMemoryBuffer.h   FReadMemoryBuffer.cpp
 	BuildString.h         BuildString.cpp
 	UFTTCore.h            UFTTCore.cpp
 	UFTTSettings.h        UFTTSettings.cpp
 	UFTTSettingsLegacy.h  UFTTSettingsLegacy.cpp
-	UFTTStatus.h          #UFTTStatus.cpp
 	AutoUpdate.h          AutoUpdate.cpp
 	Platform.h            Platform.cpp
 )
