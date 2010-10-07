@@ -8,12 +8,14 @@ FReadMemoryBuffer::FReadMemoryBuffer(uint8*const data_, const size_t size_, FRea
 {
 }
 
-void FReadMemoryBuffer::finish() {
+void FReadMemoryBuffer::finish()
+{
 	manager->release_buffer(this);
 	finished = true;
 }
 
-FReadMemoryBuffer::~FReadMemoryBuffer() {
+FReadMemoryBuffer::~FReadMemoryBuffer()
+{
 	if(!finished) {
 		//FIXME: pick a better error if protocol_error (EPROTO) is not appropriate
 		assert(false);

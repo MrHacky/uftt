@@ -6,9 +6,10 @@
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "../net-asio/asio_file_stream.h"
+
 #ifdef __linux__
 #include <sys/mman.h>
-#include "../net-asio/asio_file_stream.h"
 #endif
 boost::asio::io_service svc;
 services::diskio_service ds(svc);

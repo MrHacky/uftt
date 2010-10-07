@@ -55,6 +55,9 @@ ADD_EXECUTABLE(bench7
 	../net-asio/asio_file_stream.cpp
 	../util/Filesystem.cpp
 	../Platform.cpp
+	../FReadFileReader.cpp
+	../FReadMemoryBuffer.cpp
+	
 )
 
 TARGET_LINK_LIBRARIES(bench7

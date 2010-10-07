@@ -39,7 +39,7 @@ class FReadFileReaderManager : public IFileReaderManager {
 		//std::set<buffer_info> released_buffer_sections;
 		std::map<size_t, size_t> released_buffer_sections;
 		friend class FReadMemoryBuffer;
-		void release_buffer(FReadMemoryBuffer* const buffer);
+		void release_buffer(FReadMemoryBuffer* const buf);
 		bool check_buffer_resize();
 
 		struct helper_read_some;

@@ -76,8 +76,6 @@ struct FReadFileReaderManager::helper_read_some {
 				ext::posix_error::make_error_code(ferror(fr->fd))
 			)
 		);
-
-		delete this; // slightly ugly
 	}
 
 	typedef void result_type;
@@ -88,14 +86,15 @@ struct FReadFileReaderManager::helper_read_some {
 };
 
 struct FReadFileReaderManager::helper_read_some_wrapper {
-	helper_read_some& ref;
+	helper_read_some* ref;
 
-	helper_read_some_wrapper(helper_read_some& ref_)
+	helper_read_some_wrapper(helper_read_some* ref_)
 		: ref(ref_) {};
 
 	void operator()()
 	{
-		ref();
+		(*ref)();
+		delete ref; //slightly less ugly
 	}
 };
 
@@ -164,26 +163,28 @@ IMemoryBufferRef FReadFileReaderManager::get_buffer(size_t size) {
 	return buf;
 }
 
-void FReadFileReaderManager::release_buffer(FReadMemoryBuffer*const buffer)
+void FReadFileReaderManager::release_buffer(FReadMemoryBuffer*const buf)
 {
-	size_t offset = buffer->data - &this->buffer[0];
+	size_t offset = buf->data - &buffer[0];
 	if (buffer_begin == offset) {
-		buffer_begin += buffer->size;
-		buffer_usage -= buffer->size;
+		buffer_begin += buf->size;
+		buffer_begin %= buffer.size();
+		buffer_usage -= buf->size;
 		std::map<size_t, size_t>::iterator i;
 		while ((i = released_buffer_sections.find(offset)) != released_buffer_sections.end()) {
 			buffer_begin += i->second;
+			buffer_begin %= buffer.size();
 			buffer_usage -= i->second;
 			released_buffer_sections.erase(i);
 		}
 	} else {
-		released_buffer_sections[offset] = buffer->size;
+		released_buffer_sections[offset] = buf->size;
 	}
 
 	if (!read_request_queue.empty()) {
 		read_request_queue[0]->buf = get_buffer(read_request_queue[0]->len); // TODO: maybe wait for sufficient space?
 		if (read_request_queue[0]->buf) {
-			get_work_service().dispatch(helper_read_some_wrapper(*read_request_queue[0]));
+			get_work_service().dispatch(helper_read_some_wrapper(read_request_queue[0]));
 			read_request_queue.pop_front();
 		}
 	}
@@ -224,7 +225,7 @@ void FReadFileReader::read(const size_t len, const boost::function<void(IMemoryB
 	FReadFileReaderManager::helper_read_some* helper = new FReadFileReaderManager::helper_read_some(this, len, handler);
 	helper->buf = manager->get_buffer(len);
 	if (helper->buf)
-		manager->get_work_service().dispatch(FReadFileReaderManager::helper_read_some_wrapper(*helper));
+		manager->get_work_service().dispatch(FReadFileReaderManager::helper_read_some_wrapper(helper));
 	else
 		manager->read_request_queue.push_back(helper);
 }

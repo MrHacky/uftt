@@ -1,4 +1,4 @@
-#include <iostream>
+//#include <iostream>
 #include <algorithm>
 
 #include <boost/asio.hpp>
@@ -7,9 +7,12 @@
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
+#include "../net-asio/asio_file_stream.h"
+
+#include "../FReadFileReader.h"
+
 #ifdef __linux__
 #include <sys/mman.h>
-#include "../net-asio/asio_file_stream.h"
 #endif
 boost::asio::io_service svc;
 services::diskio_service ds(svc);
@@ -222,7 +225,8 @@ void sum_linux_mmap() {
 }
 #endif
 
-void bench_fwrite()
+#if 0
+void bench_write()
 {
 	std::cout << "bench_fwrite:\n\n";
 	prevtime = boost::posix_time::microsec_clock::universal_time();
@@ -241,6 +245,86 @@ void bench_fwrite()
 		std::cout << "Time elapsed for file[" << i << "]: " << (time-prevtime).total_microseconds() / 1000000.0 << "\n";
 		prevtime = time;
 	}
+}
+#endif
+
+void bench_fread()
+{
+	std::cout << "bench_fread:\n\n";
+	prevtime = boost::posix_time::microsec_clock::universal_time();
+	for (int i = 0; i < NUM_FILES; ++i) {
+		FILE* file = fopen(files[i].native_file_string().c_str(), "rb");
+		sum = 0;
+		size_t todo = TGT_FILESIZE;
+		do
+		{
+			todo = fread(buf, 1, bufsize, file);
+			for (size_t j = 0; j < todo; ++j)
+				sum += buf[j];
+		} while(todo > 0);
+		fclose(file);
+		boost::posix_time::ptime time = boost::posix_time::microsec_clock::universal_time();
+		std::cout << "Sum: " << sum << "\n";
+		std::cout << "Time elapsed for file[" << i << "]: " << (time-prevtime).total_microseconds() / 1000000.0 << "\n";
+		prevtime = time;
+	}
+}
+
+void frm_file_done(IFileReaderManagerRef frm, int filenum);
+
+void frm_doread(IFileReaderManagerRef frm, int filenum, IFileReaderRef ifrr, IMemoryBufferRef imbr, size_t len, boost::system::error_code ec)
+{
+	if (!imbr || len > 0)
+		ifrr->read(bufsize, boost::bind(&frm_doread, frm, filenum, ifrr, _1, _2, _3));
+
+	if (len > 0) {
+		for (int i = 0; i < len; ++i)
+			sum += (char)imbr->data[i];
+	}
+
+	if (!imbr || len > 0) /*empty*/;
+	else {
+		std::cout << "Sum: " << sum << "\n";
+		frm_file_done(frm, filenum);
+	}
+
+	if (imbr)
+		imbr->finish();
+}
+
+void frm_file_open(IFileReaderManagerRef frm, int filenum, IFileReaderRef ifrr, boost::system::error_code ec)
+{
+	sum = 0;
+	if (ec)
+		std::cout << "Open fail: " << ec.message() << "\n";
+	else
+		frm_doread(frm, filenum, ifrr, IMemoryBufferRef(), 0, boost::system::error_code());
+}
+
+void frm_file_done(IFileReaderManagerRef frm, int filenum)
+{
+	if (filenum >= 0) {
+		boost::posix_time::ptime time = boost::posix_time::microsec_clock::universal_time();
+		std::cout << "Time elapsed for file[" << filenum << "]: " << (time-prevtime).total_microseconds() / 1000000.0 << "\n";
+	}
+	prevtime = boost::posix_time::microsec_clock::universal_time();
+	++filenum;
+	if (filenum < 6) {
+		frm->get_file_reader(files[filenum].string(), boost::bind(&frm_file_open, frm, filenum, _1, _2));
+	} else
+		svc.stop();
+
+}
+
+void bench_frm()
+{
+	std::cout << "\nbench_frm:\n\n";
+	IFileReaderManagerRef frm(new  FReadFileReaderManager(svc));
+
+	frm_file_done(frm, -1);
+
+	boost::asio::io_service::work wrk(svc);
+	svc.run();
 }
 
 void flush_cashes() {
@@ -267,7 +351,8 @@ int main(int argc, char** argv)
 	files[3] = "D:/temp/UFTT/file3.bin";
 	files[4] = "D:/temp/UFTT/file4.bin";
 	files[5] = "D:/temp/UFTT/file5.bin";
-	sum_fread();
+	bench_fread();
+	bench_frm();
 	sum_async_read_some_at();
 	sum_win_mmap();
 	Sleep(5000);
