@@ -135,23 +135,23 @@ bool FReadFileReaderManager::check_buffer_resize() {
 IMemoryBufferRef FReadFileReaderManager::get_buffer(size_t size) {
 	IMemoryBufferRef buf;
 
-	if(!check_buffer_resize()) {
+	if (!check_buffer_resize()) {
 		return buf;
 	}
 
 	size_t alloc = min(size, buffer.size() - buffer_usage);
-	if(buffer_begin + buffer_usage         < buffer.size() &&
-	   buffer_begin + buffer_usage + alloc > buffer.size()) {
+	if (buffer_begin + buffer_usage         < buffer.size() &&
+	    buffer_begin + buffer_usage + alloc > buffer.size()) {
 		// if this happens we would allocate a section of buffer which wraps
 		alloc = min(alloc, buffer.size() - (buffer_begin + buffer_usage));
 	}
 
-	if(alloc == 0) { // No space available
+	if (alloc == 0) { // No space available
 		return buf;
 	}
 
 	buf = IMemoryBufferRef(
-		new  FReadMemoryBuffer(
+		new FReadMemoryBuffer(
 			&buffer[(buffer_begin + buffer_usage) % buffer.size()],
 			alloc,
 			this

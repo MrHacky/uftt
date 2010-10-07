@@ -37,6 +37,14 @@ size_t bufsize = 1024*512;
 //size_t bufsize = 10*1024*1024;
 size_t sum;
 
+void clear( boost::asio::io_service& service )
+{
+    service.stop();
+    service.~io_service();
+    new( &service ) boost::asio::io_service;
+}
+
+
 #ifdef WIN32
 	class diskio_filetype: public boost::asio::windows::random_access_handle {
 		private:
@@ -318,6 +326,7 @@ void frm_file_done(IFileReaderManagerRef frm, int filenum)
 
 void bench_frm()
 {
+	clear(svc);
 	std::cout << "\nbench_frm:\n\n";
 	IFileReaderManagerRef frm(new  FReadFileReaderManager(svc));
 
@@ -326,6 +335,7 @@ void bench_frm()
 	boost::asio::io_service::work wrk(svc);
 	svc.run();
 }
+
 
 void flush_cashes() {
 	FILE* f = fopen("/proc/sys/vm/drop_caches", "wb");
@@ -351,9 +361,10 @@ int main(int argc, char** argv)
 	files[3] = "D:/temp/UFTT/file3.bin";
 	files[4] = "D:/temp/UFTT/file4.bin";
 	files[5] = "D:/temp/UFTT/file5.bin";
+
 	bench_fread();
-	bench_frm();
 	sum_async_read_some_at();
+	bench_frm();
 	sum_win_mmap();
 	Sleep(5000);
 #else
