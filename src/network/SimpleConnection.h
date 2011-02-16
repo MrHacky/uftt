@@ -1111,6 +1111,18 @@ class SimpleConnection: public ConnectionCommon {
 			kickoff_file_write(path, fsize, rbuf, dataready, offset);
 		}
 
+		/** Initiate transfer data from socket to file.
+		 *  When all file data is read from the socket,
+		 *  start_receive_command will be called
+		 *
+		 *  @param path Path of the file to write the data to
+		 *  @param fsize Amount of data to read from the socket/write to the file
+		 *  @param rbuf Buffer optionally containing some of the file data
+		 *  @param dataready If false, ignore rbuf
+		 *  @param offset Offset in the file where to start writing
+		 *
+		 *  The amount of data consumed from the socket if fsize-offset
+		 */
 		void kickoff_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
 		{
 			if (delayed_open_file) {
@@ -1130,22 +1142,28 @@ class SimpleConnection: public ConnectionCommon {
 			++open_files;
 			// kick off handle_ready_file for when the file is ready to write
 			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
-			gdiskio->async_open_file(path, services::diskio_filetype::out|
-				((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
+			gdiskio->async_open_file(
+				path,
+				services::diskio_filetype::out | ((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
 				*file,
-				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset));
+				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset)
+			);
 
 			if (!dataready) {
 				// kick off async_read for when we received some data (capped by file size)
 				rbuf->resize(getRcvBufSize(fsize));
-				boost::asio::async_read(socket, GETBUF(rbuf),
-					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf));
+				boost::asio::async_read(
+					socket,
+					GETBUF(rbuf),
+					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)))
+				);
 			} else {
-				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf);
+				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)));
 			}
 		}
 
-		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf) {
+		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf)
+		{
 			if (e) {
 				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.message()));
 				return;
@@ -1159,14 +1177,38 @@ class SimpleConnection: public ConnectionCommon {
 			start_receive_command(rbuf);
 		}
 
-		/** handle file receiving
+		/** Start asynchronous read from socket and write to file
+		 *  @param file The file to write to
+		 *  @param done Always true, used to keep track of when both handlers have been invoked
+		 *  @param size Amount of data left to read from the socket
+		 *  @param socketbuf Buffer to receive data into
+		 *  @param filebuf Buffer to write data to file from
+		 */
+		void kickoff_socketread_and_filewrite(boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec socketbuf, shared_vec filebuf)
+		{
+			if (size != 0) {
+				*done = false;
+				socketbuf->resize(getRcvBufSize(size));
+				boost::asio::async_read(socket, GETBUF(socketbuf),
+					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, socketbuf, filebuf));
+			} else {
+				// no more data to read, just one buffer left to write
+				// handle_ready_file will handle the size==0 case and
+				// close the file when the last buffer is written
+				*done = true;
+			}
+			boost::asio::async_write(*file, GETBUF(filebuf),
+				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, socketbuf, filebuf, 0));
+		}
+
+		/** handle file data received from the network
 		 *  @param e    an error occured
-		 *  @param file is the file to write the result to
+		 *  @param file The file to write to
 		 *  @param done true if file is ready to write (handle_ready_file already fired)
 		 *  @param size amount of bytes left to receive for the file
 		 *  @param wbuf the buffer into which we received the data
 		 */
-		void handle_recv_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf)
+		void handle_recv_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec prevbuf)
 		{
 			if (e) {
 				disconnect(STRFORMAT("handle_recv_file: %s", e.message()));
@@ -1176,25 +1218,13 @@ class SimpleConnection: public ConnectionCommon {
 			maxBufSize = std::min(maxBufSize*2, uint32(1024*1024*10));
 
 			size -= wbuf->size();
+			if (size == 0)
+				start_receive_command(shared_vec(new std::vector<uint8>()));
 
 			if (!*done) {
 				*done = true;
-				if (size == 0)
-					start_receive_command(shared_vec(new std::vector<uint8>()));
 			} else {
-				shared_vec nrbuf;
-				if (size == 0) {
-					*done = true;
-					start_receive_command(shared_vec(new std::vector<uint8>()));
-				} else {
-					*done = false;
-					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize(getRcvBufSize(size));
-					boost::asio::async_read(socket, GETBUF(nrbuf),
-						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
-				};
-				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
+				kickoff_socketread_and_filewrite(file, done, size, prevbuf, wbuf);
 			}
 		}
 
@@ -1204,12 +1234,12 @@ class SimpleConnection: public ConnectionCommon {
 		 *  @param done    true if there is data ready to write (except if size==0, then we close the file)
 		 *  @param size    amount of bytes left to write for the file
 		 *  @param wbuf    the buffer from where we will write the data
-		 *  @param curbuf  the buffer containing previous data (unused)
+		 *  @param curbuf  reference to the previous buffer - needed to prevent releasing the buffer while it is still used
 		 *  @param offset  is where in the file to start writing
 		 */
 		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf, uint64 offset)
 		{
-			if(wbuf)
+			if (wbuf)
 				update_statistics(wbuf->size());
 			if (e) {
 				disconnect(STRFORMAT("handle_ready_file: %s", e.message()));
@@ -1225,26 +1255,17 @@ class SimpleConnection: public ConnectionCommon {
 				*done = true;
 			} else {
 				if (size == 0) {
+					// last buffer is written, close file and clean up
 					delete done;
 					file->close();
 					--open_files;
 					if (delayed_open_file)
 						delayed_open_file();
 					return;
-				}
-				size -= wbuf->size();
-				shared_vec nrbuf;
-				if (size == 0) {
-					*done = true;
 				} else {
-					*done = false;
-					nrbuf = shared_vec(new std::vector<uint8>());
-					nrbuf->resize(getRcvBufSize(size));
-					boost::asio::async_read(socket, GETBUF(nrbuf),
-						boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, nrbuf));
-				};
-				boost::asio::async_write(*file, GETBUF(wbuf),
-					boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, nrbuf, wbuf, 0));
+					size -= wbuf->size();
+					kickoff_socketread_and_filewrite(file, done, size, curbuf, wbuf);
+				}
 			}
 		}
 

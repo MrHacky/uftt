@@ -43,29 +43,29 @@ class AutoScrollingWindow : public Gtk::ScrolledWindow
 {
 public:
 	AutoScrollingWindow();
-	
+
 	virtual ~AutoScrollingWindow();
 private:
 	class SavedState
 	{
 	public:
 		SavedState(Gtk::Adjustment const& adj) { *this = adj; }
-		
+
 		void operator=(Gtk::Adjustment const& adj);
-		
+
 		bool operator==(Gtk::Adjustment const& adj) const;
 	private:
 		double m_lower;
 		double m_upper;
 		double m_pageSize;
 	};
-	
+
 	void onVAdjustmentChanged();
-	
+
 	void onVAdjustmentValueChanged();
-	
+
 	static bool isAtBottom(Gtk::Adjustment const& adj);
-	
+
 	SavedState m_savedState;
 	bool m_isAtBottom;
 	bool m_wasAtBottom;

@@ -23,7 +23,7 @@ class DispatcherMarshaller : public Glib::Dispatcher {
 		boost::thread::id          instantiating_thread;
 		boost::mutex               queue_mutex;
 		std::deque<function_type>  queue;
-	
+
 		// This is called by the Dispatcher object to run in the thread
 		// DispatcherMarshaller belongs to.
 		void queue_runfunction() {

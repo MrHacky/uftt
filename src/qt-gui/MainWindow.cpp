@@ -147,7 +147,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 		bar->getContentsMargins(&left, &top, &right, &bottom);
 		top += this->style()->pixelMetric(QStyle::PM_DockWidgetSeparatorExtent);
 		if((stylename != "QCleanlooksStyle") && (stylename != "QGtkStyle")) {
-			bar->setContentsMargins( left,  top,  right,  bottom);
+			bar->setContentsMargins(left, top, right, bottom);
 		}
 		//bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
 		QLabel* imagelabel = new QLabel();
@@ -459,7 +459,7 @@ MainWindow::~MainWindow()
 	delete debugstream;
 }
 
-void MainWindow::on_listBroadcastHosts_itemChanged( QTreeWidgetItem * item, int column)
+void MainWindow::on_listBroadcastHosts_itemChanged(QTreeWidgetItem * item, int column)
 {
 	if (ctwiu) return;
 	if (item == ctwi) {
@@ -577,7 +577,7 @@ void MainWindow::on_actionDownload_triggered()
 {
 	ext::filesystem::path dlpath = getDownloadPath();
 	if (!ext::filesystem::exists(dlpath)) {
-		QMessageBox::information (this, "Download Failed", "Select a valid download directory first");
+		QMessageBox::information(this, "Download Failed", "Select a valid download directory first");
 		return;
 	}
 	comboDownload->addRecentPath(comboDownload->currentPath());
@@ -602,7 +602,7 @@ void MainWindow::on_actionDownloadTo_triggered()
 
 	ext::filesystem::path dlpath = qext::path::fromQString(directory);
 	if (!ext::filesystem::exists(dlpath)) {
-		QMessageBox::information (this, "Download Failed", "Select a valid download directory");
+		QMessageBox::information(this, "Download Failed", "Select a valid download directory");
 		return;
 	}
 	comboDownload->addPath(comboDownload->currentPath());
@@ -807,13 +807,13 @@ void MainWindow::SetBackend(UFTTCore* be)
 	backend->setMainWindowId(boost::lexical_cast<std::string>(this->winId()));
 
 	if (backend->error_state == 2) {
-		QMessageBox::critical( 0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
+		QMessageBox::critical(0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
 		throw int(1); // thrown integers will quit application with integer as exit code
 		//throw std::runtime_error(std::string("Fatal Error: ") + backend->error_string);
 	}
 
 	if (backend->error_state == 1) {
-		QMessageBox::warning( 0, "UFTT", QString::fromStdString(backend->error_string));
+		QMessageBox::warning(0, "UFTT", QString::fromStdString(backend->error_string));
 	}
 }
 
@@ -837,7 +837,7 @@ void MainWindow::on_buttonManualPublish_clicked()
 
 void MainWindow::on_actionAboutUFTT_triggered()
 {
-	QMessageBox::about( this, "About UFTT", QString() +
+	QMessageBox::about(this, "About UFTT", QString() +
 		"<h3>UFTT - Ultimate File Transfer Tool</h3>" +
 		"<p>A simple no-nonsense tool for transferring files</p>" +
 		"<p>Build number: " + QString::fromStdString(get_build_string()) + "</p>" +

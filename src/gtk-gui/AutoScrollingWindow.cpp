@@ -47,7 +47,7 @@ AutoScrollingWindow::onVAdjustmentValueChanged()
 	Gtk::Adjustment& adj = *get_vadjustment();
 	m_wasAtBottom = m_isAtBottom;
 	m_isAtBottom = isAtBottom(adj);
-	
+
 	if (m_wasAtBottom && !m_isAtBottom) {
 		/*
 		Unfortunately, it doesn't mean the user has moved the scrollbar.
@@ -66,14 +66,14 @@ void
 AutoScrollingWindow::onVAdjustmentChanged()
 {
 	Gtk::Adjustment& adj = *get_vadjustment();
-	
+
 	if (m_wasAtBottom && !m_isAtBottom) {
 		if (m_savedState == adj) {
 			// See the above comments.
 			m_isAtBottom = true;
 		}
 	}
-	
+
 	if (m_isAtBottom) {
 		adj.set_value(adj.get_upper() - adj.get_page_size());
 		adj.value_changed();

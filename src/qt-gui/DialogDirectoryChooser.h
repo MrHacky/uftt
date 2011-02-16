@@ -13,7 +13,7 @@ typedef std::vector<spathinfo> spathlist;
 
 #include <QDialog>
 
-class DialogDirectoryChooser : public QDialog, public Ui::DialogDirectoryChooser {
+class DialogDirectoryChooser: public QDialog, public Ui::DialogDirectoryChooser {
 	public:
 		DialogDirectoryChooser(QWidget* parent = NULL);
 
