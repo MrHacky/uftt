@@ -16,13 +16,14 @@
 #endif
 boost::asio::io_service svc;
 services::diskio_service ds(svc);
+#define MAX_FILES 100
 #ifdef WIN32
-	#define NUM_FILES 6
+	int NUM_FILES = 6;
 #else
-	#define NUM_FILES 1
+	int NUM_FILES = 1;
 #endif
 #define TGT_FILESIZE (512*1024*1024)
-boost::filesystem::path files[NUM_FILES];
+boost::filesystem::path files[MAX_FILES];
 size_t curfile = 0;
 boost::posix_time::ptime prevtime;
 #define PAGE_SIZE (4*1024)
@@ -286,8 +287,9 @@ void frm_doread(IFileReaderManagerRef frm, int filenum, IFileReaderRef ifrr, IMe
 		ifrr->read(bufsize, boost::bind(&frm_doread, frm, filenum, ifrr, _1, _2, _3));
 
 	if (len > 0) {
+		char* buf = (char*)imbr->data;
 		for (int i = 0; i < len; ++i)
-			sum += (char)imbr->data[i];
+			sum += buf[i];
 	}
 
 	if (!imbr || len > 0) /*empty*/;
@@ -317,7 +319,7 @@ void frm_file_done(IFileReaderManagerRef frm, int filenum)
 	}
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	++filenum;
-	if (filenum < 6) {
+	if (filenum < NUM_FILES) {
 		frm->get_file_reader(files[filenum].string(), boost::bind(&frm_file_open, frm, filenum, _1, _2));
 	} else
 		svc.stop();
@@ -355,18 +357,30 @@ void flush_cashes() {
 int main(int argc, char** argv)
 {
 	#ifdef WIN32
+	NUM_FILES = 8;
 	files[0] = "D:/temp/UFTT/file0.bin";
 	files[1] = "D:/temp/UFTT/file1.bin";
 	files[2] = "D:/temp/UFTT/file2.bin";
 	files[3] = "D:/temp/UFTT/file3.bin";
 	files[4] = "D:/temp/UFTT/file4.bin";
 	files[5] = "D:/temp/UFTT/file5.bin";
+	files[6] = "D:/temp/UFTT/file6.bin";
+	files[7] = "D:/temp/UFTT/file7.bin";
+	files[8] = "D:/temp/UFTT/file8.bin";
+	files[9] = "D:/temp/UFTT/file9.bin";
+	files[10] = "D:/temp/UFTT/file10.bin";
+	files[11] = "D:/temp/UFTT/file11.bin";
 
 	bench_fread();
+	Sleep(2000);
+	bench_fread();
+	Sleep(2000);
 	sum_async_read_some_at();
+	Sleep(2000);
 	bench_frm();
+	Sleep(2000);
 	sum_win_mmap();
-	Sleep(5000);
+	Sleep(2000);
 #else
 	files[0] = "/tmp/bench-7.bin";
 	//flush_cashes();
