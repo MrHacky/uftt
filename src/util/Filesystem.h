@@ -85,8 +85,12 @@ namespace ext {
 
 #ifndef EXT_FILESYSTEM_UTF8_UTF8
 // inform boost of our path class
+#ifndef BOOST_FILESYSTEM2_NAMESPACE
+#define BOOST_FILESYSTEM2_NAMESPACE filesystem
+#endif
+
 namespace boost {
-	namespace filesystem {
+	namespace BOOST_FILESYSTEM2_NAMESPACE {
 		template<> struct is_basic_path<ext::filesystem::path>
 		{ BOOST_STATIC_CONSTANT( bool, value = true ); };
 	}

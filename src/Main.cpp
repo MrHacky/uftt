@@ -4,7 +4,6 @@
 extern "C" void tss_cleanup_implemented(void){}
 
 #include "UFTTGui.h"
-#include "qt-gui/QTMain.h"
 #include "BuildString.h"
 #include "AutoUpdate.h"
 #include "UFTTSettings.h"

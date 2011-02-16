@@ -23,6 +23,7 @@ namespace settingsmanager {
 			sep.push_back(0);
 			std::vector<std::string> values;
 			boost::split(values, in, boost::is_any_of(sep));
+			if (values.empty()) return;
 			values.pop_back();
 			out.resize(values.size());
 			for (size_t i = 0; i < values.size(); ++i)

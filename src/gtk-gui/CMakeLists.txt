@@ -101,7 +101,8 @@ IF(ENABLE_GTK_GUI)
 			COMMAND bin2c -c
 			        "${_EMBED_SRC}"
 			        "${_EMBED_DST}"
-			DEPENDS "${_EMBED_SRC}"
+			DEPENDS bin2c
+			        "${_EMBED_SRC}"
 			)
 		SET(GENERATED_BIN_HEADERS ${GENERATED_BIN_HEADERS} "${_EMBED_DST}")
 	ENDMACRO(EMBED_BINARY)

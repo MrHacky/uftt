@@ -59,7 +59,6 @@ IF(ENABLE_QT_GUI)
 		DialogPreferences.h
 		QExtPlatform.h
 		QDebugStream.h
-		QtLogger.h
 		QTMain.h
 		${UI_FILES}
 	)

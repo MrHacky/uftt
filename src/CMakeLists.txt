@@ -71,7 +71,7 @@ ADD_CUSTOM_COMMAND(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
 	ARGS -E copy "${CMAKE_CURRENT_SOURCE_DIR}/BuildStringMacros.cpp" "${CMAKE_CURRENT_BINARY_DIR}/BuildStringMacros.cpp"
 	COMMENT "VersionTarget"
 	DEPENDS ${UFTT_LIBRARIES}
-	)
+)
 
 if(OPENSSL_FOUND AND NOT APPLE)
 	add_definitions("-DUSE_OPENSSL")

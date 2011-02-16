@@ -31,7 +31,6 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		DialogPreferences* dialogPreferences;
 
 		UFTTSettingsRef settings;
-		bool askonupdates;
 		ShareID auto_update_share;
 		ext::filesystem::path auto_update_path;
 		std::string auto_update_build;

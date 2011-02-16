@@ -63,7 +63,21 @@ namespace platform {
 	 */
 	std::string makeValidUTF8(const std::string& src);
 
+	/**
+	 * Get command line in UTF8
+	 * @param argc Use argc as was passed to main()
+	 * @param argv Use argv as was passed to main()
+	 * @return A vector containing UTF8 strings, which correspond to the command line
+	 */
 	std::vector<std::string> getUTF8CommandLine(int argc, char **argv);
+
+	/**
+	 * Get path of the drag target. Call after drag is completed.
+	 * @return Drag target path if successfull, empty path if failed.
+	 * @note Relies on current mouse cursor position to locate drop target.
+	 * @note Only works on windows, and probably not even 100% then.
+	 */
+	ext::filesystem::path getDragTargetPath();
 } // namespace platform
 
 #endif//PLATFORM_H
