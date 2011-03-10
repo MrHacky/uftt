@@ -26,8 +26,6 @@ extern "C" void tss_cleanup_implemented(void){}
 using namespace std;
 
 // evil global variables
-shared_vec exefile;
-bool hassignedbuild(false);
 AutoUpdater updateProvider;
 boost::rand48 rng;
 
