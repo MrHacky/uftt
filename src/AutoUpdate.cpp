@@ -911,7 +911,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesyst
 	return false;
 }
 
-void AutoUpdater::checkfile(services::diskio_service& disk_service, boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
+void AutoUpdater::checkfile(boost::asio::io_service& service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
 {
 }
 
