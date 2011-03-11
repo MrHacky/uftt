@@ -4,6 +4,10 @@ FIND_PACKAGE(Qt)
 
 INCLUDE_DIRECTORIES("${BOOST_INCLUDE_DIR}")
 LINK_DIRECTORIES("${BOOST_LIBRARY_DIR}")
+IF(MSVC)
+	# Disable autolinking from asio->regex because we don't use it
+	ADD_DEFINITIONS("-DBOOST_REGEX_NO_LIB")
+ENDIF()
 
 ADD_SUBDIRECTORY(net-asio)
 ADD_SUBDIRECTORY(gtk-gui)
