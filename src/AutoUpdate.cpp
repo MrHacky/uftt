@@ -915,11 +915,6 @@ void AutoUpdater::checkfile(boost::asio::io_service& service, const ext::filesys
 {
 }
 
-boost::shared_ptr<std::vector<uint8> > AutoUpdater::getBuildExecutable(const std::string& buildname) const
-{
-	return boost::shared_ptr<std::vector<uint8> >();
-}
-
 const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
 {
 	return buildstrings;
