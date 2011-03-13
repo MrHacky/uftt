@@ -911,15 +911,6 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesyst
 	return false;
 }
 
-void AutoUpdater::checkfile(boost::asio::io_service& service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
-{
-}
-
-const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
-{
-	return buildstrings;
-}
-
 std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPage(const std::vector<uint8>& webpage)
 {
 	return std::vector<std::pair<std::string, std::string> >();
@@ -930,6 +921,23 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& keyfile, const std::str
 	return false;
 }
 
+void AutoUpdater::checkfile(boost::asio::io_service& service, const ext::filesystem::path& target, const std::string& bstring, bool signifneeded)
+{
+}
 
+boost::shared_ptr<std::vector<uint8> > AutoUpdater::getUpdateBuffer(const std::string& buildname) const
+{
+	return boost::shared_ptr<std::vector<uint8> >();
+}
+
+ext::filesystem::path AutoUpdater::getUpdateFilepath(const std::string& buildname) const
+{
+	return "";
+}
+
+const std::vector<std::string>& AutoUpdater::getAvailableBuilds() const
+{
+	return buildstrings;
+}
 
 #endif//USE_OPENSSL(else)
