@@ -1,0 +1,38 @@
+* Install Visual C++ Express Edition
+
+- http://www.microsoft.com/express/Downloads/#2010-Visual-CPP
+- Select language to start installer download
+
+* Install CMake
+
+- http://www.cmake.org/files/v2.8/cmake-2.8.4-win32-x86.exe
+
+* Create an 'extralibs' directory inside your uftt source checkout, or next to your source checkout (one directory up)
+    - We will install external libraries here
+
+* Install Qt
+
+- get Qt (pick one corresponding to your compiler)
+    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.7.0-dev-lite-msvc2010e-rdh.7z
+    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.4.3-dev-msvc2008e-rdh.7z
+    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.4.3-dev-msvc2005e-rdh.7z
+- unpack it somewhere ('extralibs' directory)
+    * %QTDIR% will refer to the directory you unpacked
+- add %QTDIR%\bin to the System Path
+    * My Computer, right click, properties, advanced, Environment Variables, PATH system variable
+
+* Install Boost
+    - download http://servertje.homeip.net:40080/misc/installboost.bat?boostver=1_44_0&libs=date_time,filesystem,serialization,signals,system,thread&arch=x86&variants=sdh
+    - put it in your 'extralibs' directory
+    - run it to compile boost
+    - you must keep the 'boost_1_44_0' directory
+    - you can delete the created 'build' directory, the 'boost_1_44_.7z' file, and the 'installboost.bat' file
+
+* Compile
+
+- run CMake
+    * source dir is trunk of the checkout
+    * create builddir somewhere (ex: trunk/build)
+    * configure, configure, ok
+
+- open project file in builddir and compile!
