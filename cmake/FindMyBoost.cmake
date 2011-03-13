@@ -14,22 +14,28 @@ find_package(ExtraLibDir)
 
 FIND_LIB_IN_EXTRALIBS(BOOST *boost* boost lib)
 
-GLOB_PATHS(BOOST_SEARCH_PATHS
-	GLOBS "boost_[0-9_]*" "boost_[0-9_]*/include"
-	BASES
-		/usr/include
-		/usr/local/include
-		"C:/Program Files/boost"
-		"C:/Program Files"
-		"D:/Program Files/boost"
-		"D:/Program Files"
-		"C:/Boost"
-		"D:/Prog/Boost"
+SET(BOOST_SEARCH_PATHS
+	${BOOST_EXTRALIB_BASE_DIRS}
+	/usr/include
+	/usr/local/include
+	"C:/Program Files/boost"
+	"C:/Program Files"
+	"D:/Program Files/boost"
+	"D:/Program Files"
+	"C:/Boost"
+	"D:/Prog/Boost"
 )
-
+GLOB_PATHS(BOOST_SEARCH_PATHS
+	GLOBS "boost_[0-9_]*"
+	BASES ${BOOST_SEARCH_PATHS}
+)
+GLOB_PATHS(BOOST_SEARCH_PATHS
+	GLOBS "include"
+	BASES ${BOOST_SEARCH_PATHS}
+)		
 FIND_PATH(BOOST_INCLUDE_DIR
 	NAMES boost/config.hpp
-	PATHS ${BOOST_SEARCH_PATHS} "${BOOST_EXTRALIB_INCLUDE_PATHS}" "${BOOST_EXTRALIB_INCLUDE_PATHS}/.."
+	PATHS ${BOOST_SEARCH_PATHS}
 )
 
 IF(WIN32 AND NOT MINGW)

@@ -7,12 +7,13 @@ IF(AUTODETECT_LIB_DIR)
 		GLOBS   extralibs
 		BASES
 			${PROJECT_BINARY_DIR}
+			${PROJECT_SOURCE_DIR}
 			${PROJECT_BINARY_DIR}/..
+			${PROJECT_SOURCE_DIR}/..
 			${PROJECT_BINARY_DIR}/../..
+			${PROJECT_SOURCE_DIR}/../..
 			${PROJECT_BINARY_DIR}/../../..
-			${PROJECT_BINARY_DIR}/../../../..
-			${PROJECT_BINARY_DIR}/../../../../..
-			${PROJECT_BINARY_DIR}/../../../../../..
+			${PROJECT_SOURCE_DIR}/../../..
 	)
 	SET(CMAKE_EXTRA_LIBS_PATH "${CMAKE_EXTRA_LIBS_PATH_ROOT}" CACHE PATH "Paths where to look for extra libraries")
 ENDIF()
