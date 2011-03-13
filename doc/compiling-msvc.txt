@@ -13,7 +13,7 @@
 * Install Qt
 
 - get Qt (pick one corresponding to your compiler)
-    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.7.0-dev-lite-msvc2010e-rdh.7z
+    * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.7.0-dev-lite-msvc2010e-dh.7z
     * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.4.3-dev-msvc2008e-rdh.7z
     * http://qt-win-binaries.googlecode.com/svn/tags/Qt-4.4.3-dev-msvc2005e-rdh.7z
 - unpack it somewhere ('extralibs' directory)
