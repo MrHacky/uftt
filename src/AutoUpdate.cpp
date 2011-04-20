@@ -323,7 +323,7 @@ namespace {
 				if (!istr.is_open()) return;
 
 				istr.read((char*)&(*filevec)[0], size);
-				uint32 read = istr.gcount();
+				uint32 read = boost::numeric_cast<uint32>(istr.gcount());
 				if (read != size) return;
 
 				bool ok = SignatureChecker::doCheck(filevec, buildstring, signifneeded, signifneeded);
@@ -379,7 +379,7 @@ int AutoUpdater::replace(const ext::filesystem::path& source, const ext::filesys
 	{
 		ext::filesystem::ifstream istr(source, ios_base::in|ios_base::binary);
 		istr.read((char*)&filedata[0], todo);
-		uint32 read = istr.gcount();
+		uint32 read = boost::numeric_cast<uint32>(istr.gcount());
 		if (read != todo)
 			throw std::runtime_error("Reading failed");
 	}
@@ -488,7 +488,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesyst
 			ext::filesystem::ifstream istr(target, ios_base::in|ios_base::binary);
 			if (!istr.is_open()) return false;
 			istr.read((char*)&newfile[0], todo);
-			uint32 read = istr.gcount();
+			uint32 read = boost::numeric_cast<uint32>(istr.gcount());
 			if (read != todo) {
 				cout << "failed to read the new file\n";
 				return false;
@@ -750,7 +750,7 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 	std::vector<uint8> file(todo);
 	{
 		ifile.read((char*)&file[0], todo);
-		uint32 read = ifile.gcount();
+		uint32 read = boost::numeric_cast<uint32>(ifile.gcount());
 		if (read != todo)
 			return false;
 		if (ifile.fail())
