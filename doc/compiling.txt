@@ -1,0 +1,1 @@
+* Visual Studio: http://code.google.com/p/uftt/wiki/Compiling
