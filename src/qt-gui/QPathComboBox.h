@@ -1,6 +1,8 @@
 #ifndef Q_PATH_COMBOBOX_H
 #define Q_PATH_COMBOBOX_H
 
+#include <vector>
+
 #include <QComboBox>
 
 class QPathComboBox: public QComboBox {

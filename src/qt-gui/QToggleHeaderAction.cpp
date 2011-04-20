@@ -1,5 +1,7 @@
 #include "QToggleHeaderAction.moc"
 
+#include <vector>
+
 #include <QHeaderView>
 #include <QTreeView>
 #include <QTreeWidget>
