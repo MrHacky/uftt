@@ -11,7 +11,7 @@ DialogDirectoryChooser::DialogDirectoryChooser(QWidget* parent)
 void DialogDirectoryChooser::setPaths(const spathlist& spl) {
 	BOOST_FOREACH(const spathinfo& spi, spl) {
 		QStringList sl;
-		sl << QString::fromStdString(spi.first) << qext::path::toQStringDirectory(spi.second);
+		sl << S2Q(spi.first) << qext::path::toQStringDirectory(spi.second);
 		new QTreeWidgetItem(listPaths, sl);
 	}
 	listPaths->resizeColumnToContents(0);
@@ -23,7 +23,7 @@ ext::filesystem::path DialogDirectoryChooser::getPath()
 	QList<QTreeWidgetItem*> selected = listPaths->selectedItems();
 
 	BOOST_FOREACH(QTreeWidgetItem* wi, selected) {
-		return wi->text(1).toStdString();
+		return Q2S(wi->text(1));
 	}
 	return "";
 }

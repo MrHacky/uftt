@@ -1,6 +1,7 @@
 #ifndef QEXT_UTF8_H
 #define QEXT_UTF8_H
 
+#include <string>
 #include <QString>
 #include "../util/Filesystem.h"
 
@@ -17,6 +18,7 @@ namespace qext {
 			return std::string(utf8.begin(), utf8.end());
 		}
 	}
+
 	namespace path {
 		inline QString toQStringFile(const ext::filesystem::path& src)
 		{
@@ -33,6 +35,18 @@ namespace qext {
 			return ext::filesystem::path(qext::utf8::fromQString(src));
 		}
 	}
+}
+
+/** convert QString to std::string(utf8) */
+inline std::string Q2S(const QString& s)
+{
+	return qext::utf8::fromQString(s);
+}
+
+/** convert std::string(utf8) to QString */
+inline QString S2Q(const std::string& s)
+{
+	return qext::utf8::toQString(s);
 }
 
 #endif//QEXT_UTF8_H

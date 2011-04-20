@@ -72,7 +72,6 @@ enum TaskListColumNames {
 	TLDATA_PATH = 0,
 };
 
-
 class MyItemDelegate : public QItemDelegate
 {
 public:
@@ -149,12 +148,12 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 		if((stylename != "QCleanlooksStyle") && (stylename != "QGtkStyle")) {
 			bar->setContentsMargins(left, top, right, bottom);
 		}
-		//bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		//bar->addPermanentWidget(new QLabel(S2Q(thebuildstring)));
 		QLabel* imagelabel = new QLabel();
 		//QImage image1(":/status/status-ok.png");
 		//imagelabel->setPixmap(QPixmap::fromImage(image1));
 		//bar->addPermanentWidget(imagelabel);
-		//bar->addPermanentWidget(new QLabel(QString::fromStdString(thebuildstring)));
+		//bar->addPermanentWidget(new QLabel(S2Q(thebuildstring)));
 		bar->addWidget(new QLabel("Status bar"));
 	}
 
@@ -501,8 +500,8 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 
 	QString quser  = qext::utf8::toQString(info.user);
 	QString qshare = qext::utf8::toQString(info.name);
-	QString qproto = QString::fromStdString(info.proto);
-	QString qhost  = QString::fromStdString(info.host);
+	QString qproto = S2Q(info.proto);
+	QString qhost  = S2Q(info.host);
 	QString qurl   = qext::utf8::toQString(STRFORMAT("%s:\\\\%s\\%s", info.proto, info.host, info.name));
 	if (quser == "") quser = (info.isupdate ? "<Update>" : "uftt-user");
 	uint32 version = info.proto.size() > 6 ? atoi(info.proto.substr(6).c_str()) : 0;
@@ -514,7 +513,7 @@ void MainWindow::addSimpleShare(const ShareInfo& info)
 		if (twi->text(SLCN_HOST) == qhost && twi->text(SLCN_SHARE) == qshare) {
 			found = true;
 			QString qoprot = twi->text(SLCN_PROTOCOL);
-			uint32 over = qoprot.size() > 6 ? atoi(qoprot.toStdString().substr(6).c_str()) : 0;
+			uint32 over = qoprot.size() > 6 ? atoi(Q2S(qoprot).substr(6).c_str()) : 0;
 			if (over <= version) {
 				twi->setText(SLCN_USER, quser);
 				twi->setText(SLCN_PROTOCOL, qproto);
@@ -647,7 +646,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 				QString() + (ti.isupload ? "Upload" : "Download") + " Failed",
 				QString() + "An error occured during transfer of '" +
 					qext::utf8::toQString(ti.shareinfo.name) + "':\n" +
-					QString::fromStdString(sts),
+					S2Q(sts),
 					QSystemTrayIcon::Critical
 			);
 		}
@@ -655,14 +654,14 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 
 	std::string type = (ti.isupload ? "U: " : "D: ");
 	twi->setText(TLCN_SHARE, qext::utf8::toQString(type + ti.shareinfo.name));
-	twi->setText(TLCN_STATUS, QString::fromStdString(sts));
-	twi->setText(TLCN_HOST, QString::fromStdString(ti.shareinfo.host));
-	twi->setText(TLCN_USER, QString::fromStdString(ti.shareinfo.user));
-	twi->setText(TLCN_TIME, QString::fromStdString(boost::posix_time::to_simple_string(elapsed)));
+	twi->setText(TLCN_STATUS, S2Q(sts));
+	twi->setText(TLCN_HOST, S2Q(ti.shareinfo.host));
+	twi->setText(TLCN_USER, S2Q(ti.shareinfo.user));
+	twi->setText(TLCN_TIME, S2Q(boost::posix_time::to_simple_string(elapsed)));
 	twi->setData(TLDATA_PATH, Qt::UserRole, QVariant::fromValue(ti.path));
 
 	if (total > 0 && total >= tfx && tfx > 0) {
-		twi->setText(TLCN_ETA, QString::fromStdString(
+		twi->setText(TLCN_ETA, S2Q(
 			boost::posix_time::to_simple_string(
 				boost::posix_time::time_duration(
 					boost::posix_time::seconds(
@@ -672,12 +671,12 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 			)
 		));
 	}
-	twi->setText(TLCN_TRANSFERRED, QString::fromStdString(StrFormat::bytes(tfx)));
-	twi->setText(TLCN_SIZE, QString::fromStdString(StrFormat::bytes(total)));
+	twi->setText(TLCN_TRANSFERRED, S2Q(StrFormat::bytes(tfx)));
+	twi->setText(TLCN_SIZE, S2Q(StrFormat::bytes(total)));
 	if (elapsed.total_seconds() > 0) {
-		twi->setText(TLCN_SPEED, QString::fromStdString(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
+		twi->setText(TLCN_SPEED, S2Q(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
 	}
-	twi->setText(TLCN_QUEUE, QString::fromStdString(STRFORMAT("%d", queue)));
+	twi->setText(TLCN_QUEUE, S2Q(STRFORMAT("%d", queue)));
 	if (!ti.isupload && sts == "Completed")
 		download_done(ti);
 }
@@ -691,7 +690,7 @@ void MainWindow::addLocalShare(QString url)
 
 void MainWindow::onDropTriggered(QDropEvent* evt)
 {
-	//LOG("try=" << evt->mimeData()->text().toStdString());
+	//LOG("try=" << Q2S(evt->mimeData()->text());
 	evt->acceptProposedAction();
 
 	BOOST_FOREACH(const QUrl & url, evt->mimeData()->urls())
@@ -755,7 +754,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 	dialogshowing = true;
 	QMessageBox::StandardButton res = QMessageBox::question(this,
 		QString("Auto Update"),
-		QString::fromStdString(
+		S2Q(
 			"Build: " + build + '\r' + '\n' +
 			"Host: " + info.host + '\r' + '\n'
 		),
@@ -807,20 +806,20 @@ void MainWindow::SetBackend(UFTTCore* be)
 	backend->setMainWindowId(boost::lexical_cast<std::string>(this->winId()));
 
 	if (backend->error_state == 2) {
-		QMessageBox::critical(0, "UFTT", QString::fromStdString(backend->error_string) + "\n\nApplication will now exit." );
+		QMessageBox::critical(0, "UFTT", S2Q(backend->error_string) + "\n\nApplication will now exit." );
 		throw int(1); // thrown integers will quit application with integer as exit code
 		//throw std::runtime_error(std::string("Fatal Error: ") + backend->error_string);
 	}
 
 	if (backend->error_state == 1) {
-		QMessageBox::warning(0, "UFTT", QString::fromStdString(backend->error_string));
+		QMessageBox::warning(0, "UFTT", S2Q(backend->error_string));
 	}
 }
 
 void MainWindow::on_buttonManualQuery_clicked()
 {
 	try {
-		backend->doManualQuery(editManualQuery->text().toStdString());
+		backend->doManualQuery(Q2S(editManualQuery->text()));
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	}
@@ -829,7 +828,7 @@ void MainWindow::on_buttonManualQuery_clicked()
 void MainWindow::on_buttonManualPublish_clicked()
 {
 	try {
-		backend->doManualPublish(editManualPublish->text().toStdString());
+		backend->doManualPublish(Q2S(editManualPublish->text()));
 	} catch (std::exception& e) {
 		cout << "exception: " << e.what() << '\n';
 	}
@@ -840,7 +839,7 @@ void MainWindow::on_actionAboutUFTT_triggered()
 	QMessageBox::about(this, "About UFTT", QString() +
 		"<h3>UFTT - Ultimate File Transfer Tool</h3>" +
 		"<p>A simple no-nonsense tool for transferring files</p>" +
-		"<p>Build number: " + QString::fromStdString(get_build_string()) + "</p>" +
+		"<p>Build number: " + S2Q(get_build_string()) + "</p>" +
 		//"Copyright 1991-2003 Such-and-such. "
 		//"Licenced under GPL\n\n"
 		"<p>See <a href=\"http://code.google.com/p/uftt/\">http://code.google.com/p/uftt/</a> for more information.</p>" );

@@ -59,8 +59,8 @@ DialogPreferences::DialogPreferences(boost::shared_ptr<SettingsManagerBase> sett
 	BOOST_FOREACH(const std::string& s, keys) {
 		if (widgets.count(s) == 0) {
 			QTreeWidgetItem* twi = new QTreeWidgetItem(listAdvancedOptions);
-			twi->setText(CN_KEY,     QString::fromStdString(s));
-			twi->setText(CN_DEFAULT, QString::fromStdString(settings->getInfo(s)->getDefault()));
+			twi->setText(CN_KEY,     S2Q(s));
+			twi->setText(CN_DEFAULT, S2Q(settings->getInfo(s)->getDefault()));
 			twi->setFlags(twi->flags() | Qt::ItemIsEditable);
 		}
 	}
@@ -77,12 +77,12 @@ void DialogPreferences::on_listAdvancedOptions_itemChanged(QTreeWidgetItem* item
 {
 	if (col != CN_CURVALUE) return;
 
-	std::string curval = item->text(CN_CURVALUE).toStdString();
+	std::string curval = Q2S(item->text(CN_CURVALUE));
 	bool isvalid = false;
 	try {
-		std::string normval = settings->getVariable(item->text(CN_KEY).toStdString())->isValid(curval);
+		std::string normval = settings->getVariable(Q2S(item->text(CN_KEY)))->isValid(curval);
 		if (curval != normval) {
-			item->setText(CN_CURVALUE, QString::fromStdString(normval));
+			item->setText(CN_CURVALUE, S2Q(normval));
 			return;
 		}
 		isvalid = true;
@@ -105,7 +105,7 @@ void DialogPreferences::scanWidgets(QObject* obj)
 {
 	QVariant settingkey = obj->property("settingkey");
 	if (settingkey.isValid()) {
-		std::string skey = settingkey.toString().toStdString();
+		std::string skey = Q2S(settingkey.toString());
 		if (!skey.empty()) widgets[skey] = obj;
 	}
 
@@ -177,8 +177,8 @@ void DialogPreferences::loadSettings()
 
 	for (int i = 0; i < listAdvancedOptions->topLevelItemCount (); ++i) {
 		QTreeWidgetItem* twi = listAdvancedOptions->topLevelItem(i);
-		std::string key = twi->text(CN_KEY).toStdString();
-		QString val = QString::fromStdString(settings->getVariable(key)->getString());
+		std::string key = Q2S(twi->text(CN_KEY));
+		QString val = S2Q(settings->getVariable(key)->getString());
 		twi->setText(CN_CURVALUE,  val);
 		twi->setText(CN_LASTVALUE, val);
 	}
@@ -196,12 +196,12 @@ void DialogPreferences::saveSettings()
 
 	for (int i = 0; i < listAdvancedOptions->topLevelItemCount (); ++i) {
 		QTreeWidgetItem* twi = listAdvancedOptions->topLevelItem(i);
-		std::string key = twi->text(CN_KEY).toStdString();
+		std::string key = Q2S(twi->text(CN_KEY));
 		if (twi->text(CN_CURVALUE) != twi->text(CN_LASTVALUE)) {
-			std::string val = twi->text(CN_CURVALUE).toStdString();
+			std::string val = Q2S(twi->text(CN_CURVALUE));
 			try {
 				settings->getVariable(key)->setString(val);
-				twi->setText(CN_LASTVALUE, QString::fromStdString(val));
+				twi->setText(CN_LASTVALUE, S2Q(val));
 			} catch (...) {
 			}
 		}
@@ -231,11 +231,11 @@ void DialogPreferences::saveSettings(const std::string& key, QLineEdit* w)
 // QTimeEdit load/save - assumes QTime and boost::posix_time::time_duration have similar text representations
 void DialogPreferences::loadSettings(const std::string& key, QTimeEdit* w)
 {
-	w->setTime(QTime::fromString(QString::fromStdString(settings->getVariable(key)->getString()), "hh:mm:ss"));
+	w->setTime(QTime::fromString(S2Q(settings->getVariable(key)->getString()), "hh:mm:ss"));
 }
 void DialogPreferences::saveSettings(const std::string& key, QTimeEdit* w)
 {
-	settings->getVariable(key)->setString(w->time().toString("hh:mm:ss").toStdString());
+	settings->getVariable(key)->setString(Q2S(w->time().toString("hh:mm:ss")));
 }
 
 // QComboBox load/save
@@ -246,13 +246,13 @@ void DialogPreferences::loadSettings(const std::string& key, QComboBox* w)
 		std::vector<std::string> vtext = settings->getInfo(key)->getEnumStrings();
 		std::vector<std::string> vdata = settings->getInfo(key)->getEnumValues();
 		for (size_t i = 0; i < vtext.size() && i < vdata.size(); ++i)
-			w->addItem(QString::fromStdString(vtext[i]), QString::fromStdString(vdata[i]));
+			w->addItem(S2Q(vtext[i]), S2Q(vdata[i]));
 	}
 	std::string data = settings->getVariable(key)->getString();
-	int idx = w->findData(QString::fromStdString(data));
+	int idx = w->findData(S2Q(data));
 	w->setCurrentIndex(idx);
 }
 void DialogPreferences::saveSettings(const std::string& key, QComboBox* w)
 {
-	settings->getVariable(key)->setString(w->itemData(w->currentIndex()).toString().toStdString());
+	settings->getVariable(key)->setString(Q2S(w->itemData(w->currentIndex()).toString()));
 }
