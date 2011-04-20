@@ -26,54 +26,54 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 {
 	boost::posix_time::ptime mpt(boost::posix_time::min_date_time);
 
-	sm->registerSettingsVariable("gui.qt.dockinfo", dockinfo, createSettingsInfo(std::vector<uint8>()));
+	sm->registerSettingsVariable("gui.qt.dockinfo", dockinfo, std::vector<uint8>());
 
-	sm->registerSettingsVariable("gui.qt.posx" , posx , createSettingsInfo(0));
-	sm->registerSettingsVariable("gui.qt.posy" , posy , createSettingsInfo(0));
-	sm->registerSettingsVariable("gui.qt.sizex", sizex, createSettingsInfo(0));
-	sm->registerSettingsVariable("gui.qt.sizey", sizey, createSettingsInfo(0));
-	sm->registerSettingsVariable("gui.qt.maximized", guimaximized, createSettingsInfo(false));
+	sm->registerSettingsVariable("gui.qt.posx" , posx , 0);
+	sm->registerSettingsVariable("gui.qt.posy" , posy , 0);
+	sm->registerSettingsVariable("gui.qt.sizex", sizex, 0);
+	sm->registerSettingsVariable("gui.qt.sizey", sizey, 0);
+	sm->registerSettingsVariable("gui.qt.maximized", guimaximized, false);
 
-	sm->registerSettingsVariable("gui.qt.showadvancedsettings", showadvancedsettings, createSettingsInfo(false));
+	sm->registerSettingsVariable("gui.qt.showadvancedsettings", showadvancedsettings, false);
 
-	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, createSettingsInfo(true));
+	sm->registerSettingsVariable("gui.gtk.showtoolbar", show_toolbar, true);
 
-	sm->registerSettingsVariable("gui.recentdownloadpaths", recentdownloadpaths, createSettingsInfo(std::vector<std::string>()));
+	sm->registerSettingsVariable("gui.recentdownloadpaths", recentdownloadpaths, std::vector<std::string>());
 
-	sm->registerSettingsVariable("download.path", dl_path, createSettingsInfo(platform::getDownloadPathDefault()));
-	sm->registerSettingsVariable("download.resume", experimentalresume, createSettingsInfo(true));
-	sm->registerSettingsVariable("download.notification_on_completion", notification_on_completion, createSettingsInfo(true));
-	sm->registerSettingsVariable("download.blink_statusicon_on_completion", blink_statusicon_on_completion, createSettingsInfo(true));
-	sm->registerSettingsVariable("download.show_speeds_in_titlebar", show_speeds_in_titlebar, createSettingsInfo(true));
-	sm->registerSettingsVariable("download.show_speeds_in_statusicon_tooltip", show_speeds_in_statusicon_tooltip, createSettingsInfo(true));
+	sm->registerSettingsVariable("download.path", dl_path, platform::getDownloadPathDefault());
+	sm->registerSettingsVariable("download.resume", experimentalresume, true);
+	sm->registerSettingsVariable("download.notification_on_completion", notification_on_completion, true);
+	sm->registerSettingsVariable("download.blink_statusicon_on_completion", blink_statusicon_on_completion, true);
+	sm->registerSettingsVariable("download.show_speeds_in_titlebar", show_speeds_in_titlebar, true);
+	sm->registerSettingsVariable("download.show_speeds_in_statusicon_tooltip", show_speeds_in_statusicon_tooltip, true);
 
-	sm->registerSettingsVariable("update.frompeers", autoupdate, createSettingsInfo(true));
-	sm->registerSettingsVariable("update.fromweb", webupdateinterval, createSettingsInfo(2,
+	sm->registerSettingsVariable("update.frompeers", autoupdate, true);
+	sm->registerSettingsVariable("update.fromweb", webupdateinterval, 2,
 		"Never\nDaily\nWeekly\nMonthly",
 		"0\n1\n2\n3"
-	));
-	sm->registerSettingsVariable("update.lastwebupdate", lastupdate, createSettingsInfo(mpt));
+	);
+	sm->registerSettingsVariable("update.lastwebupdate", lastupdate, mpt);
 
-	sm->registerSettingsVariable("sharing.globalannounce", enablepeerfinder, createSettingsInfo(true));
-	sm->registerSettingsVariable("sharing.nickname", nickname, createSettingsInfo(platform::getUserName()));
+	sm->registerSettingsVariable("sharing.globalannounce", enablepeerfinder, true);
+	sm->registerSettingsVariable("sharing.nickname", nickname, platform::getUserName());
 
-	sm->registerSettingsVariable("stun.lastcheck", laststuncheck, createSettingsInfo(mpt));
-	sm->registerSettingsVariable("stun.publicip", stunpublicip, createSettingsInfo(""));
+	sm->registerSettingsVariable("stun.lastcheck", laststuncheck, mpt);
+	sm->registerSettingsVariable("stun.publicip", stunpublicip, "");
 
-	sm->registerSettingsVariable("systray.showtask", show_task_tray_icon, createSettingsInfo(true));
-	sm->registerSettingsVariable("systray.minimizetotray", minimize_to_tray, createSettingsInfo(true));
-	sm->registerSettingsVariable("systray.closetotray", close_to_tray, createSettingsInfo(false));
-	sm->registerSettingsVariable("systray.startintray", start_in_tray, createSettingsInfo(false));
-	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, createSettingsInfo(true));
+	sm->registerSettingsVariable("systray.showtask", show_task_tray_icon, true);
+	sm->registerSettingsVariable("systray.minimizetotray", minimize_to_tray, true);
+	sm->registerSettingsVariable("systray.closetotray", close_to_tray, false);
+	sm->registerSettingsVariable("systray.startintray", start_in_tray, false);
+	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, true);
 
-	sm->registerSettingsVariable("system.sendtouftt", uftt_send_to, createSettingsInfo(false));
-	sm->registerSettingsVariable("system.desktopshortcut", uftt_desktop_shortcut, createSettingsInfo(false));
-	sm->registerSettingsVariable("system.quicklaunchshortcut", uftt_quicklaunch_shortcut, createSettingsInfo(false));
-	sm->registerSettingsVariable("system.startmenugroup", uftt_startmenu_group, createSettingsInfo(false));
+	sm->registerSettingsVariable("system.sendtouftt", uftt_send_to, false);
+	sm->registerSettingsVariable("system.desktopshortcut", uftt_desktop_shortcut, false);
+	sm->registerSettingsVariable("system.quicklaunchshortcut", uftt_quicklaunch_shortcut, false);
+	sm->registerSettingsVariable("system.startmenugroup", uftt_startmenu_group, false);
 
-	sm->registerSettingsVariable("gui.auto_clear_tasks_after", auto_clear_tasks_after, createSettingsInfo(boost::posix_time::seconds(30)));
+	sm->registerSettingsVariable("gui.auto_clear_tasks_after", auto_clear_tasks_after, boost::posix_time::seconds(30));
 
-	sm->registerSettingsVariable("update.showshares", showautoupdates, createSettingsInfo(false));
+	sm->registerSettingsVariable("update.showshares", showautoupdates, false);
 }
 
 void UFTTSettings::fixLegacy(std::map<std::string, std::string>& v)

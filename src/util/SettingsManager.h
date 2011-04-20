@@ -275,11 +275,17 @@ class SettingsManagerBase {
 
 		std::vector<std::string> getAllKeys();
 
-		template<typename T>
-		void registerSettingsVariable(const std::string& key, SettingsVariable<T>& val, SettingsInfoRef sir)
+		template <typename T>
+		void registerSettingsVariableInfo(const std::string& key, SettingsVariable<T>& val, SettingsInfoRef sir)
 		{
 			m_curvalues[key] = &val;
 			sinfo[key] = sir;
+		}
+
+		template <typename T, typename V>
+		void registerSettingsVariable(const std::string& key, SettingsVariable<T>& val, const V& def, std::string enum_str = "", std::string enum_val = "", std::string min = "", std::string max = "")
+		{
+			registerSettingsVariableInfo<T>(key, val, createSettingsInfo<T>(def, enum_str, enum_val, min, max));
 		}
 
 		bool load(std::map<std::string, std::string>& values);
