@@ -92,9 +92,6 @@ namespace {
 		if (!rsapub)
 			return false;
 
-		EVP_PKEY evppub;
-		EVP_PKEY_assign_RSA(&evppub, rsapub);
-
 		if (file.size() < 8)
 			return false;
 
@@ -138,13 +135,19 @@ namespace {
 		if (bstring_file != bstring_expect)
 			return false;
 
+
+		EVP_PKEY* evppub = EVP_PKEY_new();
+		EVP_PKEY_assign_RSA(evppub, rsapub);
 		int res;
 		EVP_MD_CTX verifyctx;
 		res = EVP_VerifyInit(&verifyctx, EVP_sha1());
-		if (res != 1) return false;
-		res = EVP_VerifyUpdate(&verifyctx, &file[0], file.size()-8-sigsize);
-		if (res != 1) return false;
-		res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), &evppub);
+		if(res == 1) {
+			res = EVP_VerifyUpdate(&verifyctx, &file[0], file.size()-8-sigsize);
+			if(res == 1) {
+				res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), evppub);
+			}
+		}
+		EVP_PKEY_free(evppub);
 		if (res != 1) return false;
 
 		return true;
@@ -234,11 +237,11 @@ namespace {
 				rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
 				BIO_free(pubmem);
 			}
-			EVP_PKEY evppub;
-			EVP_PKEY evppriv;
+			EVP_PKEY* evppub  = EVP_PKEY_new();
+			EVP_PKEY* evppriv = EVP_PKEY_new();
 
-			EVP_PKEY_assign_RSA(&evppub, rsapub);
-			EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+			EVP_PKEY_assign_RSA(evppub, rsapub);
+			EVP_PKEY_assign_RSA(evppriv, rsapriv);
 
 			if (checksigniature(*file, bstring)) {
 				cout << "yay! this is a signed binary!\n";
@@ -254,7 +257,7 @@ namespace {
 					file->push_back(bstring[i]);
 				file->push_back(bstring.size());
 
-				uint sigsize = EVP_PKEY_size(&evppriv);
+				uint sigsize = EVP_PKEY_size(evppriv);
 				vector<uint8> sig;
 				sig.resize(sigsize);
 
@@ -262,7 +265,7 @@ namespace {
 				EVP_SignInit(&signctx, EVP_sha1());
 
 				int r1 = EVP_SignUpdate(&signctx, &((*file)[0]), file->size());
-				int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+				int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, evppriv);
 
 				if (r1==1 && r2==1) {
 
@@ -296,6 +299,8 @@ namespace {
 			} else
 				cout << "no! this is not a signed binary!\n";
 
+			EVP_PKEY_free(evppub);
+			EVP_PKEY_free(evppriv);
 			return hassignedbuild;
 		}
 	};
@@ -600,11 +605,11 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 		rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
 		BIO_free(pubmem);
 	}
-	EVP_PKEY evppub;
-	EVP_PKEY evppriv;
+	EVP_PKEY* evppub  = EVP_PKEY_new();
+	EVP_PKEY* evppriv = EVP_PKEY_new();
 
-	EVP_PKEY_assign_RSA(&evppub, rsapub);
-	EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+	EVP_PKEY_assign_RSA(evppub, rsapub);
+	EVP_PKEY_assign_RSA(evppriv, rsapriv);
 
 	bool issigned = true;
 
@@ -615,7 +620,7 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 		if (res != 1) issigned &= false;
 		res = EVP_VerifyUpdate(&verifyctx, &content[0], content.size());
 		if (res != 1) issigned &= false;
-		res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), &evppub);
+		res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), evppub);
 		if (res != 1) issigned &= false;
 	}
 
@@ -707,14 +712,14 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 			oparse = parse;
 		}
 	} else if (rsapriv) {
-		uint sigsize = EVP_PKEY_size(&evppriv);
+		uint sigsize = EVP_PKEY_size(evppriv);
 		sig.resize(sigsize);
 
 		EVP_MD_CTX signctx;
 		EVP_SignInit(&signctx, EVP_sha1());
 
 		int r1 = EVP_SignUpdate(&signctx, &content[0], content.size());
-		int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+		int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, evppriv);
 
 		if (r1 == 1 && r2 == 1) {
 			sig = Base64::encode(sig);
@@ -729,7 +734,8 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 
 //				BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
 //				rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
-
+	EVP_PKEY_free(evppub);
+	EVP_PKEY_free(evppriv);
 
 	return result;
 }
@@ -768,16 +774,16 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 		fclose(privfile);
 	}
 
-	EVP_PKEY evppriv;
+	EVP_PKEY* evppriv = EVP_PKEY_new();
 
-	EVP_PKEY_assign_RSA(&evppriv, rsapriv);
+	EVP_PKEY_assign_RSA(evppriv, rsapriv);
 
 	// first append buildstring
 	for (uint i = 0; i < bstring.size(); ++i)
 		file.push_back(bstring[i]);
 	file.push_back(bstring.size());
 
-	uint sigsize = EVP_PKEY_size(&evppriv);
+	uint sigsize = EVP_PKEY_size(evppriv);
 	vector<uint8> sig;
 	sig.resize(sigsize);
 
@@ -785,7 +791,8 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 	EVP_SignInit(&signctx, EVP_sha1());
 
 	int r1 = EVP_SignUpdate(&signctx, &file[0], file.size());
-	int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, &evppriv);
+	int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, evppriv);
+	EVP_PKEY_free(evppriv);
 
 	if (r1==1 && r2==1) {
 
