@@ -283,7 +283,7 @@ namespace services {
 			}
 
 			template <typename CBS, typename Handler>
-			void async_write_some(CBS& cbs, const Handler& handler)
+			void async_write_some(CBS cbs, const Handler& handler)
 			{
 				service.get_work_service().dispatch(
 					helper_write_some<CBS, Handler>(service.get_io_service(), cbs, fd, handler)
