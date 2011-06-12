@@ -45,13 +45,6 @@ namespace Gtk {
 		return boost::shared_ptr<Notification>(new Notification(widget_, summary_, body_, icon_));
 	}
 
-	boost::shared_ptr<Notification> Notification::create(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_) {
-		return boost::shared_ptr<Notification>(new Notification(statusicon_, summary_, body_, icon_));
-	}
-
-	boost::shared_ptr<Notification> Notification::create(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_) {
-		return boost::shared_ptr<Notification>(new Notification(statusicon_, summary_, body_, icon_));
-	}
 
 
 
@@ -60,8 +53,7 @@ namespace Gtk {
 	 ******************************/
 
 	Notification::Notification()
-	: attached_widget(NULL)
-	, notify_notification(NULL)
+	: notify_notification(NULL)
 	, next_action_id(0)
 	{
 		check_libnotify();
@@ -69,8 +61,7 @@ namespace Gtk {
 	}
 
 	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
-	: attached_widget(NULL)
-	, notify_notification(NULL)
+	: notify_notification(NULL)
 	, next_action_id(0)
 	, summary(summary_)
 	, body(body_)
@@ -81,8 +72,7 @@ namespace Gtk {
 	}
 
 	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
-	: attached_widget(NULL)
-	, notify_notification(NULL)
+	: notify_notification(NULL)
 	, next_action_id(0)
 	, summary(summary_)
 	, body(body_)
@@ -93,8 +83,7 @@ namespace Gtk {
 	}
 
 	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
-	: attached_widget(widget_.gobj())
-	, notify_notification(NULL)
+	: notify_notification(NULL)
 	, next_action_id(0)
 	, summary(summary_)
 	, body(body_)
@@ -105,8 +94,7 @@ namespace Gtk {
 	}
 
 	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
-	: attached_widget(widget_.gobj())
-	, notify_notification(NULL)
+	: notify_notification(NULL)
 	, next_action_id(0)
 	, summary(summary_)
 	, body(body_)
@@ -116,31 +104,6 @@ namespace Gtk {
 		initialize_notification();
 	}
 
-	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
-	: attached_widget(NULL)
-	, attached_statusicon(statusicon_)
-	, notify_notification(NULL)
-	, next_action_id(0)
-	, summary(summary_)
-	, body(body_)
-	, icon(icon_)
-	{
-		check_libnotify();
-		initialize_notification();
-	}
-
-	Notification::Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
-	: attached_widget(NULL)
-	, attached_statusicon(statusicon_)
-	, notify_notification(NULL)
-	, next_action_id(0)
-	, summary(summary_)
-	, body(body_)
-	, icon_pixbuf(icon_)
-	{
-		check_libnotify();
-		initialize_notification();
-	}
 
 
 
@@ -431,22 +394,12 @@ namespace Gtk {
 			this->summary = application_name + " says hi!";
 		}
 
-		if(this->attached_statusicon) {
-			this->notify_notification = notify_notification_new_with_status_icon(
-				this->summary.c_str(),
-				this->body.size() > 0 ? this->body.c_str()              : NULL,
-				this->icon            ? this->icon.get_string().c_str() : NULL,
-				this->attached_statusicon->gobj()
-			);
-		}
-		else {
-			this->notify_notification = notify_notification_new(
-				this->summary.c_str(),
-				this->body.size() > 0 ? this->body.c_str()              : NULL,
-				this->icon            ? this->icon.get_string().c_str() : NULL,
-				this->attached_widget
-			);
-		}
+		this->notify_notification = notify_notification_new(
+			this->summary.c_str(),
+			this->body.size() > 0 ? this->body.c_str()              : NULL,
+			this->icon            ? this->icon.get_string().c_str() : NULL
+		);
+
 		if(!this->notify_notification) {
 			throw Glib::Error(); // FIXME: "Error while constructing notification";
 		}

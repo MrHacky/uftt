@@ -10,7 +10,6 @@
 #include <glibmm/listhandle.h>
 #include <glibmm/ustring.h>
 
-#include <gtkmm/statusicon.h>
 #include <gtkmm/stock.h>
 
 #include <sigc++/functors/slot.h>
@@ -204,32 +203,6 @@ namespace Gtk {
 			 */
 			static boost::shared_ptr<Notification> create(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 
-			/**
-			 * @param statusicon is the statusicon to attach to.
-			 * @param summary is a single line overview of the notification.
-			 * @param body is a multi-line body of text.
-			 * @param icon is the notification icon.
-			 *
-			 * Please refer to the @ref main_notification_constructor_description for
-			 * more information on the parameters.
-			 *
-			 * @see attach_to(const Gtk::StatusIcon& statusicon)
-			 */
-			static boost::shared_ptr<Notification> create(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
-
-			/**
-			 * @param statusicon is the statusicon to attach to.
-			 * @param summary is a single line overview of the notification.
-			 * @param body is a multi-line body of text.
-			 * @param icon is the notification icon.
-			 *
-			 * Please refer to the @ref main_notification_constructor_description for
-			 * more information on the parameters.
-			 *
-			 * @see attach_to(const Gtk::StatusIcon& statusicon)
-			 */
-			static boost::shared_ptr<Notification> create(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
-
 
 
 			/* Public functions */
@@ -295,12 +268,6 @@ namespace Gtk {
 			 * @param widget is the widget to attach to.
 			 */
 			void attach_to(Gtk::Widget& widget);
-
-			/**
-			 * Attaches the Notification to a specific statusicon.
-			 * @param statusicon is the statusicon to attach to.
-			 */
-			void attach_to(const Gtk::StatusIcon& statusicon);
 
 			/**
 			 * Sets the geometry hints on the notification. This sets the screen
@@ -499,8 +466,6 @@ namespace Gtk {
 			Notification(const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
 			Notification(Gtk::Widget& widget, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
-			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Gtk::StockID icon = Gtk::StockID());
-			Notification(const Glib::RefPtr<Gtk::StatusIcon> statusicon, const Glib::ustring summary, const Glib::ustring body = "", const Glib::RefPtr<Gdk::Pixbuf> icon = Glib::RefPtr<Gdk::Pixbuf>());
 			/* Non-copyable, like Glib::ObjectBase */
 			Notification(const Notification&);
 			Notification& operator=(const Notification&);
@@ -518,8 +483,6 @@ namespace Gtk {
 			void ensure_notify_notification();
 			guint next_action_id;
 			NotifyNotification* notify_notification;
-			GtkWidget* attached_widget;
-			Glib::RefPtr<Gtk::StatusIcon> attached_statusicon;
 			Glib::ustring summary;
 			Glib::ustring body;
 			Glib::ustring category;

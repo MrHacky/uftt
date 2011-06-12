@@ -11,7 +11,7 @@ IF(AUTODETECT_GTK_GUI)
 	IF(PKG_CONFIG_FOUND)
 		pkg_check_modules(GTKMM24 gtkmm-2.4>=2.16.0)
 		pkg_check_modules(GTHREAD gthread-2.0)
-		pkg_check_modules(LIBNOTIFY libnotify>=0.4.5)
+		pkg_check_modules(LIBNOTIFY libnotify>=0.7.2)
 
 		IF(GTKMM24_FOUND)
 			IF(GTHREAD_FOUND)
