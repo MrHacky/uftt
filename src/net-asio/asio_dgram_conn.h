@@ -636,13 +636,13 @@ namespace dgram {
 			}
 
 			template <typename MBS, typename Handler>
-			void async_read_some(MBS mbs, const Handler& handler)
+			void async_read_some(const MBS& mbs, const Handler& handler)
 			{
 				impl->async_read_some(mbs, handler);
 			}
 
 			template <typename CBS, typename Handler>
-			void async_write_some(CBS cbs, const Handler& handler)
+			void async_write_some(const CBS& cbs, const Handler& handler)
 			{
 				impl->async_write_some(cbs, handler);
 			}
