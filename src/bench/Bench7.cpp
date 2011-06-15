@@ -20,7 +20,7 @@ services::diskio_service ds(svc);
 #ifdef WIN32
 	int NUM_FILES = 6;
 #else
-	int NUM_FILES = 1;
+	#define NUM_FILES 2
 #endif
 #define TGT_FILESIZE (512*1024*1024)
 boost::filesystem::path files[MAX_FILES];
@@ -212,7 +212,7 @@ void sum_win_mmap()
 }
 #endif // WIN32
 
-#ifdef __linux__0
+#ifdef __linux__
 void sum_linux_mmap() {
 		std::cout << "\nsum_linux_mmap:\n\n";
 	prevtime = boost::posix_time::microsec_clock::universal_time();
@@ -234,13 +234,13 @@ void sum_linux_mmap() {
 }
 #endif
 
-#if 0
-void bench_write()
+#if __linux__
+void bench_fwrite()
 {
 	std::cout << "bench_fwrite:\n\n";
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	for (int i = 0; i < NUM_FILES; ++i) {
-		int file = open(files[i].native_file_string().c_str(), O_WRONLY | O_CREAT | O_DIRECT | O_TRUNC);
+		int file = open(files[i].native_file_string().c_str(), O_WRONLY | O_CREAT | O_DIRECT | O_TRUNC, 0644);
 		sum = 0;
 		size_t todo = TGT_FILESIZE;
 		do
@@ -287,9 +287,9 @@ void frm_doread(IFileReaderManagerRef frm, int filenum, IFileReaderRef ifrr, IMe
 		ifrr->read(bufsize, boost::bind(&frm_doread, frm, filenum, ifrr, _1, _2, _3));
 
 	if (len > 0) {
-		char* buf = (char*)imbr->data;
-		for (int i = 0; i < len; ++i)
-			sum += buf[i];
+		const char* buf = (const char*)&imbr->data[0];
+		for (size_t j = 0; j < len; ++j)
+			sum += buf[j];
 	}
 
 	if (!imbr || len > 0) /*empty*/;
@@ -350,7 +350,7 @@ void flush_cashes() {
 		fclose(f);
 	}
 	else {
-		std::cout << "FAILED!" << std::endl;
+		std::cout << "FAILED! (try running as root)" << std::endl;
 	}
 }
 
@@ -383,11 +383,10 @@ int main(int argc, char** argv)
 	Sleep(2000);
 #else
 	files[0] = "/tmp/bench-7.bin";
-	//flush_cashes();
-	//sum_async_read_some_at();
-	flush_cashes();
-	bench_fwrite();
-	//flush_cashes();
-	//sum_linux_mmap();
+	files[1] = "/tmp/bench-7.bin";
+	flush_cashes(); bench_fread();
+	//flush_cashes(); sum_async_read_some_at();
+	flush_cashes(); bench_frm();
+	//flush_cashes(); sum_linux_mmap();
 	#endif
 };
