@@ -457,7 +457,7 @@ namespace dgram {
 			}
 
 			template <typename MBS, typename Handler>
-			void async_read_some(MBS& mbs, const Handler& handler)
+			void async_read_some(const MBS& mbs, const Handler& handler)
 			{
 				if (!canreceive()) {
 					service.dispatch(boost::bind<void>(handler,
@@ -494,7 +494,7 @@ namespace dgram {
 			}
 
 			template <typename CBS, typename Handler>
-			void async_write_some(CBS& cbs, const Handler& handler)
+			void async_write_some(const CBS& cbs, const Handler& handler)
 			{
 				if (!cansend()) {
 					service.dispatch(boost::bind<void>(handler,
@@ -532,7 +532,7 @@ namespace dgram {
 			}
 
 			template <typename CBS>
-			size_t write_some(CBS& cbs, boost::system::error_code& ec)
+			size_t write_some(const CBS& cbs, boost::system::error_code& ec)
 			{
 				if (!cansend()) {
 					ec = boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted);
@@ -648,7 +648,7 @@ namespace dgram {
 			}
 
 			template <typename CBS>
-			size_t write_some(CBS& cbs, boost::system::error_code& ec)
+			size_t write_some(const CBS& cbs, boost::system::error_code& ec)
 			{
 				return impl->write_some(cbs, ec);
 			}

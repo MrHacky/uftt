@@ -275,7 +275,7 @@ namespace services {
 			}
 
 			template <typename MBS, typename Handler>
-			void async_read_some(MBS mbs, const Handler& handler)
+			void async_read_some(const MBS& mbs, const Handler& handler)
 			{
 				service.get_work_service().dispatch(
 					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler, testlen)
@@ -369,7 +369,7 @@ namespace services {
 				Handler handler;
 				uint32& testlen;
 
-				helper_read_some(boost::asio::io_service& service_, MBS& mbs_, FILE* fd_, const Handler& handler_, uint32& testlen_)
+				helper_read_some(boost::asio::io_service& service_, const MBS& mbs_, FILE* fd_, const Handler& handler_, uint32& testlen_)
 					: service(service_), mbs(mbs_), fd(fd_), handler(handler_), testlen(testlen_)
 				{
 				}
