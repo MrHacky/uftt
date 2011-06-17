@@ -7,6 +7,7 @@
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility.hpp>
 
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/linear_congruential.hpp>
@@ -81,6 +82,28 @@ namespace {
 	"WT6HoksG00Qxv/0SO8+CHAKWlj6BGvLTPlwbfO30btlkvqPyj+zaxiUCAwEAAQ==\n"
 	"-----END RSA PUBLIC KEY-----\n";
 
+	///> Handy wrapper for EVP_PKEY*
+	class EVP_PKEY_wrap: public boost::noncopyable {
+		private:
+			EVP_PKEY* pkey;
+		public:
+			EVP_PKEY_wrap()
+			{
+				pkey = EVP_PKEY_new();
+			}
+
+			~EVP_PKEY_wrap()
+			{
+				EVP_PKEY_free(pkey);
+			}
+
+			///< Conversion operator so this class can be used anywhere a EVP_PKEY* is expected
+			operator EVP_PKEY*()
+			{
+				return pkey;
+			}
+	};
+
 	// returns true when signature checks out
 	bool checksigniature(const std::vector<uint8>& file, const std::string& bstring_expect) {
 		RSA* rsapub = NULL;
@@ -135,19 +158,15 @@ namespace {
 		if (bstring_file != bstring_expect)
 			return false;
 
-
-		EVP_PKEY* evppub = EVP_PKEY_new();
+		EVP_PKEY_wrap evppub;
 		EVP_PKEY_assign_RSA(evppub, rsapub);
 		int res;
 		EVP_MD_CTX verifyctx;
 		res = EVP_VerifyInit(&verifyctx, EVP_sha1());
-		if(res == 1) {
-			res = EVP_VerifyUpdate(&verifyctx, &file[0], file.size()-8-sigsize);
-			if(res == 1) {
-				res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), evppub);
-			}
-		}
-		EVP_PKEY_free(evppub);
+		if (res != 1) return false;
+		res = EVP_VerifyUpdate(&verifyctx, &file[0], file.size()-8-sigsize);
+		if (res != 1) return false;
+		res = EVP_VerifyFinal(&verifyctx, &sig[0], sig.size(), evppub);
 		if (res != 1) return false;
 
 		return true;
@@ -237,8 +256,8 @@ namespace {
 				rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
 				BIO_free(pubmem);
 			}
-			EVP_PKEY* evppub  = EVP_PKEY_new();
-			EVP_PKEY* evppriv = EVP_PKEY_new();
+			EVP_PKEY_wrap evppub;
+			EVP_PKEY_wrap evppriv;
 
 			EVP_PKEY_assign_RSA(evppub, rsapub);
 			EVP_PKEY_assign_RSA(evppriv, rsapriv);
@@ -299,8 +318,6 @@ namespace {
 			} else
 				cout << "no! this is not a signed binary!\n";
 
-			EVP_PKEY_free(evppub);
-			EVP_PKEY_free(evppriv);
 			return hassignedbuild;
 		}
 	};
@@ -605,8 +622,8 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 		rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
 		BIO_free(pubmem);
 	}
-	EVP_PKEY* evppub  = EVP_PKEY_new();
-	EVP_PKEY* evppriv = EVP_PKEY_new();
+	EVP_PKEY_wrap evppub;
+	EVP_PKEY_wrap evppriv;
 
 	EVP_PKEY_assign_RSA(evppub, rsapub);
 	EVP_PKEY_assign_RSA(evppriv, rsapriv);
@@ -734,8 +751,6 @@ std::vector<std::pair<std::string, std::string> > AutoUpdater::parseUpdateWebPag
 
 //				BIO* pubmem = BIO_new_mem_buf(thepubkey, -1);
 //				rsapub = PEM_read_bio_RSAPublicKey(pubmem, NULL, NULL, NULL);
-	EVP_PKEY_free(evppub);
-	EVP_PKEY_free(evppriv);
 
 	return result;
 }
@@ -774,7 +789,7 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 		fclose(privfile);
 	}
 
-	EVP_PKEY* evppriv = EVP_PKEY_new();
+	EVP_PKEY_wrap evppriv;
 
 	EVP_PKEY_assign_RSA(evppriv, rsapriv);
 
@@ -792,7 +807,6 @@ bool AutoUpdater::doSigning(const ext::filesystem::path& kfpath, const std::stri
 
 	int r1 = EVP_SignUpdate(&signctx, &file[0], file.size());
 	int r2 = EVP_SignFinal(&signctx, &sig[0], &sigsize, evppriv);
-	EVP_PKEY_free(evppriv);
 
 	if (r1==1 && r2==1) {
 
