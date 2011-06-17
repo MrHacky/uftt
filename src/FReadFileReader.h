@@ -75,7 +75,7 @@ class FReadFileReader : public IFileReader {
 		FReadFileReaderManager*const manager;
 		FILE* fd;
 
-		friend class FReadFileReaderManager::helper_read_some;
+		friend struct FReadFileReaderManager::helper_read_some;
 };
 
 #endif // FREAD_FILE_READER_H
