@@ -15,6 +15,7 @@
 //#include "../net-asio/asio_http_request.h"
 
 #include "../UFTTCore.h"
+#include "../Platform.h"
 
 class QTreeWidgetItem;
 class QCloseEvent;
@@ -29,6 +30,7 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 	private:
 		QSystemTrayIcon* trayicon;
 		DialogPreferences* dialogPreferences;
+		platform::TaskbarProgress taskbarProgress;
 
 		UFTTSettingsRef settings;
 		ShareID auto_update_share;

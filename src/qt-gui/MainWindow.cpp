@@ -27,10 +27,8 @@
 #include <boost/foreach.hpp>
 
 #include "QDebugStream.h"
-#include "shobjidl.h"
 #include "QToggleHeaderAction.h"
 
-#include "../Platform.h"
 #include "../AutoUpdate.h"
 #include "../util/StrFormat.h"
 #include "../util/Filesystem.h"
@@ -105,6 +103,7 @@ MainWindow::MainWindow(UFTTSettingsRef settings_)
 , ishiding(false)
 , timerid(0)
 , dialogPreferences(NULL)
+, taskbarProgress(boost::lexical_cast<std::string>(this->winId()))
 {
 	setupUi(this);
 
@@ -641,11 +640,8 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 	uint32 queue = ti.queue;
 	uint64 total = ti.size;
 
-	ITaskbarList3* m_pTaskBarlist;
-	CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL, IID_ITaskbarList3, (void**)&m_pTaskBarlist);
-
 	if (ti.status == TASK_STATUS_ERROR) {
-		m_pTaskBarlist->SetProgressState(winId(), TBPF_ERROR);
+		taskbarProgress.setStateError();
 		if (!ti.isupload || false /* show upload failures */) {
 			trayicon->showMessage(
 				QString() + (ti.isupload ? "Upload" : "Download") + " Failed",
@@ -657,8 +653,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 		}
 	}
 
-	m_pTaskBarlist->SetProgressValue(winId(), ti.transferred, ti.size);
-	
+	taskbarProgress.setValue(ti.transferred, ti.size);
 
 	std::string type = (ti.isupload ? "U: " : "D: ");
 	twi->setText(TLCN_SHARE, qext::utf8::toQString(type + ti.shareinfo.name));

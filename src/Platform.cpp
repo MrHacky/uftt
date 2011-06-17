@@ -3,6 +3,7 @@
 #ifdef WIN32
 #  include <windows.h>
 #  include <shlobj.h>
+#  include <shobjidl.h>
 #  include <stdio.h>
 #  include <fcntl.h>
 #  include <io.h>
@@ -115,24 +116,31 @@ namespace platform {
 #endif
 	}
 
-	void activateWindow(const std::string& wid)
-	{
 #ifdef WIN32
+	HWND parseHWND(const std::string& hwnd)
+	{
 		// wid is a string created by boost::lexical_cast<std::string>(hwnd)
 		// as HWND is a pointer type this will be a hex value
 		// so we'll need to do some manual parsing
 		uintptr_t val = 0;
-		for (size_t i = 0; i < wid.size(); ++i) {
-			char c = wid[i];
-			int cval = 0;
+		for (size_t i = 0; i < hwnd.size(); ++i) {
+			char c = hwnd[i];
+			int cval = -1;
 			if (c >= '0' && c <= '9') cval = c - '0';
 			if (c >= 'a' && c <= 'f') cval = c - 'a' + 10;
 			if (c >= 'A' && c <= 'F') cval = c - 'A' + 10;
+			if (cval == -1) return (HWND)0;
 			val <<= 4;
 			val |= cval;
 		}
-		HWND wh = (HWND)val;
-		SetForegroundWindow(wh);
+		return (HWND)val;
+	}
+#endif
+
+	void activateWindow(const std::string& wid)
+	{
+#ifdef WIN32
+		SetForegroundWindow(parseHWND(wid));
 #endif
 	}
 
@@ -576,6 +584,44 @@ namespace platform {
 			res.push_back(argv[i]);
 #endif
 		return res;
+	}
+
+	struct TaskbarProgress::pimpl_t {
+#ifdef WIN32
+		HWND hwnd;
+		ITaskbarList3* itbl3;
+#endif
+	};
+
+	TaskbarProgress::TaskbarProgress(const std::string& wid)
+	{
+		pimpl = new pimpl_t();
+#ifdef WIN32
+		pimpl->hwnd = parseHWND(wid);
+		CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL, IID_ITaskbarList3, (void**)&pimpl->itbl3);
+#endif
+	}
+
+	TaskbarProgress::~TaskbarProgress()
+	{
+#ifdef WIN32
+		if (pimpl->itbl3) delete pimpl->itbl3;
+#endif
+		delete pimpl;
+	}
+
+	void TaskbarProgress::setValue(uint64 current, uint64 total)
+	{
+#ifdef WIN32
+		if (pimpl->itbl3) pimpl->itbl3->SetProgressValue(pimpl->hwnd, current, total);
+#endif
+	}
+
+	void TaskbarProgress::setStateError()
+	{
+#ifdef WIN32
+		if (pimpl->itbl3) pimpl->itbl3->SetProgressState(pimpl->hwnd, TBPF_ERROR);
+#endif
 	}
 
 } // namespace platform

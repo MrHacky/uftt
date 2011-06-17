@@ -78,6 +78,20 @@ namespace platform {
 	 * @note Only works on windows, and probably not even 100% then.
 	 */
 	ext::filesystem::path getDragTargetPath();
+
+	///> Wrapper for taskbar progress interface in windows 7
+	class TaskbarProgress {
+		public:
+			TaskbarProgress(const std::string& wid);
+			~TaskbarProgress();
+
+			void setValue(uint64 current, uint64 total);
+			void setStateError();
+
+		private:
+			struct pimpl_t;
+			pimpl_t* pimpl;
+	};
 } // namespace platform
 
 #endif//PLATFORM_H
