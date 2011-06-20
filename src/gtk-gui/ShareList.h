@@ -67,6 +67,7 @@
 			void on_pick_download_destination_dialog_button_clicked();
 			void on_refresh_shares();
 			bool on_share_list_treeview_signal_button_press_event(GdkEventButton* event);
+			bool on_share_list_treeview_signal_key_press_event(GdkEventKey* event);
 			void download_selected_shares();
 			void download_selected_shares(ext::filesystem::path destination);
 			void remove_selected_shares();

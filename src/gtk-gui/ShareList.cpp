@@ -2,6 +2,7 @@
 #include "../util/StrFormat.h"
 #include <string>
 #include <gdkmm/event.h>
+#include <gdk/gdkkeysyms.h>
 #include <gtkmm/stock.h>
 #include <boost/foreach.hpp>
 #include <gtkmm/messagedialog.h>
@@ -50,11 +51,12 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	listTargets.push_back( Gtk::TargetEntry("STRING"       , Gtk::TARGET_OTHER_APP, 2) );
 	share_list_treeview.drag_dest_set(listTargets); // Should use defaults, DEST_DEFAULT_ALL, Gdk::ACTION_COPY);
 	share_list_treeview.signal_drag_data_received().connect(boost::bind(&ShareList::on_share_list_treeview_signal_drag_data_received, this, _1, _2, _3, _4, _5, _6));
-	// FIXME: TreeView deselects rows before calling activated when pressing enter.
-	//         See http://bugzilla.xfce.org/show_bug.cgi?id=5943
 	share_list_treeview.signal_row_activated().connect(boost::bind(&ShareList::download_selected_shares, this));
 	share_list_treeview.signal_button_press_event().connect(
 		sigc::mem_fun(this, &ShareList::on_share_list_treeview_signal_button_press_event), false);
+	share_list_treeview.signal_key_press_event().connect(
+		sigc::mem_fun(this, &ShareList::on_share_list_treeview_signal_key_press_event), false);
+
 	share_list_scrolledwindow.add(share_list_treeview);
 	share_list_scrolledwindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
@@ -284,6 +286,31 @@ void ShareList::on_share_list_treeview_selection_signal_changed() {
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownload")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareDownloadTo")->set_sensitive(has_selection);
 	uimanager_ref->get_action("/MenuBar/ShareMenu/ShareRemoveShare")->set_sensitive(has_selection);
+}
+
+bool ShareList::on_share_list_treeview_signal_key_press_event(GdkEventKey* event) {
+	/**
+	 * We 'disconnect' the normal handlers so that we can prevent the
+	 * the 'row-activated' handler from running upon pressing 'enter'.
+	 * This is because the default row-activated handler reduces the
+	 * selection to a single item before firing the 'row-activated'
+	 * signal.
+	 */
+	if(event->type == GDK_KEY_PRESS) {
+		switch(event->keyval) {
+			case GDK_KEY_Delete:
+			case GDK_KEY_KP_Delete: {
+				remove_selected_shares();
+				return true;
+			}; break;
+			case GDK_KEY_Return:
+			case GDK_KEY_KP_Enter: {
+				download_selected_shares();
+				return true;
+			}; break;
+		}
+	}
+	return false;
 }
 
 bool ShareList::on_share_list_treeview_signal_button_press_event(GdkEventButton* event) {
