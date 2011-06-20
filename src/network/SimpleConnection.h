@@ -387,7 +387,14 @@ class SimpleConnection: public ConnectionCommon {
 							disconnect(STRFORMAT("Requested share name too long: %d", hdr.len));
 					}; break;
 					case CMD_REPLY_TREE_LIST: { // reply file listing
-						handle_reply_listing(rbuf);
+						try {
+							// handle_reply_listing may throw if something goes wrong.
+							// E.g. we want to create a target directory, but
+							// a file with that name already exists.
+							handle_reply_listing(rbuf);
+						} catch (std::exception& e) {
+							disconnect(STRFORMAT("Error while handling listing reply: %s", e.what()));
+						}
 					}; break;
 					case CMD_REQUEST_FULL_FILE: {
 						if (hdr.len < 0xffff) {
@@ -1173,7 +1180,12 @@ class SimpleConnection: public ConnectionCommon {
 
 			//cout << "got dir '" << name << "'\n";
 			cwdsharepath /= name;
-			boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
+			try {
+				boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
+			} catch(boost::filesystem::basic_filesystem_error<boost::filesystem::path> e) {
+				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.what()));
+				return;
+			}
 			start_receive_command(rbuf);
 		}
 
