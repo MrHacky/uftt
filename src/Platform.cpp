@@ -605,7 +605,7 @@ namespace platform {
 	TaskbarProgress::~TaskbarProgress()
 	{
 #ifdef WIN32
-		if (pimpl->itbl3) delete pimpl->itbl3;
+		if (pimpl->itbl3) pimpl->itbl3->Release();
 #endif
 		delete pimpl;
 	}
@@ -613,7 +613,10 @@ namespace platform {
 	void TaskbarProgress::setValue(uint64 current, uint64 total)
 	{
 #ifdef WIN32
-		if (pimpl->itbl3) pimpl->itbl3->SetProgressValue(pimpl->hwnd, current, total);
+		if (pimpl->itbl3) {
+			pimpl->itbl3->SetProgressValue(pimpl->hwnd, current, total);
+			pimpl->itbl3->SetProgressState(pimpl->hwnd, TBPF_NORMAL);
+		}
 #endif
 	}
 
