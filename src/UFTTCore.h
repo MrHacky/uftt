@@ -152,6 +152,7 @@ class UFTTCore {
 		boost::signal<void(GuiCommand)> sigGuiCommand;
 		void handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e);
 		void handle_args(const std::vector<std::string>& args, bool fromremote);
+		void handle_command_download(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const std::string& share, const ext::filesystem::path& path);
 
 		void servicerunfunc();
 	public:

@@ -44,7 +44,13 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 			// failed to open listening socket, try to connect to existing uftt process
 			std::string file_list = STRFORMAT("argv[0]%c", (char)0);
 			size_t      file_count = 1;
-			for (size_t i = 1; i < args.size(); ++i) {
+			size_t      i          = 1;
+			if (args.size() == 4 && args[1] == "--download-share") {
+				file_list += STRFORMAT("%s%c%s%c", args[1], (char)0, args[2], (char)0);
+				i = 3;
+				file_count += 2;
+			}
+			for (; i < args.size(); ++i) {
 				ext::filesystem::path p(
 					boost::filesystem::system_complete(ext::filesystem::path(args[i]))
 				);
@@ -113,6 +119,7 @@ void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::s
 			size_t n = boost::lexical_cast<size_t>(getstr0(*sock));
 			for (size_t i = 0; i < n; ++i)
 				v.push_back(getstr0(*sock));
+			if (v.size() == 4 && v[1] == "--download-share") return handle_command_download(sock, v[2], v[3]);
 			uint8 st = 0;
 			boost::asio::write(*sock, boost::asio::buffer(&st, 1));
 			boost::asio::write(*sock, boost::asio::buffer(STRFORMAT("%s%c", mwid, (char)0)));
@@ -123,6 +130,24 @@ void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::s
 		}
 		if (!v.empty())
 			handle_args(v, true);
+	}
+}
+
+void UFTTCore::handle_command_download(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const std::string& share, const ext::filesystem::path& path)
+{
+	try {
+		ShareID hax;
+		hax.mid = 0; // should be SimpleBackend id
+		hax.sid = share;
+		startDownload(hax, path);
+
+		uint8 st = 0;
+		boost::asio::write(*sock, boost::asio::buffer(&st, 1));
+		boost::asio::write(*sock, boost::asio::buffer(STRFORMAT("%s%c", mwid, (char)0)));
+
+		boost::asio::read(*sock, boost::asio::buffer(&st, 1)); // expected to fail with EOF
+	} catch (std::exception& ex) {
+		std::cout << "handle_local_connection: " << ex.what() << "\n";
 	}
 }
 
