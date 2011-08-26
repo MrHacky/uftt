@@ -293,7 +293,17 @@ namespace dgram {
 			void send_packet_once(packet& pack) {
 				//mcout(9) << STRFORMAT("[%3d,%3d] ", pack.sendid, pack.recvid) << "send udp packet: " << pack.type << "  len:" << pack.len << "\n";
 				//socket->send_to(boost::asio::buffer(&pack, ipx_packet::headersize+pack.datalen), endpoint);
-				cservice->socket.send_to(boost::asio::buffer(&pack, packet::headersize+pack.datalen), endpoint);
+				try {
+					cservice->socket.send_to(boost::asio::buffer(&pack, packet::headersize+pack.datalen), endpoint);
+				} catch (boost::system::system_error& error) {
+					if (handler) {
+						cservice->service.dispatch(boost::bind(handler, error.code()));
+						handler.clear();
+					}
+					// should clear these handler too?
+					if (!recv_queue.empty()) cservice->service.dispatch(boost::bind(recv_queue.front().handler, error.code(), 0));
+					if (!send_queue.empty()) cservice->service.dispatch(boost::bind(recv_queue.front().handler, error.code(), 0));
+				}
 				//udp_sock->async_send_to(boost::asio::buffer(&sendpack, 4*5), udp_addr, boost::bind(&ignore));
 			}
 
