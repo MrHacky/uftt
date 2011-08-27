@@ -137,9 +137,12 @@ void UFTTCore::handle_command_download(boost::shared_ptr<boost::asio::ip::tcp::s
 {
 	try {
 		ShareID hax;
-		hax.mid = 0; // should be SimpleBackend id
 		hax.sid = share;
-		startDownload(hax, path);
+		for (size_t i = 0; i < netmodules.size(); ++i) {
+			// try all modules and hackfully only one accepts the share url
+			hax.mid = i;
+			startDownload(hax, path);
+		}
 
 		uint8 st = 0;
 		boost::asio::write(*sock, boost::asio::buffer(&st, 1));
