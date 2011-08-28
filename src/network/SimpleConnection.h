@@ -657,8 +657,8 @@ class SimpleConnection: public ConnectionCommon {
 					for (uint i = 0; i < nlen; ++i)
 						(*tbuf)[i+16] = item.path[i];
 
-					send_receive_packet(tbuf);
 					qitems.pop_front();
+					send_receive_packet(tbuf);
 				}; break;
 				case QITEM_REQUEST_FILE: {
 					tbuf->clear();
@@ -912,8 +912,9 @@ class SimpleConnection: public ConnectionCommon {
 			} // fi (sendqueue.size() < 25)
 			if (sendqueue.size() > 0 && !issending) {
 				// actually initiates sending
-				handle_sent_buffer(boost::system::error_code(), 0, 0, sendqueue.front());
+				shared_vec sbuf = sendqueue.front();
 				sendqueue.pop_front();
+				handle_sent_buffer(boost::system::error_code(), 0, 0, sbuf);
 			}
 			if (sendqueue.size() == 0 && donesend && !issending)
 				handle_sent_everything();
