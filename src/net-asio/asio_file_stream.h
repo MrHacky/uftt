@@ -155,9 +155,29 @@ namespace services {
 
 	class diskio_filetype: public boost::asio::windows::stream_handle {
 		private:
-			void assign(const native_type & native_descriptor);
-			boost::system::error_code assign(const native_type & native_descriptor,	boost::system::error_code & ec);
 
+			static HANDLE openhandle(const std::string& path, DWORD access, DWORD creation) {
+				return ::CreateFileA(
+					path.c_str(),
+					access,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					NULL,
+					creation,
+					FILE_FLAG_OVERLAPPED,
+					NULL
+				);
+			}
+			static HANDLE openhandle(const std::wstring& path, DWORD access, DWORD creation) {
+				return ::CreateFileW(
+					path.c_str(),
+					access,
+					FILE_SHARE_READ|FILE_SHARE_WRITE,
+					NULL,
+					creation,
+					FILE_FLAG_OVERLAPPED,
+					NULL
+				);
+			}
 		public:
 			enum openmode {
 				in     = 1 << 0,
@@ -174,39 +194,45 @@ namespace services {
 			{
 			}
 
-			boost::system::error_code open(const ext::filesystem::path& path, unsigned int mode = in|out)
+			void open(const ext::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
 			{
-				HANDLE whandle = ::CreateFile(
-					TEXT(path.native_file_string().c_str()),
+				HANDLE whandle = openhandle(
+					path.external_file_string(),
 					((mode & in) ? GENERIC_READ : 0) | ((mode & out) ? GENERIC_WRITE : 0),
-					FILE_SHARE_READ|FILE_SHARE_WRITE,
-					NULL,
-					OPEN_EXISTING,
-					FILE_FLAG_OVERLAPPED,
-					NULL
+					OPEN_EXISTING
 				);
 				if (whandle == INVALID_HANDLE_VALUE) {
 					int error = GetLastError();
 					if (error == 2 && (mode&create)) {
-						whandle = ::CreateFile(
-							TEXT(path.native_file_string().c_str()),
+						whandle = openhandle(
+							path.external_file_string(),
 							((mode & in) ? GENERIC_READ : 0) | ((mode & out) ? GENERIC_WRITE : 0),
-							FILE_SHARE_READ|FILE_SHARE_WRITE,
-							NULL,
-							CREATE_NEW,
-							FILE_FLAG_OVERLAPPED,
-							NULL
+							CREATE_NEW
 						);
 						if (whandle == INVALID_HANDLE_VALUE)
 							error = GetLastError();
 						else
 							error = 0;
 					}
-					if (error != 0)
-						return boost::system::error_code(error, boost::asio::error::get_system_category());
+					if (error != 0) {
+						err =  boost::system::error_code(error, boost::asio::error::get_system_category());
+						return;
+					}
 				}
-				boost::asio::windows::stream_handle::assign(whandle);
-				return  boost::system::error_code();
+				assign(whandle, err);
+				return;
+			}
+
+			void open(const ext::filesystem::path& path, unsigned int mode = in|out)
+			{
+				boost::system::error_code err;
+				open(path, mode, err);
+				if (err) throw boost::system::system_error(err);
+			}
+
+			void open(const ext::filesystem::path& path, boost::system::error_code& err)
+			{
+				open(path, in|out, err);
 			}
 	};
 
