@@ -450,6 +450,7 @@ namespace dgram {
 				rcv_wnd = 1;
 				rdoff = rdsize = 0;
 				fin_rcv = fin_snd = fin_ack = false;
+				send_undelivered = 0;
 				cservice->addconn(this);
 			}
 
@@ -459,6 +460,7 @@ namespace dgram {
 				rcv_wnd = 1;
 				rdoff = rdsize = 0;
 				fin_rcv = fin_snd = fin_ack = false;
+				send_undelivered = 0;
 				cservice->addconn(this);
 			}
 
