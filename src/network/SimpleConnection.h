@@ -24,6 +24,7 @@
 #include "../UFTTCore.h"
 
 #include "../util/StrFormat.h"
+#include "../util/Coro.h"
 
 template <typename SockType, typename SockInit>
 class SimpleConnection: public ConnectionCommon {
@@ -1151,128 +1152,88 @@ class SimpleConnection: public ConnectionCommon {
 		 */
 		void kickoff_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, uint64 offset)
 		{
-			if (delayed_open_file) {
-				std::cout << "error: multiple file opens\n";
-			}
-
-			if (open_files > 256) {
-				delayed_open_file = boost::bind(&SimpleConnection::delay_file_write, this, path, fsize, rbuf, offset);
-				return;
-			}
-
-			bool* done = new bool;
-			*done = false;
-
-			++open_files;
-			// kick off handle_ready_file for when the file is ready to write
-			boost::shared_ptr<services::diskio_filetype> file(new services::diskio_filetype(*gdiskio));
-			gdiskio->async_open_file(
-				path,
-				services::diskio_filetype::out | ((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
-				*file,
-				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset)
-			);
-
-			// kick off async_read for when we received some data (capped by file size)
-			rbuf->resize(getRcvBufSize(fsize));
-			boost::asio::async_read(
-				socket,
-				GETBUF(rbuf),
-				boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)))
-			);
+			(new coro_receive_into_file(this, path, offset, fsize, rbuf))->start();
 		}
 
-		/** Start asynchronous read from socket and write to file
-		 *  @param file The file to write to
-		 *  @param done Always true, used to keep track of when both handlers have been invoked
-		 *  @param size Amount of data left to read from the socket
-		 *  @param socketbuf Buffer to receive data into
-		 *  @param filebuf Buffer to write data to file from
-		 */
-		void kickoff_socketread_and_filewrite(boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec socketbuf, shared_vec filebuf)
+		struct coro_receive_into_file: public ext::coro::base<coro_receive_into_file>
 		{
-			if (size != 0) {
-				*done = false;
-				socketbuf->resize(getRcvBufSize(size));
-				boost::asio::async_read(socket, GETBUF(socketbuf),
-					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, size, socketbuf, filebuf));
-			} else {
-				// no more data to read, just one buffer left to write
-				// handle_ready_file will handle the size==0 case and
-				// close the file when the last buffer is written
-				*done = true;
-			}
-			boost::asio::async_write(*file, GETBUF(filebuf),
-				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, size, socketbuf, filebuf, 0));
-		}
+			private:
+				SimpleConnection* conn;
+				ext::filesystem::path path;
+				services::diskio_filetype file;
+				uint64 offset;
+				uint64 bytesleft;
+				shared_vec rbuf;
+				shared_vec wbuf;
+				int forkops;
+				bool stopped;
+			public:
+				coro_receive_into_file(SimpleConnection* conn_, const ext::filesystem::path& path_, uint64 offset_, uint64 fsize_, shared_vec rbuf)
+				: conn(conn_), path(path_), file(*conn->gdiskio), offset(offset_), bytesleft(fsize_), rbuf(rbuf), wbuf(new std::vector<uint8>(0)), stopped(false)
+				{};
 
-		/** handle file data received from the network
-		 *  @param e    an error occured
-		 *  @param file The file to write to
-		 *  @param done true if file is ready to write (handle_ready_file already fired)
-		 *  @param size amount of bytes left to receive for the file
-		 *  @param wbuf the buffer into which we received the data
-		 */
-		void handle_recv_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec prevbuf)
-		{
-			if (e) {
-				disconnect(STRFORMAT("handle_recv_file: %s", e.message()));
-				return;
-			}
+				void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code(), size_t /* transferred */ = 0) {
+					if (stopped) return;
+					if (ec) {
+						stopped = true;
+						conn->disconnect(STRFORMAT("coro_receive_into_file: %s (%d)", ec.message(), this->stateval(coro)));
+						return;
+					}
+					CORO_REENTER(coro) {
+						if (conn->open_files > 256) {
+							// if too many files open, yield here until some are closed
+							CORO_YIELD conn->delayed_open_file = coro(this);
+						}
+						++conn->open_files;
 
-			maxBufSize = std::min(maxBufSize*2, uint32(1024*1024*10));
+						// fork here, child will open file, parent receives data (inside loop)
+						forkops = 2;
+						CORO_FORK conn->gdiskio->async_open_file(
+							path,
+							services::diskio_filetype::out | ((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
+							file,
+							coro(this)
+						);
+						if (coro.is_child() && offset > 0) file.fseeka(offset);
+						for (;;) {
+							if (coro.is_parent()) {
+								rbuf->resize(conn->getRcvBufSize(bytesleft));
+								CORO_YIELD boost::asio::async_read(conn->socket, GETBUF(rbuf), coro(this));
+								conn->maxBufSize = std::min(conn->maxBufSize*2, uint32(1024*1024*10));
+								bytesleft -= rbuf->size();
+								if (bytesleft == 0) conn->start_receive_command();
+							} else
+								conn->update_statistics(wbuf->size());
 
-			size -= wbuf->size();
-			if (size == 0)
-				start_receive_command(shared_vec(new std::vector<uint8>()));
+							// join here so we have data to write (receive), and the file is ready for writing again (open/write)
+							if (--forkops > 0) CORO_YIELD break; //join
 
-			if (!*done) {
-				*done = true;
-			} else {
-				kickoff_socketread_and_filewrite(file, done, size, prevbuf, wbuf);
-			}
-		}
+							// nothing left to receive, break out of loop for final write
+							if (bytesleft == 0) break;
 
-		/** handle file ready to write
-		 *  @param e       an error occured
-		 *  @param file    is the file to write to
-		 *  @param done    true if there is data ready to write (except if size==0, then we close the file)
-		 *  @param size    amount of bytes left to write for the file
-		 *  @param wbuf    the buffer from where we will write the data
-		 *  @param curbuf  reference to the previous buffer - needed to prevent releasing the buffer while it is still used
-		 *  @param offset  is where in the file to start writing
-		 */
-		void handle_ready_file(const boost::system::error_code& e, boost::shared_ptr<services::diskio_filetype> file, bool* done, uint64 size, shared_vec wbuf, shared_vec curbuf, uint64 offset)
-		{
-			if (wbuf)
-				update_statistics(wbuf->size());
-			if (e) {
-				disconnect(STRFORMAT("handle_ready_file: %s", e.message()));
-				return;
-			}
+							// swap receive/write buffers: buffer we just wrote can be reused for receive, buffer we just received needs to be written
+							std::swap(rbuf, wbuf);
 
-			if (offset > 0) {
-				file->fseeka(offset);
-				offset = 0;
-			}
+							// fork here, child will write data to file, parent will receive new data (next iteration)
+							forkops = 2;
+							CORO_FORK boost::asio::async_write(file, GETBUF(wbuf), coro(this));
+						}
+						// final write of the data we just received
+						CORO_YIELD boost::asio::async_write(file, GETBUF(rbuf),  coro(this));
+						conn->update_statistics(rbuf->size());
+						file.close();
 
-			if (!*done) {
-				*done = true;
-			} else {
-				if (size == 0) {
-					// last buffer is written, close file and clean up
-					delete done;
-					file->close();
-					--open_files;
-					if (delayed_open_file)
-						delayed_open_file();
-					return;
-				} else {
-					size -= wbuf->size();
-					kickoff_socketread_and_filewrite(file, done, size, curbuf, wbuf);
-				}
-			}
-		}
+						// notify anyone waiting for files to be closed
+						--conn->open_files;
+						if (conn->delayed_open_file) {
+							// be extra safe and copy the callback locally, so delayed_open_file is cleared before we call it
+							boost::function<void()> local_callback;
+							local_callback.swap(conn->delayed_open_file);
+							local_callback();
+						}
+					}
+				};
+		};
 
 		void disconnect(std::string errmsg = "", bool canrespond = false)
 		{
