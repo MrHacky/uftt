@@ -1110,6 +1110,26 @@ class SimpleConnection: public ConnectionCommon {
 			kickoff_file_write(path, hdr.len, rbuf, false, 0);
 		}
 
+		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf)
+		{
+			if (e) {
+				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.message()));
+				return;
+			}
+
+			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
+
+			//cout << "got dir '" << name << "'\n";
+			cwdsharepath /= name;
+			try {
+				boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
+			} catch(boost::filesystem::basic_filesystem_error<boost::filesystem::path> e) {
+				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.what()));
+				return;
+			}
+			start_receive_command(rbuf);
+		}
+
 		boost::function<void()> delayed_open_file;
 
 		void delay_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
@@ -1167,26 +1187,6 @@ class SimpleConnection: public ConnectionCommon {
 			} else {
 				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)));
 			}
-		}
-
-		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf)
-		{
-			if (e) {
-				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.message()));
-				return;
-			}
-
-			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
-
-			//cout << "got dir '" << name << "'\n";
-			cwdsharepath /= name;
-			try {
-				boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
-			} catch(boost::filesystem::basic_filesystem_error<boost::filesystem::path> e) {
-				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.what()));
-				return;
-			}
-			start_receive_command(rbuf);
 		}
 
 		/** Start asynchronous read from socket and write to file
