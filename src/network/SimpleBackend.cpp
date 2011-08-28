@@ -883,7 +883,7 @@ void SimpleBackend::add_ip_addr_ipv6(boost::asio::ip::address addr) {
 				newsock->sock.set_option(boost::asio::ip::multicast::join_group(bcaddr, bcaddr.scope_id()));
 			} catch (boost::system::system_error& e) {
 				#ifdef WIN32
-					if (e.code().value() == 10022)
+					if (e.code().value() == WSAEINVAL)
 						std::cout << "Warning: failed to join multicast group for " << addr << '\n';
 					else
 				#endif
