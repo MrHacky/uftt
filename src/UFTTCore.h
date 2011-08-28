@@ -137,7 +137,6 @@ class UFTTCore {
 	private:
 		// declare these first so they will be destroyed last
 		boost::asio::io_service io_service;
-		services::diskio_service disk_service;
 
 		std::vector<std::string> args;
 		boost::asio::ip::tcp::acceptor local_listener;
@@ -200,7 +199,7 @@ class UFTTCore {
 
 		// Service getters
 		boost::asio::io_service& get_io_service();
-		services::diskio_service& get_disk_service();
+		boost::asio::io_service& get_work_service();
 
 		// Slightly hacky error passing to GUI
 		int error_state; // 0 == none, 1 == warning, 2 == error

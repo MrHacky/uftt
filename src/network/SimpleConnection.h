@@ -29,7 +29,6 @@
 template <typename SockType, typename SockInit>
 class SimpleConnection: public ConnectionCommon {
 	private:
-		services::diskio_service* gdiskio;
 		SockType socket;
 
 		std::string sharename;
@@ -102,11 +101,10 @@ class SimpleConnection: public ConnectionCommon {
 			: ConnectionCommon(service_, core_)
 			, socket(sockinit_)
 			, progress_timer(service_)
-			, cursendfile(core_->get_disk_service())
+			, cursendfile(service_)
 			, buffer_position(0)
 			, bytes_transferred_since_last_update(0)
 		{
-			gdiskio = &core->get_disk_service();
 			dldone = false;
 			uldone = false;
 			issending = false;
@@ -431,7 +429,7 @@ class SimpleConnection: public ConnectionCommon {
 						sc->item = &qitems.front();
 						sc->data = *rbuf;
 						sc->path = getWriteShareFilePath(qitems.front().path);
-						gdiskio->get_work_service().post(boost::bind(&sigchecker::main, sc));
+						core->get_work_service().post(boost::bind(&sigchecker::main, sc));
 					}; break;
 					case CMD_REQUEST_PARTIAL_FILE: {
 						uint idx = 0;
@@ -882,7 +880,7 @@ class SimpleConnection: public ConnectionCommon {
 							boost::shared_ptr<sigmaker> sm(new sigmaker(service));
 							sm->cb = boost::bind(&SimpleConnection::sigmake_done, this, sm, _1);
 							sm->item = &qitems.front();
-							gdiskio->get_work_service().post(boost::bind(&sigmaker::main, sm));
+							core->get_work_service().post(boost::bind(&sigmaker::main, sm));
 						} else if (qtype == QITEM_REQUESTED_FILESIG_BUSY) {
 							// ignore
 						} else {
@@ -1160,7 +1158,7 @@ class SimpleConnection: public ConnectionCommon {
 			private:
 				SimpleConnection* conn;
 				ext::filesystem::path path;
-				services::diskio_filetype file;
+				ext::asio::fstream file;
 				uint64 offset;
 				uint64 bytesleft;
 				shared_vec rbuf;
@@ -1169,7 +1167,7 @@ class SimpleConnection: public ConnectionCommon {
 				bool stopped;
 			public:
 				coro_receive_into_file(SimpleConnection* conn_, const ext::filesystem::path& path_, uint64 offset_, uint64 fsize_, shared_vec rbuf)
-				: conn(conn_), path(path_), file(*conn->gdiskio), offset(offset_), bytesleft(fsize_), rbuf(rbuf), wbuf(new std::vector<uint8>(0)), stopped(false)
+				: conn(conn_), path(path_), file(conn->service), offset(offset_), bytesleft(fsize_), rbuf(rbuf), wbuf(new std::vector<uint8>(0)), stopped(false)
 				{};
 
 				void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code(), size_t /* transferred */ = 0) {
@@ -1188,10 +1186,9 @@ class SimpleConnection: public ConnectionCommon {
 
 						// fork here, child will open file, parent receives data (inside loop)
 						forkops = 2;
-						CORO_FORK conn->gdiskio->async_open_file(
+						CORO_FORK file.async_open(
 							path,
-							services::diskio_filetype::out | ((offset == 0) ? services::diskio_filetype::create : services::diskio_filetype::in),
-							file,
+							ext::asio::fstream::out | ((offset == 0) ? ext::asio::fstream::create : ext::asio::fstream::in),
 							coro(this)
 						);
 						if (coro.is_child() && offset > 0) file.fseeka(offset);

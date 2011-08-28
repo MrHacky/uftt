@@ -12,7 +12,6 @@ using namespace std;
 
 SimpleBackend::SimpleBackend(UFTTCore* core_)
 	: service(core_->get_io_service())
-	, diskio(core_->get_disk_service())
 	, tcplistener_v4(core_->get_io_service())
 	, tcplistener_v6(core_->get_io_service())
 	, settings(core_->getSettingsRef())

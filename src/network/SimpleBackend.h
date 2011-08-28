@@ -63,7 +63,6 @@ class SimpleBackend: public INetModule {
 		UFTTCore* core;
 
 		boost::asio::io_service& service;
-		services::diskio_service& diskio;
 		std::map<boost::asio::ip::address, UDPSockInfoRef> udpsocklist;
 		boost::asio::ip::tcp::acceptor tcplistener_v4;
 		boost::asio::ip::tcp::acceptor tcplistener_v6;

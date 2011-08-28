@@ -25,7 +25,6 @@ namespace {
 
 UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
 : settings(settings_)
-, disk_service(io_service)
 , local_listener(io_service)
 , error_state(0)
 {
@@ -173,7 +172,6 @@ void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote
 
 UFTTCore::~UFTTCore()
 {
-	disk_service.stop();
 	io_service.stop();
 	servicerunner.join();
 }
@@ -350,7 +348,8 @@ boost::asio::io_service& UFTTCore::get_io_service()
 	return io_service;
 }
 
-services::diskio_service& UFTTCore::get_disk_service()
+boost::asio::io_service& UFTTCore::get_work_service()
 {
-	return disk_service;
+	// TODO use seperate service here?
+	return boost::asio::use_service<ext::asio::fstream_service<ext::asio::fstream> >(io_service).get_work_service();
 }

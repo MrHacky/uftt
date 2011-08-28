@@ -214,8 +214,8 @@ int imain(int argc, char **argv)
 			platform::freeConsole();
 
 		// get services
-		boost::asio::io_service& run_service  = core.get_disk_service().get_io_service();
-		boost::asio::io_service& work_service = core.get_disk_service().get_work_service();
+		boost::asio::io_service& run_service  = core.get_io_service();
+		boost::asio::io_service& work_service = core.get_work_service();
 
 		// kick off some async tasks (which hijack the disk io thread)
 		updateProvider.checkfile(run_service, argv[0], get_build_string(), true);

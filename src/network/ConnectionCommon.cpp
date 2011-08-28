@@ -6,8 +6,8 @@ ConnectionCommon::ConnectionCommon(boost::asio::io_service& service_, UFTTCore* 
 }
 
 /* filesender */
-ConnectionCommon::filesender::filesender(services::diskio_service& diskio)
-: file(diskio)
+ConnectionCommon::filesender::filesender(boost::asio::io_service& service)
+: file(service)
 {
 }
 
@@ -15,7 +15,7 @@ void ConnectionCommon::filesender::init(uint64 offset_)
 {
 	offset = offset_;
 	fsize = boost::filesystem::file_size(path) - offset;
-	file.open(path, services::diskio_filetype::in);
+	file.open(path, ext::asio::fstream::in);
 	file.fseeka(offset);
 	hsent = false;
 };

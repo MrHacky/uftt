@@ -8,7 +8,7 @@
 //#define BOOST_ASIO_DISABLE_IOCP
 
 // offsets are wrong atm, use thread queue implementation
-#define DISABLE_DISKIO_WIN32_IOCP_HANDLE
+//#define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 
 #if !defined(WIN32) || defined(BOOST_ASIO_DISABLE_IOCP) || defined(DISABLE_DISKIO_WIN32_IOCP_HANDLE)
 #define DISABLE_DISKIO_WIN32_IOCP_HANDLE
@@ -45,118 +45,78 @@ namespace openwrapper {
 #include <boost/bind.hpp>
 #include "../util/PosixError.h"
 
-/*****************************************************************/
-// Service default implementation?
+namespace ext { namespace asio {
+	//class fstream;
 
-namespace services {
-	class diskio_filetype;
-
-	class diskio_service //: public boost::asio::detail::service_base<diskio_queue_service>
+	template <typename File>
+	class fstream_service: public boost::asio::io_service::service
 	{
-		private:
-			boost::asio::io_service& io_service_;
-			boost::asio::io_service work_io_service;
-			boost::thread work_thread;
-
-			void thread_loop() {
-				boost::asio::io_service::work work(work_io_service);
-				work_io_service.run();
-			}
-
 		public:
-			explicit diskio_service(boost::asio::io_service& io_service)
-				: io_service_(io_service)
+			static boost::asio::io_service::id id;
+
+			explicit fstream_service(boost::asio::io_service &io_service)
+			: boost::asio::io_service::service(io_service)
+			, worker_work(worker_service)
+			, worker_thread(boost::bind(&boost::asio::io_service::run, &worker_service))
 			{
-				work_thread = boost::thread(boost::bind(&diskio_service::thread_loop, this)).move();
 			}
 
-			~diskio_service()
+			template <typename Handler>
+			void async_open(File* file, const ext::filesystem::path& path, int flags, const Handler& handler)
 			{
-				stop();
-			}
-
-			typedef diskio_filetype filetype;
-
-			boost::asio::io_service& get_io_service()
-			{
-				return io_service_;
+				worker_service.post(helper_open_file<Handler>(get_io_service(), file, path, flags, handler));
 			}
 
 			boost::asio::io_service& get_work_service()
 			{
-				return work_io_service;
-			}
-
-			void stop()
-			{
-				work_io_service.stop();
-				work_thread.join();
-			}
-
-			template <typename Path, typename Handler>
-			void async_create_directory(const Path& path, const Handler& handler)
-			{
-				work_io_service.dispatch(
-					helper_create_directory<Path, Handler>(io_service_, path, handler)
-				);
-			}
-
-			template <typename Path, typename Handler>
-			void async_open_file(const Path& path, int flags, filetype& file, const Handler& handler)
-			{
-				work_io_service.dispatch(
-					helper_open_file<Path, Handler>(io_service_, path, flags, file, handler)
-				);
+				return worker_service;
 			}
 
 		private:
-			template <typename Path, typename Handler>
+			void shutdown_service()
+			{
+				worker_service.stop();
+				worker_thread.join();
+			}
+
+			template <typename Handler>
 			struct helper_open_file {
 				boost::asio::io_service& service;
-				Path path;
+				ext::filesystem::path path;
 				int flags;
-				filetype& file;
+				File* file;
 				Handler handler;
 
-				helper_open_file(boost::asio::io_service& service_, const Path& path_, int flags_, filetype& file_, const Handler& handler_)
+				helper_open_file(boost::asio::io_service& service_, File* file_, const ext::filesystem::path& path_, int flags_, const Handler& handler_)
 					: service(service_), path(path_), flags(flags_), file(file_), handler(handler_)
 				{
 				}
 
-				void operator()();
-			};
-
-			template <typename Path, typename Handler>
-			struct helper_create_directory {
-				boost::asio::io_service& service;
-				Path path;
-				Handler handler;
-
-				helper_create_directory(boost::asio::io_service& service_, const Path& path_, const Handler& handler_)
-					: service(service_), path(path_), handler(handler_)
+				void operator()()
 				{
-				}
-
-				void operator()() {
 					boost::system::error_code res;
-					try {
-						boost::filesystem::create_directory(path);
-					} catch (boost::filesystem::basic_filesystem_error<Path>& e) {
-						res = e.code();
-					}
-					service.dispatch(boost::bind(handler, res));
+					file->open(path, flags, res);
+					service.post(boost::bind(handler, res));
 				}
 			};
 
+			boost::asio::io_service worker_service;
+			boost::asio::io_service::work worker_work;
+			boost::thread worker_thread;
 	};
+
+	template <typename File>
+	boost::asio::io_service::id fstream_service<File>::id;
 
 #ifndef DISABLE_DISKIO_WIN32_IOCP_HANDLE
 
-	class diskio_filetype: public boost::asio::windows::random_access_handle {
+	class fstream: public boost::asio::windows::random_access_handle {
 		private:
 			boost::uint64_t offset;
+			bool written;
 
-			static HANDLE openhandle(const std::string& path, DWORD access, DWORD creation) {
+			static HANDLE openhandle(const std::string& path, DWORD access, DWORD creation)
+			{
 				return ::CreateFileA(
 					path.c_str(),
 					access,
@@ -167,7 +127,8 @@ namespace services {
 					NULL
 				);
 			}
-			static HANDLE openhandle(const std::wstring& path, DWORD access, DWORD creation) {
+			static HANDLE openhandle(const std::wstring& path, DWORD access, DWORD creation)
+			{
 				return ::CreateFileW(
 					path.c_str(),
 					access,
@@ -178,6 +139,12 @@ namespace services {
 					NULL
 				);
 			}
+
+			ext::asio::fstream_service<fstream>& get_fstream_service()
+			{
+				return boost::asio::use_service<ext::asio::fstream_service<fstream> >(this->get_io_service());
+			}
+
 		public:
 			enum openmode {
 				in     = 1 << 0,
@@ -189,10 +156,16 @@ namespace services {
 				create = 1 << 6,
 			};
 
-			diskio_filetype(diskio_service& service)
-				: boost::asio::windows::random_access_handle(service.get_io_service())
-				, offset(0)
+			fstream(boost::asio::io_service& service)
+				: boost::asio::windows::random_access_handle(service)
+				, offset(0), written(false)
 			{
+			}
+
+			template <typename Handler>
+			void async_open(const ext::filesystem::path& path, int flags, const Handler& handler)
+			{
+				get_fstream_service().async_open(this, path, flags, handler);
 			}
 
 			void open(const ext::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
@@ -238,15 +211,18 @@ namespace services {
 
 			template <typename Handler>
 			struct handle_offset_inc {
-				diskio_filetype* parent;
+				fstream* file;
 				Handler handler;
 
-				handle_offset_inc(diskio_filetype* parent_, const Handler& handler_)
-					: parent(parent_), handler(handler_) {};
+				handle_offset_inc(fstream* file_, const Handler& handler_)
+					: file(file_), handler(handler_) {};
 
 				void operator()(const boost::system::error_code& error, std::size_t bytes_transferred)
 				{
-					parent->offset += bytes_transferred;
+					// if error, we might be aborted because file object was destroyed, and parent is no longer valid
+					// however, we don't actually support abortion for async_open, or for the non-iocp case
+					// so just ignore this for now
+					file->offset += bytes_transferred;
 					handler(error, bytes_transferred);
 				}
 			};
@@ -260,20 +236,34 @@ namespace services {
 			template <typename CBS, typename Handler>
 			void async_write_some(const CBS& cbs, const Handler& handler)
 			{
+				if (!written) {
+					// If first write after a seek, truncate file to current file position
+					written = true;
+					SetEndOfFile(native());
+				}
 				async_write_some_at(offset, cbs, handle_offset_inc<Handler>(this, handler));
 			}
 
 			void fseeka(uint64 offset_) {
 				offset = offset_;
+				written = false;
+				// setting file pointer here for truncate purposes in async_write_some
+				LARGE_INTEGER li;
+				li.QuadPart = offset;
+				SetFilePointer(native(), li.LowPart, &li.HighPart, FILE_BEGIN);
 			}
 	};
 
 #else
-	class diskio_filetype {
+	class fstream {
 		private:
-			diskio_service& service;
+			boost::asio::io_service& service;
 			FILE* fd;
-			uint32 testlen;
+
+			ext::asio::fstream_service<fstream>& get_fstream_service()
+			{
+				return boost::asio::use_service<ext::asio::fstream_service<fstream> >(service);
+			}
 
 		public:
 			enum openmode {
@@ -286,16 +276,20 @@ namespace services {
 				create = 1 << 6,
 			};
 
-			diskio_filetype(diskio_service& service_)
+			fstream(boost::asio::io_service& service_)
 				: service(service_)
+				, fd(NULL)
 			{
-				fd = NULL;
-				testlen = 716244992;//683*1024*1024;
+			}
+
+			~fstream()
+			{
+				close();
 			}
 
 			boost::asio::io_service& get_io_service()
 			{
-				return service.get_io_service();
+				return service;
 			}
 
 			void open(const ext::filesystem::path& path, unsigned int mode, boost::system::error_code& err)
@@ -306,7 +300,6 @@ namespace services {
 				if (mode&in && mode&out) openmode += "+";
 				if (!(mode&text)) openmode += "b";
 				fd = ext::filesystem::fopen(path, openmode.c_str());
-					//fopen(path.external_file_string().c_str(), openmode.c_str());
 				if (fd != NULL)
 					err = boost::system::error_code();
 				else
@@ -325,6 +318,12 @@ namespace services {
 				open(path, in|out, err);
 			}
 
+			template <typename Handler>
+			void async_open(const ext::filesystem::path& path, int flags, const Handler& handler)
+			{
+				get_fstream_service().async_open(this, path, flags, handler);
+			}
+
 			void close() {
 				if (fd != NULL) {
 					fclose(fd);
@@ -335,16 +334,16 @@ namespace services {
 			template <typename MBS, typename Handler>
 			void async_read_some(const MBS& mbs, const Handler& handler)
 			{
-				service.get_work_service().dispatch(
-					helper_read_some<MBS, Handler>(service.get_io_service(), mbs, fd, handler, testlen)
+				get_fstream_service().get_work_service().dispatch(
+					helper_read_some<MBS, Handler>(service, mbs, fd, handler)
 				);
 			}
 
 			template <typename CBS, typename Handler>
 			void async_write_some(const CBS& cbs, const Handler& handler)
 			{
-				service.get_work_service().dispatch(
-					helper_write_some<CBS, Handler>(service.get_io_service(), cbs, fd, handler)
+				get_fstream_service().get_work_service().dispatch(
+					helper_write_some<CBS, Handler>(service, cbs, fd, handler)
 				);
 			}
 
@@ -395,12 +394,6 @@ namespace services {
 						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 						return;
 					};
-					//> DEBUG HAX
-					/*
-					service.dispatch(boost::bind<void>(handler, boost::system::error_code(), buflen));
-					return;
-					*/
-					//< DEBUG HAX
 
 					size_t written = fwrite(buf, 1, buflen, fd);
 
@@ -425,10 +418,9 @@ namespace services {
 				MBS mbs;
 				FILE* fd;
 				Handler handler;
-				uint32& testlen;
 
-				helper_read_some(boost::asio::io_service& service_, const MBS& mbs_, FILE* fd_, const Handler& handler_, uint32& testlen_)
-					: service(service_), mbs(mbs_), fd(fd_), handler(handler_), testlen(testlen_)
+				helper_read_some(boost::asio::io_service& service_, const MBS& mbs_, FILE* fd_, const Handler& handler_)
+					: service(service_), mbs(mbs_), fd(fd_), handler(handler_)
 				{
 				}
 
@@ -463,19 +455,6 @@ namespace services {
 						return;
 					};
 
-					//> DEBUG HAX
-					/*
-					size_t hxread = buflen;
-					if (hxread > testlen) hxread = testlen;
-					testlen -= hxread;
-					if (hxread > 0)
-						service.dispatch(boost::bind<void>(handler, boost::system::error_code(), hxread));
-					else
-						service.dispatch(boost::bind<void>(handler, boost::system::error_code(-1,boost::asio::error::get_system_category()), 0));
-					return;
-					*/
-					//< DEBUG HAX
-
 					size_t read = fread(buf, 1, buflen, fd);
 
 					if (read == 0) {
@@ -501,17 +480,6 @@ namespace services {
 			};
 	};
 #endif
-
-	template <typename Path, typename Handler>
-	inline void diskio_service::helper_open_file<Path, Handler>::operator()()
-	{
-		boost::system::error_code res;
-		file.open(path, flags, res);
-		service.dispatch(boost::bind(handler, res));
-	}
-
-} // namespace services
-
-
+} }
 
 #endif//ASIO_FILE_STREAM

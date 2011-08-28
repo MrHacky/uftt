@@ -18,12 +18,12 @@ class HTTPTask {
 	public:
 		boost::asio::http_request req;
 		ext::filesystem::path path;
-		services::diskio_filetype file;
+		ext::asio::fstream file;
 		TaskInfo info;
 		boost::signal<void(const TaskInfo&)> sig_progress;
 
 		HTTPTask(UFTTCore* core)
-		: req(core->get_io_service()), file(core->get_disk_service())
+		: req(core->get_io_service()), file(core->get_io_service())
 		{}
 };
 
@@ -193,10 +193,9 @@ void HTTPBackend::handle_download_progress(const boost::system::error_code& err,
 		string fname = task->info.shareinfo.name;
 		if (fname.find("win32") != string::npos) fname += ".exe";
 		if (fname.find("-deb-") != string::npos) fname += ".deb.signed";
-		core->get_disk_service().async_open_file(
+		task->file.async_open(
 			task->path / fname,
-			services::diskio_filetype::out|services::diskio_filetype::create,
-			task->file,
+			ext::asio::fstream::out|ext::asio::fstream::create,
 			boost::bind(&HTTPBackend::handle_file_open_done, this, _1, task)
 		);
 	}

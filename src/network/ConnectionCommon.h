@@ -66,13 +66,13 @@ class ConnectionCommon: public ConnectionBase {
 		struct filesender {
 			std::string name;
 			ext::filesystem::path path;
-			services::diskio_filetype file;
+			ext::asio::fstream file;
 
 			bool hsent;
 			uint64 fsize;
 			uint64 offset;
 
-			filesender(services::diskio_service& diskio);
+			filesender(boost::asio::io_service& service);
 
 			void init(uint64 offset_ = 0);
 
