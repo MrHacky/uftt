@@ -10,8 +10,7 @@
 // offsets are wrong atm, use thread queue implementation
 #define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 
-#if defined(WIN32) && !defined(BOOST_ASIO_DISABLE_IOCP) && !defined(DISABLE_DISKIO_WIN32_IOCP_HANDLE)
-#else
+#if !defined(WIN32) || defined(BOOST_ASIO_DISABLE_IOCP) || defined(DISABLE_DISKIO_WIN32_IOCP_HANDLE)
 #define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 #endif
 
@@ -153,8 +152,9 @@ namespace services {
 
 #ifndef DISABLE_DISKIO_WIN32_IOCP_HANDLE
 
-	class diskio_filetype: public boost::asio::windows::stream_handle {
+	class diskio_filetype: public boost::asio::windows::random_access_handle {
 		private:
+			boost::uint64_t offset;
 
 			static HANDLE openhandle(const std::string& path, DWORD access, DWORD creation) {
 				return ::CreateFileA(
@@ -190,7 +190,8 @@ namespace services {
 			};
 
 			diskio_filetype(diskio_service& service)
-				: boost::asio::windows::stream_handle(service.get_io_service())
+				: boost::asio::windows::random_access_handle(service.get_io_service())
+				, offset(0)
 			{
 			}
 
@@ -233,6 +234,37 @@ namespace services {
 			void open(const ext::filesystem::path& path, boost::system::error_code& err)
 			{
 				open(path, in|out, err);
+			}
+
+			template <typename Handler>
+			struct handle_offset_inc {
+				diskio_filetype* parent;
+				Handler handler;
+
+				handle_offset_inc(diskio_filetype* parent_, const Handler& handler_)
+					: parent(parent_), handler(handler_) {};
+
+				void operator()(const boost::system::error_code& error, std::size_t bytes_transferred)
+				{
+					parent->offset += bytes_transferred;
+					handler(error, bytes_transferred);
+				}
+			};
+
+			template <typename MBS, typename Handler>
+			void async_read_some(const MBS& mbs, const Handler& handler)
+			{
+				async_read_some_at(offset, mbs, handle_offset_inc<Handler>(this, handler));
+			}
+
+			template <typename CBS, typename Handler>
+			void async_write_some(const CBS& cbs, const Handler& handler)
+			{
+				async_write_some_at(offset, cbs, handle_offset_inc<Handler>(this, handler));
+			}
+
+			void fseeka(uint64 offset_) {
+				offset = offset_;
 			}
 	};
 
