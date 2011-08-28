@@ -291,12 +291,12 @@ class SimpleConnection: public ConnectionCommon {
 				case CMD_REPLY_PARTIAL_FILE: {
 					qitem tqi = qitems.front();
 					qitems.pop_front();
-					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, false, tqi.poffset);
+					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, tqi.poffset);
 				}; break;
 				case CMD_REPLY_FULL_FILE: {
 					qitem tqi = qitems.front();
 					qitems.pop_front();
-					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, false, 0);
+					kickoff_file_write(getWriteShareFilePath(tqi.path), hdr.len, rbuf, 0);
 				}; break;
 				default: {
 					if (lcommands.count(hdr.cmd)) {
@@ -1107,7 +1107,7 @@ class SimpleConnection: public ConnectionCommon {
 			std::string name(&((*rbuf)[0]), &((*rbuf)[0]) + rbuf->size());
 			ext::filesystem::path path = getWriteShareFilePath((cwdsharepath / name).string());
 
-			kickoff_file_write(path, hdr.len, rbuf, false, 0);
+			kickoff_file_write(path, hdr.len, rbuf, 0);
 		}
 
 		void handle_recv_dir_header(const boost::system::error_code& e, cmdinfo hdr, shared_vec rbuf)
@@ -1132,10 +1132,10 @@ class SimpleConnection: public ConnectionCommon {
 
 		boost::function<void()> delayed_open_file;
 
-		void delay_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
+		void delay_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, uint64 offset)
 		{
 			delayed_open_file = boost::function<void()>();
-			kickoff_file_write(path, fsize, rbuf, dataready, offset);
+			kickoff_file_write(path, fsize, rbuf, offset);
 		}
 
 		/** Initiate transfer data from socket to file.
@@ -1144,24 +1144,21 @@ class SimpleConnection: public ConnectionCommon {
 		 *
 		 *  @param path Path of the file to write the data to
 		 *  @param fsize Amount of data to read from the socket/write to the file
-		 *  @param rbuf Buffer optionally containing some of the file data
-		 *  @param dataready If false, ignore rbuf
+		 *  @param rbuf Buffer to optionally reuse
 		 *  @param offset Offset in the file where to start writing
 		 *
-		 *  The amount of data consumed from the socket if fsize-offset
+		 *  The amount of data consumed from the socket is fsize-offset
 		 */
-		void kickoff_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, bool dataready, uint64 offset)
+		void kickoff_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, uint64 offset)
 		{
 			if (delayed_open_file) {
 				std::cout << "error: multiple file opens\n";
 			}
 
 			if (open_files > 256) {
-				delayed_open_file = boost::bind(&SimpleConnection::delay_file_write, this, path, fsize, rbuf, dataready, offset);
+				delayed_open_file = boost::bind(&SimpleConnection::delay_file_write, this, path, fsize, rbuf, offset);
 				return;
 			}
-
-			if (rbuf->empty()) dataready = false;
 
 			bool* done = new bool;
 			*done = false;
@@ -1176,17 +1173,13 @@ class SimpleConnection: public ConnectionCommon {
 				boost::bind(&SimpleConnection::handle_ready_file, this, _1, file, done, fsize, rbuf, rbuf, offset)
 			);
 
-			if (!dataready) {
-				// kick off async_read for when we received some data (capped by file size)
-				rbuf->resize(getRcvBufSize(fsize));
-				boost::asio::async_read(
-					socket,
-					GETBUF(rbuf),
-					boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)))
-				);
-			} else {
-				handle_recv_file(boost::system::error_code(), file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)));
-			}
+			// kick off async_read for when we received some data (capped by file size)
+			rbuf->resize(getRcvBufSize(fsize));
+			boost::asio::async_read(
+				socket,
+				GETBUF(rbuf),
+				boost::bind(&SimpleConnection::handle_recv_file, this, _1, file, done, fsize, rbuf, shared_vec(new std::vector<uint8>(0)))
+			);
 		}
 
 		/** Start asynchronous read from socket and write to file
