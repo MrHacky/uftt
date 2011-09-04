@@ -253,6 +253,7 @@ void SimpleBackend::dl_connect_handle(const boost::system::error_code& e, Connec
 		std::cout << "connect failed: " << e.message() << '\n';
 		conn->taskinfo.error_message = STRFORMAT("Failed to connect: %s", e.message());
 		conn->taskinfo.status = TASK_STATUS_ERROR;
+		conn->sig_progress(conn->taskinfo);
 	} else {
 		std::cout << "Connected!\n";
 		conn->taskinfo.status = TASK_STATUS_CONNECTED;
