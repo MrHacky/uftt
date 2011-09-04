@@ -376,7 +376,7 @@ namespace dgram {
 							}
 						}
 						if (pack->flags & packet::flag_ack && pack->acknum == snd_una+1) {
-							// the packed acks previously unacked data
+							// the packet acks previously unacked data
 							++snd_una;
 							if (fin_snd) fin_ack = true;
 							setstate(state); // clears send timeouts
@@ -543,6 +543,13 @@ namespace dgram {
 				check_queues();
 			}
 
+			// read_some impossible to implement, because we can't turn
+			// asynchronous operations into synchronous ones, and we can't
+			// do synchronous reads on our udp socket, because we don't own
+			// it and other kinds of packets may be received on it
+			//template <typename CBS>
+			//size_t read_some(const CBS& cbs, boost::system::error_code& ec);
+
 			template <typename CBS>
 			size_t write_some(const CBS& cbs, boost::system::error_code& ec)
 			{
@@ -560,19 +567,20 @@ namespace dgram {
 					const void* buf = boost::asio::buffer_cast<const void*>(buffer);
 					size_t buflen = boost::asio::buffer_size(buffer);
 					if (buflen > 0) {
+						boost::shared_ptr<std::vector<uint8> > sbuf(new std::vector<uint8>(buflen));
+						memcpy(&(*sbuf)[0], buf, buflen);
+
 						tlen += buflen;
 						send_queue.push_back(
 							snditem(
-								buf,
+								&(*sbuf)[0],
 								buflen,
-								boost::function<void(const boost::system::error_code&, size_t len)>()
+								// handler does nothing except keep buffer alive through shared_ptr
+								boost::bind(&std::vector<uint8>::size, sbuf)
 							)
 						);
 					}
 				}
-
-				if (tlen != 0)
-					send_queue.back().handler = null_handler();
 
 				check_queues();
 
