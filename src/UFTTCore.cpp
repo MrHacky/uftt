@@ -91,10 +91,11 @@ void UFTTCore::initialize()
 
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 
-	settings->uftt_send_to.connectChanged(boost::bind(&platform::setSendToUFTTEnabled, _1), true);
-	settings->uftt_desktop_shortcut.connectChanged(boost::bind(&platform::setDesktopShortcutEnabled, _1), true);
-	settings->uftt_quicklaunch_shortcut.connectChanged(boost::bind(&platform::setQuicklaunchShortcutEnabled, _1), true);
-	settings->uftt_startmenu_group.connectChanged(boost::bind(&platform::setStartmenuGroupEnabled, _1), true);
+	// Disabled for now because they clobber user state:
+	//settings->uftt_send_to.connectChanged(boost::bind(&platform::setSendToUFTTEnabled, _1), true);
+	//settings->uftt_desktop_shortcut.connectChanged(boost::bind(&platform::setDesktopShortcutEnabled, _1), true);
+	//settings->uftt_quicklaunch_shortcut.connectChanged(boost::bind(&platform::setQuicklaunchShortcutEnabled, _1), true);
+	//settings->uftt_startmenu_group.connectChanged(boost::bind(&platform::setStartmenuGroupEnabled, _1), true);
 }
 
 void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e)

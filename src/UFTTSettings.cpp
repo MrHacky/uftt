@@ -66,6 +66,7 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 	sm->registerSettingsVariable("systray.startintray", start_in_tray, false);
 	sm->registerSettingsVariable("systray.doubleclick", traydoubleclick, true);
 
+	// Don't actually do anything, disabled in UFTTCore.cpp
 	sm->registerSettingsVariable("system.sendtouftt", uftt_send_to, false);
 	sm->registerSettingsVariable("system.desktopshortcut", uftt_desktop_shortcut, false);
 	sm->registerSettingsVariable("system.quicklaunchshortcut", uftt_quicklaunch_shortcut, false);
