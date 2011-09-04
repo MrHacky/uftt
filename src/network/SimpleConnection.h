@@ -1210,7 +1210,7 @@ class SimpleConnection: public ConnectionCommon {
 							if (bytesleft == 0) break;
 
 							// swap receive/write buffers: buffer we just wrote can be reused for receive, buffer we just received needs to be written
-							std::swap(rbuf, wbuf);
+							boost::swap(rbuf, wbuf);
 
 							// fork here, child will write data to file, parent will receive new data (next iteration)
 							forkops = 2;
