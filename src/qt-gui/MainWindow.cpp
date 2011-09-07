@@ -680,7 +680,7 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 		twi->setText(TLCN_SPEED, S2Q(STRFORMAT("%s\\s", StrFormat::bytes(tfx/elapsed.total_seconds()))));
 	}
 	twi->setText(TLCN_QUEUE, S2Q(STRFORMAT("%d", queue)));
-	if (!ti.isupload && sts == "Completed")
+	if (!ti.isupload && (ti.status == TASK_STATUS_COMPLETED || ti.status == TASK_STATUS_ERROR))
 		download_done(ti);
 }
 
@@ -743,11 +743,15 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 {
 	std::string build = info.name;
 
+	// stop prompting for updates when one is already downloading
+	if (auto_update_build != "")
+		return;
+
 	bool fromweb = (info.proto == "http");
 	if (!fromweb && !settings->autoupdate)
 		return;
 
-	if (!AutoUpdater::isBuildBetter(build, get_build_string())) {
+	if (!AutoUpdater::isBuildBetter(build, get_build_string(), settings->minbuildtype)) {
 		cout << "ignoring update: " << build << " @ " << info.host << '\n';
 		return;
 	}
@@ -784,11 +788,15 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 
 void MainWindow::download_done(const TaskInfo& ti)
 {
-	trayicon->showMessage("Download Completed", qext::utf8::toQString(ti.shareinfo.name));
-	//cout << "download complete: " << sid.name << " (" << sid.host << ")\n";
+	if (ti.status == TASK_STATUS_COMPLETED)
+		trayicon->showMessage("Download Completed", qext::utf8::toQString(ti.shareinfo.name));
+
 	if (ti.shareid == auto_update_share) {
-		cout << "autoupdate: " << auto_update_path << "!\n";
-		this->doSelfUpdate(auto_update_build, auto_update_path);
+		if (ti.status == TASK_STATUS_COMPLETED) {
+			cout << "autoupdate: " << auto_update_path << "!\n";
+			this->doSelfUpdate(auto_update_build, auto_update_path);
+		}
+		auto_update_build = "";
 	}
 }
 

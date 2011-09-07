@@ -34,25 +34,14 @@ extern char build_string_macro_time[];
 extern char build_string_version_major[];
 extern char build_string_version_minor[];
 extern char build_string_version_patch[];
+extern char build_string_version_btype[];
 extern char build_string_version_extra[];
 
-std::string get_build_string()
-{
-	std::string bstring = "uftt-";
-	bstring += BUILD_STRING_PLATFORM;
-	bstring += BUILD_STRING_LINKAGE;
-	if (strlen(build_string_version_extra) > 0) {
-		if (build_string_version_extra[0] != '-') bstring += '-';
-		bstring += build_string_version_extra;
-	}
-	bstring += '-';
-	bstring += build_string_version_major;
-	bstring += '.';
-	bstring += build_string_version_minor;
-	bstring += '.';
+namespace {
+	std::string fixts(const std::string& s)
+	{
+		if (s != "<TIMESTAMP>") return s;
 
-	std::string pstring = build_string_version_patch;
-	if (pstring == "<TIMESTAMP>") {
 		std::stringstream sstamp;
 
 		int month, day, year;
@@ -78,8 +67,26 @@ std::string get_build_string()
 
 		sstamp << year << '_' << month << '_' << day << '_' << tstamp;
 
-		pstring = sstamp.str();
+		return sstamp.str();
 	}
-	bstring += pstring;
+}
+
+std::string get_build_string()
+{
+	std::string bstring = "uftt-";
+	bstring += BUILD_STRING_PLATFORM;
+	bstring += BUILD_STRING_LINKAGE;
+	if (strlen(build_string_version_extra) > 0) {
+		if (build_string_version_extra[0] != '-') bstring += '-';
+		bstring += build_string_version_extra;
+	}
+	bstring += '-';
+	bstring += fixts(build_string_version_major);
+	bstring += '.';
+	bstring += fixts(build_string_version_minor);
+	bstring += '.';
+	bstring += fixts(build_string_version_patch);
+	bstring += '.';
+	bstring += fixts(build_string_version_btype);
 	return bstring;
 }

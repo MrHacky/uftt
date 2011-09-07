@@ -164,6 +164,8 @@ class UFTTSettings {
 		SettingsVariable<int> webupdateinterval; // 0:never, 1:daily, 2:weekly, 3:monthly
 		SettingsVariable<boost::posix_time::ptime> lastupdate;
 
+		SettingsVariable<int> minbuildtype;
+
 		SettingsVariable<bool> enablepeerfinder;
 		SettingsVariable<std::string> nickname;
 

@@ -18,13 +18,13 @@ class AutoUpdater {
 
 		static void remove(boost::asio::io_service& result_service, boost::asio::io_service& work_service, const ext::filesystem::path& target);
 
-		static bool isBuildBetter(const std::string& newstr, const std::string& oldstr);
+		static bool isBuildBetter(const std::string& newstr, const std::string& oldstr, int minbuildtype);
 
 		static bool doSelfUpdate(const std::string& buildname, const ext::filesystem::path& target, const ext::filesystem::path& selfpath);
 
 		static std::vector<std::pair<std::string, std::string> > parseUpdateWebPage(const std::vector<uint8>& webpage);
 
-		static bool doSigning(const ext::filesystem::path& keyfile, const std::string& build, const ext::filesystem::path& infile, const ext::filesystem::path& outfile);
+		static bool doSigning(const ext::filesystem::path& keyfile, const std::string& tag, const std::string& build, const ext::filesystem::path& infile, const ext::filesystem::path& outfile);
 
 	public: // actual object interface for offering builds for autoupdate
 

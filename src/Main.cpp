@@ -165,7 +165,6 @@ bool waitonexit = false;
 
 int imain(int argc, char **argv)
 {
-
 	bool madeConsole = false;
 	if (argc > 1 && string(argv[1]) == "--console") {
 		if (!platform::hasConsole()) madeConsole = platform::newConsole();
@@ -173,8 +172,14 @@ int imain(int argc, char **argv)
 		--argc; ++argv;
 	}
 
-	if (argc > 5 && string(argv[1]) == "--sign")
-		return AutoUpdater::doSigning(argv[2], argv[3], argv[4], argv[5]) ? 0 : 1;
+	if (argc > 6 && string(argv[1]) == "--sign")
+		return AutoUpdater::doSigning(argv[2], argv[3], argv[4], argv[5], argv[6]) ? 0 : 1;
+
+	if (argc > 2 && string(argv[1]) == "--write-build-version") {
+		std::ofstream ofs(argv[2]);
+		ofs << get_build_string();
+		return 0;
+	}
 
 	if (argc > 1 && string(argv[1]) == "--runtest")
 		return runtest();
@@ -206,12 +211,14 @@ int imain(int argc, char **argv)
 		boost::shared_ptr<UFTTGui> gui;
 		UFTTCore core(settings, argc, argv);
 		gui = UFTTGui::makeGui(argc, argv, settings);
-		core.initialize();
+		std::cout << "Build: " << get_build_string() << '\n';
 
+		core.initialize();
 		gui->bindEvents(&core);
 
 		if (madeConsole)
 			platform::freeConsole();
+
 
 		// get services
 		boost::asio::io_service& run_service  = core.get_io_service();

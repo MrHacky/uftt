@@ -53,6 +53,7 @@ void UFTTSettings::registerSettings(SettingsManagerBase* sm)
 		"0\n1\n2\n3"
 	);
 	sm->registerSettingsVariable("update.lastwebupdate", lastupdate, mpt);
+	sm->registerSettingsVariable("update.minbuildtype", minbuildtype, 1000);
 
 	sm->registerSettingsVariable("sharing.globalannounce", enablepeerfinder, true);
 	sm->registerSettingsVariable("sharing.nickname", nickname, platform::getUserName());

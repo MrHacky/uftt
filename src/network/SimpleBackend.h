@@ -58,6 +58,7 @@ class SimpleBackend: public INetModule {
 			UDPPACK_REPLY_UPDATE,
 			UDPPACK_QUERY_PEER,
 			UDPPACK_REPLY_PEER,
+			UDPPACK_REPLY_UPDATE_NEW,
 		};
 
 		UFTTCore* core;

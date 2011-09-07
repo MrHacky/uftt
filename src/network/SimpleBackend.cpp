@@ -160,7 +160,7 @@ void SimpleBackend::doManualPublish(const std::string& host)
 	try {
 		service.post(boost::bind(&SimpleBackend::send_publishes, this,
 			uftt_bcst_if, my_endpoint_from_string<boost::asio::ip::udp::endpoint>(host, UFTT_PORT)
-			, true, true
+			, 1, true
 		));
 	} catch (std::exception& /*e*/) {}
 }
@@ -630,7 +630,8 @@ void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, 
 				}
 			}
 		}; break;
-		case UDPPACK_REPLY_UPDATE: { // type = autoupdate share
+		case UDPPACK_REPLY_UPDATE: // type = autoupdate share
+		case UDPPACK_REPLY_UPDATE_NEW: { // type = futureproof autoupdate share
 			if (len >= 6 && (version == 1)) {
 				uint32 slen = recv_buf[5];
 				if (len >= slen+6) {
