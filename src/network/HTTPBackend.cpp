@@ -191,8 +191,6 @@ void HTTPBackend::handle_download_progress(const boost::system::error_code& err,
 		task->info.transferred = task->req.getContent().size();
 		task->info.queue = 2;
 		string fname = task->info.shareinfo.name;
-		if (fname.find("win32") != string::npos) fname += ".exe";
-		if (fname.find("-deb-") != string::npos) fname += ".deb.signed";
 		task->file.async_open(
 			task->path / fname,
 			ext::asio::fstream::out|ext::asio::fstream::create,
