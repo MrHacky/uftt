@@ -228,6 +228,11 @@ int imain(int argc, char **argv)
 
 		settings.save();
 
+#ifndef DEBUG
+		// TODO: figure out why ~UFTTCore hangs sometimes
+		gui.reset();
+		if (ret == 0) platform::exit(0);
+#endif
 		return ret;
 	} catch (int i) {
 		return i;

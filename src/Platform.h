@@ -19,6 +19,9 @@ namespace platform {
 	// frees the stdout console
 	bool freeConsole();
 
+	// exits the current process
+	void exit(unsigned int ret);
+
 	void msSleep(int ms);
 
 	bool fseek64a(FILE* fd, uint64 offset);

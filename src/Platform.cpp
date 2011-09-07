@@ -116,6 +116,13 @@ namespace platform {
 #endif
 	}
 
+	void exit(unsigned int ret)
+	{
+#ifdef WIN32
+		::ExitProcess(ret);
+#endif
+	}
+
 #ifdef WIN32
 	HWND parseHWND(const std::string& hwnd)
 	{
