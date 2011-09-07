@@ -2,7 +2,7 @@
 -----BEGIN RSA CHECKED CONTENT-----
 </div>
 <p>
-<a href="http://uftt.googlecode.com/files/uftt-r959.exe">uftt-win32.nt-static-2.959.2011_9_7_15_07_53.1500</a>
+<a href="http://uftt.googlecode.com/files/uftt-r961.exe">uftt-win32.nt-static-2.961.2011_9_7_21_52_48.1500</a>
 <p>
 <a href="http://uftt.googlecode.com/files/uftt-r959-win9x.exe">uftt-win32.9x-static-2.959.2011_9_7_14_57_55.1500</a>
 <p>
@@ -14,14 +14,14 @@
 </div>
 <div style="display:none;">
 -----BEGIN RSA SIGNIATURE-----
-rf/VToaWTk2Lvi8Vt9n5bwrod+bwq9LbdjcJ5ivcuJAO89hTiAQ0LLIXVkxnCNuNFgr6JsEY9piscTR5sz+2qd2ZRo4eJTu8SU2Vyp1JdSY3VykZPPXY8pOk8s1MiaylVwoOnItRLZAPPG2ZpCJEm9mFc8XTom1CpS8A7scp9qn4xxuLlD94vDvTELwGs6T9RlREHUI+AOjC02ybJRx81EEYmfhn+++R6ir5iMTTXFdbceyC8BLMkRKiFU8sz2mvgbTOspS3WuJ95wLLJuV/pYyFMVxwLlNMJR6cdWpmCspHaCVv8epLrpZulZs4u5qDvOHWrfd7ZN36TaD4G6oVRr2E+i9xu+IgX0BWPhOb/+xBp649JClhSHkbaVxhPpNFqI8e6eew2yOcC2lCeY7OA2SLiLyfftYF//OhZZ4io1ixcNNf6JuyRqN4hYoRMXToLWDaUeA4UrG+4SkSUnNDHyaYUeDYfaXJ1TEJvFUqLzPY2RH7XXWu5iqaxWeVWkGtm/W5Jy3IStUdrd4iBcMMaRI0gimsY6s6VGRKH/dCF+kbQAbbe5idwxiI0YnGBC3W1G7PfNKJyLtFDqhxXGyEmTuo5zU78rsZ2q9jvn+oETL7k2xD816YC7nKs+O4aq40ju8idAKB8pEdeqDmkZPUe58iukjcdZizNGADSa0ovHs=
+S2xGz9NSiHjyg5MPpBhW4zjIACH1GuKpfOmRxaytWCUeiIiXPIcb+/LOiNCQpOr5ohNq+rCzfVFGm4b8hF0gvgsMIKlw+GvHI9S7X9on62zXQWdtflvrd9hRL19LwrH/VPHRl7ilu9/IjchBHWruhxsP8WLN9ja/GVw2zvUMpET5Ohf3XpARNbXzpWmghtVvTgA0S8hubGd/yKcHV4aL0FFrWN2y3YqFuXaRAPYej67GJ7oaSCUqf0Ctx3Y15zyd7l1BDR67m5kmiT7Ix6ALRgTeS8ses0S3GsVRjYnTOBq31HBIgxZbtKpza49QEu8xGLse+b+eBjgxJ7LDSiiAikjiL48AXeHLKq9sONqvgCHpDO75Q4SfIhtMvwI0o05XyJ929aqqADH6YBjNARJn6a+uJzjcuCof7MtsTjd5Y4plVqtExeXoxRpbhKVwK8eLH9kblcMNR6dgKQN03MxdQ5kaTsqw+n3Ib3Sh3kOfZ0AiWUwKTZo7RFIFEuj72VjbPVrPeotzkF9ZsBUgEgSNcj6oHTaarA6cgBY8P4KVQJxGgnBv/I+JlKc1dJIiuHmIfNaYMJjYsZDUvsFzgwh2lpOpLv5Xk9UEfegu6aoo9mkrqWRibgD7kiqbr4A0LXrasVp/1F3gxX22hIvSgPzSVBn8rQNdWq/A9UD4J51GYBM=
 -----END RSA SIGNIATURE-----
 </div>
 <div style="display:none;">
 -----BEGIN RSA CHECKED CONTENT-----
 </div>
 <p>
-<a href="http://uftt.googlecode.com/files/uftt-r959.exe">uftt-win32.nt-static-2.959.2011_9_7_15_07_53.1500</a>
+<a href="http://uftt.googlecode.com/files/uftt-r961.exe">uftt-win32.nt-static-2.961.2011_9_7_21_52_48.1500</a>
 <p>
 <a href="http://uftt.googlecode.com/files/uftt-r959-win9x.exe">uftt-win32.9x-static-2.959.2011_9_7_14_57_55.1500</a>
 <div style="display:none;">
@@ -29,6 +29,6 @@ rf/VToaWTk2Lvi8Vt9n5bwrod+bwq9LbdjcJ5ivcuJAO89hTiAQ0LLIXVkxnCNuNFgr6JsEY9piscTR5
 </div>
 <div style="display:none;">
 -----BEGIN RSA SIGNIATURE-----
-lW52zOn7Bpk4Z5J9clVzdi7FpfBprPsaEYDSVWTZYCzYlx10GcU4xsC8lDK6fno31x+vhCXAURLo2tUDFMg9g1Pj4XlcvidmwaD+HX/4t1JaRDtDuee95EWqCI72dvDmCD+qgRv0UXxKUYUVmKtWCLP2dwlZp+RxZdhvKNogWLXVkaoVaURbQtCYcJm7/+zIRS79HKa1PuG7KjvKwiI5hOXAH4Oby0xNxWjgFG+r8QLUDAc23uUGn4qmPtFQp82J10AfBqBep3BjccuijgjoCmuANdhkHvxxgLWxHZUREyGveJ4eWUagJP+Wmyw9MRLYF1QbDAny+lzKY3k1HWCEGd7aoNeJSsv6n1fuHHsP35CQxSx/3LcF14ialBO7jVmb7TYL5BSs/Dux5nEkvN7wA3hV5cWvisA2/K2K6GNXOamUSsNxo99TenAmtOe58GO/XRZGc+IYExPp25rP6S7suXymq9Eeo6I2SkMIXLWZBSLL8MScBpm2Yp7NzudJ158TryP0P+tm8AjD3ejUDpimpltObfkTFOtVtphLKrguNLLaIzPRLqhZE5D2fBouJGa3q/9RYCeSZhdchngwIBtVtUMxLRfYuyrJywZH8DPj5HXR+nBCqTJLkA9LLPNz74ZJsJiXr0J9bk8RUazCwKRaDlEHV/GYLSMLE9vymXeVre8=
+0eHOS0FfO+ayxfRRx16rz9kpmc/SanTviWzBppgS8WMFn1WN85LIPOMhqjwDv81/LNnPV5ABv+S135/2f0QIfU3KLHkPm7aVPnXvH7OQ0D+pYucQ/P/yShNwAc5Jbeao043v1R6MORGvRnzmHjO8He+6vXUGzWZAB2XcSv4dp8zxTX0APBJS2JX6Wbxj9jorFwUhPCkD+aL560E0QZJenT/lEm5QyLWmHmGkQvl8mXpbGcOCm+G+qkwYA4Vp9yHs1kND1S3eCLgjmPjBXayRF3fmkjgijZrwRhWWHCDevDoLxOgqzg/9IN+negnXkHT23Bt0SB1bC01q8Mz+CUttam9k5NkYaGIxIJe1q5JAGFQg1Smnb3Bfx4lxoBQThR301DrClmR2V/jb/gnLi7HxgORPyoI12VXb/d/UPpyyWVzqa8P5KGEscu1Fhb0ttW2OoQzlHShkAP1La/kEFZP6zN9DRDH0u81SPOCGWxgBR8eDArYq9ZQnNh0xxlN1aYQm/4lxy21kP2BpPHOgyi9YXC++jFqy9mX4Zbgd4MIy/ouuA96SUevWbq/VnHiJDxpVzW++xkX7zzObRFfzaRB5JlQZd90NxrKiNxXfTCvCFDSTAEvx9J12FKWo4Xw3E3I17ydPusc2fjH9jFqQjkcxuFEUelwMWCO7wAqIdY0fBeA=
 -----END RSA SIGNIATURE-----
 </div>
