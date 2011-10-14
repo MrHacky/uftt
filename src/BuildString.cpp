@@ -36,38 +36,42 @@ extern char build_string_version_minor[];
 extern char build_string_version_patch[];
 extern char build_string_version_btype[];
 extern char build_string_version_extra[];
+extern char build_string_version_svnrev[];
 
 namespace {
-	std::string fixts(const std::string& s)
+	std::string fixbs(const std::string& s)
 	{
-		if (s != "<TIMESTAMP>") return s;
+		if (s == "<SVNREV>" && strlen(build_string_version_svnrev)) {
+			return build_string_version_svnrev;
+		} else if (s == "<TIMESTAMP>") {
+			std::stringstream sstamp;
 
-		std::stringstream sstamp;
+			int month, day, year;
+			{
+				std::string tstring = build_string_macro_date;
+				char* temp = &tstring[0];
 
-		int month, day, year;
-		{
-			std::string tstring = build_string_macro_date;
-			char* temp = &tstring[0];
+				// ANSI C Standard month names
+				const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+				year = atoi(temp + 7);
+				*(temp + 6) = 0;
+				day = atoi(temp + 4);
+				*(temp + 3) = 0;
+				for (month = 0; month < 12; ++month)
+					if (!strcmp(temp, months[month]))
+						break;
+				++month;
+			}
 
-			// ANSI C Standard month names
-			const char *months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-			year = atoi(temp + 7);
-			*(temp + 6) = 0;
-			day = atoi(temp + 4);
-			*(temp + 3) = 0;
-			for (month = 0; month < 12; ++month)
-				if (!strcmp(temp, months[month]))
-					break;
-			++month;
-		}
+			std::string tstamp(build_string_macro_time);
+			BOOST_FOREACH(char& chr, tstamp)
+				if (chr == ':') chr = '_';
 
-		std::string tstamp(build_string_macro_time);
-		BOOST_FOREACH(char& chr, tstamp)
-			if (chr == ':') chr = '_';
+			sstamp << year << '_' << month << '_' << day << '_' << tstamp;
 
-		sstamp << year << '_' << month << '_' << day << '_' << tstamp;
-
-		return sstamp.str();
+			return sstamp.str();
+		} else
+			return s;
 	}
 }
 
@@ -81,12 +85,12 @@ std::string get_build_string()
 		bstring += build_string_version_extra;
 	}
 	bstring += '-';
-	bstring += fixts(build_string_version_major);
+	bstring += fixbs(build_string_version_major);
 	bstring += '.';
-	bstring += fixts(build_string_version_minor);
+	bstring += fixbs(build_string_version_minor);
 	bstring += '.';
-	bstring += fixts(build_string_version_patch);
+	bstring += fixbs(build_string_version_patch);
 	bstring += '.';
-	bstring += fixts(build_string_version_btype);
+	bstring += fixbs(build_string_version_btype);
 	return bstring;
 }
