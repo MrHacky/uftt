@@ -30,6 +30,7 @@ namespace platform {
 		RF_NEW_CONSOLE   = 1 << 0,
 		RF_WAIT_FOR_EXIT = 1 << 1,
 		RF_NO_WINDOW     = 1 << 2,
+		RF_NOQUOTING     = 1 << 3,
 	};
 
 	int RunCommand(const std::string& cmd, const std::vector<std::string>* args, const std::string& workdir, int flags);
@@ -95,6 +96,8 @@ namespace platform {
 			struct pimpl_t;
 			pimpl_t* pimpl;
 	};
+
+	bool openContainingFolder(const ext::filesystem::path& itempath);
 } // namespace platform
 
 #endif//PLATFORM_H

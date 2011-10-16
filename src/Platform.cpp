@@ -186,20 +186,22 @@ namespace platform {
 	{
 #ifdef WIN32
 		string command;
+		bool quote = !(flags&RF_NOQUOTING);
 
 		STARTUPINFO si = { sizeof(si) };
 		PROCESS_INFORMATION pi;
 
-		command += "\"";
+		if (quote) command += '\"';
 		command += cmd;
-		command += "\"";
+		if (quote) command += '\"';
 
 		// TODO args
 		if (args) {
 			for (unsigned int i = 0; i < args->size(); ++i) {
-				command += " \"";
+				command += ' ';
+				if (quote) command += '\"';
 				command += (*args)[i];
-				command += "\"";
+				if (quote) command += '\"';
 			}
 		}
 
@@ -651,6 +653,23 @@ namespace platform {
 #ifdef WIN32
 		if (pimpl->itbl3) pimpl->itbl3->SetProgressState(pimpl->hwnd, TBPF_ERROR);
 #endif
+	}
+
+	bool openContainingFolder(const ext::filesystem::path& itempath)
+	{
+#ifdef WIN32
+		// TODO: fix utf8/ansi/oem mismatch
+		std::vector<std::string> args;
+		args.push_back(std::string() + "/select," + itempath.native_file_string());
+		// explorer.exe /select doesn't need the filename quoted, and doing so actually breaks it
+		int ret = RunCommand("explorer.exe", &args, "", RF_WAIT_FOR_EXIT|RF_NOQUOTING);
+		// seems to always return 1, don't know why, maybe should just always return true here?
+		if (ret == 1)
+			return true;
+		else
+			std::cout << "openContainingFolder: " << ret << "\n";
+#endif
+		return false;
 	}
 
 } // namespace platform

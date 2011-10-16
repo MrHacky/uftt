@@ -885,10 +885,14 @@ void MainWindow::on_actionTaskOpen_triggered()
 void MainWindow::on_actionTaskOpenContainingFolder_triggered()
 {
 	QTreeWidgetItem* twi = listTasks->currentItem();
-	ext::filesystem::path path = twi->data(TLDATA_PATH, Qt::UserRole).value<ext::filesystem::path>();
+	ext::filesystem::path dirpath = twi->data(TLDATA_PATH, Qt::UserRole).value<ext::filesystem::path>();
+	string sharename = qext::utf8::fromQString(twi->text(TLCN_SHARE).mid(3));
+	ext::filesystem::path shrpath = dirpath / sharename;
 
-	if (ext::filesystem::exists(path))
-		QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringDirectory(path)));
+	if (ext::filesystem::exists(shrpath) && platform::openContainingFolder(shrpath)) {
+		// openContainingFolder succeeded!
+	} else if (ext::filesystem::exists(dirpath))
+		QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringDirectory(dirpath)));
 }
 
 void MainWindow::on_actionClearCompletedTasks_triggered()
