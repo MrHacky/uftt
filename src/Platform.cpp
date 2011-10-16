@@ -1,6 +1,9 @@
 #include "Platform.h"
 
 #ifdef WIN32
+#  ifndef _WIN32_WINDOWS
+#    define UNICODE
+#  endif
 #  include <windows.h>
 #  include <shlobj.h>
 #  include <shobjidl.h>
@@ -38,6 +41,34 @@
 using namespace std;
 
 namespace platform {
+	#ifdef WIN32
+		#ifdef _WIN32_WINDOWS
+			typedef std::string tstring;
+
+			std::string convertTStringToUTF8(const char* tcs)
+			{
+				return convertLocaleToUTF8(tcs);
+			}
+
+			std::string convertUTF8ToTString(const std::string& in)
+			{
+				return convertUTF8ToLocale(in);
+			}
+		#else
+			typedef std::wstring tstring;
+
+			std::string convertTStringToUTF8(const wchar_t* tcs)
+			{
+				return convertUTF16ToUTF8(tcs);
+			}
+
+			std::wstring convertUTF8ToTString(const std::string& in)
+			{
+				return convertUTF8ToUTF16(in);
+			}
+		#endif
+	#endif
+
 	bool haveConsole =
 #ifdef NDEBUG
 		false;
@@ -172,16 +203,18 @@ namespace platform {
 			}
 		}
 
+		command += '\x00';
+		tstring ncmd = convertUTF8ToTString(command);
 		int res = -1;
 		if (CreateProcess(
 				NULL,
-				TEXT((char*)command.c_str()),
+				&ncmd[0],
 				NULL,
 				NULL,
 				FALSE,
 				(flags & RF_NO_WINDOW)   ? CREATE_NO_WINDOW   : 0 |
 				(flags & RF_NEW_CONSOLE) ? CREATE_NEW_CONSOLE : 0 ,
-				NULL, (workdir=="") ? NULL : TEXT(workdir.c_str()), &si, &pi))
+				NULL, workdir.empty() ? NULL : convertUTF8ToTString(workdir).c_str(), &si, &pi))
 		{
 			if (flags & RF_WAIT_FOR_EXIT) {
 				DWORD exitcode;
@@ -214,9 +247,9 @@ namespace platform {
 		);
 		if (res != S_OK) return retval;
 
-		LPSTR Path = new TCHAR[MAX_PATH];
+		TCHAR* Path = new TCHAR[MAX_PATH];
 		if (SHGetPathFromIDList(pidlist, Path))
-			retval = Path;
+			retval = convertTStringToUTF8(Path);
 
 		delete[] Path;
 		ILFree(pidlist);
@@ -333,18 +366,6 @@ namespace platform {
 #endif
 	}
 
-#ifdef WIN32
-	std::string convertTStringToUTF8(const char* tstring)
-	{
-		return convertLocaleToUTF8(tstring);
-	}
-
-	std::string convertTStringToUTF8(const wchar_t* tstring)
-	{
-		return convertUTF16ToUTF8(tstring);
-	}
-#endif
-
 	std::string getUserName()
 	{
 #if defined(WIN32) && !defined(_WIN32_WINDOWS)
@@ -374,34 +395,33 @@ namespace platform {
 		bool success = true;
 		IShellLink* isl = NULL;
 		IPersistFile* ipf = NULL;
-		WCHAR wcs[MAX_PATH];
+		tstring nsource = convertUTF8ToTString(source.native_file_string());
 
-		// Retrieve object pointers and convert source path
+		// Retrieve object pointers
 		success = success && SUCCEEDED(CoCreateInstance(CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, IID_IShellLink, (LPVOID*)&isl));
 		success = success && SUCCEEDED(isl->QueryInterface(IID_IPersistFile, (LPVOID*)&ipf));
-		success = success && SUCCEEDED(MultiByteToWideChar(CP_ACP, 0, TEXT(source.native_file_string().c_str()), -1, wcs, MAX_PATH));
 
 		if (success) {
 			// load previous shortcut from disk
-			success = SUCCEEDED(ipf->Load(wcs, STGM_READ));
+			success = SUCCEEDED(ipf->Load(nsource.c_str(), STGM_READ));
 			if (success) {
 				// check if existing shortcut points to our target
 				success = success && SUCCEEDED(isl->Resolve(NULL, SLR_NO_UI));
 
 				WIN32_FIND_DATA wfd;
-				char szGotPath[MAX_PATH];
+				TCHAR szGotPath[MAX_PATH];
 
 				success = success && SUCCEEDED(isl->GetPath(szGotPath, MAX_PATH, (WIN32_FIND_DATA*)&wfd, 0));
-				success = success && boost::iequals(ext::filesystem::path(szGotPath).string(), target.string());
+				success = success && boost::iequals(ext::filesystem::path(convertTStringToUTF8(szGotPath)).string(), target.string());
 			}
 
 			if (!success) {
 				// save shortcut with our target (either failed to load or it did not point to our target)
 				success = true;
-				success = success && SUCCEEDED(isl->SetPath(TEXT(target.native_file_string().c_str())));
-				success = success && SUCCEEDED(isl->SetWorkingDirectory(TEXT(target.branch_path().native_file_string().c_str())));
-				success = success && SUCCEEDED(isl->SetDescription(TEXT(description.c_str())));
-				success = success && SUCCEEDED(ipf->Save(wcs, TRUE));
+				success = success && SUCCEEDED(isl->SetPath(convertUTF8ToTString(target.native_file_string()).c_str()));
+				success = success && SUCCEEDED(isl->SetWorkingDirectory(convertUTF8ToTString(target.branch_path().native_file_string()).c_str()));
+				success = success && SUCCEEDED(isl->SetDescription(convertUTF8ToTString(description).c_str()));
+				success = success && SUCCEEDED(ipf->Save(nsource.c_str(), TRUE));
 			}
 		}
 		if (ipf) ipf->Release();
@@ -431,10 +451,9 @@ namespace platform {
 	{
 		// currently only used on windows
 #ifdef WIN32
-		// test for unicode support?
-		char module_name[MAX_PATH];
-		GetModuleFileNameA(0, module_name, MAX_PATH);
-		ext::filesystem::path path = module_name;
+		TCHAR module_name[MAX_PATH];
+		GetModuleFileName(0, module_name, MAX_PATH);
+		ext::filesystem::path path = convertTStringToUTF8(module_name);
 		if (!ext::filesystem::exists(path)) path = "";
 		return path;
 #endif
