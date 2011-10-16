@@ -526,7 +526,7 @@ namespace platform {
 	{
 		std::string ret;
 		size_t i = 0;
-		char c;
+		unsigned char c;
 		while(i < src.size()) {
 			size_t start = i;
 			c = src[i];
@@ -559,14 +559,14 @@ namespace platform {
 					ret += "\xC2\xBF"; // U+00BF (upside-down question mark)
 				}
 				else {
-					ret += src.substr(start, i);
+					ret += src.substr(start, i-start);
 				}
 			}
 			else {
 				if (src[i] != 0) // clean up autoupdate shares
 					ret += src[i];
+				++i;
 			}
-			++i;
 		}
 		return ret;
 	}
