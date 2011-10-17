@@ -657,8 +657,18 @@ namespace platform {
 
 	bool openContainingFolder(const ext::filesystem::path& itempath)
 	{
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
+		ITEMIDLIST *pidl = ILCreateFromPath(convertUTF8ToTString(itempath.native_file_string()).c_str());
+		if(pidl) {
+			HRESULT hres = SHOpenFolderAndSelectItems(pidl,0,0,0);
+			ILFree(pidl);
+			if (hres == S_OK)
+				return true;
+			else
+				std::cout << "openContainingFolder1: " << hres << "\n";
+		}
+#endif
 #ifdef WIN32
-		// TODO: fix utf8/ansi/oem mismatch
 		std::vector<std::string> args;
 		args.push_back(std::string() + "/select," + itempath.native_file_string());
 		// explorer.exe /select doesn't need the filename quoted, and doing so actually breaks it
@@ -667,7 +677,7 @@ namespace platform {
 		if (ret == 1)
 			return true;
 		else
-			std::cout << "openContainingFolder: " << ret << "\n";
+			std::cout << "openContainingFolder2: " << ret << "\n";
 #endif
 		return false;
 	}
