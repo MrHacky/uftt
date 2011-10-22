@@ -36,7 +36,6 @@
 #include <boost/algorithm/string.hpp>
 
 #include "util/Filesystem.h"
-#include <boost/utility/binary.hpp>
 
 using namespace std;
 
@@ -544,33 +543,43 @@ namespace platform {
 
 	std::string makeValidUTF8(const std::string& src)
 	{
+		const int BINARY_1000_0000 = 0x80;
+		const int BINARY_1100_0000 = 0xC0;
+		const int BINARY_1110_0000 = 0xE0;
+		const int BINARY_1111_0000 = 0xF0;
+		const int BINARY_1111_1000 = 0xF8;
+		const int BINARY_0011_1111 = 0x3F;
+		const int BINARY_0001_1111 = 0x1F;
+		const int BINARY_0000_1111 = 0x0F;
+		const int BINARY_0000_0111 = 0x07;
+
 		std::string ret;
 		size_t i = 0;
 		unsigned char c;
 		while(i < src.size()) {
 			size_t start = i;
 			c = src[i];
-			if((c & BOOST_BINARY(1000 0000)) != 0) { // Not US-ASCII
+			if((c & BINARY_1000_0000) != 0) { // Not US-ASCII
 				uint32 code_point = 0;
 				int expected = 0;
-				if((c & BOOST_BINARY(1110 0000)) == BOOST_BINARY(1100 0000)) { // start of a 2-byte sequence
-					code_point = c & BOOST_BINARY(0001 1111);
+				if((c & BINARY_1110_0000) == BINARY_1100_0000) { // start of a 2-byte sequence
+					code_point = c & BINARY_0001_1111;
 					expected = 2;
 				} else
-				if((c & BOOST_BINARY(1111 0000)) == BOOST_BINARY(1110 0000)) { // start of a 3-byte sequence
-					code_point = c & BOOST_BINARY(0000 1111);
+				if((c & BINARY_1111_0000) == BINARY_1110_0000) { // start of a 3-byte sequence
+					code_point = c & BINARY_0000_1111;
 					expected = 3;
 				} else
-				if((c & BOOST_BINARY(1111 1000)) == BOOST_BINARY(1111 0000)) { // start of a 4-byte sequence
-					code_point = c & BOOST_BINARY(0000 0111);
+				if((c & BINARY_1111_1000) == BINARY_1111_0000) { // start of a 4-byte sequence
+					code_point = c & BINARY_0000_0111;
 					expected = 4;
 				}
 				else {
 					expected = 0;
 				}
 				++i;
-				while(i < src.size() && ((src[i] & BOOST_BINARY(1100 0000)) == BOOST_BINARY(1000 0000))) {
-					code_point = code_point << 6 | (src[i] & BOOST_BINARY(0011 1111));
+				while(i < src.size() && ((src[i] & BINARY_1100_0000) == BINARY_1000_0000)) {
+					code_point = code_point << 6 | (src[i] & BINARY_0011_1111);
 					++i;
 					if(expected>0)
 						--expected;
