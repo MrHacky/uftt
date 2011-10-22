@@ -249,11 +249,10 @@ namespace platform {
 		);
 		if (res != S_OK) return retval;
 
-		TCHAR* Path = new TCHAR[MAX_PATH];
+		TCHAR Path[MAX_PATH];
 		if (SHGetPathFromIDList(pidlist, Path))
 			retval = convertTStringToUTF8(Path);
 
-		delete[] Path;
 		ILFree(pidlist);
 		return retval;
 	}
