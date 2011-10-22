@@ -504,10 +504,10 @@ namespace platform {
 	std::wstring convertUTF8ToUTF16(const std::string& src)
 	{
 #if defined(WIN32) && !defined(_WIN32_WINDOWS)
-		WCHAR wcs[MAX_PATH];
-		if (!SUCCEEDED(MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, wcs, MAX_PATH)))
+		std::vector<WCHAR> wcs(src.size()+1); // worst case: 1xUTF8 -> 1xUTF16
+		if (!SUCCEEDED(MultiByteToWideChar(CP_UTF8, 0, src.c_str(), -1, &wcs[0], wcs.size())))
 			throw std::runtime_error("convertUTF8ToUTF16: MultiByteToWideChar Failed");
-		return std::wstring(wcs);
+		return std::wstring(&wcs[0]);
 #else
 		throw std::runtime_error("convertUTF8ToUTF16: Not implemented");
 #endif
@@ -516,10 +516,10 @@ namespace platform {
 	std::string convertUTF16ToUTF8(const std::wstring& src)
 	{
 #if defined(WIN32) && !defined(_WIN32_WINDOWS)
-		char res[MAX_PATH];
-		if (!SUCCEEDED(WideCharToMultiByte(CP_UTF8, 0, src.c_str(), -1, res, MAX_PATH, NULL, NULL)))
+		std::vector<char> res(src.size()*3+1); // worst case: 1xUTF16 -> 3xUTF8
+		if (!SUCCEEDED(WideCharToMultiByte(CP_UTF8, 0, src.c_str(), -1, &res[0], res.size(), NULL, NULL)))
 			throw std::runtime_error("convertUTF8ToUTF16: WideCharToMultiByte Failed");
-		return std::string(res);
+		return std::string(&res[0]);
 #else
 		throw std::runtime_error("convertUTF8ToUTF16: Not implemented");
 #endif
