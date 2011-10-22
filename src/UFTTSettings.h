@@ -104,7 +104,7 @@ namespace settingsmanager {
 			out = in;
 		}
 	};
-/*
+
 	template <>
 	struct tostring_t<ext::filesystem::path> {
 		static void convert(const ext::filesystem::path& in, std::string& out)
@@ -112,7 +112,7 @@ namespace settingsmanager {
 			out = in.string();
 		}
 	};
-*/
+
 
 #ifdef _WIN32_WINDOWS
 	// in win9x boost/locales are buggy so use this workaround

@@ -89,7 +89,7 @@ bool SettingsManagerBase::save(const ext::filesystem::path& path)
 			s_values[sp.first] = sp.second->getString();
 		}
 
-		boost::filesystem::create_directories(path.branch_path());
+		boost::filesystem::create_directories(path.parent_path());
 		ext::filesystem::ofstream ofs(path);
 		if (!ofs.is_open()) return false;
 		boost::archive::xml_oarchive oa(ofs);

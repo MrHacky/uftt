@@ -22,12 +22,12 @@ namespace qext {
 	namespace path {
 		inline QString toQStringFile(const ext::filesystem::path& src)
 		{
-			return qext::utf8::toQString(ext::filesystem::external_utf8_file(src));
+			return qext::utf8::toQString(src.native_file_string());
 		}
 
 		inline QString toQStringDirectory(const ext::filesystem::path& src)
 		{
-			return qext::utf8::toQString(ext::filesystem::external_utf8_directory(src));
+			return qext::utf8::toQString(src.native_directory_string());
 		}
 
 		inline ext::filesystem::path fromQString(QString src)

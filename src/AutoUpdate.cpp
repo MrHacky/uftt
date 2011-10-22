@@ -390,10 +390,7 @@ namespace {
 		}
 
 		cout << "Trying delete...";
-		try {
-			boost::filesystem::remove(target);
-		} catch (...) {
-		}
+		ext::filesystem::remove(target);
 
 		if (ext::filesystem::exists(target)) {
 			cout << "Failed\n";
@@ -550,7 +547,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesyst
 				// TODO: key size always 512? actually read from file to find out
 				newfile.resize(newfile.size() - 4 - 4 - 512 - 1 - buildname.size());
 
-				ext::filesystem::path newtarget = target.branch_path() / (buildname +".deb");
+				ext::filesystem::path newtarget = target.parent_path() / (buildname +".deb");
 				if (newtarget == target) {
 					std::cout << "Huh? need different paths!\n";
 					return false;
@@ -574,7 +571,7 @@ bool AutoUpdater::doSelfUpdate(const std::string& buildname, const ext::filesyst
 					return false;
 				}
 
-				boost::filesystem::remove(target);
+				ext::filesystem::remove(target);
 
 				std::cout << "write succeeded: " << newtarget << '\n';
 				return true;

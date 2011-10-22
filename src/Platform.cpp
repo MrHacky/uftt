@@ -259,8 +259,7 @@ namespace platform {
 
 	spathlist getSettingsPathList() {
 		spathlist result;
-		ext::filesystem::path currentdir(boost::filesystem::current_path<ext::filesystem::path>());
-		result.push_back(spathinfo("Current Directory"      , currentdir / "uftt.dat"));
+		result.push_back(spathinfo("Current Directory"      , ext::filesystem::current_path() / "uftt.dat"));
 		//if (!ApplicationPath.empty())
 		//	result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
 #ifdef WIN32
@@ -419,7 +418,7 @@ namespace platform {
 				// save shortcut with our target (either failed to load or it did not point to our target)
 				success = true;
 				success = success && SUCCEEDED(isl->SetPath(convertUTF8ToTString(target.native_file_string()).c_str()));
-				success = success && SUCCEEDED(isl->SetWorkingDirectory(convertUTF8ToTString(target.branch_path().native_file_string()).c_str()));
+				success = success && SUCCEEDED(isl->SetWorkingDirectory(convertUTF8ToTString(target.parent_path().native_file_string()).c_str()));
 				success = success && SUCCEEDED(isl->SetDescription(convertUTF8ToTString(description).c_str()));
 				success = success && SUCCEEDED(ipf->Save(nsource.c_str(), TRUE));
 			}
@@ -443,7 +442,7 @@ namespace platform {
 			if (!ext::filesystem::exists(target)) return false;
 			return createLink(description, source, target);
 		} else {
-			return boost::filesystem::remove(source);
+			return ext::filesystem::remove(source);
 		}
 	}
 
@@ -493,7 +492,7 @@ namespace platform {
 		menudir /= "UFTT";
 		if (enabled && !boost::filesystem::create_directory(menudir)) return false;
 		bool ret = createRemoveLink(enabled, "UFTT", "Ultimate File Transfer Tool", menudir, getApplicationPath());
-		if (!enabled) ret = boost::filesystem::remove(menudir) && ret;
+		if (!enabled) ret = ext::filesystem::remove(menudir) && ret;
 		return ret;
 #endif
 		return false;

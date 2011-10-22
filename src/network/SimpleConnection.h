@@ -528,7 +528,7 @@ class SimpleConnection: public ConnectionCommon {
 			} else {
 				readsharepath = spath;
 				sharename = elems[0];
-				taskinfo.path = readsharepath.branch_path(); // TODO
+				taskinfo.path = readsharepath.parent_path(); // TODO
 			}
 
 			if (spath.empty() || !ext::filesystem::exists(spath)) {
@@ -562,10 +562,10 @@ class SimpleConnection: public ConnectionCommon {
 					ext::filesystem::recursive_directory_iterator curiter(spath);
 					ext::filesystem::recursive_directory_iterator enditer;
 					for (; curiter != enditer; ++curiter) {
-						const ext::filesystem::path& iterpath = *curiter;
+						const ext::filesystem::path iterpath = *curiter;
 						for (; curlevel > curiter.level(); --curlevel)
-							curpath = curpath.branch_path();
-						curpath /= curiter->leaf();
+							curpath = curpath.parent_path();
+						curpath /= iterpath.filename();
 						++curlevel;
 						if (ext::filesystem::exists(iterpath)) {
 							if (boost::filesystem::is_directory(iterpath)) {
@@ -737,7 +737,7 @@ class SimpleConnection: public ConnectionCommon {
 
 		void sendpath(ext::filesystem::path path, std::string name = "")
 		{
-			if (name.empty()) name = path.leaf();
+			if (name.empty()) name = path.filename();
 
 			if (!ext::filesystem::exists(path)) {
 				disconnect(STRFORMAT("path does not exist: %s", path));
@@ -998,7 +998,7 @@ class SimpleConnection: public ConnectionCommon {
 			taskinfo.shareinfo.name = platform::makeValidUTF8(sharename);
 			taskinfo.isupload = true;
 			readsharepath = core->getLocalSharePath(sharename);
-			taskinfo.path = readsharepath.branch_path();
+			taskinfo.path = readsharepath.parent_path();
 			if (readsharepath == "") {
 				shared_vec buildfile = updateProvider.getUpdateBuffer(sharename);
 				if (buildfile) {
@@ -1123,7 +1123,7 @@ class SimpleConnection: public ConnectionCommon {
 			cwdsharepath /= name;
 			try {
 				boost::filesystem::create_directory(getWriteShareFilePath(cwdsharepath.string()));
-			} catch(boost::filesystem::basic_filesystem_error<boost::filesystem::path> e) {
+			} catch (ext::filesystem::filesystem_error& e) {
 				disconnect(STRFORMAT("handle_recv_dir_header: %s", e.what()));
 				return;
 			}

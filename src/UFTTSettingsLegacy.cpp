@@ -235,7 +235,7 @@ bool UFTTSettingsLegacy::load(ext::filesystem::path path_)
 bool UFTTSettingsLegacy::save()
 {
 	try {
-		boost::filesystem::create_directories(path.branch_path());
+		boost::filesystem::create_directories(path.parent_path());
 		ext::filesystem::ofstream ofs(path);
 		if (!ofs.is_open()) return false;
 		boost::archive::xml_oarchive oa(ofs);

@@ -956,7 +956,7 @@ void MainWindow::doSelfUpdate(const std::string& build, const ext::filesystem::p
 			this->actionQuit->trigger();
 	} else if (build.find("-deb-") != string::npos) {
 		if (AutoUpdater::doSelfUpdate(build, path, "")) {
-			ext::filesystem::path newtarget = path.branch_path() / (build +".deb");
+			ext::filesystem::path newtarget = path.parent_path() / (build +".deb");
 
 			QDesktopServices::openUrl(QUrl::fromLocalFile(qext::path::toQStringFile(newtarget)));
 

@@ -203,8 +203,8 @@ void UFTTCore::addLocalShare(const std::string& name, const ext::filesystem::pat
 void UFTTCore::addLocalShare(const ext::filesystem::path& path)
 {
 	ext::filesystem::path p = path;
-	while (p.leaf() == ".") p.remove_leaf(); // linux thingy
-	std::string name = p.leaf();
+	while (p.filename() == ".") p = p.parent_path(); // linux thingy
+	std::string name = p.filename();
 #ifdef WIN32
 	if (name == "/" && p.string().size() == 3 && p.string()[1] == ':')
 		name = p.string()[0];
