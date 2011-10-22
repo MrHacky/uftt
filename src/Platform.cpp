@@ -260,8 +260,9 @@ namespace platform {
 	spathlist getSettingsPathList() {
 		spathlist result;
 		result.push_back(spathinfo("Current Directory"      , ext::filesystem::current_path() / "uftt.dat"));
-		//if (!ApplicationPath.empty())
-		//	result.push_back(spathinfo("Executable Directory", ApplicationPath.branch_path() / "uftt.dat"));
+		ext::filesystem::path apppath = getApplicationPath();
+		if (!apppath.empty())
+			result.push_back(spathinfo("Executable Directory", apppath.parent_path() / "uftt.dat"));
 #ifdef WIN32
 		result.push_back(spathinfo("User Documents"         , getFolderLocation(CSIDL_MYDOCUMENTS)    / "UFTT" / "uftt.dat"));
 		result.push_back(spathinfo("User Application Data"  , getFolderLocation(CSIDL_APPDATA)        / "UFTT" / "uftt.dat"));
