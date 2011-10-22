@@ -659,8 +659,8 @@ namespace platform {
 	{
 #if defined(WIN32) && !defined(_WIN32_WINDOWS)
 		ITEMIDLIST *pidl = ILCreateFromPath(convertUTF8ToTString(itempath.native_file_string()).c_str());
-		if(pidl) {
-			HRESULT hres = SHOpenFolderAndSelectItems(pidl,0,0,0);
+		if (pidl) {
+			HRESULT hres = SHOpenFolderAndSelectItems(pidl, 0, 0, 0);
 			ILFree(pidl);
 			if (hres == S_OK)
 				return true;
