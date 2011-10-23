@@ -75,6 +75,8 @@ namespace ext {
 				operator boostpath() const;
 				operator std::string() const;
 
+				boostpath bpath() const;
+
 				// external format: native separators/native encoding
 				externalstring external_file_string() const;
 				externalstring external_directory_string() const;

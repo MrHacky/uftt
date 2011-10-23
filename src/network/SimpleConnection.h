@@ -562,7 +562,7 @@ class SimpleConnection: public ConnectionCommon {
 					ext::filesystem::recursive_directory_iterator curiter(spath);
 					ext::filesystem::recursive_directory_iterator enditer;
 					for (; curiter != enditer; ++curiter) {
-						const ext::filesystem::path iterpath = *curiter;
+						const ext::filesystem::path iterpath = curiter->path();
 						for (; curlevel > curiter.level(); --curlevel)
 							curpath = curpath.parent_path();
 						curpath /= iterpath.filename();

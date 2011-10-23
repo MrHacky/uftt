@@ -63,7 +63,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	on_download_destination_path_entry_signal_changed_connection =
 		download_destination_path_entry.signal_changed().connect(
 			boost::bind(&ShareList::on_download_destination_path_entry_signal_changed, this));
-	download_destination_path_entry.set_text(ext::filesystem::external_utf8_directory(settings->dl_path));
+	download_destination_path_entry.set_text(settings->dl_path.get().native_directory_string());
 	download_destination_path_hbox.add(download_destination_path_entry);
 	download_destination_path_hbox.pack_start(browse_for_download_destination_path_button, Gtk::PACK_SHRINK);
 	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
@@ -339,7 +339,7 @@ void ShareList::set_backend(UFTTCore* _core) {
 
 void ShareList::on_download_destination_path_entry_signal_changed() {
 	ext::filesystem::path dl_path(download_destination_path_entry.get_text());
-	while(dl_path.leaf() == ".") dl_path.remove_leaf(); // Remove trailing '/' 's
+	while(dl_path.filename() == ".") dl_path = dl_path.parent_path(); // Remove trailing '/' 's
 
 	settings->dl_path = dl_path;
 	if(!ext::filesystem::exists(dl_path)) {
@@ -358,8 +358,8 @@ void ShareList::on_download_destination_path_entry_signal_changed() {
 void ShareList::on_browse_for_download_destination_path_button_signal_current_folder_changed() {
 	ext::filesystem::path pa(download_destination_path_entry.get_text());
 	ext::filesystem::path pb(browse_for_download_destination_path_button.get_current_folder());
-	while(pa.leaf() == ".") pa.remove_leaf();
-	while(pb.leaf() == ".") pb.remove_leaf();
+	while(pa.filename() == ".") pa = pa.parent_path();
+	while(pb.filename() == ".") pb = pb.parent_path();
 
 	if((!on_download_destination_path_entry_signal_changed_connection.blocked()) && (pa.string() != pb.string())) {
 		// If this connection is blocked it means we are being called because the

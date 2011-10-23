@@ -194,6 +194,9 @@ namespace ext {
 		path::operator std::string() const
 		{ return this->string(); }
 
+		boostpath path::bpath() const
+		{ return internal_to_boostpath(value); }
+
 		externalstring path::external_file_string() const
 		{ return internal_to_external(value); }
 
@@ -226,17 +229,17 @@ namespace ext {
 
 		void path::operator/=(const std::string& o)
 		{
-			*this = path(boostpath(*this) / native_to_external(o));
+			*this = path(this->bpath() / native_to_external(o));
 			return;
 			// TODO: test/profile more direct implementation below
-			if (!value.empty() && value.back() != '/')
+			if (!value.empty() && *(value.end()-1) != '/')
 				value.push_back('/');
 			value += unknown_to_internal(o);
 		}
 
 		path path::parent_path() const
 		{
-			return path(boostpath(*this).branch_path());
+			return path(this->bpath().branch_path());
 			// TODO: test/profile more direct implementation below
 			path ret;
 			size_t lastslash = value.rfind('/');
@@ -252,7 +255,7 @@ namespace ext {
 
 		std::string path::filename() const
 		{
-			return path(boostpath(*this).leaf()).string();
+			return path(this->bpath().leaf()).string();
 			// TODO: test/profile more direct implementation below
 			std::string ret;
 			size_t lastslash = value.rfind('/');
@@ -269,7 +272,7 @@ namespace ext {
 
 		path path::normalize() const
 		{
-			return path(boostpath(*this).normalize());
+			return path(this->bpath().normalize());
 			// TODO: figure out/test/profile more direct implementation
 		}
 
