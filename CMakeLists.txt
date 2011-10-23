@@ -5,6 +5,7 @@ SET(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true)
 IF(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
 	cmake_policy(SET CMP0005 OLD)
+	cmake_policy(SET CMP0007 NEW)
 	cmake_policy(SET CMP0015 NEW)
 ENDIF()
 
