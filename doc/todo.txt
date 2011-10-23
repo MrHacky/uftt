@@ -33,19 +33,16 @@
 - make size-optimized bootstrapper executable (no gui etc)
 - make bootstrapper universal (detect os, web version)
 - make uftt.dat location changable after initial startup
-- make autoupdate dialog
-- find uftt.dat in executable directory (again)
+- make real autoupdate dialog
 - implement debian/ubuntu .deb autoupdate (again)
 - disable apply button in qt preferences dialog when nothing is changed
-- actually quit when shutting down with close to tray
+- actually quit when os shutting down with close to tray
 - really fix ipv?_watcher shutdown problem (needs some locking?)
 - password protected shares
-- make distinction between release and beta autoupdates
 - move bin2c to /tools (and use EXCLUDE_FROM_ALL)
 - implement disable systray option (qt)
 - platform dependant defaults for settings
 - remove 'web updates' settings if not used
-- dont save settings at their default values (so defaults can be changed)
 - add more icons to qt gui
 - implement autoupdate for mac osx
 - add a wiki page with screenshot(s)
@@ -55,14 +52,15 @@
 - Transferring files does not preserve file permissions (in particular the executable is not preserved)
 
 * Misc GUI items
-- Notify on download completion (libnotify?)
 - Update wiki pages to match Help menu (FAQ, Howto, etc)
 - Unify 'Share File' and 'Share Folder', and allow multi-select
-- Mark notifications as a new feature
 - Show transfer speeds / nr. up-/downloads in titlebar
 - Show transfer speeds / nr. up-/downloads on mouse-over of status icon
 
 * Already completed features.
+- [DONE] make distinction between release and beta autoupdates
+- [DONE] Notify on download completion (libnotify?)
+- [DONE] find uftt.dat in executable directory
 - [DONE] show share name for upload tasks
 - [DONE] show progress for web update tasks
 - [DONE] implement udp hole punching via central web server
