@@ -3,6 +3,7 @@ ADD_LIBRARY(lib-util
 	ScopeExitSignal.h      ScopeExitSignal.cpp
 	SettingsManager.h      SettingsManager.cpp
 	Filesystem.h           Filesystem.cpp
+	SignalConnection.h     SignalConnection.cpp
 	Coro.h                 coroutine.hpp
 	PosixError.h
 	asio_timer_oneshot.h

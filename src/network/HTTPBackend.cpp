@@ -34,24 +34,25 @@ HTTPBackend::HTTPBackend(UFTTCore* core_)
 	check_update_interval();
 }
 
-void HTTPBackend::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
+SignalConnection HTTPBackend::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
 {
-	sig_new_share.connect(cb);
+	return SignalConnection::connect_wait(service, sig_new_share, cb);
 }
 
-void HTTPBackend::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
+SignalConnection HTTPBackend::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
 {
 	// TODO: implement this
+	return SignalConnection();
 }
 
-void HTTPBackend::connectSigNewTask(const boost::function<void(const TaskInfo&)>& cb)
+SignalConnection HTTPBackend::connectSigNewTask(const boost::function<void(const TaskInfo&)>& cb)
 {
-	sig_new_task.connect(cb);
+	return SignalConnection::connect_wait(service, sig_new_task, cb);
 }
 
-void HTTPBackend::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+SignalConnection HTTPBackend::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
-	service.post(boost::bind(&HTTPBackend::do_connect_sig_task_status, this, tid, cb));
+	return SignalConnection::connect_wait(service, boost::bind(&HTTPBackend::do_connect_sig_task_status, this, tid, cb));
 }
 
 void HTTPBackend::doRefreshShares()
@@ -231,10 +232,12 @@ void HTTPBackend::handle_file_write_done(const boost::system::error_code& err,HT
 	task->sig_progress(task->info);
 }
 
-void HTTPBackend::do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+boost::signals::connection HTTPBackend::do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
+	boost::signals::connection c;
 	if (tid.cid < tasklist.size() && tasklist[tid.cid]) {
-		tasklist[tid.cid]->sig_progress.connect(cb);
+		c = tasklist[tid.cid]->sig_progress.connect(cb);
 		cb(tasklist[tid.cid]->info);
 	}
+	return c;
 }

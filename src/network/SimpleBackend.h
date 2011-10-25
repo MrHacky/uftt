@@ -138,6 +138,8 @@ class SimpleBackend: public INetModule {
 
 		void del_ip_addr(boost::asio::ip::address addr);
 
+		boost::signals::connection attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+
 		boost::signal<void(const ShareInfo&)> sig_new_share;
 		boost::signal<void(const TaskInfo&)> sig_new_task;
 
@@ -155,17 +157,16 @@ class SimpleBackend: public INetModule {
 		void dl_connect_handle(const boost::system::error_code& e, ConnectionBaseRef conn, std::string name, ext::filesystem::path dlpath, uint32 version);
 		void start_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener);
 		void handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistener, SimpleTCPConnectionRef newconn, const boost::system::error_code& e);
-		void attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 
 		void start_udp_accept(UDPConnService* cservice);
 		void handle_udp_accept(UDPConnService* cservice, UDPSemiConnectionRef newconn, const boost::system::error_code& e);
 
 	public:
 		// Implementation of IBackend interface
-		virtual void connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
-		virtual void connectSigDelShare(const boost::function<void(const ShareID&)>&);
-		virtual void connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
-		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
+		virtual SignalConnection connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
+		virtual SignalConnection connectSigDelShare(const boost::function<void(const ShareID&)>&);
+		virtual SignalConnection connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
+		virtual SignalConnection connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
 		virtual void doRefreshShares();
 		virtual void startDownload(const ShareID& sid, const ext::filesystem::path& path);

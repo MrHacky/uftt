@@ -182,9 +182,9 @@ void UFTTCore::servicerunfunc() {
 	io_service.run();
 }
 
-void UFTTCore::connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb)
+SignalConnection UFTTCore::connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb)
 {
-	sigGuiCommand.connect(cb);
+	return SignalConnection::connect_wait(io_service, sigGuiCommand, cb);
 }
 
 // Local Share management
@@ -286,28 +286,36 @@ std::vector<std::string> UFTTCore::getLocalShares()
 }
 
 // Remote Share Listing/Downloading
-void UFTTCore::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
+SignalConnection UFTTCore::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
 {
+	SignalConnection conn;
 	BOOST_FOREACH(INetModuleRef nm, netmodules)
-		nm->connectSigAddShare(cb);
+		conn += nm->connectSigAddShare(cb);
+	return conn;
 }
 
-void UFTTCore::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
+SignalConnection UFTTCore::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
 {
+	SignalConnection conn;
 	BOOST_FOREACH(INetModuleRef nm, netmodules)
-		nm->connectSigDelShare(cb);
+		conn += nm->connectSigDelShare(cb);
+	return conn;
 }
 
-void UFTTCore::connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb)
+SignalConnection UFTTCore::connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb)
 {
+	SignalConnection conn;
 	BOOST_FOREACH(INetModuleRef nm, netmodules)
-		nm->connectSigNewTask(cb);
+		conn += nm->connectSigNewTask(cb);
+	return conn;
 }
 
-void UFTTCore::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+SignalConnection UFTTCore::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
 	if (tid.mid < netmodules.size())
-		netmodules[tid.mid]->connectSigTaskStatus(tid, cb);
+		return netmodules[tid.mid]->connectSigTaskStatus(tid, cb);
+	else
+		return SignalConnection();
 }
 
 void UFTTCore::startDownload(const ShareID& sid, const ext::filesystem::path& path)

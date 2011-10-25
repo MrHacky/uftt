@@ -36,16 +36,16 @@ class HTTPBackend: public INetModule {
 		void handle_file_open_done(const boost::system::error_code& err, HTTPTaskRef task);
 		void handle_file_write_done(const boost::system::error_code& err, HTTPTaskRef task);
 
-		void do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+		boost::signals::connection do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 	public:
 		HTTPBackend(UFTTCore* core_);
 	public:
 		// interface starts here!
 
-		virtual void connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
-		virtual void connectSigDelShare(const boost::function<void(const ShareID&)>&);
-		virtual void connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
-		virtual void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
+		virtual SignalConnection connectSigAddShare(const boost::function<void(const ShareInfo&)>&);
+		virtual SignalConnection connectSigDelShare(const boost::function<void(const ShareID&)>&);
+		virtual SignalConnection connectSigNewTask(const boost::function<void(const TaskInfo&)>&);
+		virtual SignalConnection connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>&);
 
 		virtual void doRefreshShares();
 		virtual void startDownload(const ShareID& sid, const ext::filesystem::path& path);

@@ -15,6 +15,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "util/Filesystem.h"
+#include "util/SignalConnection.h"
 
 #include "UFTTSettings.h"
 
@@ -161,7 +162,7 @@ class UFTTCore {
 		void initialize();
 
 		// Core->Gui commands
-		void connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb);
+		SignalConnection connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb);
 		void setMainWindowId(const std::string& mwid_);
 
 		// Local Share management
@@ -180,10 +181,10 @@ class UFTTCore {
 		std::vector<std::string> getLocalShares();
 
 		// Remote Share Listing/Downloading
-		void connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb);
-		void connectSigDelShare(const boost::function<void(const ShareID&)>& cb);
-		void connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb);
-		void connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+		SignalConnection connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb);
+		SignalConnection connectSigDelShare(const boost::function<void(const ShareID&)>& cb);
+		SignalConnection connectSigNewTask(const boost::function<void(const TaskInfo& tinfo)>& cb);
+		SignalConnection connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 
 		void startDownload(const ShareID& sid, const ext::filesystem::path& path);
 

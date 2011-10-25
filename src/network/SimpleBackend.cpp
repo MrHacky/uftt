@@ -124,24 +124,26 @@ SimpleBackend::SimpleBackend(UFTTCore* core_)
 	settings->nickname.sigChanged.connect(service.wrap(boost::bind(&SimpleBackend::send_publishes, this, uftt_bcst_if, uftt_bcst_ep, 1, true)));
 }
 
-void SimpleBackend::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
+SignalConnection SimpleBackend::connectSigAddShare(const boost::function<void(const ShareInfo&)>& cb)
 {
-	sig_new_share.connect(cb);
+	return SignalConnection::connect_wait(service, sig_new_share, cb);
+
 }
 
-void SimpleBackend::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
+SignalConnection SimpleBackend::connectSigDelShare(const boost::function<void(const ShareID&)>& cb)
 {
+	return SignalConnection();
 	// TODO: implement this
 }
 
-void SimpleBackend::connectSigNewTask(const boost::function<void(const TaskInfo&)>& cb)
+SignalConnection SimpleBackend::connectSigNewTask(const boost::function<void(const TaskInfo&)>& cb)
 {
-	sig_new_task.connect(cb);
+	return SignalConnection::connect_wait(service, sig_new_task, cb);
 }
 
-void SimpleBackend::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+SignalConnection SimpleBackend::connectSigTaskStatus(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
-	service.post(boost::bind(&SimpleBackend::attach_progress_handler, this, tid, cb));
+	return SignalConnection::connect_wait(service, boost::bind(&SimpleBackend::attach_progress_handler, this, tid, cb));
 }
 
 void SimpleBackend::doRefreshShares()
@@ -289,11 +291,13 @@ void SimpleBackend::handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistene
 	}
 }
 
-void SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+boost::signals::connection SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
+	boost::signals::connection c;
 	int num = tid.cid;
-	conlist[num]->sig_progress.connect(cb);
+	c = conlist[num]->sig_progress.connect(cb);
 	cb(conlist[num]->taskinfo);
+	return c;
 }
 
 void SimpleBackend::stun_new_addr()
