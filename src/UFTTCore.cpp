@@ -3,10 +3,14 @@
 #include "network/INetModule.h"
 #include "network/NetModuleLinker.h"
 
+#include "util/Coro.h"
 #include "util/Filesystem.h"
 #include "util/StrFormat.h"
 
 #include <boost/foreach.hpp>
+
+#include "AutoUpdate.h"
+#include "Globals.h"
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
@@ -23,58 +27,242 @@ namespace {
 	}
 }
 
-UFTTCore::UFTTCore(UFTTSettingsRef settings_, int argc, char **argv)
+struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelper> {
+	UFTTCore* core;
+	CommandLineInfo* cmdinfo;
+	boost::function<void(void)> cb;
+
+	CommandLineCommand clc;
+	size_t icmd;
+
+	SignalConnection sigconn;
+
+	std::string share;
+	TaskInfo taskinfo;
+
+	CommandExecuteHelper(UFTTCore* core_, CommandLineInfo* cmdinfo_, const boost::function<void(void)>& cb_)
+		: core(core_), cmdinfo(cmdinfo_), cb(cb_)
+	{
+		icmd = 0;
+	}
+
+	void operator()(ext::coro coro, const TaskInfo& tinfo)
+	{
+		taskinfo = tinfo;
+		(*this)(coro);
+	}
+
+	void operator()(ext::coro coro)
+	{
+		CORO_REENTER(coro) {
+			for (icmd = 0; icmd < cmdinfo->list5.size(); ++icmd) {
+				clc = cmdinfo->list5[icmd];
+
+				if (clc.empty()) {
+					std::cout << "Warning: ignoring empty command\n";
+				} else if (clc[0] == "--delete") {
+					if (clc.size() == 2)
+						AutoUpdater::remove(core->get_io_service(), core->get_work_service(), clc[1]);
+					else
+						std::cout << "Warning: ignoring --delete with incorrect number of paramenters: " << clc.size()-1 << "\n";
+				} else if (clc[0] == "--add-extra-build") {
+					updateProvider.checkfile(core->get_io_service(), clc[2], clc[1], true);
+				} else if (clc[0] == "--add-share" || clc[0] == "--add-shares") {
+					for (size_t i = 1; i < clc.size(); ++i) {
+						ext::filesystem::path fp(clc[i]);
+						if (ext::filesystem::exists(fp))
+							core->addLocalShare(fp);
+						else
+							std::cout << "Warning: tried to share non-existing file/dir: " << fp << "\n";
+					}
+				} else if (clc[0] == "--download-share") {
+					if (clc.size() == 3) {
+						share = clc[1];
+						CORO_YIELD { // Wait until download started
+							sigconn = core->connectSigNewTask(coro(this));
+							ShareID hax;
+							hax.sid = share;
+							for (size_t i = 0; i < core->netmodules.size(); ++i) {
+								// try all modules and hackfully only one accepts the share url
+								hax.mid = i;
+								core->startDownload(hax, clc[2]);
+							}
+						};
+						if (taskinfo.isupload || taskinfo.shareid.sid != share)
+							CORO_YIELD break; // YIELD above actually forked, get rid of unwanted children here
+						sigconn.disconnect(); // got child we wanted, prevent any more
+						// TODO: check if this is actually supported: disconnecting during signal invokation
+
+						CORO_YIELD sigconn =core->connectSigTaskStatus(taskinfo.id, coro(this));
+						if (taskinfo.status != TASK_STATUS_COMPLETED && taskinfo.status != TASK_STATUS_ERROR)
+							CORO_YIELD break; // Again get rid of unwanted children
+						sigconn.disconnect(); // until we get the one we want
+
+						if (taskinfo.status == TASK_STATUS_COMPLETED) {
+							std::cout << "cbTaskProgress: TASK_STATUS_COMPLETED\n";
+						} else if (taskinfo.status == TASK_STATUS_ERROR) {
+							std::cout << "cbTaskProgress: TASK_STATUS_ERROR\n";
+						} else
+							throw std::runtime_error("Error!");
+					} else
+						std::cout << "Warning: ignoring --download-share with incorrect number of paramenters: " << clc.size()-1 << "\n";
+				} else if (clc[0] == "--quit") {
+					cmdinfo->quit = true;
+				}
+			}
+
+			{
+				boost::function<void(void)> lcb;
+				lcb.swap(cb);
+				lcb();
+			}
+		}
+	}
+};
+
+struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionHandler> {
+	UFTTCore* core;
+	boost::asio::ip::tcp::socket sock;
+	boost::asio::streambuf rbuf;
+	std::istream rstream;
+	std::string wstr;
+
+
+	size_t icmd, ncmd;
+	size_t iarg, narg;
+
+	CommandLineInfo cmdinfo;
+
+	bool execwait;
+
+	LocalConnectionHandler(UFTTCore* core_)
+		: core(core_), sock(core->get_io_service()), rstream(&rbuf)
+	{
+		execwait = true;
+	}
+
+	void error(const std::string& message)
+	{
+		std::cout << message << '\n';
+	}
+
+	void recvline0(ext::coro coro)
+	{
+		boost::asio::async_read_until(sock, rbuf, '\x00', coro(this));
+	}
+
+	void sendline0(ext::coro coro, const std::string& s)
+	{
+		wstr = s;
+		boost::asio::async_write(sock, boost::asio::buffer(wstr.c_str(), wstr.size()+1), coro(this));
+	}
+
+	std::string getline0(size_t transferred)
+	{
+		std::string res;
+		res.resize(transferred);
+		rstream.read(&res[0], transferred);
+		res.resize(transferred-1);
+		return res;
+	}
+
+	void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code(), size_t transferred = 0)
+	{
+		if (ec)
+			return error(STRFORMAT("LocalConnectionHandler: %s (%d)\n", ec.message(), this->stateval(coro)));
+		try {
+			CORO_REENTER(coro) {
+				CORO_YIELD core->local_listener.async_accept(sock, coro(this));
+				(new LocalConnectionHandler(core))->start();
+
+				CORO_YIELD recvline0(coro);
+				{
+					std::string rtag = getline0(transferred);
+					if (rtag != "argsL5.0") return error(std::string() + "LocalConnectionHandler: invalid tag: " +rtag);
+				}
+				CORO_YIELD recvline0(coro);
+				ncmd = boost::lexical_cast<size_t>(getline0(transferred));
+				for (icmd = 0; icmd < ncmd; ++icmd) {
+					cmdinfo.list5.push_back(CommandLineCommand());
+					CORO_YIELD recvline0(coro);
+					narg = boost::lexical_cast<size_t>(getline0(transferred));
+					for (iarg = 0; iarg < narg; ++iarg) {
+						CORO_YIELD recvline0(coro);
+						cmdinfo.list5.back().push_back(getline0(transferred));
+					}
+				}
+
+				// if execwait==true, we wait for command execution, otherwise we fork a child to do it
+				if (!execwait) CORO_FORK coro(this);
+				if (execwait || coro.is_child()) {
+					CORO_YIELD (new UFTTCore::CommandExecuteHelper(core, &cmdinfo, coro(this)))->start();
+					if (!execwait) return; // !execwait means we were the forked child
+				}
+
+				CORO_YIELD sendline0(coro, "0");
+				CORO_YIELD sendline0(coro, cmdinfo.quit ? "quit" : "activate");
+				if (!cmdinfo.quit)
+					CORO_YIELD sendline0(coro, core->mwid);
+				else
+					CORO_YIELD sendline0(coro, platform::getCurrentPID());
+				CORO_YIELD recvline0(coro);
+				{
+					std::string rtag = getline0(transferred);
+					if (rtag != "done") return error(std::string() + "LocalConnectionHandler: invalid ack: " +rtag);
+				}
+				if (!cmdinfo.quit)
+					core->sigGuiCommand(GUI_CMD_SHOW);
+				else
+					core->sigGuiCommand(GUI_CMD_QUIT);
+			}
+		} catch (std::exception& e) {
+			return error(e.what());
+		}
+	}
+};
+
+UFTTCore::UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo)
 : settings(settings_)
 , local_listener(io_service)
 , error_state(0)
 {
-	args = platform::getUTF8CommandLine(argc, argv);
-
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
 		local_listener.open(boost::asio::ip::tcp::v4());
 		local_listener.bind(local_endpoint);
 		local_listener.listen(16);
 
-		handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket>(), boost::system::error_code());
-	} catch (std::exception& /*e*/) {
+		(new LocalConnectionHandler(this))->start();
+	} catch (std::exception& pe) {
 		bool success = false;
+		int ret = 1;
 		try {
-			// failed to open listening socket, try to connect to existing uftt process
-			std::string file_list = STRFORMAT("argv[0]%c", (char)0);
-			size_t      file_count = 1;
-			size_t      i          = 1;
-			if (args.size() == 4 && args[1] == "--download-share") {
-				file_list += STRFORMAT("%s%c%s%c", args[1], (char)0, args[2], (char)0);
-				i = 3;
-				file_count += 2;
-			}
-			for (; i < args.size(); ++i) {
-				ext::filesystem::path p(
-					boost::filesystem::system_complete(ext::filesystem::path(args[i]))
-				);
-				if (ext::filesystem::exists(p)) {
-					file_list += STRFORMAT("%s%c", p.string(), (char)0);
-					++file_count;
-				} else {
-					std::cout << STRFORMAT("%s: %s: No such file or directory.", args[0], args[i]) << std::endl;
-				}
-			}
 			boost::asio::ip::tcp::socket sock(io_service);
 			sock.open(boost::asio::ip::tcp::v4());
 			sock.connect(local_endpoint);
-			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("args%c%d%c", (char)0, file_count, (char)0)));
-			boost::asio::write(sock, boost::asio::buffer(file_list));
-			uint8 ret;
-			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
-			if (ret != 0) std::runtime_error("Read failed");
-			std::string wid = getstr0(sock);
-			platform::activateWindow(wid);
+			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("argsL5.0%c%d%c", (char)0, cmdinfo.list5.size(), (char)0)));
+			BOOST_FOREACH(const CommandLineCommand& cmd, cmdinfo.list5) {
+				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%d%c", cmd.size(), (char)0)));
+				BOOST_FOREACH(const std::string& str, cmd)
+					boost::asio::write(sock, boost::asio::buffer(str.c_str(), str.size()+1));
+			}
+			ret = boost::lexical_cast<int>(getstr0(sock));
+			std::string mode = getstr0(sock);
+			std::string widpid = getstr0(sock);
+			platform::PHANDLE* proc;
+			if (mode == "quit") proc = platform::getProcessHandle(widpid);
+			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("done%c", (char)0)));
+			if (mode == "quit") {
+				ret = platform::waitForProcessExit(proc);
+				platform::freeProcessHandle(proc);
+			} else if (mode == "activate")
+				platform::activateWindow(widpid);
 			success = true;
 		} catch (std::exception& e) {
-			std::cout << "Failed to listen and failed to connect: " << e.what() << std::endl;
+			std::cout << "Failed to listen : " << pe.what() << std::endl;
+			std::cout << "Failed to connect: " << e.what() << std::endl;
 		}
-		if (success) throw 0;
+		if (success) throw ret;
 	}
 }
 
@@ -86,9 +274,6 @@ void UFTTCore::initialize()
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 
-	handle_args(args, false);
-	args.clear();
-
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
 
 	// Disabled for now because they clobber user state:
@@ -98,77 +283,22 @@ void UFTTCore::initialize()
 	//settings->uftt_startmenu_group.connectChanged(boost::bind(&platform::setStartmenuGroupEnabled, _1), true);
 }
 
-void UFTTCore::handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e)
+void UFTTCore::handleArgsDone(CommandLineInfo* cmdinfo)
 {
-	if (e) {
-		std::cout << "handle_local_connection: " << e << "\n";
-	}
-
-	if (!e) {
-		boost::shared_ptr<boost::asio::ip::tcp::socket> newsock(new boost::asio::ip::tcp::socket(io_service));
-		local_listener.async_accept(*newsock,
-			boost::bind(&UFTTCore::handle_local_connection, this, newsock, boost::asio::placeholders::error));
-	}
-
-	if (sock && !e) {
-		std::string s;
-		std::vector<std::string> v;
-		try {
-			std::string r = getstr0(*sock);
-			if (r != "args") return;
-			size_t n = boost::lexical_cast<size_t>(getstr0(*sock));
-			for (size_t i = 0; i < n; ++i)
-				v.push_back(getstr0(*sock));
-			if (v.size() == 4 && v[1] == "--download-share") return handle_command_download(sock, v[2], v[3]);
-			uint8 st = 0;
-			boost::asio::write(*sock, boost::asio::buffer(&st, 1));
-			boost::asio::write(*sock, boost::asio::buffer(STRFORMAT("%s%c", mwid, (char)0)));
-
-			boost::asio::read(*sock, boost::asio::buffer(&st, 1)); // expected to fail with EOF
-		} catch (std::exception& ex) {
-			std::cout << "handle_local_connection: " << ex.what() << "\n";
-		}
-		if (!v.empty())
-			handle_args(v, true);
-	}
+	if (cmdinfo->quit)
+		sigGuiCommand(GUI_CMD_QUIT);
 }
 
-void UFTTCore::handle_command_download(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const std::string& share, const ext::filesystem::path& path)
+void UFTTCore::handleArgs(CommandLineInfo* cmdinfo)
 {
-	try {
-		ShareID hax;
-		hax.sid = share;
-		for (size_t i = 0; i < netmodules.size(); ++i) {
-			// try all modules and hackfully only one accepts the share url
-			hax.mid = i;
-			startDownload(hax, path);
-		}
-
-		uint8 st = 0;
-		boost::asio::write(*sock, boost::asio::buffer(&st, 1));
-		boost::asio::write(*sock, boost::asio::buffer(STRFORMAT("%s%c", mwid, (char)0)));
-
-		boost::asio::read(*sock, boost::asio::buffer(&st, 1)); // expected to fail with EOF
-	} catch (std::exception& ex) {
-		std::cout << "handle_local_connection: " << ex.what() << "\n";
-	}
+	io_service.post(
+		(new UFTTCore::CommandExecuteHelper(this, cmdinfo, boost::bind(&UFTTCore::handleArgsDone, this, cmdinfo)))->starter()
+	);
 }
 
 void UFTTCore::setMainWindowId(const std::string& mwid_)
 {
 	mwid = mwid_;
-}
-
-void UFTTCore::handle_args(const std::vector<std::string>& args, bool fromremote)
-{
-	for (size_t i = 1; i < args.size(); ++i) {
-		ext::filesystem::path fp(args[i]);
-		if (!ext::filesystem::exists(fp)) break;
-		addLocalShare(fp);
-	}
-
-	if (fromremote)
-		sigGuiCommand(GUI_CMD_SHOW);
 }
 
 UFTTCore::~UFTTCore()

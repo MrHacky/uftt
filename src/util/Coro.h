@@ -89,10 +89,15 @@ namespace ext {
 				}
 
 			public:
+				resumer_intrusive<T> starter()
+				{
+					return resume(state());
+				}
+
 				void start()
 				{
 					// resumer will take initial ownership here
-					resume(state())();
+					starter()();
 				}
 
 				resumer_intrusive<T> resume(state s)

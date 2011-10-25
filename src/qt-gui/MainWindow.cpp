@@ -450,7 +450,10 @@ bool MainWindow::showFromTray()
 
 void MainWindow::handleGuiCommand(UFTTCore::GuiCommand cmd)
 {
-	if (cmd == UFTTCore::GUI_CMD_SHOW) showFromTray();
+	if (cmd == UFTTCore::GUI_CMD_SHOW)
+		showFromTray();
+	else if (cmd == UFTTCore::GUI_CMD_QUIT)
+		this->actionQuit->trigger();
 }
 
 MainWindow::~MainWindow()

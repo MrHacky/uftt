@@ -56,6 +56,7 @@ SET(UFTT_SOURCES
 	UFTTCore.h            UFTTCore.cpp
 	UFTTSettings.h        UFTTSettings.cpp
 	UFTTSettingsLegacy.h  UFTTSettingsLegacy.cpp
+	UFTTCommandLine.h     UFTTCommandLine.cpp
 	AutoUpdate.h          AutoUpdate.cpp
 	Platform.h            Platform.cpp
 )

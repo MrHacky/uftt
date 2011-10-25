@@ -37,6 +37,13 @@ namespace platform {
 
 	void activateWindow(const std::string& wid);
 
+	std::string getCurrentPID();
+
+	struct PHANDLE;
+	PHANDLE* getProcessHandle(const std::string& pid);
+	int waitForProcessExit(PHANDLE* handle);
+	void freeProcessHandle(PHANDLE* handle);
+
 	ext::filesystem::path getApplicationPath();
 
 	bool setSendToUFTTEnabled(bool enabled);

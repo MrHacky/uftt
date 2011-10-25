@@ -18,6 +18,7 @@
 #include "util/SignalConnection.h"
 
 #include "UFTTSettings.h"
+#include "UFTTCommandLine.h"
 
 #define UFTT_PORT (47189)
 
@@ -134,12 +135,12 @@ class UFTTCore {
 	public:
 		enum GuiCommand {
 			GUI_CMD_SHOW = 0,
+			GUI_CMD_QUIT,
 		};
 	private:
 		// declare these first so they will be destroyed last
 		boost::asio::io_service io_service;
 
-		std::vector<std::string> args;
 		boost::asio::ip::tcp::acceptor local_listener;
 		std::string mwid;
 
@@ -150,16 +151,19 @@ class UFTTCore {
 		boost::thread servicerunner;
 
 		boost::signal<void(GuiCommand)> sigGuiCommand;
-		void handle_local_connection(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const boost::system::error_code& e);
-		void handle_args(const std::vector<std::string>& args, bool fromremote);
-		void handle_command_download(boost::shared_ptr<boost::asio::ip::tcp::socket> sock, const std::string& share, const ext::filesystem::path& path);
-
 		void servicerunfunc();
+
+		void handleArgsDone(CommandLineInfo* cmdinfo);
+
+		// private asio coroutines
+		struct LocalConnectionHandler;
+		struct CommandExecuteHelper;
 	public:
-		UFTTCore(UFTTSettingsRef settings_, int argc, char **argv);
+		UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo);
 		~UFTTCore();
 
 		void initialize();
+		void handleArgs(CommandLineInfo* cmdinfo);
 
 		// Core->Gui commands
 		SignalConnection connectSigGuiCommand(const boost::function<void(GuiCommand)>& cb);

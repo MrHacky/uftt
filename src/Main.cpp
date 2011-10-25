@@ -165,27 +165,24 @@ bool waitonexit = false;
 
 int imain(int argc, char **argv)
 {
+	CommandLineInfo cmd = CommandLineInfo::parseCommandLine(argc, argv);
 	bool madeConsole = false;
-	if (argc > 1 && string(argv[1]) == "--console") {
-		if (!platform::hasConsole()) madeConsole = platform::newConsole();
-		argv[1] = argv[0];
-		--argc; ++argv;
+
+	BOOST_FOREACH(const CommandLineCommand& clc, cmd.list0) {
+		if (clc[0] == "--console") {
+			if (!platform::hasConsole()) madeConsole = platform::newConsole();
+		} else if (clc[0] == "--sign") {
+			return AutoUpdater::doSigning(clc[1], clc[2], clc[3], clc[4], clc[5]) ? 0 : 1;
+		} else if (clc[0] == "--write-build-version") {
+			std::ofstream ofs(argv[2]);
+			ofs << get_build_string();
+			return 0;
+		} else if (clc[0] == "--runtest") {
+			return runtest();
+		} else if (clc[0] == "--replace") {
+			return AutoUpdater::replace(clc[1], clc[2]);
+		}
 	}
-
-	if (argc > 6 && string(argv[1]) == "--sign")
-		return AutoUpdater::doSigning(argv[2], argv[3], argv[4], argv[5], argv[6]) ? 0 : 1;
-
-	if (argc > 2 && string(argv[1]) == "--write-build-version") {
-		std::ofstream ofs(argv[2]);
-		ofs << get_build_string();
-		return 0;
-	}
-
-	if (argc > 1 && string(argv[1]) == "--runtest")
-		return runtest();
-
-	if (argc > 2 && string(argv[1]) == "--replace")
-		return AutoUpdater::replace(argv[0], argv[2]);
 
 	std::string extrabuildpath;
 	std::string extrabuildname;
@@ -209,27 +206,29 @@ int imain(int argc, char **argv)
 
 	try {
 		boost::shared_ptr<UFTTGui> gui;
-		UFTTCore core(settings, argc, argv);
-		gui = UFTTGui::makeGui(argc, argv, settings);
+		UFTTCore core(settings, cmd);
+		{
+			std::vector<char*> gargs;
+			BOOST_FOREACH(CommandLineCommand& clc, cmd.list2) {
+				if (clc[0] == "--gui-opt" || clc[0] == "--gui-opts") {
+					for (size_t i = 1; i < clc.size(); ++i) {
+						clc[i] += '\x00';
+						gargs.push_back(&clc[i][0]);
+					}
+				}
+			}
+
+			gui = UFTTGui::makeGui(gargs.size(), &gargs[0], settings);
+		}
 		std::cout << "Build: " << get_build_string() << '\n';
 
 		core.initialize();
 		gui->bindEvents(&core);
 
+		core.handleArgs(&cmd);
+
 		if (madeConsole)
 			platform::freeConsole();
-
-
-		// get services
-		boost::asio::io_service& run_service  = core.get_io_service();
-		boost::asio::io_service& work_service = core.get_work_service();
-
-		// kick off some async tasks (which hijack the disk io thread)
-		updateProvider.checkfile(run_service, argv[0], get_build_string(), true);
-		if (!extrabuildname.empty())
-			updateProvider.checkfile(run_service, extrabuildpath, extrabuildname, true);
-		if (argc > 2 && string(argv[1]) == "--delete")
-			AutoUpdater::remove(run_service, work_service, argv[2]);
 
 		int ret = gui->run();
 

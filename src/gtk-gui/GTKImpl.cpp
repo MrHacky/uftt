@@ -480,6 +480,9 @@ void UFTTWindow::handle_uftt_core_gui_command(UFTTCore::GuiCommand cmd) {
 			restore_window_size_and_position();
 			present();
 		}; break;
+		case UFTTCore::GUI_CMD_QUIT: {
+			on_menu_file_quit();
+		}; break;
 		default: {
 			std::cout << "WARNING: Unhandled UFTTCore::GuiCommand" << cmd << std::endl;
 		}; break;

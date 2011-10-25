@@ -22,6 +22,7 @@
 #  endif
 
 #else
+#  include <signal.h>
 #  include <unistd.h>
 #  include <stdlib.h>
 #  include <iostream>
@@ -33,6 +34,7 @@
 #endif
 
 #include <boost/filesystem.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/algorithm/string.hpp>
 
 #include "util/Filesystem.h"
@@ -68,12 +70,7 @@ namespace platform {
 		#endif
 	#endif
 
-	bool haveConsole =
-#ifdef NDEBUG
-		false;
-#else
-		true;
-#endif
+	bool haveConsole = false;
 
 	// returns whether we have a console attached to stdout
 	bool hasConsole()
@@ -689,4 +686,61 @@ namespace platform {
 		return false;
 	}
 
+	std::string getCurrentPID()
+	{
+#ifdef WIN32
+		DWORD pid = GetCurrentProcessId();
+		return boost::lexical_cast<std::string>(pid);
+#else
+		pid_t pid = getpid();
+		return boost::lexical_cast<std::string>(pid);
+#endif
+	}
+
+	struct PHANDLE {
+#ifdef WIN32
+		HANDLE phandle;
+#else
+		pid_t pid;
+#endif
+	};
+
+	PHANDLE* getProcessHandle(const std::string& pid)
+	{
+		PHANDLE* ret = new PHANDLE();
+#ifdef WIN32
+		ret->phandle = OpenProcess(SYNCHRONIZE|PROCESS_QUERY_INFORMATION, false, boost::lexical_cast<DWORD>(pid));
+#else
+		ret->pid = boost::lexical_cast<pid_t>(pid);
+#endif
+		return ret;
+	}
+
+	int waitForProcessExit(PHANDLE* handle)
+	{
+		int res = -1;
+#ifdef WIN32
+		DWORD exitcode;
+		WaitForSingleObject(handle->phandle, INFINITE);
+		if (GetExitCodeProcess(handle->phandle, &exitcode))
+			res = exitcode;
+#else
+		for (int i = 0; i < 5*100; ++i) {
+			if (kill(handle->pid, 0) == -1 && errno == ESRCH) {
+				res = 0; // no way to get actual exit code of non-child processes
+				break;
+			}
+			msSleep(10); // 100/sec
+		}
+#endif
+		return res;
+	}
+
+	void freeProcessHandle(PHANDLE* handle)
+	{
+#ifdef WIN32
+		CloseHandle(handle->phandle);
+#endif
+		delete handle;
+	}
 } // namespace platform
