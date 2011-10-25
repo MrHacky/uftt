@@ -368,15 +368,10 @@ namespace platform {
 
 	std::string getUserName()
 	{
-#if defined(WIN32) && !defined(_WIN32_WINDOWS)
-		wchar_t tname[256];
+#if defined(WIN32)
+		TCHAR tname[256];
 		DWORD len = 256;
-		if (GetUserNameW(tname, &len))
-			return convertTStringToUTF8(tname);
-#elif defined(WIN32) && defined(_WIN32_WINDOWS)
-		char tname[256];
-		DWORD len = 256;
-		if (GetUserNameA(tname, &len))
+		if (GetUserName(tname, &len) && tname[0] != 0)
 			return convertTStringToUTF8(tname);
 #endif
 		char* name = NULL;
