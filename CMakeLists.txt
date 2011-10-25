@@ -93,3 +93,9 @@ ENDIF()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/")
 
 SUBDIRS(src)
+
+Set(TESTING_ENABLE OFF CACHE BOOL "Enable uftt automatic testing.")
+If(TESTING_ENABLE)
+	ENABLE_TESTING()
+	SUBDIRS(tests)
+Endif()
