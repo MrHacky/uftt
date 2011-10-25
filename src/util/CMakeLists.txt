@@ -6,6 +6,7 @@ ADD_LIBRARY(lib-util
 	Coro.h                 coroutine.hpp
 	PosixError.h
 	asio_timer_oneshot.h
+	asio_sync_dispatcher.h
 	StrFormat.h
 )
 
