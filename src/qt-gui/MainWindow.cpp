@@ -452,8 +452,12 @@ void MainWindow::handleGuiCommand(UFTTCore::GuiCommand cmd)
 {
 	if (cmd == UFTTCore::GUI_CMD_SHOW)
 		showFromTray();
-	else if (cmd == UFTTCore::GUI_CMD_QUIT)
-		this->actionQuit->trigger();
+	else if (cmd == UFTTCore::GUI_CMD_QUIT) {
+		// workaround: singleShot here fixes a problem with 'uftt --quit' taking 30 seconds to complete
+		// TODO: investigate why, maybe better luck with qt debug .pdb files?
+		QTimer::singleShot(0, this->actionQuit, SLOT(trigger()));
+		//this->actionQuit->trigger();
+	}
 }
 
 MainWindow::~MainWindow()
