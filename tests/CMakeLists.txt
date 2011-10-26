@@ -33,3 +33,5 @@ Add_Test_Script(test-dummy1 dummy1.sh)
 
 Add_Executable(dummy2 dummy2.cpp)
 Add_Test(test-dummy2 dummy2)
+
+Add_Test_Script(test-quit1 quit1.sh)
