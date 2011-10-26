@@ -1,5 +1,5 @@
 #!/bin/bash
 
 echo "DP=${TESTDIR}"
-diff "$1" "$1"
+diff "${UFTT}" "${UFTT}"
 echo "Test Success"

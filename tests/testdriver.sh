@@ -8,7 +8,5 @@ cd "$(dirname "$0")"
 
 # Get scriptname
 TESTSCRIPT="$1"
-# Shift TARGET ($2) so its the first parameter for the test script
-shift
-# Include the test script
+UFTT="$2"
 source "${TESTSCRIPT}"
