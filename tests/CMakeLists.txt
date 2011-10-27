@@ -28,10 +28,22 @@ Function(Add_Test_Script TESTNAME TESTSCRIPT)
 	Endforeach()
 EndFunction()
 
+FIND_PACKAGE(MyBoost)
+
+INCLUDE_DIRECTORIES("${BOOST_INCLUDE_DIR}")
+LINK_DIRECTORIES("${BOOST_LIBRARY_DIR}")
+IF(MSVC)
+	# Disable autolinking from asio->regex because we don't use it
+	ADD_DEFINITIONS("-DBOOST_REGEX_NO_LIB")
+ENDIF()
 
 Add_Test_Script(test-dummy1 dummy1.sh)
 
-Add_Executable(dummy2 dummy2.cpp)
-Add_Test(test-dummy2 dummy2)
+Add_Executable(test-dummy2 dummy2.cpp)
+Add_Test(test-dummy2 test-dummy2)
+
+Add_Executable(test-filesystem1 filesystem1.cpp)
+Target_Link_Libraries(test-filesystem1 uftt-core lib-util ${BOOST_FILESYSTEM_LIBRARY} ${BOOST_SYSTEM_LIBRARY})
+Add_Test(test-filesystem1 test-filesystem1)
 
 Add_Test_Script(test-quit1 quit1.sh)
