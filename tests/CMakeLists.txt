@@ -47,3 +47,5 @@ Target_Link_Libraries(test-filesystem1 uftt-core lib-util ${BOOST_FILESYSTEM_LIB
 Add_Test(test-filesystem1 test-filesystem1)
 
 Add_Test_Script(test-quit1 quit1.sh)
+
+Add_Test_Script(test-download1 download1.sh)
