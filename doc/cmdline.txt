@@ -1,0 +1,72 @@
+=== Brainstorm ramblings about command line handling ===
+
+Steps:
+- Get UTF8 commandline (platform::getUTF8CommandLine)
+- Parse/Validate command line into 'Commands'
+	Default command is 'AddShares', but only if *all* arguments are existing files/directories
+	Parsing error: console/messagebox/gui/spawn console?
+	Validation makes sure all referenced files actually exist, when commands are executed they
+	can assume this and any i/o errors will be fatal (or ignored? warnings?).
+
+L0
+- Load Settings
+L1
+- construct UFTTCore (detect client/server 'mode')
+L2
+- (server only) construct UFTTGui
+L3
+- (server only) initialize UFTTCore
+L4
+- (server only) bind UFTTCore<->UFTTGui
+L5
+- (server only) gui->run();
+
+Typed of commands:
+Client: execute in current executable always
+Server: execute in existing executable if possible, otherwise in current one (which will be started)
+
+
+#L0 mods - Alter operations
+#--stdout L0?
+#--console
+
+L0 commands - Standalone utilities, don't actually spin up any of uftt
+--sign (L0, Final)
+--write-build-version (L0, Final)
+--runtest (L0, Final)
+--replace (L0, Final)
+
+L5 commands - Async tasks executed in worker thread (cannot be waited for)
+--extra-build-share
+--delete
+
+L5 commands - Async tasks handled by uftt core, client waits until the server completes the command
+--download-share
+--add-share
+--add-shares
+--quit (special, waiting on this needs some platform support?)
+
+'--' or ''
+	Accepted as nops, can be used to inhibit parsing all arguments as filenames ('': empty string is never a valid filename)
+
+--detach (Client)
+	Forks/daemonized the current executable, rest of the commands will still be executed,
+	but their results will not be accessible any more.
+
+--async (Client)
+	For consequent server commands, does not wait for their completion before continueing with the
+	next command.
+
+--sync (Cl
+--wait (Client)
+	Waits for all(any?)
+
+Conclusion:
+For now, L0 commands are all final, and the rest of the commands can be L5. As L0Final commands must appear alone,
+we either have a single L0 command or a sequence of L5 commands. L5 sequence will be serialized through to the server
+if uftt is already running. More complicated stuff like multiple instances each with their own port, or detaching and 
+async/wait commands will have to wait (maybe even introduce some scripting for that instead, command-line interface
+should not become impossible to understand.) (also, do we even need that stuff?)
+
+Actually, some L2 commands: --gui-opt and --gui-opts can be usefull too, but they still fit in because it doesn't matter how they
+are interleaved with L5 commands.
