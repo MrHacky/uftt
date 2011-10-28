@@ -11,6 +11,7 @@
 
 #include "AutoUpdate.h"
 #include "Globals.h"
+#include "BuildString.h"
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
@@ -275,6 +276,10 @@ void UFTTCore::initialize()
 		netmodules[i]->setModuleID(i);
 
 	servicerunner = boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)).move();
+
+	ext::filesystem::path apppath = platform::getApplicationPath();
+	if (!apppath.empty())
+		updateProvider.checkfile(get_io_service(), apppath, get_build_string(), true);
 
 	// Disabled for now because they clobber user state:
 	//settings->uftt_send_to.connectChanged(boost::bind(&platform::setSendToUFTTEnabled, _1), true);
