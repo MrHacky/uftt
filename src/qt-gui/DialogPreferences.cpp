@@ -4,6 +4,7 @@
 
 #include <QTreeWidgetItem>
 #include <QItemDelegate>
+#include <QPushButton>
 
 #include <boost/foreach.hpp>
 
@@ -71,11 +72,14 @@ DialogPreferences::DialogPreferences(boost::shared_ptr<SettingsManagerBase> sett
 	bool showadvanced = sv->getValue<bool>();
 	if (!showadvanced)
 		delete listCategories->item(listCategories->count()-1);
+
+	initSettings();
 }
 
 void DialogPreferences::on_listAdvancedOptions_itemChanged(QTreeWidgetItem* item, int col)
 {
 	if (col != CN_CURVALUE) return;
+	onSettingChanged();
 
 	std::string curval = Q2S(item->text(CN_CURVALUE));
 	bool isvalid = false;
@@ -163,7 +167,25 @@ class Dispatcher {
 			T* t = qobject_cast<T*>(w.second);
 			if (t) dlg->saveSettings(w.first, t);
 		}
+
+		template <typename T>
+		void initSettings(DialogPreferences::wpair& w)
+		{
+			T* t = qobject_cast<T*>(w.second);
+			if (t) dlg->initSettings(w.first, t);
+		}
 };
+
+void DialogPreferences::initSettings()
+{
+	Dispatcher d(this);
+	BOOST_FOREACH(wpair& w, widgets) {
+		d.initSettings<QCheckBox>(w);
+		d.initSettings<QLineEdit>(w);
+		d.initSettings<QTimeEdit>(w);
+		d.initSettings<QComboBox>(w);
+	}
+}
 
 void DialogPreferences::loadSettings()
 {
@@ -182,6 +204,8 @@ void DialogPreferences::loadSettings()
 		twi->setText(CN_CURVALUE,  val);
 		twi->setText(CN_LASTVALUE, val);
 	}
+
+	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
 }
 
 void DialogPreferences::saveSettings()
@@ -206,6 +230,13 @@ void DialogPreferences::saveSettings()
 			}
 		}
 	}
+
+	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(false);
+}
+
+void DialogPreferences::onSettingChanged()
+{
+	buttonBox->button(QDialogButtonBox::Apply)->setEnabled(true);
 }
 
 // QCheckBox load/save
@@ -217,6 +248,10 @@ void DialogPreferences::saveSettings(const std::string& key, QCheckBox* w)
 {
 	settings->getVariable(key)->setValue<bool>(w->isChecked());
 }
+void DialogPreferences::initSettings(const std::string& key, QCheckBox* w)
+{
+	QObject::connect(w, SIGNAL(toggled(bool)), this, SLOT(onSettingChanged()));
+}
 
 // QLineEdit load/save
 void DialogPreferences::loadSettings(const std::string& key, QLineEdit* w)
@@ -226,6 +261,10 @@ void DialogPreferences::loadSettings(const std::string& key, QLineEdit* w)
 void DialogPreferences::saveSettings(const std::string& key, QLineEdit* w)
 {
 	settings->getVariable(key)->setValue<std::string>(qext::utf8::fromQString(w->text()));
+}
+void DialogPreferences::initSettings(const std::string& key, QLineEdit* w)
+{
+	QObject::connect(w, SIGNAL(textChanged(QString)), this, SLOT(onSettingChanged()));
 }
 
 // QTimeEdit load/save - assumes QTime and boost::posix_time::time_duration have similar text representations
@@ -237,17 +276,14 @@ void DialogPreferences::saveSettings(const std::string& key, QTimeEdit* w)
 {
 	settings->getVariable(key)->setString(Q2S(w->time().toString("hh:mm:ss")));
 }
+void DialogPreferences::initSettings(const std::string& key, QTimeEdit* w)
+{
+	QObject::connect(w, SIGNAL(timeChanged(QTime)), this, SLOT(onSettingChanged()));
+}
 
 // QComboBox load/save
 void DialogPreferences::loadSettings(const std::string& key, QComboBox* w)
 {
-	if (w->count() == 0) {
-		// Initialize
-		std::vector<std::string> vtext = settings->getInfo(key)->getEnumStrings();
-		std::vector<std::string> vdata = settings->getInfo(key)->getEnumValues();
-		for (size_t i = 0; i < vtext.size() && i < vdata.size(); ++i)
-			w->addItem(S2Q(vtext[i]), S2Q(vdata[i]));
-	}
 	std::string data = settings->getVariable(key)->getString();
 	int idx = w->findData(S2Q(data));
 	w->setCurrentIndex(idx);
@@ -255,4 +291,13 @@ void DialogPreferences::loadSettings(const std::string& key, QComboBox* w)
 void DialogPreferences::saveSettings(const std::string& key, QComboBox* w)
 {
 	settings->getVariable(key)->setString(Q2S(w->itemData(w->currentIndex()).toString()));
+}
+void DialogPreferences::initSettings(const std::string& key, QComboBox* w)
+{
+	std::vector<std::string> vtext = settings->getInfo(key)->getEnumStrings();
+	std::vector<std::string> vdata = settings->getInfo(key)->getEnumValues();
+	for (size_t i = 0; i < vtext.size() && i < vdata.size(); ++i)
+		w->addItem(S2Q(vtext[i]), S2Q(vdata[i]));
+
+	QObject::connect(w, SIGNAL(currentIndexChanged(int)), this, SLOT(onSettingChanged()));
 }

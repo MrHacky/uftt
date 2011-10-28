@@ -36,6 +36,12 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 		void saveSettings(const std::string& key, QTimeEdit* w);
 		void saveSettings(const std::string& key, QComboBox* w);
 
+		void initSettings();
+		void initSettings(const std::string& key, QCheckBox* w);
+		void initSettings(const std::string& key, QLineEdit* w);
+		void initSettings(const std::string& key, QTimeEdit* w);
+		void initSettings(const std::string& key, QComboBox* w);
+
 	public:
 		DialogPreferences(boost::shared_ptr<SettingsManagerBase> settings_, QWidget* parent = NULL);
 
@@ -43,6 +49,8 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 		void on_buttonBox_clicked(QAbstractButton*);
 		void on_listAdvancedOptions_itemChanged(QTreeWidgetItem*, int);
 		void on_line_customContextMenuRequested(QPoint);
+
+		void onSettingChanged();
 
 		int exec();
 };
