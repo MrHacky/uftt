@@ -649,7 +649,8 @@ void MainWindow::download_progress(QTreeWidgetItem* twi, boost::posix_time::ptim
 
 	if (ti.status == TASK_STATUS_ERROR) {
 		taskbarProgress.setStateError();
-		if (!ti.isupload || false /* show upload failures */) {
+		bool showuploadfailures = false;
+		if (settings->notification_on_completion && (!ti.isupload || showuploadfailures)) {
 			trayicon->showMessage(
 				QString() + (ti.isupload ? "Upload" : "Download") + " Failed",
 				QString() + "An error occured during transfer of '" +
@@ -795,7 +796,7 @@ void MainWindow::new_autoupdate(const ShareInfo& info)
 
 void MainWindow::download_done(const TaskInfo& ti)
 {
-	if (ti.status == TASK_STATUS_COMPLETED)
+	if (ti.status == TASK_STATUS_COMPLETED && settings->notification_on_completion)
 		trayicon->showMessage("Download Completed", qext::utf8::toQString(ti.shareinfo.name));
 
 	if (ti.shareid == auto_update_share) {
