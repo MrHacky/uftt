@@ -26,18 +26,21 @@ class DialogPreferences: public QDialog, public Ui::DialogPreferences {
 
 		void loadSettings();
 		void loadSettings(const std::string& key, QCheckBox* w);
+		void loadSettings(const std::string& key, QGroupBox* w);
 		void loadSettings(const std::string& key, QLineEdit* w);
 		void loadSettings(const std::string& key, QTimeEdit* w);
 		void loadSettings(const std::string& key, QComboBox* w);
 
 		void saveSettings();
 		void saveSettings(const std::string& key, QCheckBox* w);
+		void saveSettings(const std::string& key, QGroupBox* w);
 		void saveSettings(const std::string& key, QLineEdit* w);
 		void saveSettings(const std::string& key, QTimeEdit* w);
 		void saveSettings(const std::string& key, QComboBox* w);
 
 		void initSettings();
 		void initSettings(const std::string& key, QCheckBox* w);
+		void initSettings(const std::string& key, QGroupBox* w);
 		void initSettings(const std::string& key, QLineEdit* w);
 		void initSettings(const std::string& key, QTimeEdit* w);
 		void initSettings(const std::string& key, QComboBox* w);

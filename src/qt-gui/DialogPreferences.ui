@@ -270,7 +270,16 @@ QLabel[isHeaderText=&quot;true&quot;] {
          <item>
           <widget class="QGroupBox" name="groupBox_4">
            <property name="title">
-            <string>System Tray Icon</string>
+            <string>Enable System Tray Icon</string>
+           </property>
+           <property name="checkable">
+            <bool>true</bool>
+           </property>
+           <property name="checked">
+            <bool>true</bool>
+           </property>
+           <property name="settingkey" stdset="0">
+            <string notr="true">systray.showtask</string>
            </property>
            <layout class="QGridLayout" name="gridLayout">
             <item row="2" column="0">

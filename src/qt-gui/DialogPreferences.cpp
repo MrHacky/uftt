@@ -181,6 +181,7 @@ void DialogPreferences::initSettings()
 	Dispatcher d(this);
 	BOOST_FOREACH(wpair& w, widgets) {
 		d.initSettings<QCheckBox>(w);
+		d.initSettings<QGroupBox>(w);
 		d.initSettings<QLineEdit>(w);
 		d.initSettings<QTimeEdit>(w);
 		d.initSettings<QComboBox>(w);
@@ -192,6 +193,7 @@ void DialogPreferences::loadSettings()
 	Dispatcher d(this);
 	BOOST_FOREACH(wpair& w, widgets) {
 		d.loadSettings<QCheckBox>(w);
+		d.loadSettings<QGroupBox>(w);
 		d.loadSettings<QLineEdit>(w);
 		d.loadSettings<QTimeEdit>(w);
 		d.loadSettings<QComboBox>(w);
@@ -213,6 +215,7 @@ void DialogPreferences::saveSettings()
 	Dispatcher d(this);
 	BOOST_FOREACH(wpair& w, widgets) {
 		d.saveSettings<QCheckBox>(w);
+		d.saveSettings<QGroupBox>(w);
 		d.saveSettings<QLineEdit>(w);
 		d.saveSettings<QTimeEdit>(w);
 		d.saveSettings<QComboBox>(w);
@@ -249,6 +252,20 @@ void DialogPreferences::saveSettings(const std::string& key, QCheckBox* w)
 	settings->getVariable(key)->setValue<bool>(w->isChecked());
 }
 void DialogPreferences::initSettings(const std::string& key, QCheckBox* w)
+{
+	QObject::connect(w, SIGNAL(toggled(bool)), this, SLOT(onSettingChanged()));
+}
+
+// QGroupBox load/save
+void DialogPreferences::loadSettings(const std::string& key, QGroupBox* w)
+{
+	w->setChecked(settings->getVariable(key)->getValue<bool>());
+}
+void DialogPreferences::saveSettings(const std::string& key, QGroupBox* w)
+{
+	settings->getVariable(key)->setValue<bool>(w->isChecked());
+}
+void DialogPreferences::initSettings(const std::string& key, QGroupBox* w)
 {
 	QObject::connect(w, SIGNAL(toggled(bool)), this, SLOT(onSettingChanged()));
 }

@@ -376,7 +376,7 @@ void MainWindow::moveEvent(QMoveEvent* evnt)
 
 void MainWindow::closeEvent(QCloseEvent * evnt)
 {
-	if (!quitting && settings->close_to_tray && hideToTray()) {
+	if (!quitting && settings->show_task_tray_icon && settings->close_to_tray && hideToTray()) {
 		evnt->ignore();
 		return;
 	}
@@ -397,7 +397,7 @@ void MainWindow::changeEvent(QEvent * evnt)
 
 	// This was a hide event
 	if (ishiding) return;
-	if (settings->minimize_to_tray && hideToTray())
+	if (settings->show_task_tray_icon && settings->minimize_to_tray && hideToTray())
 		return;
 
 	++timerid;
@@ -867,7 +867,9 @@ void MainWindow::on_actionPreferences_triggered()
 {
 	if (!dialogPreferences) dialogPreferences = new DialogPreferences(settings.get(), this);
 
+	trayicon->blockSignals(true);
 	dialogPreferences->exec();
+	trayicon->blockSignals(false);
 }
 
 void MainWindow::on_actionAboutQt_triggered()
@@ -950,10 +952,14 @@ void MainWindow::post_show() {
 		marshaller.wrap(boost::bind(&linuxQTextEditScrollFix, debugText))
 	);
 #endif
-	if (settings->start_in_tray)
-		hideToTray();
-	else //if (settings->tray_show_always)
-		trayicon->show();
+	if (settings->show_task_tray_icon) {
+		if (settings->start_in_tray)
+			hideToTray();
+		else //if (settings->tray_show_always)
+			trayicon->show();
+	}
+
+	settings->show_task_tray_icon.connectChanged(marshaller.wrap(boost::bind(&QSystemTrayIcon::setVisible, trayicon, _1)));
 }
 
 void MainWindow::doSelfUpdate(const std::string& build, const ext::filesystem::path& path)
