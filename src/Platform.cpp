@@ -441,15 +441,21 @@ namespace platform {
 
 	ext::filesystem::path getApplicationPath()
 	{
-		// currently only used on windows
+		ext::filesystem::path path;
 #ifdef WIN32
 		TCHAR module_name[MAX_PATH];
-		GetModuleFileName(0, module_name, MAX_PATH);
-		ext::filesystem::path path = convertTStringToUTF8(module_name);
-		if (!ext::filesystem::exists(path)) path = "";
-		return path;
+		DWORD retsize = GetModuleFileName(0, module_name, MAX_PATH);
+		if (retsize != 0 && retsize != MAX_PATH)
+			path = convertTStringToUTF8(module_name);
+#else
+		// Some hints to implement this:
+		//   http://www.linuxquestions.org/questions/programming-9/unix-function-call-to-get-executables-path-470000/
+		//   http://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe
+		// However on unix the need for this is usually considered a design flaw...
 #endif
-		return ext::filesystem::path();
+		if (!path.empty() && !ext::filesystem::exists(path))
+			path = "";
+		return path;
 	}
 
 	bool setSendToUFTTEnabled(bool enabled)
