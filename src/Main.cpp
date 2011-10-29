@@ -184,17 +184,6 @@ int imain(int argc, char **argv)
 		}
 	}
 
-	std::string extrabuildpath;
-	std::string extrabuildname;
-	if (argc > 1 && string(argv[1]) == "--dotest") {
-		for (int i = 2; i < argc; ++i) {
-			if (string(argv[i]) == "test_extra_build") {
-				extrabuildname = argv[++i];
-				extrabuildpath = argv[++i];
-			}
-		}
-	}
-
 	waitonexit = true;
 
 	// initialize settings & gui
@@ -205,10 +194,10 @@ int imain(int argc, char **argv)
 	};
 
 	try {
+		std::vector<char*> gargs;
 		boost::shared_ptr<UFTTGui> gui;
 		UFTTCore core(settings, cmd);
 		{
-			std::vector<char*> gargs;
 			BOOST_FOREACH(CommandLineCommand& clc, cmd.list2) {
 				if (clc[0] == "--gui-opt" || clc[0] == "--gui-opts") {
 					for (size_t i = 1; i < clc.size(); ++i) {

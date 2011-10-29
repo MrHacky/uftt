@@ -74,6 +74,8 @@ class MainWindow: public QMainWindow, public Ui::MainWindow
 		void onDropTriggered(QDropEvent* evt);
 		void onFocusChanged(QWidget* old, QWidget* now);
 
+		void do_post_show();
+
 	public:
 		MainWindow(UFTTSettingsRef settings_);
 		void SetBackend(UFTTCore* be);

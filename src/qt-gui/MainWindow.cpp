@@ -943,11 +943,13 @@ void linuxQTextEditScrollFix(QTextEdit* qedit) { // Work around bug in Qt (linux
 }
 #endif
 
-void MainWindow::pre_show() {
+void MainWindow::pre_show()
+{
 	//trayicon->show();
 }
 
-void MainWindow::post_show() {
+void MainWindow::do_post_show()
+{
 #ifdef __linux__
 	boost::thread thread(
 		marshaller.wrap(boost::bind(&linuxQTextEditScrollFix, debugText))
@@ -961,6 +963,11 @@ void MainWindow::post_show() {
 	}
 
 	settings->show_task_tray_icon.connectChanged(marshaller.wrap(boost::bind(&QSystemTrayIcon::setVisible, trayicon, _1)));
+}
+
+void MainWindow::post_show()
+{
+	QTimer::singleShot(0, this, SLOT(do_post_show()));
 }
 
 void MainWindow::doSelfUpdate(const std::string& build, const ext::filesystem::path& path)

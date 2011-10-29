@@ -17,6 +17,7 @@ class QTImpl {
 		QTImpl(int argc, char **argv, UFTTSettingsRef settings)
 			: app(argc, argv), wnd(settings)
 		{
+			if (app.arguments().empty()) throw std::runtime_error("Invalid argument list");
 			QObject::connect(&app, SIGNAL(focusChanged(QWidget*, QWidget*)), &wnd, SLOT(onFocusChanged(QWidget*, QWidget*)));
 		};
 
