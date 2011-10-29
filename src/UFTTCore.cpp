@@ -249,7 +249,13 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo)
 {
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);
 	try {
-		local_listener.open(boost::asio::ip::tcp::v4());
+		local_listener.open(local_endpoint.protocol());
+		#ifdef __linux
+			// In linux this is needed to be able to listen on a port for which there are still
+			// connections in the TIME_WAIT state. Note you still can't actively listen on
+			// the same port twice, so detecting running uftt instances still works.
+			local_listener.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true));
+		#endif
 		local_listener.bind(local_endpoint);
 		local_listener.listen(16);
 
