@@ -1,7 +1,31 @@
 #!/bin/bash
 
-# strict mode, all commands must have 0 exit code
-set -e
+trap handle_exit ERR
+
+# strict mode, all commands must have 0 exit code, no unfinished jobs
+function handle_exit {
+	local EXITCODE=$?
+	local JOBSLEFT=0
+
+	for job in $(jobs -p); do
+		echo "Unfinished job: $job"
+		JOBSLEFT=1
+		kill $job || true
+	done
+
+	if [ "x${JOBSLEFT}" == "x1" ]; then
+		EXITCODE=1
+		sleep 1
+		for job in $(jobs -p); do
+			echo "Unkilled job: $job"
+			kill -9 $job || true
+			wait $job || true
+		done
+	fi
+
+	exit $EXITCODE
+}
+
 
 # Start an uftt instance in the background, and wait for it to spin up
 # UFTTPID is set to the pid of the started instance
@@ -40,3 +64,5 @@ source "${SCRIPTDIR}/$1"
 # Clean up temp location
 cd ..
 rm -r "${TEMPDIR}"
+
+handle_exit
