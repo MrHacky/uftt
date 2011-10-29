@@ -127,6 +127,9 @@ CommandLineInfo CommandLineInfo::parseCommandLine(int argc, char** argv)
 			CommandLineCommand cmd = getCommandLineCommand(2, args, &i);
 			validateFilename(cmd[2]);
 			cli.list5.push_back(cmd);
+		} else if (arg == "--notify-socket") {
+			CommandLineCommand cmd = getCommandLineCommand(1, args, &i);
+			cli.list5.push_back(cmd);
 		} else if (arg == "--quit") {
 			cli.list5.push_back(getCommandLineCommandFinal(0, args, &i));
 		} else {

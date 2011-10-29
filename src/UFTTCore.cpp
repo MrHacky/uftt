@@ -38,11 +38,15 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 
 	SignalConnection sigconn;
 
+	// --download-share
 	std::string share;
 	TaskInfo taskinfo;
 
+	// --notify-socket
+	boost::asio::ip::tcp::socket sock;
+
 	CommandExecuteHelper(UFTTCore* core_, CommandLineInfo* cmdinfo_, const boost::function<void(void)>& cb_)
-		: core(core_), cmdinfo(cmdinfo_), cb(cb_)
+		: core(core_), cmdinfo(cmdinfo_), cb(cb_), sock(core->io_service)
 	{
 		icmd = 0;
 	}
@@ -50,6 +54,13 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 	void operator()(ext::coro coro, const TaskInfo& tinfo)
 	{
 		taskinfo = tinfo;
+		(*this)(coro);
+	}
+
+	void operator()(ext::coro coro, const boost::system::error_code& ec)
+	{
+		if (ec)
+			std::cout << "CommandExecuteHelper: Warning: " << ec.message() << "\n";
 		(*this)(coro);
 	}
 
@@ -94,7 +105,7 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 						sigconn.disconnect(); // got child we wanted, prevent any more
 						// TODO: check if this is actually supported: disconnecting during signal invokation
 
-						CORO_YIELD sigconn =core->connectSigTaskStatus(taskinfo.id, coro(this));
+						CORO_YIELD sigconn = core->connectSigTaskStatus(taskinfo.id, coro(this));
 						if (taskinfo.status != TASK_STATUS_COMPLETED && taskinfo.status != TASK_STATUS_ERROR)
 							CORO_YIELD break; // Again get rid of unwanted children
 						sigconn.disconnect(); // until we get the one we want
@@ -107,6 +118,15 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 							throw std::runtime_error("Error!");
 					} else
 						std::cout << "Warning: ignoring --download-share with incorrect number of paramenters: " << clc.size()-1 << "\n";
+				} else if (clc[0] == "--notify-socket") {
+					if (clc.size() == 2) {
+						sock.open(boost::asio::ip::tcp::v4());
+						CORO_YIELD sock.async_connect(
+							boost::asio::ip::tcp::endpoint(boost::asio::ip::address_v4::loopback(), atoi(clc[1].c_str())),
+							coro(this)
+						);
+						sock.close();
+					}
 				} else if (clc[0] == "--quit") {
 					cmdinfo->quit = true;
 				}
