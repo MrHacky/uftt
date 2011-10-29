@@ -3,6 +3,22 @@
 # strict mode, all commands must have 0 exit code
 set -e
 
+# Start an uftt instance in the background, and wait for it to spin up
+# UFTTPID is set to the pid of the started instance
+function start_uftt_bg {
+	if (nc -h 2>&1 | grep -o -i bsd); then
+		nc -l 47187&
+	else
+		nc -l -p 47187&
+	fi
+	NCPID=$!
+
+	"${UFTT}" --notify-socket 47187&
+	UFTTPID=$!
+
+	wait ${NCPID}
+}
+
 # Find script location
 SCRIPTDIR="$(cd $(dirname "$0"); pwd)"
 
