@@ -1204,7 +1204,7 @@ class SimpleConnection: public ConnectionCommon {
 								conn->update_statistics(wbuf->size());
 
 							// join here so we have data to write (receive), and the file is ready for writing again (open/write)
-							if (--forkops > 0) CORO_YIELD break; //join
+							if (--forkops > 0) CORO_BREAK; //join
 
 							// nothing left to receive, break out of loop for final write
 							if (bytesleft == 0) break;

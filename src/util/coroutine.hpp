@@ -81,10 +81,12 @@ private:
 # define CORO_REENTER(c) CORO_REENTER_IMPL(c, __COUNTER__)
 # define CORO_YIELD CORO_YIELD_IMPL(__COUNTER__ - _coro_counter_base + 1)
 # define CORO_FORK CORO_FORK_IMPL(__COUNTER__ - _coro_counter_base + 1)
+# define CORO_BREAK do { return; } while (false)
 #else // defined(__COUNTER__)
 # define CORO_REENTER(c) CORO_REENTER_IMPL(c, __LINE__)
 # define CORO_YIELD CORO_YIELD_IMPL(__LINE__ - _coro_counter_base + 1)
 # define CORO_FORK CORO_FORK_IMPL(__LINE__ - _coro_counter_base + 1)
+# define CORO_BREAK do { return; } while (false)
 #endif // defined(__COUNTER__)
 
 #endif // COROUTINE_HPP

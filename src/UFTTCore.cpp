@@ -101,13 +101,13 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 							}
 						};
 						if (taskinfo.isupload || taskinfo.shareid.sid != share)
-							CORO_YIELD break; // YIELD above actually forked, get rid of unwanted children here
+							CORO_BREAK; // YIELD above actually forked, get rid of unwanted children here
 						sigconn.disconnect(); // got child we wanted, prevent any more
 						// TODO: check if this is actually supported: disconnecting during signal invokation
 
 						CORO_YIELD sigconn = core->connectSigTaskStatus(taskinfo.id, coro(this));
 						if (taskinfo.status != TASK_STATUS_COMPLETED && taskinfo.status != TASK_STATUS_ERROR)
-							CORO_YIELD break; // Again get rid of unwanted children
+							CORO_BREAK; // Again get rid of unwanted children
 						sigconn.disconnect(); // until we get the one we want
 
 						if (taskinfo.status == TASK_STATUS_COMPLETED) {
@@ -217,7 +217,7 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 				if (!execwait) CORO_FORK coro(this);
 				if (execwait || coro.is_child()) {
 					CORO_YIELD (new UFTTCore::CommandExecuteHelper(core, &cmdinfo, coro(this)))->start();
-					if (!execwait) return; // !execwait means we were the forked child
+					if (!execwait) CORO_BREAK; // !execwait means we were the forked child
 				}
 
 				CORO_YIELD sendline0(coro, "0");
