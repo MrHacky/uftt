@@ -37,7 +37,8 @@ private:
   bool modified_;
 };
 
-#define CORO_REENTER(c) \
+#define CORO_REENTER_IMPL(c, n) \
+  if (const int _coro_counter_base = (n)) { goto reenter_coroutine; } else reenter_coroutine: \
   switch (coroutine_ref _coro_value = c) \
     case 1: if (_coro_value) \
     { \
@@ -77,11 +78,13 @@ private:
     else
 
 #if defined(__COUNTER__)
-# define CORO_YIELD CORO_YIELD_IMPL(__COUNTER__ + 2)
-# define CORO_FORK CORO_FORK_IMPL(__COUNTER__ + 2)
+# define CORO_REENTER(c) CORO_REENTER_IMPL(c, __COUNTER__)
+# define CORO_YIELD CORO_YIELD_IMPL(__COUNTER__ - _coro_counter_base + 1)
+# define CORO_FORK CORO_FORK_IMPL(__COUNTER__ - _coro_counter_base + 1)
 #else // defined(__COUNTER__)
-# define CORO_YIELD CORO_YIELD_IMPL(__LINE__ + 1)
-# define CORO_FORK CORO_FORK_IMPL(__LINE__ + 1)
+# define CORO_REENTER(c) CORO_REENTER_IMPL(c, __LINE__)
+# define CORO_YIELD CORO_YIELD_IMPL(__LINE__ - _coro_counter_base + 1)
+# define CORO_FORK CORO_FORK_IMPL(__LINE__ - _coro_counter_base + 1)
 #endif // defined(__COUNTER__)
 
 #endif // COROUTINE_HPP
