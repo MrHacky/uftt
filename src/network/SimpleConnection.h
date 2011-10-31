@@ -1132,12 +1132,6 @@ class SimpleConnection: public ConnectionCommon {
 
 		boost::function<void()> delayed_open_file;
 
-		void delay_file_write(ext::filesystem::path path, uint64 fsize, shared_vec rbuf, uint64 offset)
-		{
-			delayed_open_file = boost::function<void()>();
-			kickoff_file_write(path, fsize, rbuf, offset);
-		}
-
 		/** Initiate transfer data from socket to file.
 		 *  When all file data is read from the socket,
 		 *  start_receive_command will be called
