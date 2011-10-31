@@ -15,18 +15,6 @@
 
 typedef boost::shared_ptr<INetModule> INetModuleRef;
 
-namespace {
-	std::string getstr0(boost::asio::ip::tcp::socket& sock)
-	{
-		std::string r;
-		char ret;
-		while (true) {
-			boost::asio::read(sock, boost::asio::buffer(&ret, 1));
-			if (ret == 0) return r;
-			r.push_back(ret);
-		}
-	}
-}
 
 struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelper> {
 	UFTTCore* core;
@@ -76,7 +64,7 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 					if (clc.size() == 2)
 						AutoUpdater::remove(core->get_io_service(), core->get_work_service(), clc[1]);
 					else
-						std::cout << "Warning: ignoring --delete with incorrect number of paramenters: " << clc.size()-1 << "\n";
+						std::cout << "Warning: ignoring --delete with incorrect number of parameters: " << clc.size()-1 << "\n";
 				} else if (clc[0] == "--add-extra-build") {
 					updateProvider.checkfile(core->get_io_service(), clc[2], clc[1], true);
 				} else if (clc[0] == "--add-share" || clc[0] == "--add-shares") {
@@ -103,7 +91,6 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 						if (taskinfo.isupload || taskinfo.shareid.sid != share)
 							CORO_BREAK; // YIELD above actually forked, get rid of unwanted children here
 						sigconn.disconnect(); // got child we wanted, prevent any more
-						// TODO: check if this is actually supported: disconnecting during signal invokation
 
 						CORO_YIELD sigconn = core->connectSigTaskStatus(taskinfo.id, coro(this));
 						if (taskinfo.status != TASK_STATUS_COMPLETED && taskinfo.status != TASK_STATUS_ERROR)
@@ -117,7 +104,7 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 						} else
 							throw std::runtime_error("Error!");
 					} else
-						std::cout << "Warning: ignoring --download-share with incorrect number of paramenters: " << clc.size()-1 << "\n";
+						std::cout << "Warning: ignoring --download-share with incorrect number of parameters: " << clc.size()-1 << "\n";
 				} else if (clc[0] == "--notify-socket") {
 					if (clc.size() == 2) {
 						sock.open(boost::asio::ip::tcp::v4());
@@ -141,13 +128,58 @@ struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelp
 	}
 };
 
-struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionHandler> {
-	UFTTCore* core;
+template <typename T>
+struct LocalConnectionBase: public ext::coro::base<T> {
 	boost::asio::ip::tcp::socket sock;
 	boost::asio::streambuf rbuf;
 	std::istream rstream;
-	std::string wstr;
 
+	std::string sendstr;
+	std::string recvstr;
+
+	struct recvtag {};
+	struct sendtag {};
+
+	T* This() { return static_cast<T*>(this); }
+
+	LocalConnectionBase(boost::asio::io_service& service)
+		: sock(service), rstream(&rbuf)
+	{
+	}
+
+	void recvline0(ext::coro coro)
+	{
+		boost::asio::async_read_until(sock, rbuf, '\x00',
+			boost::bind(coro(this), recvtag(), _1, _2)
+		);
+	}
+
+	void sendline0(ext::coro coro, const std::string& s)
+	{
+		sendstr = s;
+		boost::asio::async_write(sock, boost::asio::buffer(sendstr.c_str(), sendstr.size()+1),
+			boost::bind(coro(this), sendtag(), _1, _2)
+		);
+	}
+
+	void operator()(ext::coro coro, recvtag tag, const boost::system::error_code& ec, size_t transferred)
+	{
+		if (!ec) {
+			recvstr.resize(transferred);
+			rstream.read(&recvstr[0], transferred);
+			recvstr.resize(transferred-1);
+		}
+		(*This())(coro, ec);
+	}
+
+	void operator()(ext::coro coro, sendtag tag, const boost::system::error_code& ec, size_t transferred)
+	{
+		(*This())(coro, ec);
+	}
+};
+
+struct UFTTCore::LocalConnectionHandler: public LocalConnectionBase<LocalConnectionHandler> {
+	UFTTCore* core;
 
 	size_t icmd, ncmd;
 	size_t iarg, narg;
@@ -155,9 +187,11 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 	CommandLineInfo cmdinfo;
 
 	bool execwait;
+	boost::system::error_code sec;
 
 	LocalConnectionHandler(UFTTCore* core_)
-		: core(core_), sock(core->get_io_service()), rstream(&rbuf)
+		: LocalConnectionBase<LocalConnectionHandler>(core_->get_io_service())
+		, core(core_)
 	{
 		execwait = true;
 	}
@@ -167,27 +201,8 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 		std::cout << message << '\n';
 	}
 
-	void recvline0(ext::coro coro)
-	{
-		boost::asio::async_read_until(sock, rbuf, '\x00', coro(this));
-	}
-
-	void sendline0(ext::coro coro, const std::string& s)
-	{
-		wstr = s;
-		boost::asio::async_write(sock, boost::asio::buffer(wstr.c_str(), wstr.size()+1), coro(this));
-	}
-
-	std::string getline0(size_t transferred)
-	{
-		std::string res;
-		res.resize(transferred);
-		rstream.read(&res[0], transferred);
-		res.resize(transferred-1);
-		return res;
-	}
-
-	void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code(), size_t transferred = 0)
+	using LocalConnectionBase<LocalConnectionHandler>::operator();
+	void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code())
 	{
 		if (ec)
 			return error(STRFORMAT("LocalConnectionHandler: %s (%d)\n", ec.message(), this->stateval(coro)));
@@ -197,24 +212,21 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 				(new LocalConnectionHandler(core))->start();
 
 				CORO_YIELD recvline0(coro);
-				{
-					std::string rtag = getline0(transferred);
-					if (rtag != "argsL5.0") return error(std::string() + "LocalConnectionHandler: invalid tag: " +rtag);
-				}
+				if (recvstr != "argsL5.0") return error(std::string() + "LocalConnectionHandler: invalid tag: " + recvstr);
 				CORO_YIELD recvline0(coro);
-				ncmd = boost::lexical_cast<size_t>(getline0(transferred));
+				ncmd = boost::lexical_cast<size_t>(recvstr);
 				for (icmd = 0; icmd < ncmd; ++icmd) {
 					cmdinfo.list5.push_back(CommandLineCommand());
 					CORO_YIELD recvline0(coro);
-					narg = boost::lexical_cast<size_t>(getline0(transferred));
+					narg = boost::lexical_cast<size_t>(recvstr);
 					for (iarg = 0; iarg < narg; ++iarg) {
 						CORO_YIELD recvline0(coro);
-						cmdinfo.list5.back().push_back(getline0(transferred));
+						cmdinfo.list5.back().push_back(recvstr);
 					}
 				}
 
 				// if execwait==true, we wait for command execution, otherwise we fork a child to do it
-				if (!execwait) CORO_FORK coro(this);
+				if (!execwait) CORO_FORK coro(this)();
 				if (execwait || coro.is_child()) {
 					CORO_YIELD (new UFTTCore::CommandExecuteHelper(core, &cmdinfo, coro(this)))->start();
 					if (!execwait) CORO_BREAK; // !execwait means we were the forked child
@@ -227,10 +239,7 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 				else
 					CORO_YIELD sendline0(coro, platform::getCurrentPID());
 				CORO_YIELD recvline0(coro);
-				{
-					std::string rtag = getline0(transferred);
-					if (rtag != "done") return error(std::string() + "LocalConnectionHandler: invalid ack: " +rtag);
-				}
+				if (recvstr != "done") return error(std::string() + "LocalConnectionHandler: invalid ack: " + recvstr);
 				if (!cmdinfo.quit)
 					core->sigGuiCommand(GUI_CMD_SHOW);
 				else
@@ -238,6 +247,67 @@ struct UFTTCore::LocalConnectionHandler: public ext::coro::base<LocalConnectionH
 			}
 		} catch (std::exception& e) {
 			return error(e.what());
+		}
+	}
+};
+
+struct UFTTCore::LocalConnectionWriter: public LocalConnectionBase<LocalConnectionWriter> {
+	boost::asio::io_service& service;
+	const boost::asio::ip::tcp::endpoint& local_endpoint;
+	const CommandLineInfo& cmdinfo;
+	int ret;
+
+	platform::PHANDLE* proc;
+	boost::system::error_code sec;
+
+	LocalConnectionWriter(boost::asio::io_service& service_, const boost::asio::ip::tcp::endpoint& local_endpoint_, const CommandLineInfo& cmdinfo_)
+	: LocalConnectionBase<LocalConnectionWriter>(service_), service(service_)
+	, local_endpoint(local_endpoint_), cmdinfo(cmdinfo_)
+	, ret(-1)
+	{
+	}
+
+	using LocalConnectionBase<LocalConnectionWriter>::operator();
+	void operator()(ext::coro coro, const boost::system::error_code& ec = boost::system::error_code())
+	{
+		if (ec)
+			throw std::runtime_error(STRFORMAT("LocalConnectionWriter: %s (%d)\n", ec.message(), this->stateval(coro)));
+		CORO_REENTER(coro) {
+			CORO_FORK coro(this)();
+			if (coro.is_parent()) {
+				service.run();
+				return;
+			}
+			sock.open(boost::asio::ip::tcp::v4());
+			CORO_YIELD sock.async_connect(local_endpoint, coro(this));
+			sendstr.clear();
+			sendstr += STRFORMAT("argsL5.0%c%d%c", '\x00', cmdinfo.list5.size(), '\x00');
+			BOOST_FOREACH(const CommandLineCommand& cmd, cmdinfo.list5) {
+				sendstr += STRFORMAT("%d", cmd.size());
+				sendstr += '\x00';
+				BOOST_FOREACH(const std::string& str, cmd) {
+					sendstr += str;
+					sendstr += '\x00';
+				}
+			}
+			sendstr.resize(sendstr.size()-1);
+			CORO_YIELD sendline0(coro, sendstr);
+			CORO_YIELD recvline0(coro);
+			ret =  boost::lexical_cast<int>(recvstr);
+			CORO_YIELD recvline0(coro);
+			if (recvstr == "quit") {
+				CORO_YIELD recvline0(coro);
+				proc = platform::getProcessHandle(recvstr);
+				CORO_YIELD sendline0(coro, "done");
+				ret = platform::waitForProcessExit(proc);
+				platform::freeProcessHandle(proc);
+			} else if (recvstr == "activate") {
+				CORO_YIELD recvline0(coro);
+				CORO_YIELD sendline0(coro, "done");
+				platform::activateWindow(recvstr);
+			} else
+				throw std::runtime_error("Unknown mode");
+			throw ret;
 		}
 	}
 };
@@ -261,35 +331,14 @@ UFTTCore::UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo)
 
 		(new LocalConnectionHandler(this))->start();
 	} catch (std::exception& pe) {
-		bool success = false;
-		int ret = 1;
 		try {
-			boost::asio::ip::tcp::socket sock(io_service);
-			sock.open(boost::asio::ip::tcp::v4());
-			sock.connect(local_endpoint);
-			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("argsL5.0%c%d%c", (char)0, cmdinfo.list5.size(), (char)0)));
-			BOOST_FOREACH(const CommandLineCommand& cmd, cmdinfo.list5) {
-				boost::asio::write(sock, boost::asio::buffer(STRFORMAT("%d%c", cmd.size(), (char)0)));
-				BOOST_FOREACH(const std::string& str, cmd)
-					boost::asio::write(sock, boost::asio::buffer(str.c_str(), str.size()+1));
-			}
-			ret = boost::lexical_cast<int>(getstr0(sock));
-			std::string mode = getstr0(sock);
-			std::string widpid = getstr0(sock);
-			platform::PHANDLE* proc;
-			if (mode == "quit") proc = platform::getProcessHandle(widpid);
-			boost::asio::write(sock, boost::asio::buffer(STRFORMAT("done%c", (char)0)));
-			if (mode == "quit") {
-				ret = platform::waitForProcessExit(proc);
-				platform::freeProcessHandle(proc);
-			} else if (mode == "activate")
-				platform::activateWindow(widpid);
-			success = true;
+			// will throw std::exception on failure, and int with exit code on success
+			(new LocalConnectionWriter(io_service, local_endpoint, cmdinfo))->start();
 		} catch (std::exception& e) {
 			std::cout << "Failed to listen : " << pe.what() << std::endl;
 			std::cout << "Failed to connect: " << e.what() << std::endl;
+			io_service.reset();
 		}
-		if (success) throw ret;
 	}
 }
 

@@ -157,6 +157,7 @@ class UFTTCore {
 
 		// private asio coroutines
 		struct LocalConnectionHandler;
+		struct LocalConnectionWriter;
 		struct CommandExecuteHelper;
 	public:
 		UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo);
