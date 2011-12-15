@@ -16,6 +16,19 @@
 			ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Glib::RefPtr<Gtk::UIManager> uimanager_ref_);
 			void set_backend(UFTTCore* _core);
 
+			/**
+			 * Returns the widget that should be used as the target mnemonic
+			 * widget by users of class ShareList, as Gtk::VBox is not suitable
+			 * for mnemonic activation.
+			 *
+			 * The widget returned by this function is intended to be passed
+			 * to the set_mnemomic_widget() functions of widgets intending to
+			 * activate the ShareList.
+			 *
+			 * @return a GTK::Widget suitable for passing to set_mnemomic_widget().
+			 */
+			Gtk::Widget* get_mnemonic_widget();
+
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;

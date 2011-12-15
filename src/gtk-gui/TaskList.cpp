@@ -74,21 +74,24 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 	action->set_accel_path("<UFTT>/MainWindow/MenuBar/View/ClearTaskList");
 
 	/* Task menu */
-	action = Gtk::Action::create("TaskMenu", "_Task");
+	action = Gtk::Action::create("TaskMenu", "T_ask");
 	action->set_sensitive(false);
 	actiongroup_ref->add(action);
 
 	action = Gtk::Action::create("TaskPause", Gtk::Stock::MEDIA_PAUSE);
 	action->set_sensitive(false);
 	actiongroup_ref->add(action);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Task/Pause");
 
 	action = Gtk::Action::create("TaskResume", Gtk::Stock::MEDIA_PLAY,  "_Resume");
 	action->set_sensitive(false);
 	actiongroup_ref->add(action);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Task/Resume");
 
 	action = Gtk::Action::create("TaskCancel", Gtk::Stock::MEDIA_STOP,  "_Cancel");
 	action->set_sensitive(false);
 	actiongroup_ref->add(action);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Task/Cancel");
 
 	action = Gtk::Action::create(
 		"TaskExecute",
@@ -125,6 +128,10 @@ TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uiman
 	task_list_treeview.get_model()->signal_row_deleted().connect(
 		boost::bind(&TaskList::on_task_list_treeview_signal_row_inserted_deleted, this)
 	);
+}
+
+Gtk::Widget* TaskList::get_mnemonic_widget() {
+	return &task_list_treeview;
 }
 
 void TaskList::on_task_list_treeview_signal_row_inserted_deleted() {
@@ -453,4 +460,9 @@ void TaskList::on_signal_new_task(const TaskInfo& info) {
 	boost::function<void(const TaskInfo&)> handler =
 		dispatcher.wrap(boost::bind(&TaskList::on_signal_task_status, this, rowref, _1));
 	core->connectSigTaskStatus(info.id, handler);
+
+	// If this is the first task to be added, automatically select it.
+	if(task_list_liststore->children().size() == 1) {
+		task_list_treeview.get_selection()->select(i);
+	}
 }

@@ -69,7 +69,9 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	browse_for_download_destination_path_button.signal_current_folder_changed().connect( // FIXME: Dialog is not modal
 		boost::bind(&ShareList::on_browse_for_download_destination_path_button_signal_current_folder_changed, this));
 	download_destination_path_label.set_alignment(0.0f, 0.5f);
-	download_destination_path_label.set_text("Download destination folder:");
+	download_destination_path_label.set_use_underline(true);
+	download_destination_path_label.set_text_with_mnemonic("_Download destination folder:");
+	download_destination_path_label.set_mnemonic_widget(download_destination_path_entry);
 	download_destination_path_vbox.add(download_destination_path_label);
 	download_destination_path_vbox.add(download_destination_path_hbox);
 	download_destination_path_alignment.add(download_destination_path_vbox);
@@ -157,7 +159,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	);
 
 	/* Share menu */
-	action = Gtk::Action::create("ShareMenu", "_Share");
+	action = Gtk::Action::create("ShareMenu", "S_hare");
 	action->set_sensitive(false);
 	actiongroup_ref->add(action);
 
@@ -172,6 +174,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 		action,
 		boost::bind(&ShareList::download_selected_shares, this)
 	);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Share/Download");
 
 	action = Gtk::Action::create(
 		"ShareDownloadTo",
@@ -184,6 +187,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 		action,
 		boost::bind(&Gtk::Dialog::present, &pick_download_destination_dialog)
 	);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Share/DownloadTo");
 
 	action = Gtk::Action::create(
 		"ShareRemoveShare",
@@ -196,6 +200,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 		action,
 		boost::bind(&ShareList::remove_selected_shares, this)
 	);
+	action->set_accel_path("<UFTT>/MainWindow/MenuBar/Share/RemoveShare");
 
 	/* View menu */
 	action = Gtk::Action::create("ViewRefreshShareList",Gtk::Stock::REFRESH, "_Refresh Shares", "Refresh the list of shares");
@@ -208,6 +213,10 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	 * NOTE: The actual layout for the menu, toolbar items and pop-ups is done
 	 *       in the XML description in UFTTWindow (see GTKImpl.cpp).
 	 */
+}
+
+Gtk::Widget* ShareList::get_mnemonic_widget() {
+	return &share_list_treeview;
 }
 
 void ShareList::on_refresh_shares() {
@@ -298,11 +307,6 @@ bool ShareList::on_share_list_treeview_signal_key_press_event(GdkEventKey* event
 	 */
 	if(event->type == GDK_KEY_PRESS) {
 		switch(event->keyval) {
-			case GDK_KEY_Delete:
-			case GDK_KEY_KP_Delete: {
-				remove_selected_shares();
-				return true;
-			}; break;
 			case GDK_KEY_Return:
 			case GDK_KEY_KP_Enter: {
 				download_selected_shares();
@@ -513,6 +517,7 @@ void ShareList::on_signal_add_share(const ShareInfo& info) {
 			}
 		}
 	}
+
 	if(!found) {
 		Gtk::TreeModel::iterator i = share_list_liststore->append();
 		(*i)[share_list_columns.user_name]  = info.user;
@@ -522,5 +527,10 @@ void ShareList::on_signal_add_share(const ShareInfo& info) {
 		(*i)[share_list_columns.protocol]   = info.proto;
 		(*i)[share_list_columns.url]        = STRFORMAT("%s://%s/%s", info.proto, info.host, info.name);
 		(*i)[share_list_columns.share_id]   = info.id;
+
+		// If this is the first share to be added, automatically select it.
+		if(share_list_liststore->children().size() == 1) {
+			share_list_treeview.get_selection()->select(i);
+		}
 	}
 }

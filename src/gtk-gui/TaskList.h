@@ -19,6 +19,20 @@
 			// nr downloads, downloadspeed, nr uploads, upload speed
 			boost::signal<void(uint32, uint32, uint32, uint32)> signal_status;
 			boost::signal<void(bool)> signal_task_completed;
+
+			/**
+			 * Returns the widget that should be used as the target mnemonic
+			 * widget by users of class TaskList, as Gtk::ScrolledWindow is not
+			 * suitable for mnemonic activation.
+			 *
+			 * The widget returned by this function is intended to be passed
+			 * to the set_mnemomic_widget() functions of widgets intending to
+			 * activate the TaskList.
+			 *
+			 * @return a GTK::Widget suitable for passing to set_mnemomic_widget().
+			 */
+			Gtk::Widget* get_mnemonic_widget();
+
 		private:
 			UFTTCore* core;
 			UFTTSettingsRef settings;

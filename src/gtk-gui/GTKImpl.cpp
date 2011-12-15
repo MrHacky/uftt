@@ -208,7 +208,14 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 		"</ui>";
 	uimanager_ref->add_ui_from_string(ui_info);
 
-	share_list_frame.set_label("Shares:");
+	Gtk::Label* label = NULL; // Used to hold references to labels created with Gtk::manage()
+
+	label = Gtk::manage(new Gtk::Label());
+	label->set_use_underline(true);
+	label->set_text_with_mnemonic("_Shares:");
+	label->set_mnemonic_widget(*share_list.get_mnemonic_widget());
+
+	share_list_frame.set_label_widget(*label);
 	share_list_frame.add(share_list);
 	share_list_alignment.add(share_list_frame);
 	share_list_alignment.set_padding(4, 4, 4, 4);
@@ -226,7 +233,12 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	((Gtk::Label*)(((Gtk::MenuItem*)uimanager_ref->get_widget("/TaskListSelectionPopup/PopupTasklistExecute"))->get_child()))->set_attributes(attr_list);
 */
 
-	task_list_frame.set_label("Tasks:");
+	label = Gtk::manage(new Gtk::Label());
+	label->set_use_underline(true);
+	label->set_text_with_mnemonic("_Tasks:");
+	label->set_mnemonic_widget(*task_list.get_mnemonic_widget());
+
+	task_list_frame.set_label_widget(*label);
 	task_list_frame.add(task_list);
 	task_list_alignment.add(task_list_frame);
 	task_list_alignment.set_padding(4, 4, 4, 4);
@@ -286,16 +298,27 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	// shortcuts without us having to provide a seperate configuration window.
 	// This does require that the following property be set to true:
 	// Gtk::Settings::get_default()->property_gtk_can_change_accels() = true;
-	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Edit/Preferences"     , Gtk::AccelKey( "P").get_key(), Gdk::CONTROL_MASK   , true);
-	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/RefreshShareList", Gtk::AccelKey("F5").get_key(), Gdk::ModifierType(0), true);
-	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/ClearTaskList"   , Gtk::AccelKey("F6").get_key(), Gdk::ModifierType(0), true);
-	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey( "T").get_key(), Gdk::CONTROL_MASK   , true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Edit/Preferences"     , Gtk::AccelKey("P"     ).get_key(), Gdk::CONTROL_MASK   , true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/RefreshShareList", Gtk::AccelKey("F5"    ).get_key(), Gdk::ModifierType(0), true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/ClearTaskList"   , Gtk::AccelKey("F6"    ).get_key(), Gdk::ModifierType(0), true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/View/Toolbar"         , Gtk::AccelKey("T"     ).get_key(), Gdk::CONTROL_MASK   , true);
+
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Share/Download"       , Gtk::AccelKey("D"     ).get_key(), Gdk::CONTROL_MASK   , true);
+	//Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Share/DownloadTo"     , Gtk::AccelKey("T"     ).get_key(), Gdk::CONTROL_MASK   , true);
+	Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Share/RemoveShare"    , Gtk::AccelKey("Delete").get_key(), Gdk::ModifierType(0), true);
+
+	//Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Task/Pause"           , Gtk::AccelKey(""      ).get_key(), Gdk::ModifierType(0), true);
+	//Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Task/Resume"          , Gtk::AccelKey(""      ).get_key(), Gdk::ModifierType(0), true);
+	//Gtk::AccelMap::change_entry("<UFTT>/MainWindow/MenuBar/Task/Cancel"          , Gtk::AccelKey(""      ).get_key(), Gdk::ModifierType(0), true);
 
 	restore_window_size_and_position();
 	uimanager_ref->get_widget("/Toolbar")->show_all();
 	uimanager_ref->get_widget("/Toolbar")->set_no_show_all(true);
 	((Gtk::CheckMenuItem*)uimanager_ref->get_widget("/MenuBar/ViewMenu/ViewToolbar"))->set_active(settings->show_toolbar);
 	uimanager_ref->get_widget("/Toolbar")->property_visible() = settings->show_toolbar;
+
+	// Change the focus to the sharelist, so that the user can start downloading asap.
+	share_list.get_mnemonic_widget()->grab_focus();
 }
 
 void UFTTWindow::on_main_paned_realize() {
