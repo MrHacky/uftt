@@ -3,7 +3,7 @@ User Thread --------------------------------------------------------------
                   \       /  \         /  \              \          /
                    \     /    \BUF    /    BUF-----|      \|---    /
                     \   /      \     /                     .   \  /
-IO Fread thread ----------------------------------------------------------
+IO FRead thread ----------------------------------------------------------
 
 User thread tries to acquire buffer, if it fail puts request on a queue
 on a buffer release this queue is checked for requests that can be satisfied
