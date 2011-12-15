@@ -810,15 +810,16 @@ class SimpleConnection: public ConnectionCommon {
 
 			// need to send another chunk of the current buffer
 
-			size_t target_speed = 1024*1024*8; // default to 8MB per buffer
+			size_t target_speed = 1024*1024*8; // default to 8MB per buffer //FIXME: why not try to send the whole buffer?
 			// we aim for 1/4 of the current bps, so 4 updates per second
 			if (taskinfo.speed / 4 <= std::numeric_limits<size_t>::max()) {
 				target_speed = (size_t)(taskinfo.speed / 4);
-			}
+			} //FIXME: On extremely high-speed networks this will limit the max-buffersize to 8MB
 			size_t todo = target_speed;
 			todo = std::min(todo, (size_t)1024*1024*32); // Be gentle on the memory use, max 32MB buffers
 			todo = std::max(todo, (size_t)1024*1); // But transfer at least 1KB
 			todo = std::min(todo, bufsize - ofs); // limited by whats left in the current buffer
+			//TODO: IDEA: would it be useful to round to the nearest multiple of (MTU-ProtocolHeaderSize)?
 
 			issending = true;
 			uint8* bufstart = &((*sbuf)[0]);
@@ -1198,7 +1199,7 @@ class SimpleConnection: public ConnectionCommon {
 								conn->update_statistics(wbuf->size());
 
 							// join here so we have data to write (receive), and the file is ready for writing again (open/write)
-							if (--forkops > 0) CORO_BREAK; //join
+							if (--forkops > 0) CORO_BREAK; //join //FIXME: coro => !race?
 
 							// nothing left to receive, break out of loop for final write
 							if (bytesleft == 0) break;
