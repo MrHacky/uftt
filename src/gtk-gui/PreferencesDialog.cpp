@@ -9,6 +9,7 @@ using namespace std;
 
 UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 : settings(_settings),
+  // Characters used for short-cuts: a b c i l m n o p r s t u v
   enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
   enable_download_resume_checkbutton("Resume _partial downloads", true),
   enable_tray_icon_checkbutton("Enable system _tray icon", true),
@@ -18,9 +19,9 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
   auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.get().total_seconds()), 0.0, 24*60*60*1.0, 1.0),
   auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0),
   enable_notification_on_completion_checkbutton       ("Pop_up notification upon completion of a download", true),
-  enable_blink_statusicon_on_completion_checkbutton   ("_Blink the tray icon  upon completion of a download", true),
-  enable_show_speeds_in_titlebar_checkbutton          ("Show cumulative transfer speeds in the title_bar", true),
-  enable_show_speeds_in_statusicon_tooltip_checkbutton("Show cumulative transfer speeds in the tooltip of the task icon", true)
+  enable_blink_statusicon_on_completion_checkbutton   ("_Blink the tray icon upon completion of a download", true),
+  enable_show_speeds_in_titlebar_checkbutton          ("Show cumulative transfer speeds in the tit_lebar", true),
+  enable_show_speeds_in_statusicon_tooltip_checkbutton("Show cumulati_ve transfer speeds in the tooltip of the tray icon", true)
 {
 	set_modal(true);
 	set_title("Preferences");
