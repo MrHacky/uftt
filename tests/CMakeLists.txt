@@ -8,7 +8,7 @@ Endif()
 If(ENABLE_GTK_GUI)
 	Set(TESTING_DEFAULT_TARGETS "${TESTING_DEFAULT_TARGETS};guftt")
 Endif()
-If(ENABLE_QT_GUI)
+If(ENABLE_CONSOLE_UI)
 	Set(TESTING_DEFAULT_TARGETS "${TESTING_DEFAULT_TARGETS};cuftt")
 Endif()
 
@@ -25,7 +25,7 @@ Function(Add_Test_Script TESTNAME TESTSCRIPT)
 				COMMAND "${TESTING_BASH}" ${TESTING_BASH_ARGS} "${CMAKE_CURRENT_SOURCE_DIR}/testdriver.sh" "${TESTSCRIPT}" "$<TARGET_FILE:${TARGET}>"
 			)
 		Endif()
-	Endforeach()
+	EndForeach()
 EndFunction()
 
 FIND_PACKAGE(MyBoost)
