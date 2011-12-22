@@ -70,7 +70,7 @@ void clear( boost::asio::io_service& service )
 			boost::system::error_code open(const boost::filesystem::path& path, unsigned int mode = in|out)
 			{
 				HANDLE whandle = ::CreateFile(
-					TEXT(path.native_file_string().c_str()),
+					TEXT(path.native().c_str()),
 					((mode & in) ? GENERIC_READ : 0) | ((mode & out) ? GENERIC_WRITE : 0),
 					FILE_SHARE_READ|FILE_SHARE_WRITE,
 					NULL,
@@ -82,7 +82,7 @@ void clear( boost::asio::io_service& service )
 					int error = GetLastError();
 					if (error == 2 && (mode&create)) {
 						whandle = ::CreateFile(
-							TEXT(path.native_file_string().c_str()),
+							TEXT(path.native().c_str()),
 							((mode & in) ? GENERIC_READ : 0) | ((mode & out) ? GENERIC_WRITE : 0),
 							FILE_SHARE_READ|FILE_SHARE_WRITE,
 							NULL,
@@ -178,7 +178,7 @@ void sum_win_mmap()
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	for (int i = 0; i < NUM_FILES; ++i) {
 		size_t fsize = boost::filesystem::file_size(files[i]);
-		std::string fname = files[i].native_file_string();
+		std::string fname = files[i].native();
 				HANDLE whandle = ::CreateFile(
 					TEXT(fname.c_str()),
 					GENERIC_READ,
@@ -217,7 +217,7 @@ void sum_linux_mmap() {
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	for (int i = 0; i < NUM_FILES; ++i) {
 		size_t fsize = boost::filesystem::file_size(files[i]);
-		std::string fname = files[i].native_file_string();
+		std::string fname = files[i].native();
 		int fd = open(fname.c_str(), O_RDONLY);
 		char* mapbuf = (char*)mmap(NULL, fsize, PROT_READ, MAP_SHARED, fd, 0);
 		sum = 0;
@@ -239,7 +239,7 @@ void bench_fwrite()
 	std::cout << "bench_fwrite:\n\n";
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	for (int i = 0; i < NUM_FILES; ++i) {
-		int file = open(files[i].native_file_string().c_str(), O_WRONLY | O_CREAT | O_DIRECT | O_TRUNC, 0644);
+		int file = open(files[i].native().c_str(), O_WRONLY | O_CREAT | O_DIRECT | O_TRUNC, 0644);
 		sum = 0;
 		size_t todo = TGT_FILESIZE;
 		do
@@ -261,7 +261,7 @@ void bench_fread()
 	std::cout << "bench_fread:\n\n";
 	prevtime = boost::posix_time::microsec_clock::universal_time();
 	for (int i = 0; i < NUM_FILES; ++i) {
-		FILE* file = fopen(files[i].native_file_string().c_str(), "rb");
+		FILE* file = fopen(files[i].native().c_str(), "rb");
 		sum = 0;
 		size_t todo = TGT_FILESIZE;
 		do
