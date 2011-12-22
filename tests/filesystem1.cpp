@@ -80,9 +80,15 @@ int main(int argc, char** argv)
 			efps = efp2.string();
 			bfps = bfp2.generic_string();
 
+			/*
+			std::cerr << "efp2 = efp1(s1) / s2 = '" << efp1 << "' (" << s1 << ") / '" << s2 << "', from string: '" << efp2.string() << "' --> '" << efps << "'" << std::endl;
+			std::cerr << "bfp2 = bfp1(s1) / s2 = '" << bfp1 << "' (" << s1 << ") / '" << s2 << "', from string: '" << bfp2.string() << "' --> '" << bfps << "'" << std::endl;
+			*/
+
 			if (efps != bfps) return one();
 		}
 	}
+
 
 	BOOST_FOREACH(const std::string& s1, itemsmore) {
 		ext::filesystem::path efp1(s1);
