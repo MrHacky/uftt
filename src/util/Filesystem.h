@@ -106,7 +106,7 @@ namespace ext {
 
 		template<typename OS>
 		OS& operator<<(OS& os, const path& p) {
-			return os << p.string();
+			return os << "\"" << p.string() << "\"";
 		}
 	}
 }
