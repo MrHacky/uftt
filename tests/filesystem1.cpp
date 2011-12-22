@@ -22,7 +22,14 @@ int main(int argc, char** argv)
 // (unicode) character conversion. This test uses only ascii characters and their 8 bit encoding
 // is the same in all codepages, so those conversions aren't tested either.
 
-#define BOOST_FILESYSTEM_VERSION 3
+#ifndef BOOST_FILESYSTEM_VERSION
+	/* Don't try to redefine the filesystem version here differently from
+	 * the version specified in CMakeLists.txt. This can lead to surprising
+	 * results when e.g. ext::filesystem was compiled with version 2, and we
+	 * compare against version 3
+	 */
+	#define BOOST_FILESYSTEM_VERSION 3
+#endif
 
 #include <boost/filesystem.hpp>
 #include <boost/foreach.hpp>
