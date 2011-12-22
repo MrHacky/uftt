@@ -45,22 +45,13 @@ extern "C" {
 using namespace std;
 #ifdef __linux__
 
+
 struct nlmsg_list {
 	struct nlmsg_list *next;
 	struct nlmsghdr h;
 };
 
-const char *rt_addr_n2a(int af, int  len,
-		void *addr, char *buf, int buflen)
-{
-	switch (af) {
-	case AF_INET:
-	case AF_INET6:
-		return inet_ntop(af, addr, buf, buflen);
-	default:
-		return "???";
-	}
-}
+const char *rt_addr_n2a(int af, int  len, void *addr, char *buf, int buflen); /* Implemented in net-asio/ipaddr_watcher_impl_*.cpp */
 
 static int store_nlmsg(const struct sockaddr_nl *who, struct nlmsghdr *n, void *arg)
 {
