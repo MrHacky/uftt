@@ -15,7 +15,6 @@
 #include <sys/mman.h>
 #endif
 boost::asio::io_service svc;
-services::diskio_service ds(svc);
 #define MAX_FILES 100
 #ifdef WIN32
 	int NUM_FILES = 6;
@@ -104,12 +103,12 @@ void clear( boost::asio::io_service& service )
 			}
 	};
 #else
-	class diskio_filetype: public services::diskio_filetype {
+	class fstream: public ext::asio::fstream {
 		private:
 
 		public:
-			diskio_filetype(boost::asio::io_service& service)
-				: services::diskio_filetype(ds)
+			fstream(boost::asio::io_service& service)
+				: ext::asio::fstream(service)
 			{
 			}
 
@@ -120,9 +119,9 @@ void clear( boost::asio::io_service& service )
 	};
 #endif
 
-void handle_read(diskio_filetype* file, char* buf, char* prevbuf, size_t bufsize, boost::uint64_t pos, const boost::system::error_code& ec, size_t len);
+void handle_read(fstream* file, char* buf, char* prevbuf, size_t bufsize, boost::uint64_t pos, const boost::system::error_code& ec, size_t len);
 
-void handle_file_done(diskio_filetype* file)
+void handle_file_done(fstream* file)
 {
 	boost::posix_time::ptime time = boost::posix_time::microsec_clock::universal_time();
 	if (file) {
@@ -137,12 +136,12 @@ void handle_file_done(diskio_filetype* file)
 		svc.stop();
 		return;
 	}
-	file = new diskio_filetype(svc);
+	file = new fstream(svc);
 	file->open(files[curfile]);
 	handle_read(file, buf, buf2, bufsize, 0, boost::system::error_code(), 0);
 }
 
-void handle_read(diskio_filetype* file, char* buf, char* prevbuf, size_t bufsize, boost::uint64_t pos, const boost::system::error_code& ec, size_t len)
+void handle_read(fstream* file, char* buf, char* prevbuf, size_t bufsize, boost::uint64_t pos, const boost::system::error_code& ec, size_t len)
 {
 	if (ec) {
 		//std::cout << "Error occured: " << ec.message() << "\n";
