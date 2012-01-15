@@ -18,6 +18,14 @@ function die() {
 	exit 1
 }
 
+function do_kill() {
+	if uname | grep -i cygwin; then
+		"${SCRIPTDIR}/cygkill.sh" "${1}"
+	else
+		kill "${1}"
+	fi
+}
+
 # Find a netcat binary. The original netcat uses 'nc', whereas gnu-netcat
 # uses 'ncat' and 'netcat'.
 NETCAT="$(which nc ncat netcat 2>/dev/null | head -1)"
@@ -29,6 +37,13 @@ fi
 function handle_exit {
 	local EXITCODE=$?
 	local JOBSLEFT=0
+
+	if mv "${LOCKFILE}.init" "${LOCKFILE}.done"; then
+		do_kill ${TIMEOUTPID} || true
+		wait ${TIMEOUTPID} || true
+	else
+		EXITCODE=2
+	fi
 
 	for job in $(jobs -p); do
 		echo "Unfinished job: $job"
@@ -44,6 +59,12 @@ function handle_exit {
 			kill -9 $job || true
 			wait $job || true
 		done
+	fi
+
+	# Clean up temp location
+	if [ "x${EXITCODE}" == "x0" ]; then
+		cd ..
+		rm -r "${TEMPDIR}"
 	fi
 
 	exit $EXITCODE
@@ -72,6 +93,10 @@ SCRIPTDIR="$(cd $(dirname "$0"); pwd)"
 # Make temp location
 TEMPDIR="$(mktemp -d --tmpdir uftt.test.XXXXXXXXXX)"
 
+# Create lockfile
+LOCKFILE="${TEMPDIR}/lockfile"
+touch "${LOCKFILE}.init"
+
 # Enter temp location
 cd "${TEMPDIR}"
 
@@ -81,11 +106,12 @@ touch uftt.dat
 # Set uftt Location
 UFTT="$2"
 
+# Set up timeout (20 seconds)
+DRIVERPID=$$
+sleep 20 && mv "${LOCKFILE}.init" "${LOCKFILE}.timeout" 2>/dev/null && echo Timeout && do_kill ${DRIVERPID} || true&
+TIMEOUTPID=$!
+
 # Execute test script
 source "${SCRIPTDIR}/$1"
-
-# Clean up temp location
-cd ..
-rm -r "${TEMPDIR}"
 
 handle_exit
