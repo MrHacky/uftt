@@ -48,9 +48,8 @@ struct ShareID {
 
 	bool operator<(const ShareID& o) const
 	{
-		if (mid < o.mid) return true;
-		if (sid < o.sid) return true;
-		return false;
+		if (mid != o.mid) return mid < o.mid;
+		return sid < o.sid;
 	}
 };
 
