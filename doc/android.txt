@@ -1,0 +1,52 @@
+Here is some info about the current state of uftt's android support.
+
+Currently only the console ui (cuftt) compiles for android.
+
+For this you need an android NDK (http://developer.android.com/sdk/ndk/index.html)
+
+Using this you need to compile boost for android
+(i followed instructions here http://android-cmake.googlecode.com/hg/docs/boost.html,
+with a checkout from here http://code.google.com/p/android-cmake/source/checkout)
+
+For windows hosts you also need jom (ftp://ftp.qt.nokia.com/jom/, jom.zip),
+or make-win32 (http://gnuwin32.sourceforge.net/packages/make.htm, Binaries+Dependancies),
+or nmake (comes with visual studio), cygwin make won't work.
+Note that of these 3 options, jom seems to support the -j flag for multicore builds the best.
+
+When starting cmake for the first time in your build directory, you need to add some arguments:
+	-DCMAKE_TOOLCHAIN_FILE="<path to uftt trunk>/cmake/android.toolchain.cmake"
+	-DANDROID_NDK="<path to android NDK>"
+Windows only, when using jom
+	-DCMAKE_MAKE_PROGRAM="<path to jom>\jom.exe"
+	-G "NMake Makefiles JOM"
+Windows only, when using make-win32
+	-DCMAKE_MAKE_PROGRAM="<path to make-win32>\make-win32.exe"
+	-G "Unix Makefiles"
+Windows only, when using nmake
+	-DCMAKE_MAKE_PROGRAM="<path to nmake>\nmake.exe"
+	-G "NMake Makefiles"
+
+Other CMake variables that will need to be set, but can be done later with ccmake or cmake-gui (or extra -D<name>=<value> arguments):
+ENABLE_CONSOLE_UI=ON
+BOOST_INCLUDE_DIR="<path to boost include dir>"
+BOOST_DATETIME_LIBRARY="<path to android boost libs>\libboost_date_time.a"
+BOOST_FILESYSTEM_LIBRARY="<path to android boost libs>\libboost_filesystem.a"
+BOOST_SYSTEM_LIBRARY="<path to android boost libs>\libboost_system.a"
+BOOST_SIGNALS_LIBRARY="<path to android boost libs>\libboost_signals.a"
+BOOST_THREAD_LIBRARY="<path to android boost libs>\libboost_thread.a"
+
+The boost lib paths need to be set manually because cmake won't look in the usual places when cross-compiling, but instead looks somewhere
+inside the android target inside the ndk, and i haven't figured out exactly where, or how to fix this in another way.
+
+After compiling cuftt, you can transfer it to your android device to test it, you will need a terminal emulator app to run it,
+and chmod to mark cuftt as executable (busybox contains chmod)
+
+When android support is more mature some (all?) of the information here should probably be put on the uftt wiki.
+
+Timings: (on my dual core laptop)
+4:31	make-win32 -j3
+4:15	make-win32 -j3
+3:01	jom -j3
+3:01	jom -j3
+4:04	nmake
+4:02	nmake
