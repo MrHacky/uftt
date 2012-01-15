@@ -60,8 +60,10 @@ namespace platform {
 
 	std::string getUserName();
 
+#if defined(WIN32) && !defined(_WIN32_WINDOWS)
 	std::wstring convertUTF8ToUTF16(const std::string& src);
 	std::string convertUTF16ToUTF8(const std::wstring& src);
+#endif
 	std::string convertUTF8ToLocale(const std::string& src);
 	std::string convertLocaleToUTF8(const std::string& src);
 
