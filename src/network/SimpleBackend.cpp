@@ -579,7 +579,7 @@ std::set<uint32> SimpleBackend::parseVersions(uint8* base, uint start, uint len,
 
 void SimpleBackend::handle_discovery_packet(UDPSockInfoRef si, uint8* recv_buf, boost::asio::ip::udp::endpoint* recv_peer, std::size_t len, uint32 version)
 {
-	std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
+	//std::cout << "got packet type " << (int)recv_buf[4] << " from " << *recv_peer << "\n";
 	switch (recv_buf[4]) {
 		case UDPPACK_QUERY_SHARE: if (version == 1) { // type = broadcast;
 			uint32 vstart = 5;
@@ -718,14 +718,14 @@ void SimpleBackend::send_udp_packet_to(boost::asio::ip::udp::socket& sock, const
 
 void SimpleBackend::send_udp_packet_to(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags)
 {
-	std::cout << "Send udp packet to " << ep;
-	if (boost::asio::buffer_size(buf) >= 5)
-		std::cout << " = " << (int)boost::asio::buffer_cast<const uint8*>(buf)[4];
-	std::cout << " (" << si->is_v4 << ")\n";
+	//std::cout << "Send udp packet to " << ep;
+	//if (boost::asio::buffer_size(buf) >= 5)
+	//	std::cout << " = " << (int)boost::asio::buffer_cast<const uint8*>(buf)[4];
+	//std::cout << " (" << si->is_v4 << ")\n";
 	if (si->is_v4 == ep.address().is_v4())
 		send_udp_packet_to(si->sock, ep, buf, err, flags);
-	else
-		std::cout << "Skipped\n";
+	//else
+	//	std::cout << "Skipped\n";
 }
 
 void SimpleBackend::send_udp_packet(UDPSockInfoRef si, const boost::asio::ip::udp::endpoint& ep, boost::asio::const_buffers_1 buf, boost::system::error_code& err, int flags)
