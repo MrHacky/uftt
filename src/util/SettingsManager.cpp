@@ -1,11 +1,14 @@
 #include "SettingsManager.h"
 
 #include <fstream>
+#include <iostream>
 
+#ifdef ENABLE_LEGACY_SETTINGS
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
+#endif//ENABLE_LEGACY_SETTINGS
 
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -68,32 +71,53 @@ bool SettingsManagerBase::load(const ext::filesystem::path& path)
 		std::map<std::string, std::string> s_values;
 		ext::filesystem::ifstream ifs(path);
 		if (!ifs.is_open()) return false;
+		std::string line;
+		std::getline(ifs, line);
+		if (line == "[uftt]") {
+			loaded = true;
+			while (loaded && std::getline(ifs, line))
+			if (!line.empty() && line[0] != '#') {
+				size_t eqpos = line.find('=');
+				if (eqpos != std::string::npos) {
+					s_values[line.substr(0, eqpos)] = line.substr(eqpos+1);
+				} else
+					loaded = false;
+			}
+			if (loaded) loaded = load(s_values);
+		}
+	} catch (std::exception& e) {
+		std::cout << "Load settings failed: " << e.what() << '\n';
+		loaded = false;
+	}
+
+#ifdef ENABLE_LEGACY_SETTINGS
+	if (!loaded) try {
+		std::map<std::string, std::string> s_values;
+		ext::filesystem::ifstream ifs(path);
+		if (!ifs.is_open()) return false;
 		boost::archive::xml_iarchive ia(ifs);
 		ia & boost::serialization::make_nvp("settingsmap", s_values);
-
 		loaded = load(s_values);
 	} catch (std::exception& e) {
 		std::cout << "Load settings failed: " << e.what() << '\n';
 		loaded = false;
 	}
+#endif//ENABLE_LEGACY_SETTINGS
 	return loaded;
 }
 
 bool SettingsManagerBase::save(const ext::filesystem::path& path)
 {
 	try {
-		std::map<std::string, std::string> s_values;
-
+		boost::filesystem::create_directories(path.parent_path());
+		ext::filesystem::ofstream eofs(path);
+		std::ofstream& ofs(eofs);
+		if (!ofs.is_open()) return false;
+		ofs << "[uftt]" << std::endl;
 		typedef std::pair<std::string, SettingsVariableBase*> mp;
 		BOOST_FOREACH(const mp& sp, m_curvalues) {
-			s_values[sp.first] = sp.second->getString();
+			ofs << sp.first << '=' << sp.second->getString() << std::endl;
 		}
-
-		boost::filesystem::create_directories(path.parent_path());
-		ext::filesystem::ofstream ofs(path);
-		if (!ofs.is_open()) return false;
-		boost::archive::xml_oarchive oa(ofs);
-		oa & boost::serialization::make_nvp("settingsmap", s_values);
 		return true;
 	} catch (std::exception& e) {
 		std::cout << "Load settings failed: " << e.what() << '\n';

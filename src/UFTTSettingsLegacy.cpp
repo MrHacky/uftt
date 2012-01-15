@@ -1,5 +1,7 @@
 #include "UFTTSettingsLegacy.h"
 
+#ifdef ENABLE_LEGACY_SETTINGS
+
 #include "util/Filesystem.h"
 
 #include "Types.h"
@@ -257,8 +259,11 @@ namespace {
 	}
 }
 
+#endif//ENABLE_LEGACY_SETTINGS
+
 bool UFTTSettingsLegacyLoader(UFTTSettingsRef sref)
 {
+#ifdef ENABLE_LEGACY_SETTINGS
 	try {
 		ext::filesystem::path path = sref.get()->s_curvalues.getSavePath();
 		if (!ext::filesystem::exists(path)) return false;
@@ -299,7 +304,7 @@ bool UFTTSettingsLegacyLoader(UFTTSettingsRef sref)
 		s_values["gui.auto_clear_tasks_after"] = getString(legacy.auto_clear_tasks_after);
 
 		return sref.get()->load(s_values);
-	} catch (...) {
-		return false;
-	}
+	} catch (...) {}
+#endif//ENABLE_LEGACY_SETTINGS
+	return false;
 }
