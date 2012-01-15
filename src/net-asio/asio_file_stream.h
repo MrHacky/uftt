@@ -10,7 +10,7 @@
 // offsets are wrong atm, use thread queue implementation
 //#define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 
-#if !defined(WIN32) || defined(BOOST_ASIO_DISABLE_IOCP) || defined(DISABLE_DISKIO_WIN32_IOCP_HANDLE)
+#if !defined(WIN32) || defined(_WIN32_WINDOWS) || defined(BOOST_ASIO_DISABLE_IOCP) || defined(DISABLE_DISKIO_WIN32_IOCP_HANDLE)
 #define DISABLE_DISKIO_WIN32_IOCP_HANDLE
 #endif
 
