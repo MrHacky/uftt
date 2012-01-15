@@ -623,7 +623,7 @@ namespace platform {
 	}
 
 	struct TaskbarProgress::pimpl_t {
-#ifdef WIN32
+#if defined(WIN32) && defined(__ITaskbarList3_INTERFACE_DEFINED__)
 		HWND hwnd;
 		ITaskbarList3* itbl3;
 #endif
@@ -632,7 +632,7 @@ namespace platform {
 	TaskbarProgress::TaskbarProgress(const std::string& wid)
 	{
 		pimpl = new pimpl_t();
-#ifdef WIN32
+#if defined(WIN32) && defined(__ITaskbarList3_INTERFACE_DEFINED__)
 		pimpl->hwnd = parseHWND(wid);
 		CoCreateInstance(CLSID_TaskbarList, NULL, CLSCTX_ALL, IID_ITaskbarList3, (void**)&pimpl->itbl3);
 #endif
@@ -640,7 +640,7 @@ namespace platform {
 
 	TaskbarProgress::~TaskbarProgress()
 	{
-#ifdef WIN32
+#if defined(WIN32) && defined(__ITaskbarList3_INTERFACE_DEFINED__)
 		if (pimpl->itbl3) pimpl->itbl3->Release();
 #endif
 		delete pimpl;
@@ -648,7 +648,7 @@ namespace platform {
 
 	void TaskbarProgress::setValue(uint64 current, uint64 total)
 	{
-#ifdef WIN32
+#if defined(WIN32) && defined(__ITaskbarList3_INTERFACE_DEFINED__)
 		if (pimpl->itbl3) {
 			pimpl->itbl3->SetProgressValue(pimpl->hwnd, current, total);
 			pimpl->itbl3->SetProgressState(pimpl->hwnd, TBPF_NORMAL);
@@ -658,7 +658,7 @@ namespace platform {
 
 	void TaskbarProgress::setStateError()
 	{
-#ifdef WIN32
+#if defined(WIN32) && defined(__ITaskbarList3_INTERFACE_DEFINED__)
 		if (pimpl->itbl3) pimpl->itbl3->SetProgressState(pimpl->hwnd, TBPF_ERROR);
 #endif
 	}
