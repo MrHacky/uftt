@@ -150,6 +150,11 @@ namespace platform {
 #endif
 	}
 
+	string getenv(const string& s) {
+		char* r = ::getenv(s.c_str());
+		return (r == NULL) ? string() : string(r);
+	}
+
 #ifdef WIN32
 	HWND parseHWND(const std::string& hwnd)
 	{
@@ -279,16 +284,11 @@ namespace platform {
 	}
 
 #ifndef WIN32
-	string _getenv(string s) {
-		char* r = getenv(s.c_str());
-		return (r == NULL) ? string() : string(r);
-	}
-
 	string scan_xdg_user_dirs(string dirname) {
 		string result;
-		ext::filesystem::path xdgConfigHome(string(_getenv("XDG_CONFIG_HOME")));
+		ext::filesystem::path xdgConfigHome(getenv("XDG_CONFIG_HOME"));
 		if(!ext::filesystem::exists(xdgConfigHome))
-			xdgConfigHome = ext::filesystem::path(string(_getenv("HOME")) + "/.config");
+			xdgConfigHome = ext::filesystem::path(getenv("HOME") + "/.config");
 		if(ext::filesystem::exists(xdgConfigHome) && boost::filesystem::is_directory(xdgConfigHome)) {
 			ext::filesystem::path file(xdgConfigHome / "user-dirs.dirs");
 			if(boost::filesystem::is_regular(file)) {
@@ -302,7 +302,7 @@ namespace platform {
 						if((result.find('"') == 0) && (result.rfind('"') == result.size() - 1))
 							result = result.substr(1, result.size() - 2);
 						if(result.find("$HOME") == 0) // FIXME: Hax! (like Qt)
-							result = string(_getenv("HOME")) + result.substr(5);
+							result = getenv("HOME") + result.substr(5);
 					}
 				}
 			}
@@ -321,15 +321,15 @@ namespace platform {
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = ext::filesystem::path(_getenv("DESKTOP"));
+		p = ext::filesystem::path(getenv("DESKTOP"));
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = ext::filesystem::path(_getenv("HOME")) / "Desktop";
+		p = ext::filesystem::path(getenv("HOME")) / "Desktop";
 		if(ext::filesystem::exists(p))
 			return p;
 
-		p = ext::filesystem::path(_getenv("HOME"));
+		p = ext::filesystem::path(getenv("HOME"));
 		if(ext::filesystem::exists(p))
 			return p;
 
@@ -365,16 +365,18 @@ namespace platform {
 
 	std::string getUserName()
 	{
+		std::string name;
 #if defined(WIN32)
-		TCHAR tname[256];
-		DWORD len = 256;
-		if (GetUserName(tname, &len) && tname[0] != 0)
-			return convertTStringToUTF8(tname);
+		if (name.empty()) {
+			TCHAR tname[256];
+			DWORD len = 256;
+			if (GetUserName(tname, &len))
+				name =  convertTStringToUTF8(tname);
+		}
 #endif
-		char* name = NULL;
-		if (!name) name = getenv("USER");
-		if (!name) name = getenv("USERNAME");
-		if (!name) return "uftt-user";
+		if (name.empty()) name = getenv("USER");
+		if (name.empty()) name = getenv("USERNAME");
+		if (name.empty()) name = "uftt-user";
 		return name;
 	}
 
