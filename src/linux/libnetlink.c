@@ -1,4 +1,3 @@
-#if __linux__
 /*
  * libnetlink.c	RTnetlink service routines.
  *
@@ -590,4 +589,3 @@ int parse_rtattr_byindex(struct rtattr *tb[], int max, struct rtattr *rta, int l
 		fprintf(stderr, "!!!Deficit %d, rta_len=%d\n", len, rta->rta_len);
 	return i;
 }
-#endif

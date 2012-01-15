@@ -11,7 +11,7 @@
 		#else
 			#define IPADDRW_DUMMY_IPV4
 		#endif
-		#ifdef __linux__
+		#if defined(__linux__) && !defined(ANDROID)
 			#include "ipaddr_watcher_osimpl_v6linux.cpp"
 		#else
 			#define IPADDRW_DUMMY_IPV6
@@ -22,20 +22,20 @@
 		struct ipv4_osimpl {
 			void init() {};
 			void close() {};
-			void sync_wait() { return false; };
+			bool sync_wait() { return false; };
 
 			std::set<addrwithbroadcast> getlist() { return std::set<addrwithbroadcast>(); };
 			bool cancel_wait() { return false; };
 		};
 	#endif
 
-	#ifdef IPADDRW_DUMMY_IPV4
+	#ifdef IPADDRW_DUMMY_IPV6
 		struct ipv6_osimpl {
 			void init() {};
 			void close() {};
-			void sync_wait() { return false; };
+			bool sync_wait() { return false; };
 
-			std::set<boost::asio::ip::address> getlist() { return std::set<addrwithbroadcast>(); };
+			std::set<boost::asio::ip::address> getlist() { return std::set<boost::asio::ip::address>(); };
 			bool cancel_wait() { return false; };
 		};
 	#endif

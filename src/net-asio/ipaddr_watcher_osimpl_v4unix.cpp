@@ -1,4 +1,8 @@
-#ifdef __linux__
+#if defined(__linux__) && !defined(ANDROID)
+#  define HAVE_LINUX_SYNCWAIT
+#endif
+
+#ifdef HAVE_LINUX_SYNCWAIT
 #  include <asm/types.h>
 #  include <linux/netlink.h>
 #  include <linux/rtnetlink.h>
@@ -22,7 +26,7 @@ struct unix_osimpl_base {
 
 	void init(int ifaddrflag)
 	{
-#ifdef __linux__
+#ifdef HAVE_LINUX_SYNCWAIT
 		struct sockaddr_nl sa;
 
 		memset (&sa, 0, sizeof(sa));
@@ -38,7 +42,7 @@ struct unix_osimpl_base {
 
 	bool sync_wait()
 	{
-#ifdef __linux__
+#ifdef HAVE_LINUX_SYNCWAIT
 		if (fd == -1) return false;
 		char buffer[1024];
 		int r = ::recv(fd, buffer, sizeof(buffer), 0);
@@ -67,7 +71,7 @@ struct unix_osimpl_base {
 struct ipv4_osimpl: public unix_osimpl_base {
 	void init()
 	{
-#ifdef __linux__
+#ifdef HAVE_LINUX_SYNCWAIT
 		unix_osimpl_base::init(RTMGRP_IPV4_IFADDR);
 #endif
 	}
