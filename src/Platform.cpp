@@ -333,10 +333,12 @@ namespace platform {
 		if(ext::filesystem::exists(p))
 			return p;
 
+#ifndef ANDROID
 		/* Should never happen */
 		char dirname_template[] = "uftt-XXXXXX";
 		char* dirname = mkdtemp(dirname_template);
 		p = ext::filesystem::path(dirname);
+#endif
 		return p;
 #endif
 	}
