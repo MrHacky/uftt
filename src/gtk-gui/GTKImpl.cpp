@@ -9,7 +9,7 @@
 #include "uftt-48x48.png.h"
 #include <ios>
 #include <boost/bind.hpp>
-#include <glib/gthread.h>
+#include <glib.h>
 #include <gdkmm/pixbufloader.h>
 #include <gtkmm/stock.h>
 #include <gtkmm/action.h>
