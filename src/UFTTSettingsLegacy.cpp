@@ -145,7 +145,7 @@ BOOST_CLASS_VERSION(UFTTSettingsLegacy, 14)
 namespace boost { namespace serialization {
 
 	template<class Archive>
-inline void save (Archive & ar, ext::filesystem::path const& p,
+inline void save (Archive & ar, ::ext::filesystem::path const& p,
     const unsigned int /* file_version */)
 {
     using namespace boost::serialization;
@@ -154,19 +154,19 @@ inline void save (Archive & ar, ext::filesystem::path const& p,
 }
 
 template<class Archive>
-inline void load (Archive & ar, ext::filesystem::path &p,
+inline void load (Archive & ar, ::ext::filesystem::path &p,
     const unsigned int /* file_version */)
 {
     using namespace boost::serialization;
     std::string path_str;
     ar & make_nvp("path", path_str);
-    p = ext::filesystem::path(path_str);//, boost::filesystem::native);
+    p = ::ext::filesystem::path(path_str);//, boost::filesystem::native);
 }
 
 // split non-intrusive serialization function member into separate
 // non intrusive save/load member functions
 template<class Archive>
-inline void serialize (Archive & ar, ext::filesystem::path &p,
+inline void serialize (Archive & ar, ::ext::filesystem::path &p,
     const unsigned int file_version)
 {
     boost::serialization::split_free(ar, p, file_version);
