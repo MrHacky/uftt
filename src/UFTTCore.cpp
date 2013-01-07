@@ -350,7 +350,7 @@ void UFTTCore::initialize()
 	for (uint i = 0; i < netmodules.size(); ++i)
 		netmodules[i]->setModuleID(i);
 
-	servicerunner = boost::move(boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)));
+	servicerunner = BOOST_THREAD_MAKE_RV_REF(boost::thread(boost::bind(&UFTTCore::servicerunfunc, this)));
 
 	ext::filesystem::path apppath = platform::getApplicationPath();
 	if (!apppath.empty())
