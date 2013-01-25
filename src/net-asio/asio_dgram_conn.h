@@ -11,10 +11,21 @@
 #include "../util/asio_timer_oneshot.h"
 
 namespace dgram {
+	enum { max_window_size = 1 }; // just 1 for now until its fully working
+	enum { max_queue_size = 128 };
+
 	namespace timeout {
 		const boost::posix_time::time_duration resend     = boost::posix_time::milliseconds(500);          // 500ms
 		const boost::posix_time::time_duration giveup     = boost::posix_time::minutes(1);                 // 1min
 		const boost::posix_time::time_duration conn_reuse = boost::posix_time::minutes(10);                // 10min
+	}
+
+	bool inwindow(uint32 seqnum, uint32 wndstart, uint32 wndlen)
+	{
+		for (size_t i = 0; i < wndlen; ++i)
+			if (seqnum == wndstart+i)
+				return true;
+		return false;
 	}
 
 	struct packet {
@@ -33,9 +44,8 @@ namespace dgram {
 			flag_rst  = 1 << 2,
 			flag_syn  = 1 << 3,
 			flag_fin  = 1 << 4,
-			flag_ping = 1 << 5, // packet has no data, but sequence number should be increased by 1
+			flag_ping = 1 << 5, // packet has no data but should still increase seqnum
 			flag_oob  = 1 << 6, // packet wants no acknowledgement
-			flag_shake= 1 << 7, // for syn packets, pingpong count is in first data byte
 		};
 
 		// actual binary data in packet
@@ -54,22 +64,24 @@ namespace dgram {
 
 	// item waiting to be sent
 	struct snditem {
-		const void* data;
+		const uint8* data;
 		size_t len;
+		size_t ofs;
 		boost::function<void(const boost::system::error_code&, size_t len)> handler;
 
-		snditem(const void* data_, size_t len_,  boost::function<void(const boost::system::error_code&, size_t len)> handler_)
-			: data(data_), len(len_), handler(handler_) {};
+		snditem(const uint8* data_, size_t len_, boost::function<void(const boost::system::error_code&, size_t len)> handler_)
+			: data(data_), len(len_), ofs(0), handler(handler_) {};
 	};
 
 	// item waiting for receiving data
 	struct rcvitem {
-		void* data;
+		uint8* data;
 		size_t len;
+		size_t ofs;
 		boost::function<void(const boost::system::error_code&, size_t len)> handler;
 
-		rcvitem(void* data_, size_t len_,  boost::function<void(const boost::system::error_code&, size_t len)> handler_)
-			: data(data_), len(len_), handler(handler_) {};
+		rcvitem(uint8* data_, size_t len_,  boost::function<void(const boost::system::error_code&, size_t len)> handler_)
+			: data(data_), len(len_), ofs(0), handler(handler_) {};
 	};
 
 	struct null_handler {
@@ -105,16 +117,11 @@ namespace dgram {
 			};
 
 			enum retflag {
-				rf_sendpack,
+				rf_sendpack = 1,
 			};
 
 			boost::asio::io_service& service;
 			conn_service<Proto>* cservice;
-
-			// small receive buffer
-			uint8 rdata[packet::maxmtu];
-			size_t rdsize; // size of data in buffer
-			size_t rdoff;  // offset of unused data in buffer
 
 			typename Proto::endpoint endpoint;
 
@@ -127,6 +134,7 @@ namespace dgram {
 			bool fin_ack;
 
 			bool hashandle;
+			bool hastimeout;
 
 			uint16 lqid;
 			uint16 rqid;
@@ -136,14 +144,20 @@ namespace dgram {
 			uint32 snd_wnd; // remote receiver window size
 
 			uint32 rcv_nxt; // next sequence number expected on an incoming segment
-			uint16 rcv_wnd; // receiver window size
 
 			boost::asio::deadline_timer short_timer;
 			boost::asio::deadline_timer long_timer;
 			bool resending;
 
-			std::deque<snditem> send_queue;
-			std::deque<rcvitem> recv_queue;
+			std::deque<snditem> send_buffers;
+			std::deque<packet> send_packets_queue;
+			std::deque<packet> send_packets;
+
+			std::deque<rcvitem> recv_buffers;
+			std::deque<packet> recv_packets_queue;
+			std::deque<packet> recv_packets;
+
+			bool inrcv;
 
 			// stats
 			uint32 resend;
@@ -180,11 +194,7 @@ namespace dgram {
 				pack.flags = flags;
 				pack.seqnum = snd_una;
 				pack.acknum = rcv_nxt;
-				pack.window = rcv_wnd; // - received packets in queue
 				pack.datalen = datalen; // default
-
-				if (fin_snd)
-					pack.flags |= packet::flag_fin;
 
 				pack.header[0] = (pack.recvqid >> 8) & 0xff;
 				pack.header[1] = (pack.recvqid >> 0) & 0xff;
@@ -195,8 +205,8 @@ namespace dgram {
 			int check_queues()
 			{
 				int ret = 0;
-				ret |= check_recv_queues();
-				ret |= check_send_queues();
+				ret |= check_recv_buffers();
+				ret |= check_send_buffers();
 
 				if (fin_rcv && fin_snd && fin_ack && state != timewait) {
 					setstate(timewait);
@@ -204,42 +214,82 @@ namespace dgram {
 				return ret;
 			}
 
-			int check_send_queues()
+			// moves data: send_buffers -> send_packets_queue
+			void handle_send_buffers()
 			{
-				int ret = 0;
-				if (snd_una == snd_nxt && !send_queue.empty()) {
-					snditem& front = send_queue.front();
-					size_t trylen = front.len;
-					if (trylen > packet::sendmtu)
-						trylen = packet::sendmtu;
-					initsendpack(sendpack, (uint16)trylen); // mtu always < 0xffff
-					memcpy(sendpack.data,  front.data, trylen);
-					sendpack.seqnum = snd_nxt++;
-					send_packet();
-					ret |= rf_sendpack;
-					front.data = ((char*)front.data) + trylen;
-					front.len -= trylen;
-					send_undelivered += trylen;
-					if (front.len == 0) {
-						if (front.handler) {
-							cservice->service.dispatch(boost::bind(front.handler, boost::system::error_code(), send_undelivered));
-							send_undelivered = 0;
-						}
-						send_queue.pop_front();
+				if (send_buffers.empty()) {
+					if (state == closing && !fin_snd) {
+						fin_snd = true;
+						send_packets_queue.push_back(packet());
+						send_packets_queue.back().flags = packet::flag_fin | packet::flag_ping;
+					}
+					return;
+				}
+				size_t totalsize = 0;
+				for (auto b: send_buffers)
+					totalsize += (b.len - b.ofs);
+
+				packet* np = nullptr;
+				if (!send_packets_queue.empty())
+					np = &send_packets_queue.back();
+
+				while ((totalsize > 0) && (send_packets_queue.size() + (np ? 0 : 1) < max_queue_size)) {
+					assert(!send_buffers.empty());
+					snditem& sendbuf = send_buffers.front();
+					if (!np) {
+						send_packets_queue.push_back(packet());
+						np = &send_packets_queue.back();
+						np->datalen = 0;
+						np->flags = 0;
+					}
+
+					size_t copy = std::min<size_t>(packet::sendmtu - np->datalen, sendbuf.len - sendbuf.ofs);
+					std::copy(sendbuf.data + sendbuf.ofs, sendbuf.data + sendbuf.ofs + copy, np->data + np->datalen);
+					np->datalen += copy;
+					sendbuf.ofs += copy;
+					totalsize -= copy;
+
+					if (np->datalen == packet::sendmtu)
+						np = nullptr;
+					if (sendbuf.len == sendbuf.ofs) {
+						auto sitem = sendbuf;
+						send_buffers.pop_front();
+						if (sitem.handler)
+							cservice->service.dispatch(boost::bind(sitem.handler, boost::system::error_code(), sitem.len));
 					}
 				}
-				if (snd_una == snd_nxt && send_queue.empty() && state == closing && !fin_snd) {
-					fin_snd = true;
-					initsendpack(sendpack);
-					sendpack.seqnum = snd_nxt++;
-					send_packet();
+			}
+
+			// sends data: send_packets_queue -> send_packets 
+			int handle_send_packets_queue()
+			{
+				int ret = 0;
+				while (inwindow(snd_nxt, snd_una, calc_snd_wnd()) && !send_packets_queue.empty()) {
+					send_packets.push_back(std::move(send_packets_queue.front()));
+					send_packets_queue.pop_front();
+
+					packet& pack = send_packets.back();
+					initsendpack(pack, pack.datalen, pack.flags | packet::flag_ack);
+					pack.seqnum = snd_nxt++;
+					send_packet_impl(pack);
+
 					ret |= rf_sendpack;
 				}
+				return ret;
+			}
+
+			int check_send_buffers()
+			{
+				int ret = 0;
+				handle_send_buffers();
+
+				if (!inrcv)
+					ret |= handle_send_packets_queue();
 
 				if (state != closing && !cansend()) {
-					while (!send_queue.empty()) {
-						snditem front = send_queue.front();
-						send_queue.pop_front();
+					while (!send_buffers.empty()) {
+						snditem front = send_buffers.front();
+						send_buffers.pop_front();
 						if (front.handler) {
 							cservice->service.dispatch(boost::bind(front.handler,
 								boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted),
@@ -251,32 +301,67 @@ namespace dgram {
 				return ret;
 			}
 
-			int check_recv_queues()
+			// moves data: recv_packets -> recv_packets_queue
+			void handle_recv_packets()
+			{
+				if (recv_packets_queue.size() >= max_queue_size) return;
+
+				while (!recv_packets.empty() && (recv_packets[0].flags & packet::flag_ack)) {
+					assert(recv_packets.front().seqnum == rcv_nxt);
+					if (recv_packets[0].datalen > 0)
+						recv_packets_queue.push_back(recv_packets.front());
+					recv_packets.pop_front();
+					++rcv_nxt;
+				}
+			}
+
+			// calls handlers: recv_packets_queue -> recv_buffers
+			void handle_recv_packets_queue()
+			{
+				if (fin_rcv)
+					recv_packets_queue.clear();
+				size_t ofs = 0;
+				while (!recv_buffers.empty() && !recv_packets_queue.empty()) {
+					auto& recvbuf = recv_buffers[0];
+					auto& recvpack = recv_packets_queue[0];
+					if (recvpack.flags & packet::flag_fin)
+						fin_rcv = true;
+					if (recvpack.datalen == 0) {
+						recv_packets_queue.pop_front();
+						continue;
+					}
+					size_t copy = std::min<size_t>(recvbuf.len - ofs, recvpack.datalen);
+					std::copy(recvpack.data, recvpack.data + copy, recvbuf.data + ofs);
+					if (copy != recvpack.datalen) {
+						recvpack.datalen -= copy;
+						for (size_t i = 0; i < recvpack.datalen; ++i)
+							recvpack.data[i] = recvpack.data[i+copy];
+						//std::copy(recvpack.data + copy, recvpack.data + recvpack.datalen, recvpack.data);
+					} else
+						recv_packets_queue.pop_front();
+
+					ofs += copy;
+
+					if (ofs == recvbuf.len || recv_packets_queue.empty()) {
+						auto ritem = recvbuf;
+						recv_buffers.pop_front();
+						if (ritem.handler)
+							cservice->service.dispatch(boost::bind(ritem.handler, boost::system::error_code(), ofs));
+						ofs = 0;
+					}
+				}
+			}
+
+			int check_recv_buffers()
 			{
 				int ret = 0;
-				while (rdsize != 0 && !recv_queue.empty()) {
-					#undef min
-					size_t len = std::min(recv_queue.front().len, rdsize-rdoff);
-					memcpy(recv_queue.front().data, rdata+rdoff, len);
+				handle_recv_packets();
+				handle_recv_packets_queue();
 
-					rdoff += len;
-
-					if (rdsize == rdoff) {
-						rdsize = 0;
-						++rcv_nxt;
-						initsendpack(sendpackonce);
-						send_packet_once();
-					}
-
-					rcvitem ritem = recv_queue.front();
-					recv_queue.pop_front();
-					cservice->service.dispatch(boost::bind(ritem.handler, boost::system::error_code(), len));
-				}
-
-				if (rdsize == 0 && !canreceive()) {
-					while (!recv_queue.empty()) {
-						rcvitem ritem = recv_queue.front();
-						recv_queue.pop_front();
+				if (!recv_buffers.empty() && !canreceive()) {
+					while (!recv_buffers.empty()) {
+						rcvitem ritem = recv_buffers.front();
+						recv_buffers.pop_front();
 						cservice->service.dispatch(boost::bind(ritem.handler, boost::system::posix_error::make_error_code(boost::system::posix_error::connection_aborted), 0));
 					};
 					if (handler) {
@@ -287,13 +372,23 @@ namespace dgram {
 				return ret;
 			}
 
-			void send_packet_once() {
-				send_packet_once(sendpackonce);
+			int calc_snd_wnd()
+			{
+				return snd_wnd;
 			}
 
-			void send_packet_once(packet& pack) {
-				//mcout(9) << STRFORMAT("[%3d,%3d] ", pack.sendid, pack.recvid) << "send udp packet: " << pack.type << "  len:" << pack.len << "\n";
-				//socket->send_to(boost::asio::buffer(&pack, ipx_packet::headersize+pack.datalen), endpoint);
+			int calc_rcv_wnd()
+			{
+				int space = max_queue_size - recv_packets_queue.size();
+				return std::min<int>(space, max_window_size);
+			}
+
+			void send_packet_impl(packet& pack)
+			{
+				if (pack.flags & packet::flag_ack)
+					pack.acknum = rcv_nxt;
+				pack.window = calc_rcv_wnd();
+
 				try {
 					cservice->socket.send_to(boost::asio::buffer(&pack, packet::headersize+pack.datalen), endpoint);
 				} catch (boost::system::system_error& error) {
@@ -302,12 +397,41 @@ namespace dgram {
 						handler.clear();
 					}
 					// should clear these handler too?
-					if (!recv_queue.empty()) cservice->service.dispatch(boost::bind(recv_queue.front().handler, error.code(), 0));
-					if (!send_queue.empty()) cservice->service.dispatch(boost::bind(recv_queue.front().handler, error.code(), 0));
+					if (!recv_buffers.empty()) cservice->service.dispatch(boost::bind(recv_buffers.front().handler, error.code(), 0));
+					if (!send_buffers.empty()) cservice->service.dispatch(boost::bind(send_buffers.front().handler, error.code(), 0));
 				}
+
+				if (!hastimeout && !send_packets.empty()) {
+					short_timer.expires_from_now(timeout::resend);
+					short_timer.async_wait(boost::bind(&conn_impl<Proto>::send_packet_impl_retry, this, boost::asio::placeholders::error));
+					hastimeout = true;
+				}
+			}
+
+			void send_packet_impl_retry(const boost::system::error_code& error)
+			{
+				if (error) return; //aborted
+				hastimeout = false;
+				if (send_packets.empty()) return; // nothing to do
+				for (auto& p: send_packets)
+					send_packet_impl(p);
+			}
+
+
+			void send_packet_once() {
+				send_packet_once(sendpackonce);
+			}
+
+			void send_packet_once(packet& pack) {
+				//mcout(9) << STRFORMAT("[%3d,%3d] ", pack.sendid, pack.recvid) << "send udp packet: " << pack.type << "  len:" << pack.len << "\n";
+				//socket->send_to(boost::asio::buffer(&pack, ipx_packet::headersize+pack.datalen), endpoint);
+				assert(pack.datalen == 0);
+				assert(!(pack.flags & packet::flag_ping));
+				send_packet_impl(pack);
 				//udp_sock->async_send_to(boost::asio::buffer(&sendpack, 4*5), udp_addr, boost::bind(&ignore));
 			}
 
+			/*
 			void send_packet(const boost::system::error_code& error = boost::system::error_code(), bool newresend = true)
 			{
 				if (newresend) resending = true;
@@ -320,70 +444,98 @@ namespace dgram {
 				} else
 					--resend; // and subtract all canceled timeouts
 			}
+			*/
+
+			void stream_packet(const packet& p)
+			{
+			}
 
 			// for when a connection is established
 			boost::function<void(const boost::system::error_code&)> handler;
 
+			void handle_ack(uint32 ack)
+			{
+				if (!inwindow(ack, snd_una+1, snd_nxt-snd_una))
+					return;
+				while (snd_una != ack) {
+					assert(!send_packets.empty());
+					assert(send_packets[0].seqnum = snd_una);
+					++snd_una;
+					if (send_packets[0].flags & packet::flag_fin)
+						fin_ack = true;
+					send_packets.pop_front();
+				}
+				if (state == synsent || state == synreceived) {
+					setstate(established);
+					cservice->service.dispatch(boost::bind(handler, boost::system::error_code()));
+					handler.clear();
+				}
+
+				if (!send_packets.empty()) {
+					short_timer.expires_from_now(timeout::resend);
+					short_timer.async_wait(boost::bind(&conn_impl<Proto>::send_packet_impl_retry, this, boost::asio::placeholders::error));
+					hastimeout = true;
+				} else {
+					short_timer.cancel();
+					hastimeout = false;
+				}
+
+				setstate(state); // clears timeouts?
+			}
+
+			void handle_packet_data(packet* pack)
+			{
+				if (!inwindow(pack->seqnum, rcv_nxt, calc_rcv_wnd()))
+					return;
+
+				if (pack->datalen == 0 && !(pack->flags & packet::flag_ping))
+					return;
+
+				uint32 wndidx = pack->seqnum - rcv_nxt;
+
+				if (recv_packets.size() <= wndidx) recv_packets.resize(wndidx+1);
+				if (!(recv_packets[wndidx].flags & packet::flag_ack)) {
+					recv_packets[wndidx] = *pack;
+					pack = &recv_packets[wndidx];
+					pack->flags |= packet::flag_ack;
+				}
+			}
+
 			void handle_read(packet* pack, size_t len)
 			{
-				snd_wnd = pack->window;
+				snd_wnd = std::max<uint32>(pack->window, 1);
+				inrcv = true;
 				switch (state) {
 					case closed: {
 					}; break;
 					case listening: {
 						if (pack->flags & packet::flag_syn) {
-							snd_nxt = snd_una+1;
+							snd_nxt = snd_una;
 							setstate(synreceived);
-							initsendpack(sendpack, 0, packet::flag_syn | packet::flag_ack);
-							send_packet();
+
+							assert(send_packets.empty() && send_packets_queue.empty());
+							send_packets.push_back(packet());
+							packet& pack = send_packets.back();
+
+							initsendpack(pack, 0, packet::flag_syn | packet::flag_ack | packet::flag_ping);
+							pack.seqnum = snd_nxt++;
+							send_packet_impl(pack);
 						}
 					}; break;
 					case synsent:
-					case synreceived: {
-						if (pack->flags & packet::flag_ack && pack->acknum == snd_una+1) {
-							++snd_una;
-							initsendpack(sendpackonce);
-							send_packet_once();
-							setstate(established);
-							cservice->service.dispatch(boost::bind(handler, boost::system::error_code()));
-							handler.clear();
-							check_queues();
-						}
-					}; break;
+					case synreceived:
 					case established:
 					case closing: {
-						if (pack->seqnum == rcv_nxt) {
-							if (pack->datalen > 0 && !fin_rcv) {
-								// there is new data in the packet
-								if (!recv_queue.empty() && rdsize == 0) {
-									// we have a receiver waiting and no more data buffered
-									if (recv_queue.front().len < pack->datalen) {
-										// the packet contains more data than the receiver requested, so we buffer it
-										memcpy(rdata, pack->data, pack->datalen);
-										rdsize = pack->datalen;
-										rdoff = 0;
-									} else {
-										// the receiver requested more data than the packet contains, so pass it directly
-										memcpy(recv_queue.front().data, pack->data, pack->datalen);
-										++rcv_nxt;
-										cservice->service.dispatch(boost::bind(recv_queue.front().handler, boost::system::error_code(), pack->datalen));
-										recv_queue.pop_front();
-									}
-								}
-							}
-							if (rdsize == 0 && pack->flags & packet::flag_fin) {
-								fin_rcv = true;
-								++rcv_nxt;
-							}
-						}
-						if (pack->flags & packet::flag_ack && pack->acknum == snd_una+1) {
-							// the packet acks previously unacked data
-							++snd_una;
-							if (fin_snd) fin_ack = true;
-							setstate(state); // clears send timeouts
-						}
+						if (pack->flags & packet::flag_ack)
+							handle_ack(pack->acknum);
+
+						handle_packet_data(pack);
+
+						bool needack = (pack->seqnum != rcv_nxt);
 						int check = check_queues();
-						if (!(check & rf_sendpack) && pack->seqnum != rcv_nxt) {
+						check |= handle_send_packets_queue();
+						needack = needack || (pack->datalen > 0) || (pack->flags & packet::flag_ping);
+						if (!(check & rf_sendpack) && needack) {
 							// sender could use new ack packet
 							initsendpack(sendpackonce);
 							send_packet_once();
@@ -399,11 +551,11 @@ namespace dgram {
 					case reuse: {
 					}; break;
 				}
+				inrcv = false;
 			}
 
 			void setstate(uint32 newstate, bool resend=false) {
 				state = newstate;
-				short_timer.cancel();
 				long_timer.cancel();
 
 				if (state == reuse) {
@@ -448,20 +600,18 @@ namespace dgram {
 			conn_impl(conn_service<Proto>* cservice_)
 			: cservice(cservice_), short_timer(cservice_->service), long_timer(cservice_->service), service(cservice_->service)
 			{
-				rcv_wnd = 1;
-				rdoff = rdsize = 0;
 				fin_rcv = fin_snd = fin_ack = false;
 				send_undelivered = 0;
+				hastimeout = false;
 				cservice->addconn(this);
 			}
 
 			conn_impl(conn_service<Proto>& cservice_)
 			: cservice(&cservice_), short_timer(cservice_.service), long_timer(cservice_.service), service(cservice_.service)
 			{
-				rcv_wnd = 1;
-				rdoff = rdsize = 0;
 				fin_rcv = fin_snd = fin_ack = false;
 				send_undelivered = 0;
+				hastimeout = false;
 				cservice->addconn(this);
 			}
 
@@ -480,14 +630,14 @@ namespace dgram {
 					return;
 				};
 
-				void* buf;
+				uint8* buf;
 				size_t buflen = 0;
 				typename MBS::const_iterator iter = mbs.begin();
 				typename MBS::const_iterator end = mbs.end();
 				for (;buflen == 0 && iter != end; ++iter) {
 					// at least 1 buffer
 					boost::asio::mutable_buffer buffer(*iter);
-					buf = boost::asio::buffer_cast<void*>(buffer);
+					buf = boost::asio::buffer_cast<uint8*>(buffer);
 					buflen = boost::asio::buffer_size(buffer);
 				}
 				if (buflen == 0) {
@@ -496,7 +646,7 @@ namespace dgram {
 					return;
 				};
 
-				recv_queue.push_back(
+				recv_buffers.push_back(
 					rcvitem(
 						buf,
 						buflen,
@@ -523,11 +673,11 @@ namespace dgram {
 				for (;iter != end; ++iter) {
 					// at least 1 buffer
 					boost::asio::const_buffer buffer(*iter);
-					const void* buf = boost::asio::buffer_cast<const void*>(buffer);
+					const uint8* buf = boost::asio::buffer_cast<const uint8*>(buffer);
 					size_t buflen = boost::asio::buffer_size(buffer);
 					if (buflen > 0) {
 						tlen += buflen;
-						send_queue.push_back(
+						send_buffers.push_back(
 							snditem(
 								buf,
 								buflen,
@@ -539,7 +689,7 @@ namespace dgram {
 				if (tlen == 0)
 					service.dispatch(boost::bind<void>(handler, boost::system::error_code(), 0));
 				else
-					send_queue.back().handler = handler;
+					send_buffers.back().handler = handler;
 
 				check_queues();
 			}
@@ -551,6 +701,8 @@ namespace dgram {
 			//template <typename CBS>
 			//size_t read_some(const CBS& cbs, boost::system::error_code& ec);
 
+			// this adds the buffers without handlers, so error may not be reported directly
+			// its also weird to call this when handlers are still pending, but thats an error on the user part (interleaving writes)
 			template <typename CBS>
 			size_t write_some(const CBS& cbs, boost::system::error_code& ec)
 			{
@@ -572,7 +724,7 @@ namespace dgram {
 						memcpy(&(*sbuf)[0], buf, buflen);
 
 						tlen += buflen;
-						send_queue.push_back(
+						send_buffers.push_back(
 							snditem(
 								&(*sbuf)[0],
 								buflen,
@@ -591,22 +743,29 @@ namespace dgram {
 			template <typename ConnectHandler>
 			void async_connect(const typename Proto::endpoint& endpoint_, const ConnectHandler& handler_)
 			{
-				snd_una = cservice->get_isn();
+				snd_nxt = snd_una = cservice->get_isn();
 				handler = handler_;
 				endpoint = endpoint_;
-				snd_nxt = snd_una+1;
 				rqid = 0xffff;
 
 				setstate(synsent);
-				initsendpack(sendpack, 1, packet::flag_syn | packet::flag_shake);
-				sendpack.data[0] = 1;
-				send_packet();
+
+				assert(send_packets.empty() && send_packets_queue.empty());
+
+				send_packets.push_back(packet());
+				packet& pack = send_packets.back();
+
+				initsendpack(pack, 0, packet::flag_syn | packet::flag_ping);
+				pack.acknum = 1;
+
+				pack.seqnum = snd_nxt++;
+				send_packet_impl(pack);
 			}
 
 			template <typename AcceptHandler>
 			void async_accept(const AcceptHandler& handler_)
 			{
-				snd_una = cservice->get_isn();
+				snd_nxt = snd_una = cservice->get_isn();
 				cservice->acceptlog.push_back(lqid);
 				handler = handler_;
 
@@ -793,17 +952,15 @@ namespace dgram {
 				pack->flags   = pack->header[2];
 				pack->datalen = len - packet::headersize;
 
-				std::cout << "got udp packet: len:" << pack->datalen << " D:" << (int)pack->data[0] << "\n";
-				if (pack->flags & packet::flag_shake) {
-					if (pack->datalen != 1) return;
-					if (pack->data[0] < 5) {
-						++pack->data[0];
+				//std::cout << "got udp packet: len:" << pack->datalen << " D:" << (int)pack->data[0] << "\n";
+				if ((pack->flags & packet::flag_syn) && !(pack->flags & packet::flag_ack)) {
+					if (pack->acknum < 5) {
+						++pack->acknum;
 						try {
 							socket.send_to(boost::asio::buffer(pack, packet::headersize+pack->datalen), *peer);
 						} catch (...) {};
 						return;
-					} else
-						pack->flags &= ~packet::flag_shake;
+					}
 				}
 
 				conn_impl<Proto>* tconn = NULL;
