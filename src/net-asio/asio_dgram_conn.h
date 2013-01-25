@@ -35,6 +35,7 @@ namespace dgram {
 			flag_fin  = 1 << 4,
 			flag_ping = 1 << 5, // packet has no data, but sequence number should be increased by 1
 			flag_oob  = 1 << 6, // packet wants no acknowledgement
+			flag_shake= 1 << 7, // for syn packets, pingpong count is in first data byte
 		};
 
 		// actual binary data in packet
@@ -597,7 +598,8 @@ namespace dgram {
 				rqid = 0xffff;
 
 				setstate(synsent);
-				initsendpack(sendpack, 0, packet::flag_syn);
+				initsendpack(sendpack, 1, packet::flag_syn | packet::flag_shake);
+				sendpack.data[0] = 1;
 				send_packet();
 			}
 
@@ -790,6 +792,19 @@ namespace dgram {
 				pack->recvqid = (pack->header[0] << 8) | (pack->header[1] << 0);
 				pack->flags   = pack->header[2];
 				pack->datalen = len - packet::headersize;
+
+				std::cout << "got udp packet: len:" << pack->datalen << " D:" << (int)pack->data[0] << "\n";
+				if (pack->flags & packet::flag_shake) {
+					if (pack->datalen != 1) return;
+					if (pack->data[0] < 5) {
+						++pack->data[0];
+						try {
+							socket.send_to(boost::asio::buffer(pack, packet::headersize+pack->datalen), *peer);
+						} catch (...) {};
+						return;
+					} else
+						pack->flags &= ~packet::flag_shake;
+				}
 
 				conn_impl<Proto>* tconn = NULL;
 				if ((pack->flags & packet::flag_syn) && !(pack->flags & packet::flag_ack)) {
