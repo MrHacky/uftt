@@ -2,7 +2,7 @@
 #define NETMODULE_LINKER_H
 
 #include <vector>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/function.hpp>
 #include "../UFTTCore.h"
 
@@ -10,15 +10,15 @@ class INetModule;
 class UFTTCore;
 
 namespace NetModuleLinker {
-	std::vector<boost::shared_ptr<INetModule> > getNetModuleList(UFTTCore* core);
+	std::vector<std::shared_ptr<INetModule> > getNetModuleList(UFTTCore* core);
 
-	void regNetModule(const boost::function<boost::shared_ptr<INetModule>(UFTTCore*)>& fp);
+	void regNetModule(const boost::function<std::shared_ptr<INetModule>(UFTTCore*)>& fp);
 
 	template <class T>
 	struct create_netmodule {
-		boost::shared_ptr<INetModule> operator()(UFTTCore* core)
+		std::shared_ptr<INetModule> operator()(UFTTCore* core)
 		{
-			return boost::shared_ptr<INetModule>(new T(core));
+			return std::shared_ptr<INetModule>(new T(core));
 		}
 	};
 

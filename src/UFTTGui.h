@@ -4,6 +4,7 @@
 	#include "UFTTCore.h"
 	#include "UFTTSettings.h"
 	#include <boost/noncopyable.hpp>
+	#include <memory>
 
 	class UFTTGui : boost::noncopyable {
 		public:
@@ -18,7 +19,7 @@
 			 * @param settings are the settings the gui should use to initialize itself.
 			 *         (E.g. window position, the state of radio-buttons, etc.)
 			 */
-			static const boost::shared_ptr<UFTTGui> makeGui(int argc, char** argv, UFTTSettingsRef settings);
+			static const std::shared_ptr<UFTTGui> makeGui(int argc, char** argv, UFTTSettingsRef settings);
 
 			/**
 			 * After the GUI has been created using makeGui you need to call bindEvents()

@@ -12,7 +12,7 @@
 
 #include <boost/thread.hpp>
 #include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "util/Filesystem.h"
 #include "util/SignalConnection.h"
@@ -144,7 +144,7 @@ class UFTTCore {
 		std::string mwid;
 
 		std::map<std::string, ext::filesystem::path> localshares;
-		std::vector<boost::shared_ptr<class INetModule> > netmodules;
+		std::vector<std::shared_ptr<class INetModule> > netmodules;
 		UFTTSettingsRef settings;
 
 		boost::thread servicerunner;

@@ -1,7 +1,7 @@
 #include <boost/asio.hpp>
 #include <boost/signal.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 #include "../UFTTGui.h"
 #include "../UFTTCore.h"
@@ -19,8 +19,8 @@ struct servicelocker {
 class ConsoleMain : public UFTTGui {
 	public:
 		boost::asio::io_service service;
-		boost::shared_ptr<boost::asio::io_service::work> work;
-		boost::shared_ptr<servicelocker> lockedservice;
+		std::shared_ptr<boost::asio::io_service::work> work;
+		std::shared_ptr<servicelocker> lockedservice;
 
 		UFTTCore* core;
 		std::map<std::string, ShareID> sharemap;
@@ -95,7 +95,7 @@ class ConsoleMain : public UFTTGui {
 			return 0;
 		}
 
-		static void input(ConsoleMain* cmain, boost::shared_ptr<servicelocker> lockedservice)
+		static void input(ConsoleMain* cmain, std::shared_ptr<servicelocker> lockedservice)
 		{
 			std::string line;
 			while (std::getline(std::cin, line)) {
@@ -108,6 +108,6 @@ class ConsoleMain : public UFTTGui {
 		}
 };
 
-const boost::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
-	return boost::shared_ptr<UFTTGui>(new ConsoleMain(argc, argv, settings));
+const std::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
+	return std::shared_ptr<UFTTGui>(new ConsoleMain(argc, argv, settings));
 }

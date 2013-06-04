@@ -5,12 +5,12 @@
 #include "../UFTTGui.h"
 #include "../UFTTCore.h"
 #include "../UFTTSettings.h"
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 class GTKMain : public UFTTGui {
 	private:
 		// implementation class (PIMPL idiom)
-		boost::shared_ptr<class GTKImpl> impl;
+		std::shared_ptr<class GTKImpl> impl;
 		GTKMain();
 
 	public:

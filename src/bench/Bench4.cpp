@@ -23,7 +23,7 @@ int APIENTRY synesisWinMain(HINSTANCE,
 #include <iostream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/thread.hpp>
+#include <thread>
 #include <boost/foreach.hpp>
 #include "../util/StrFormat.h"
 #include "../net-asio/ipaddr_watcher.h"
@@ -422,7 +422,7 @@ void start_receive(boost::asio::ip::udp::socket& s) {
 
 template <typename Proto>
 class address_watcher {
-	boost::thread t;
+	std::thread t;
 	boost::function<void()> nf;
 	typedef typename Proto::socket socktype;
 	socktype& sock;
@@ -448,7 +448,7 @@ public:
 
 	void async_watch(const boost::function<void()>& f) {
 		nf = f;
-		t = boost::thread(boost::bind(&address_watcher<Proto>::main, this)).move();
+		t = std::thread(boost::bind(&address_watcher<Proto>::main, this));
 	}
 
 };
@@ -613,7 +613,7 @@ int main( int argc, char **argv ) {
 
 	boost::asio::ip::udp::endpoint raddr;
 
-	boost::thread(boost::bind(&boost::asio::io_service::run, boost::ref(svc)));
+	std::thread(boost::bind(&boost::asio::io_service::run, boost::ref(svc)));
 
 	char buf[3];
 	//while(1)

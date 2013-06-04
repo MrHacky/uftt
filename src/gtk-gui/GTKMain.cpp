@@ -1,11 +1,9 @@
 #include "GTKMain.h"
 #include "GTKImpl.h"
 #include "Notification.h"
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
+#include <functional>
 
 using namespace std;
-using namespace boost;
 
 // implementation class (PIMPL idiom)
 class GTKImpl {
@@ -57,8 +55,8 @@ int GTKMain::run() {
 	return 0;
 }
 
-const boost::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
-	return boost::shared_ptr<GTKMain>(new GTKMain(argc, argv, settings));
+const shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
+	return shared_ptr<GTKMain>(new GTKMain(argc, argv, settings));
 }
 
 #ifndef DEBUG

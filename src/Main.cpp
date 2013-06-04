@@ -195,7 +195,7 @@ int imain(int argc, char **argv)
 
 	try {
 		std::vector<char*> gargs;
-		boost::shared_ptr<UFTTGui> gui;
+		std::shared_ptr<UFTTGui> gui;
 		UFTTCore core(settings, cmd);
 		{
 			BOOST_FOREACH(CommandLineCommand& clc, cmd.list2) {

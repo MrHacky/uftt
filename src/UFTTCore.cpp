@@ -13,7 +13,7 @@
 #include "Globals.h"
 #include "BuildString.h"
 
-typedef boost::shared_ptr<INetModule> INetModuleRef;
+typedef std::shared_ptr<INetModule> INetModuleRef;
 
 
 struct UFTTCore::CommandExecuteHelper: public ext::coro::base<CommandExecuteHelper> {
