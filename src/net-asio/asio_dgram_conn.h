@@ -989,6 +989,6 @@ namespace dgram {
 			}
 	};
 
-};
+}
 
 #endif//ASIO_DGRAM_CONN_H
