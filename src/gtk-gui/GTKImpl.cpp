@@ -263,7 +263,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	menu_main_paned_vbox.show_all();
 	add(menu_main_paned_vbox);
 
-	vector<string> author_list;
+	vector<Glib::ustring> author_list;
 	author_list.push_back("\"CodeAcc\" <http://code.google.com/u/CodeAcc/>");
 	author_list.push_back("Daniël Geelen <http://code.google.com/u/daniel.geelen/>");
 	author_list.push_back("Simon Sasburg <http://code.google.com/u/simon.sasburg/>");
