@@ -55,7 +55,11 @@ boost::asio::ip::address_v6 get_ipv6_address(const nlmsghdr *in, const nlmsghdr 
 	if (alen < NLMSG_LENGTH(sizeof(ifa)))
 			return unspec;
 
-	if (ifi->ifi_index != ifa->ifa_index)
+	/* NOTE: ifi_index and ifa_index should have the same type (int), but for
+	 * some reason they are not... So instead of a normal (in)equality comparison
+	 * we do a bit-wise compare.
+	 */
+	if (ifi->ifi_index ^ ifa->ifa_index)
 		return unspec;
 
 	if (ifi->ifi_family != AF_INET6 || ifa->ifa_family != AF_INET6)
@@ -147,7 +151,11 @@ struct ipv6_osimpl: public unix_osimpl_base {
 					struct nlmsghdr *n = &a->h;
 					struct ifaddrmsg *ifa = (struct ifaddrmsg *)NLMSG_DATA(n);
 
-					if (ifa->ifa_index != ifi->ifi_index)
+					/* NOTE: ifi_index and ifa_index should have the same type (int), but for
+					 * some reason they are not... So instead of a normal (in)equality comparison
+					 * we do a bit-wise compare.
+					 */
+					if (ifi->ifi_index ^ ifa->ifa_index)
 						continue;
 					if (ifa->ifa_family != AF_INET6)
 						continue;
