@@ -18,8 +18,8 @@
 TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_)
 : settings(_settings),
   uimanager_ref(uimanager_ref_),
-  last_completion(boost::posix_time::neg_infin),
   last_notification(boost::posix_time::neg_infin),
+  last_completion(boost::posix_time::neg_infin),
   last_status_update(boost::posix_time::neg_infin)
 {
 	this->add(task_list_treeview);

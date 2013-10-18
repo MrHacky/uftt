@@ -15,10 +15,10 @@ using namespace std;
 
 ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Glib::RefPtr<Gtk::UIManager> uimanager_ref_)
 : settings(_settings),
+  pick_download_destination_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   add_share_file_dialog(_parent_window, "Select a file", Gtk::FILE_CHOOSER_ACTION_OPEN),
   add_share_folder_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   browse_for_download_destination_path_button("Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
-  pick_download_destination_dialog(_parent_window, "Select a folder", Gtk::FILE_CHOOSER_ACTION_SELECT_FOLDER),
   uimanager_ref(uimanager_ref_)
 {
 	share_list_liststore = Gtk::ListStore::create(share_list_columns);

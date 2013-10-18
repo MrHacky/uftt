@@ -53,16 +53,16 @@ namespace Gtk {
 	 ******************************/
 
 	Notification::Notification()
-	: notify_notification(NULL)
-	, next_action_id(0)
+	: next_action_id(0)
+	, notify_notification(NULL)
 	{
 		check_libnotify();
 		initialize_notification();
 	}
 
 	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
-	: notify_notification(NULL)
-	, next_action_id(0)
+	: next_action_id(0)
+	, notify_notification(NULL)
 	, summary(summary_)
 	, body(body_)
 	, icon(icon_)
@@ -72,8 +72,8 @@ namespace Gtk {
 	}
 
 	Notification::Notification(const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
-	: notify_notification(NULL)
-	, next_action_id(0)
+	: next_action_id(0)
+	, notify_notification(NULL)
 	, summary(summary_)
 	, body(body_)
 	, icon_pixbuf(icon_)
@@ -83,8 +83,8 @@ namespace Gtk {
 	}
 
 	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Gtk::StockID icon_)
-	: notify_notification(NULL)
-	, next_action_id(0)
+	: next_action_id(0)
+	, notify_notification(NULL)
 	, summary(summary_)
 	, body(body_)
 	, icon(icon_)
@@ -94,8 +94,8 @@ namespace Gtk {
 	}
 
 	Notification::Notification(Gtk::Widget& widget_, const Glib::ustring summary_, const Glib::ustring body_, const Glib::RefPtr<Gdk::Pixbuf> icon_)
-	: notify_notification(NULL)
-	, next_action_id(0)
+	: next_action_id(0)
+	, notify_notification(NULL)
 	, summary(summary_)
 	, body(body_)
 	, icon_pixbuf(icon_)

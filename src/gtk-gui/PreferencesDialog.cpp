@@ -10,11 +10,11 @@ using namespace std;
 UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 : settings(_settings),
   // Characters used for short-cuts: a b c i l m n o p r s t u v
-  enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
-  enable_download_resume_checkbutton("Resume _partial downloads", true),
   enable_tray_icon_checkbutton("Enable system _tray icon", true),
   minimize_on_close_checkbutton("_Minimize to tray on close", true),
   start_in_tray_checkbutton("_Start in tray", true),
+  enable_download_resume_checkbutton("Resume _partial downloads", true),
+  enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
   enable_auto_clear_tasks_checkbutton(string() + "Automatically _remove completed tasks after (hh:mm:ss)", true),
   auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.get().total_seconds()), 0.0, 24*60*60*1.0, 1.0),
   auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0),
