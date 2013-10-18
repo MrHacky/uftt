@@ -123,7 +123,6 @@ uint64 ConnectionCommon::sigchecker::getoffset()
 	}
 	size_t bread;
 	using namespace std;
-	uint64 fsize = boost::filesystem::file_size(path);
 
 	uint32 dpos = 0;
 	vector<uint8> buf(item->psize);

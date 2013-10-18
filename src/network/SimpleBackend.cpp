@@ -335,7 +335,7 @@ void SimpleBackend::handle_stun_packet(UDPSockInfoRef si, uint8* recv_buf, boost
 	if (!recv_peer->address().is_v4() && !recv_peer->address().to_v6().is_v4_mapped()) return;
 
 	uint16 type = (recv_buf[0] << 8) | (recv_buf[1] << 0);
-	uint16 slen = (recv_buf[2] << 8) | (recv_buf[3] << 0);
+	//NOTE: slen = (recv_buf[2] << 8) | (recv_buf[3] << 0);
 	std::cout << "Got STUN packet\n";
 
 	boost::asio::ip::udp::endpoint mapped_address;

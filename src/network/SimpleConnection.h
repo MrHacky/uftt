@@ -156,12 +156,10 @@ class SimpleConnection: public ConnectionCommon {
 					disconnect();
 				} else if (dldone && open_files == 0) {
 					taskinfo.status = TASK_STATUS_COMPLETED;
-					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else if (uldone) { // FIXME: Never triggers?
 					taskinfo.status = TASK_STATUS_COMPLETED;
-					boost::posix_time::ptime now = boost::posix_time::microsec_clock::universal_time();
 					taskinfo.speed = (taskinfo.transferred * 1000000L) / (boost::posix_time::microsec_clock::universal_time() - taskinfo.start_time).total_microseconds();
 					disconnect();
 				} else {
