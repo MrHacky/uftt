@@ -300,6 +300,10 @@ void UFTTPreferencesDialog::on_control_button_clicked(Gtk::ResponseType response
 			signal_settings_changed();
 			previous_settings = *settings;
 		}; break;
+		default: {
+			/* ignore other responses */
+			/* XXX: What about CLOSE, DELETE_EVENT, etc? (remove default and read warning)*/
+		}; break;
 	}
 	apply_settings();
 }
