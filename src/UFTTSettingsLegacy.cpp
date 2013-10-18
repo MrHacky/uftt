@@ -38,7 +38,7 @@ struct vector_as_string {
 	void load(Archive & ar, const unsigned int version) const {
 		std::string strdata;
 		ar & NVP("data", strdata);
-		data = std::vector<uint8>(strdata.begin(), strdata.end());
+		data = { strdata.begin(), strdata.end() };
 	}
 
 	template<class Archive>
