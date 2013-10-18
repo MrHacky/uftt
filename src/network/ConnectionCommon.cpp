@@ -103,7 +103,12 @@ void ConnectionCommon::sigmaker::main() {
 	for (uint i = 0; i < item->pos.size(); ++i) {
 		platform::fseek64a(fd, item->pos[i]);
 		bread = fread(&((*sbuf)[dpos]), 1, item->psize, fd);
-		dpos += item->psize;
+		dpos += bread;
+		// XXX: Decide on something better to do here... Can we 'post' an error?
+		//      (this was changed to fix an unused variable warning after updating
+		//      to c++11).
+		if (bread != item->psize)
+			break;
 	}
 	pkt_put_uint64(sbuf->size()-16, &((*sbuf)[8]));
 	service.post(boost::bind(cb, sbuf));
