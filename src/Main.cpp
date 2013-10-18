@@ -1,7 +1,6 @@
 #include "Types.h"
 
-// allow upx compression (prevents use of TLS callbacks in boost::thread)
-extern "C" void tss_cleanup_implemented(void){}
+#include "util/UPXFix.h"
 
 #include "UFTTGui.h"
 #include "BuildString.h"
