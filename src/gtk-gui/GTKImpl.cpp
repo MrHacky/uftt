@@ -464,7 +464,6 @@ bool UFTTWindow::on_statusicon_signal_size_changed(int xy) {
 }
 
 Glib::RefPtr<Gdk::Pixbuf> UFTTWindow::get_best_uftt_icon_for_size(int x, int y) {
-	long surface = x * y;
 	int	best_match = 0; // starts at 48 x 48, does not allow upscaling (in either direction)
 	if(x <= 32  && y <= 32) best_match = 1;
 //	if(x < 22  && y < 22) best_match = 2;
