@@ -44,7 +44,7 @@ UFTTWindow::UFTTWindow(UFTTSettingsRef _settings)
 	statusicon_pixbuf = get_best_uftt_icon_for_size(256, 256);
 	statusicon = Gtk::StatusIcon::create(statusicon_pixbuf);
 	set_default_icon(statusicon_pixbuf);
-	statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
+	statusicon->set_tooltip_text(UFTT_TITLE_BASE "\n" UFTT_TOOLTIP_BASE);
 	statusicon->set_visible(false);
 	{
 	sigc::slot<bool, int> slot = sigc::mem_fun(*this, &UFTTWindow::on_statusicon_signal_size_changed);
@@ -346,7 +346,7 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 	}
 
 	if(nr_downloads + nr_uploads > 0 && settings->show_task_tray_icon && settings->show_speeds_in_statusicon_tooltip) {
-		statusicon->set_tooltip(
+		statusicon->set_tooltip_text(
 			STRFORMAT(
 				UFTT_TITLE_BASE "\n%i downloading, %i uploading\n%s down, %s up",
 				nr_downloads,
@@ -357,7 +357,7 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 		);
 	}
 	else {
-		statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
+		statusicon->set_tooltip_text(UFTT_TITLE_BASE "\n" UFTT_TOOLTIP_BASE);
 	}
 }
 
@@ -379,7 +379,7 @@ void UFTTWindow::on_apply_settings() {
 		set_title(UFTT_TITLE_BASE);
 	}
 	if(!settings->show_task_tray_icon || !settings->show_speeds_in_statusicon_tooltip) {
-		statusicon->set_tooltip(UFTT_TITLE_BASE"\n"UFTT_TOOLTIP_BASE);
+		statusicon->set_tooltip_text(UFTT_TITLE_BASE "\n" UFTT_TOOLTIP_BASE);
 	}
 
 	//TODO: Rebroadcast sharelist (needs backend support)

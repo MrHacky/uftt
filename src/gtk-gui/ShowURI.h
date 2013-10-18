@@ -3,6 +3,7 @@
 	#include <gdkmm/screen.h>
 	#include <glibmm/refptr.h>
 	#include <glibmm/ustring.h>
+	#include <glibmm/spawn.h>
 
 	namespace Gtk {
 		/**

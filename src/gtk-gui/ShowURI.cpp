@@ -2,7 +2,6 @@
 #include "../util/StrFormat.h"
 #include <iostream>
 #include <gtkmm.h>
-#include <glibmm/spawn.h>
 
 using namespace std;
 
