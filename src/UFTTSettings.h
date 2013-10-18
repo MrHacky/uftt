@@ -134,7 +134,7 @@ namespace settingsmanager {
 		}
 	};
 #endif
-};
+}
 
 class UFTTSettings {
 	private:
