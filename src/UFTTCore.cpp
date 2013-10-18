@@ -313,8 +313,8 @@ struct UFTTCore::LocalConnectionWriter: public LocalConnectionBase<LocalConnecti
 };
 
 UFTTCore::UFTTCore(UFTTSettingsRef settings_, const CommandLineInfo& cmdinfo)
-: settings(settings_)
-, local_listener(io_service)
+: local_listener(io_service)
+, settings(settings_)
 , error_state(0)
 {
 	boost::asio::ip::tcp::endpoint local_endpoint(boost::asio::ip::address_v4::loopback(), UFTT_PORT-1);

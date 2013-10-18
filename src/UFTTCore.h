@@ -117,6 +117,7 @@ struct TaskInfo {
 
 	TaskInfo()
 	: isupload(true)
+	, status(TASK_STATUS_INITIAL)
 	, transferred(0)
 	, size(0)
 	, queue(0)
@@ -125,7 +126,6 @@ struct TaskInfo {
 	, last_rtt_update(boost::posix_time::not_a_date_time)
 	, rtt(boost::posix_time::seconds(-1))
 	, speed(0)
-	, status(TASK_STATUS_INITIAL)
 	{
 	};
 };
