@@ -62,6 +62,7 @@ class SimpleBackend: public INetModule {
 		};
 
 		UFTTCore* core;
+		UFTTSettingsRef settings;
 
 		boost::asio::io_service& service;
 		std::map<boost::asio::ip::address, UDPSockInfoRef> udpsocklist;
@@ -143,7 +144,6 @@ class SimpleBackend: public INetModule {
 		boost::signal<void(const ShareInfo&)> sig_new_share;
 		boost::signal<void(const TaskInfo&)> sig_new_task;
 
-		UFTTSettingsRef settings;
 	public:
 
 		void print_addr(std::string prefix, boost::asio::ip::address a)

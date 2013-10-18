@@ -11,21 +11,21 @@ REGISTER_NETMODULE_CLASS(SimpleBackend);
 using namespace std;
 
 SimpleBackend::SimpleBackend(UFTTCore* core_)
-	: service(core_->get_io_service())
+	: core(core_)
+	, settings(core_->getSettingsRef())
+	, service(core_->get_io_service())
 	, tcplistener_v4(core_->get_io_service())
 	, tcplistener_v6(core_->get_io_service())
-	, settings(core_->getSettingsRef())
-	, peerfindertimer(core_->get_io_service())
 	, udpfails(0)
 	, watcher_v4(core_->get_io_service())
 	, watcher_v6(core_->get_io_service())
 	, udp_sock_v4(core_->get_io_service())
 	, udp_sock_v6(core_->get_io_service())
-	, core(core_)
+	, clearpeers(false)
+	, peerfindertimer(core_->get_io_service())
 	, stun_timer(core_->get_io_service())
 	, stun_timer2(core_->get_io_service())
 	, stun_server_found(false)
-	, clearpeers(false)
 	, stun_retries(0)
 {
 	bool workv4 = false;

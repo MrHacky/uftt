@@ -100,7 +100,7 @@ class ConnectionCommon: public ConnectionBase {
 			uint32 psize;
 			std::vector<uint64> pos;
 			qitem(int type_, const std::string& path_, uint64 fsize_ = 0) : type(type_), path(path_), fsize(fsize_), poffset(0) {};
-			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_, uint32 psize_) : type(type_), path(path_), fsize(-1), pos(pos_), poffset(0), psize(psize_) {};
+			qitem(int type_, const std::string& path_, const std::vector<uint64>& pos_, uint32 psize_) : type(type_), path(path_), fsize(-1), poffset(0), psize(psize_), pos(pos_) {};
 		};
 		std::deque<qitem> qitems;
 

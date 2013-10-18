@@ -100,10 +100,10 @@ class SimpleConnection: public ConnectionCommon {
 		SimpleConnection(boost::asio::io_service& service_, UFTTCore* core_, SockInit sockinit_)
 			: ConnectionCommon(service_, core_)
 			, socket(sockinit_)
-			, progress_timer(service_)
 			, cursendfile(service_)
 			, buffer_position(0)
 			, bytes_transferred_since_last_update(0)
+			, progress_timer(service_)
 		{
 			dldone = false;
 			uldone = false;
