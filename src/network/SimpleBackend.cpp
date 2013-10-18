@@ -845,9 +845,10 @@ void SimpleBackend::send_publishes(UDPSockInfoRef si, const boost::asio::ip::udp
 			if (item.size() < 0xff)
 				send_publish(si, ep, item, sharever);
 	}
-	if (sendbuilds)
+	if (sendbuilds) {
 		BOOST_FOREACH(const std::string& name, updateProvider.getAvailableBuilds())
 			send_publish(si, ep, name, 1, true);
+	}
 }
 
 void SimpleBackend::add_local_share(std::string name)
