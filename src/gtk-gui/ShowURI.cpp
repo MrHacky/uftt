@@ -6,7 +6,7 @@
 
 using namespace std;
 
-void child_setup() {};
+void child_setup() {}
 
 namespace Gtk {
 	void show_uri(Glib::RefPtr<Gdk::Screen> screen,

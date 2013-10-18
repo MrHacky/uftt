@@ -88,7 +88,7 @@ class DispatcherMarshaller : public Glib::Dispatcher {
 			template <typename TCallee>
 			MarshallFunctionObject<TCallee> wrap(const TCallee& callee_) {
 				return MarshallFunctionObject<TCallee>(this, callee_);
-			};
+			}
 };
 
 #endif //DISPATCHER_MARSHALLER_H
