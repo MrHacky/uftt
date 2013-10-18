@@ -59,8 +59,8 @@ struct FReadFileReaderManager::helper_read_some {
 
 	//pre: fd is valid
 	helper_read_some(FReadFileReader* fr_, size_t len_, const boost::function<void(IMemoryBufferRef, size_t len, boost::system::error_code ec)>& handler_)
-	: len(len_)
-	, fr(fr_)
+	: fr(fr_)
+	, len(len_)
 	, handler(handler_)
 	{}
 
@@ -81,8 +81,8 @@ struct FReadFileReaderManager::helper_read_some {
 	typedef void result_type;
 
 	private:
-		helper_read_some(const helper_read_some& o) {}; // prevent copy construct
-		helper_read_some& operator=(const helper_read_some& o) {} // prevent assignment
+		helper_read_some(const helper_read_some& o); // prevent copy construct
+		helper_read_some& operator=(const helper_read_some& o); // prevent assignment
 };
 
 struct FReadFileReaderManager::helper_read_some_wrapper {
@@ -104,8 +104,8 @@ FReadFileReaderManager::FReadFileReaderManager(boost::asio::io_service& io_servi
 , work_thread(boost::bind(&boost::asio::io_service::run, &work_io_service))
 , buffer_begin(0)
 , buffer_usage(0)
-, buffer(0)
 , buffer_size(32*1024*1024)
+, buffer(0)
 {
 }
 

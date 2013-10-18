@@ -3,8 +3,8 @@
 
 FReadMemoryBuffer::FReadMemoryBuffer(uint8*const data_, const size_t size_, FReadFileReaderManager*const manager_)
 : IMemoryBuffer(data_, size_)
-, manager(manager_)
 , finished(false)
+, manager(manager_)
 {
 }
 
