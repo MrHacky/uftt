@@ -904,7 +904,8 @@ boost::shared_ptr<std::vector<uint8> > AutoUpdater::getUpdateBuffer(const std::s
 		ext::filesystem::ifstream ifs(info->path, ios_base::in|ios_base::binary);
 		boost::shared_ptr<std::vector<uint8> > res(new std::vector<uint8>(info->len));
 		ifs.read((char*)&(*res)[0], info->len);
-		if (ifs.gcount() != info->len) return null;
+		// note: ifs.gcount() should always be positive, so the cast is benign.
+		if (static_cast<size_t>( ifs.gcount() ) != info->len) return null;
 		if (info->len <= info->sig.size()) return null;
 		for (size_t i = 0; i < info->sig.size(); ++i)
 			if (info->sig[i] != (*res)[i + res->size() - info->sig.size()])
