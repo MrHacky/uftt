@@ -10,19 +10,20 @@
 #include <ios>
 #include <boost/bind.hpp>
 #include <glib.h>
-#include <gdkmm/pixbufloader.h>
-#include <gtkmm/stock.h>
-#include <gtkmm/action.h>
 #include <gtkmm/accelkey.h>
 #include <gtkmm/accelmap.h>
-#include <gtkmm/settings.h>
+#include <gtkmm/action.h>
+#include <gtkmm/checkmenuitem.h>
 #include <gtkmm/liststore.h>
-#include <gtkmm/radioaction.h>
-#include <gtkmm/toggleaction.h>
 #include <gtkmm/messagedialog.h>
+#include <gdkmm/pixbufloader.h>
+#include <gtkmm/radioaction.h>
+#include <gtkmm/separatortoolitem.h>
+#include <gtkmm/settings.h>
+#include <gtkmm/stock.h>
+#include <gtkmm/toggleaction.h>
 #include <gtkmm/treemodelsort.h>
 #include <gtkmm/treeviewcolumn.h>
-#include <gtkmm/separatortoolitem.h>
 
 using namespace std;
 
