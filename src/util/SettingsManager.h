@@ -44,7 +44,7 @@ namespace settingsmanager {
 	{
 		tostring_t<T>::convert(in, out);
 	}
-};
+}
 
 class SettingsVariableBase
 {

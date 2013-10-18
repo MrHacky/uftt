@@ -157,7 +157,7 @@ namespace ext {
 				return native_to_external(internal_to_native(o));
 			}
 
-		};
+		}
 
 		path::path() {}
 

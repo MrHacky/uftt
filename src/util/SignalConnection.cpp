@@ -3,7 +3,7 @@
 SignalConnection::SignalConnection()
 : service(NULL), next(NULL)
 {
-};
+}
 
 SignalConnection::SignalConnection(boost::asio::io_service& service_, boost::signals::connection c)
 : service(&service_), next(NULL)
@@ -62,7 +62,7 @@ void SignalConnection::disconnect()
 		do_disconnect();
 	else
 		ext::asio::sync_dispatch(*service, boost::bind(&SignalConnection::do_disconnect, this));
-};
+}
 
 void SignalConnection::do_disconnect()
 {

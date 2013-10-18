@@ -86,7 +86,7 @@ namespace StrFormat {
 		int decs = (2 - (size >= 10.0) - (size >= 100.0)) * (suf > 0);
 		std::string fstr = STRFORMAT(fmt_string, decs, (kibi && suf > 0) ? "i" : "");
 		return STRFORMAT(fstr, (float)size, size_suffix[suf]);
-	};
+	}
 
 #if 0
 	// wip optimised non-float uselessness
