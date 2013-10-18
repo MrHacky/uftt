@@ -401,8 +401,8 @@ string urldecode(std::string s) { //http://www.koders.com/cpp/fid6315325A03C89DE
 
 vector<std::string> urilist_convert(const std::string urilist) {
 	vector<std::string> files;
-	int begin = urilist.find("file://", 0);
-	int end = urilist.find("\r\n", begin);
+	size_t begin = urilist.find("file://", 0);
+	size_t end = urilist.find("\r\n", begin);
 	while( end != string::npos) {
 		files.push_back(urldecode(urilist.substr(begin + 7, end-begin-7)));
 		begin = urilist.find("file://", end);

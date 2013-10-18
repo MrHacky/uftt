@@ -219,8 +219,8 @@ void TaskList::check_completed_tasks() {
 	}
 
 	std::string body = "The following shares have been downloaded:\n";
-	int i = 0;
-	int max = 5;
+	size_t i = 0;
+	size_t max = 5;
 	std::string spacer("  -  ");
 	BOOST_FOREACH(TaskInfo& ti, completed_tasks) {
 		body += spacer + ti.shareinfo.name + "\n";
