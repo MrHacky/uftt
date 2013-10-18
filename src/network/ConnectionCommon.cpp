@@ -18,7 +18,7 @@ void ConnectionCommon::filesender::init(uint64 offset_)
 	file.open(path, ext::asio::fstream::in);
 	file.fseeka(offset);
 	hsent = false;
-};
+}
 
 bool ConnectionCommon::filesender::getbuf(shared_vec buf) {
 	if (!hsent) {
@@ -36,14 +36,14 @@ bool ConnectionCommon::filesender::getbuf(shared_vec buf) {
 	}
 	return false;
 	//cout << ">file.async_read_some(): " << path << " : " << buf->size() << " : " << fsize << '\n';
-};
+}
 
 /* dirsender */
 void ConnectionCommon::dirsender::init()
 {
 	curiter = ext::filesystem::directory_iterator(path);
 	hsent = false;
-};
+}
 
 bool ConnectionCommon::dirsender::getbuf(shared_vec buf, ext::filesystem::path& newpath)
 {
@@ -74,13 +74,13 @@ bool ConnectionCommon::dirsender::getbuf(shared_vec buf, ext::filesystem::path& 
 
 	++curiter;
 	return false;
-};
+}
 
 /* sigmaker */
 ConnectionCommon::sigmaker::sigmaker(boost::asio::io_service& service_)
 : service(service_)
 {
-};
+}
 
 void ConnectionCommon::sigmaker::main() {
 	size_t bread;
@@ -114,7 +114,7 @@ void ConnectionCommon::sigmaker::main() {
 ConnectionCommon::sigchecker::sigchecker(boost::asio::io_service& service_)
 : service(service_)
 {
-};
+}
 
 uint64 ConnectionCommon::sigchecker::getoffset()
 {

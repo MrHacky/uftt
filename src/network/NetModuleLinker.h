@@ -26,19 +26,22 @@ namespace NetModuleLinker {
 	int reg_netmodule() {
 		regNetModule(create_netmodule<T>());
 		return 1;
-	};
+	}
 }
+
+#define SWALLOW_SEMICOLON_AFTER_NAMESPACE(cls) \
+	struct macro_swallow_semicolon_after_namespace_ ## cls {}
 
 #define REGISTER_NETMODULE_CLASS(cls) namespace NetModuleLinker{ \
 	namespace ns_cls_ ## cls { \
 		int x = NetModuleLinker::reg_netmodule<cls>(); \
 	} \
-}
+} SWALLOW_SEMICOLON_AFTER_NAMESPACE(cls)
 
 #define DISABLE_NETMODULE_CLASS(cls) namespace NetModuleLinker{ \
 	namespace ns_cls_ ## cls { \
 		int x = 1; \
 	} \
-}
+} SWALLOW_SEMICOLON_AFTER_NAMESPACE(cls)
 
 #endif//NETMODULE_LINKER_H

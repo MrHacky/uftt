@@ -7,7 +7,7 @@
 		extern int x; \
 		int y = x; \
 	} \
-}
+} SWALLOW_SEMICOLON_AFTER_NAMESPACE(cls)
 
 #include "NetModuleLinker.inc"
 
@@ -42,5 +42,5 @@ namespace NetModuleLinker {
 			netmodulelist = new std::vector<boost::function<std::shared_ptr<INetModule>(UFTTCore*)> >();
 		}
 		netmodulelist->push_back(fp);
-	};
+	}
 }
