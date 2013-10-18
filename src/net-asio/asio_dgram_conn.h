@@ -598,7 +598,7 @@ namespace dgram {
 
 		public:
 			conn_impl(conn_service<Proto>* cservice_)
-			: cservice(cservice_), short_timer(cservice_->service), long_timer(cservice_->service), service(cservice_->service)
+			: service(cservice_->service), cservice(cservice_), short_timer(cservice_->service), long_timer(cservice_->service)
 			{
 				fin_rcv = fin_snd = fin_ack = false;
 				send_undelivered = 0;
@@ -607,7 +607,7 @@ namespace dgram {
 			}
 
 			conn_impl(conn_service<Proto>& cservice_)
-			: cservice(&cservice_), short_timer(cservice_.service), long_timer(cservice_.service), service(cservice_.service)
+			: service(cservice_.service), cservice(&cservice_), short_timer(cservice_.service), long_timer(cservice_.service)
 			{
 				fin_rcv = fin_snd = fin_ack = false;
 				send_undelivered = 0;
