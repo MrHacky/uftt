@@ -334,7 +334,7 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 	if(nr_downloads + nr_uploads > 0 && settings->show_speeds_in_titlebar) {
 		set_title(
 			STRFORMAT(
-				"D:%s U:%s - "UFTT_TITLE_BASE,
+				"D:%s U:%s - " UFTT_TITLE_BASE,
 				StrFormat::bytes(download_speed, false, true),
 				StrFormat::bytes(upload_speed, false, true)
 			)
@@ -347,7 +347,7 @@ void UFTTWindow::on_signal_task_status(uint32 nr_downloads, uint32 download_spee
 	if(nr_downloads + nr_uploads > 0 && settings->show_task_tray_icon && settings->show_speeds_in_statusicon_tooltip) {
 		statusicon->set_tooltip(
 			STRFORMAT(
-				UFTT_TITLE_BASE"\n%i downloading, %i uploading\n%s down, %s up",
+				UFTT_TITLE_BASE "\n%i downloading, %i uploading\n%s down, %s up",
 				nr_downloads,
 				nr_uploads,
 				StrFormat::bytes(download_speed, true),
