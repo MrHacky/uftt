@@ -283,7 +283,7 @@ void TaskList::check_completed_tasks() {
 		if(settings->notification_on_completion) {
 			notification->show();
 		}
-	} catch(Glib::Error /*e*/) {/* silently fail */}
+	} catch(Glib::Error& /*e*/) {/* silently fail */}
 }
 
 void TaskList::on_notification_signal_closed(Gtk::Notification::ClosedReason reason) {
@@ -358,7 +358,7 @@ void TaskList::on_signal_task_status(const boost::shared_ptr<Gtk::TreeModel::Row
 		);
 		try {
 			notification->show();
-		} catch(Glib::Error /*e*/) {/* silently fail */}
+		} catch(Glib::Error& /*e*/) {/* silently fail */}
 	}
 
 	if(!info.isupload && info.status == TASK_STATUS_COMPLETED) { // Transfer done, explicitly set ETA to 00:00:00

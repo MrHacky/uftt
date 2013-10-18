@@ -20,12 +20,12 @@ namespace Gtk {
 		try {
 			Glib::spawn_command_line_async(STRFORMAT("exo-open \"%s\"", uri));
 			return;
-		} catch(Glib::SpawnError e) {}
+		} catch(Glib::SpawnError& e) {}
 
 		try {
 			Glib::spawn_command_line_async(STRFORMAT("xdg-open \"%s\"", uri));
 			return;
-		} catch(Glib::SpawnError e) {}
+		} catch(Glib::SpawnError& e) {}
 
 		throw Glib::SpawnError(Glib::SpawnError::INVAL, STRFORMAT("Could not open URL \"%s\"", uri));
 	}

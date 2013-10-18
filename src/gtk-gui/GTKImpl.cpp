@@ -390,7 +390,7 @@ void UFTTWindow::show_uri(Glib::ustring uri) {
 	try {
 		Gtk::show_uri(Glib::wrap((GdkScreen*)NULL), uri, GDK_CURRENT_TIME);
 	}
-	catch(Glib::SpawnError e) {
+	catch(Glib::SpawnError& e) {
 		Gtk::MessageDialog dialog(*this, "Failed to open URL", false, Gtk::MESSAGE_ERROR, Gtk::BUTTONS_OK, true);
 		dialog.set_transient_for(*this);
 		dialog.set_modal(true);

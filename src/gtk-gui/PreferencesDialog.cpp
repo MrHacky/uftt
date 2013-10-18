@@ -182,7 +182,7 @@ int UFTTPreferencesDialog::on_auto_clear_tasks_spinbutton_input(double* output) 
 	try {
 		settings->auto_clear_tasks_after = boost::posix_time::duration_from_string(auto_clear_tasks_spinbutton.get_text());
 		(*output) = settings->auto_clear_tasks_after.get().total_seconds();
-	} catch(boost::bad_lexical_cast /*e*/) {};
+	} catch(boost::bad_lexical_cast& /*e*/) {};
 	return true;
 }
 
