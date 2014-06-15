@@ -4,6 +4,7 @@
 // workaround for https://bugreports.qt-project.org/browse/QTBUG-22829
 #ifdef Q_MOC_RUN
 #define BOOST_TT_HAS_OPERATOR_HPP_INCLUDED
+#define BOOST_NO_TEMPLATE_PARTIAL_SPECIALIZATION
 #endif
 
 #include "ui_MainWindow.h"
