@@ -71,7 +71,11 @@ class ConsoleMain : public UFTTGui {
 				refresh();
 			else if ((items[0] == "d" || items[0] == "download") && items.size() == 3)
 				core->startDownload(sharemap[items[1]], items[2]);
-			else if ((items[0] == "s" || items[0] == "share") && items.size() == 2)
+			else if (items[0] == "D" && items.size() == 3) {
+				ShareID share = sharemap[items[1]];
+				share.sid[0] = 'x'; // trigger UDP download...
+				core->startDownload(share, items[2]);
+			} else if ((items[0] == "s" || items[0] == "share") && items.size() == 2)
 				core->addLocalShare(items[1]);
 			else
 				std::cout << "[q]uit, [l]ist, [d]ownload <id> <path>, [s]hare <path>, [r]emove <id> [h]elp\n";
