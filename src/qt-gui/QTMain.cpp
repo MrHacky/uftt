@@ -54,7 +54,7 @@ int QTMain::run()
 		qInitResources_ ## name (); \
 	} while (0)
 
-const boost::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
+const std::shared_ptr<UFTTGui> UFTTGui::makeGui(int argc, char** argv, UFTTSettingsRef settings) {
 	LINK_QT_RESOURCE(icons);
-	return boost::shared_ptr<UFTTGui>(new QTMain(argc, argv, settings));
+	return std::shared_ptr<UFTTGui>(new QTMain(argc, argv, settings));
 }
