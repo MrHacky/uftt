@@ -1,6 +1,7 @@
 #include "QTMain.h"
 
 #include <QApplication>
+#include <QFileInfo>
 
 #include <boost/bind.hpp>
 
@@ -27,6 +28,24 @@ class QTImpl {
 
 QTMain::QTMain(int argc, char **argv, UFTTSettingsRef settings)
 {
+	#ifdef Q_OS_WIN
+	{
+		// this should really be inside qt...
+		HMODULE hmod = 0;
+		if (hmod == 0) hmod = GetModuleHandleA("Qt5Core.dll");
+		if (hmod == 0) hmod = GetModuleHandleA("Qt5Cored.dll");
+		if (hmod != 0) {
+			QString Path;
+			wchar_t module_name[256] = { 0 };
+			GetModuleFileNameW(hmod, module_name, sizeof(module_name) / sizeof(wchar_t));
+			Path = QString::fromUtf16((ushort*) module_name);
+			if (!Path.isEmpty()) {
+				Path = QFileInfo(Path).absolutePath();
+				QCoreApplication::addLibraryPath(Path + "/../plugins");
+			}
+		}
+	}
+	#endif
 	impl = new QTImpl(argc, argv, settings);
 }
 
