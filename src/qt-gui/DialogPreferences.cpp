@@ -1,4 +1,4 @@
-#include "DialogPreferences.moc"
+#include "DialogPreferences.h"
 
 #include "../util/SettingsManager.h"
 

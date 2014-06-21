@@ -6,26 +6,28 @@ IF(AUTODETECT_QT_GUI OR ENABLE_QT_GUI)
 	ENDIF()
 ENDIF()
 IF(AUTODETECT_QT_GUI)
-	find_package(Qt4)
+	find_package(Qt5Core)
 
-	IF(QT4_FOUND)
+	IF(QT5_FOUND)
 		MESSAGE(STATUS "Enabling Qt gui")
 		SET(ENABLE_QT_GUI ON CACHE BOOL "Enable building of the Qt gui")
-	ELSE(QT4_FOUND)
+	ELSE(QT5_FOUND)
 		MESSAGE(STATUS "Disabling Qt gui")
 		SET(ENABLE_QT_GUI OFF CACHE BOOL "Disable building of the Qt gui")
-	ENDIF(QT4_FOUND)
+	ENDIF(QT5_FOUND)
 ENDIF()
 
 IF(ENABLE_QT_GUI)
-	find_package(Qt4 REQUIRED)
+	Get_Filename_Component(QT_HINTS_DIR "${QT_QMAKE_EXECUTABLE}/../../lib/cmake/Qt5" ABSOLUTE)
+	find_package(Qt5 COMPONENTS Core Gui Widgets REQUIRED HINTS "${QT_HINTS_DIR}")
 	add_definitions("${QT_DEFINITIONS} -DQT_NO_KEYWORDS")
-	include(${QT_USE_FILE})
 	include_directories(${CMAKE_CURRENT_BINARY_DIR})
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 	IF(MINGW AND NOT QT_SHARED)
 		SET(QT_LIBRARIES "${QT_LIBRARIES}" Imm32 Winmm gdi32 comdlg32 oleaut32 winspool Ws2_32 ole32 uuid)
 	ENDIF()
+	SET(QT_LIBRARIES Qt5::Core Qt5::Gui Qt5::Widgets)
+	SET(QT_QTMAIN_LIBRARY "")
 
 	SET(UI_FILES
 		MainWindow.ui
@@ -45,11 +47,11 @@ IF(ENABLE_QT_GUI)
 		QExtPlatform.cpp
 	)
 
-	QT4_AUTOMOC(${UI_SRCS})
+	Set(CMAKE_AUTOMOC ON)
 
-	QT4_WRAP_UI(UI_H_FILES ${UI_FILES})
+	QT5_WRAP_UI(UI_H_FILES ${UI_FILES})
 
-	QT4_ADD_RESOURCES(QRC_SRCS Icons/icons.qrc)
+	QT5_ADD_RESOURCES(QRC_SRCS Icons/icons.qrc)
 
 	ADD_LIBRARY(uftt-qt
 		${UI_SRCS}

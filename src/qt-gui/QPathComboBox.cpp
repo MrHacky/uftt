@@ -1,4 +1,4 @@
-#include "QPathComboBox.moc"
+#include "QPathComboBox.h"
 
 #include <QTimer>
 #include <QDirModel>

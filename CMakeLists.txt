@@ -7,6 +7,7 @@ IF(COMMAND cmake_policy)
 	cmake_policy(SET CMP0005 OLD)
 	cmake_policy(SET CMP0007 NEW)
 	cmake_policy(SET CMP0015 NEW)
+	cmake_policy(SET CMP0020 NEW)
 ENDIF()
 
 IF(LINK_STATIC_RUNTIME AND PROJECT_NAME_DEPENDS_ON_LINKAGE)

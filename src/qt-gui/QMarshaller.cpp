@@ -1,4 +1,4 @@
-#include "QMarshaller.moc"
+#include "QMarshaller.h"
 
 #include <QMetaType>
 

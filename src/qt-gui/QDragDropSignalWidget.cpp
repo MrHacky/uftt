@@ -1,1 +1,1 @@
-#include "QDragDropSignalWidget.moc"
+#include "QDragDropSignalWidget.h"

@@ -1,4 +1,4 @@
-#include "QToggleHeaderAction.moc"
+#include "QToggleHeaderAction.h"
 
 #include <vector>
 

@@ -1,4 +1,4 @@
-#include "MainWindow.moc"
+#include "MainWindow.h"
 
 #include <iostream>
 #include <fstream>
