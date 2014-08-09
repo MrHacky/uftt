@@ -17,7 +17,7 @@ ELSE()
 ENDIF()
 
 # Treat warnings as errors cmake option
-SET(TREAT_WARNINGS_AS_ERRORS OFF CACHE BOOL "Treat warnings as errors")
+SET(TREAT_WARNINGS_AS_ERRORS ON CACHE BOOL "Treat warnings as errors")
 
 IF(MSVC)
 	SET(LINK_STATIC_RUNTIME OFF CACHE BOOL "Link statically against C++ runtime")
