@@ -22,24 +22,24 @@
 			virtual void on_show();
 			virtual bool on_delete_event(GdkEventAny* event);
 		private:
-			UFTTSettingsRef  settings;
-			UFTTSettings     previous_settings;
-			Gtk::Entry       username_entry;
-			Gtk::CheckButton enable_tray_icon_checkbutton;
-			Gtk::CheckButton minimize_on_close_checkbutton;
-			Gtk::CheckButton start_in_tray_checkbutton;
-			Gtk::CheckButton enable_auto_update_checkbutton;
-			Gtk::CheckButton enable_download_resume_checkbutton;
-			Gtk::CheckButton enable_global_peer_discovery_checkbutton;
-			Gtk::CheckButton enable_auto_clear_tasks_checkbutton;
-			Gtk::Adjustment  auto_clear_tasks_spinbutton_adjustment; // note: used by auto_clear_tasks_spinbutton, so ensure it is constructed before auto_clear_tasks_spinbutton
-			Gtk::SpinButton  auto_clear_tasks_spinbutton;
-			Gtk::CheckButton enable_notification_on_completion_checkbutton;
+			UFTTSettingsRef               settings;
+			UFTTSettings                  previous_settings;
+			Gtk::Entry                    username_entry;
+			Gtk::CheckButton              enable_tray_icon_checkbutton;
+			Gtk::CheckButton              minimize_on_close_checkbutton;
+			Gtk::CheckButton              start_in_tray_checkbutton;
+			Gtk::CheckButton              enable_auto_update_checkbutton;
+			Gtk::CheckButton              enable_download_resume_checkbutton;
+			Gtk::CheckButton              enable_global_peer_discovery_checkbutton;
+			Gtk::CheckButton              enable_auto_clear_tasks_checkbutton;
+			Glib::RefPtr<Gtk::Adjustment> auto_clear_tasks_spinbutton_adjustment; // note: used by auto_clear_tasks_spinbutton, so ensure it is constructed before auto_clear_tasks_spinbutton
+			Gtk::SpinButton               auto_clear_tasks_spinbutton;
+			Gtk::CheckButton              enable_notification_on_completion_checkbutton;
 			#ifdef USE_GTK24_API
-			Gtk::CheckButton enable_blink_statusicon_on_completion_checkbutton;
+			Gtk::CheckButton              enable_blink_statusicon_on_completion_checkbutton;
 			#endif
-			Gtk::CheckButton enable_show_speeds_in_titlebar_checkbutton;
-			Gtk::CheckButton enable_show_speeds_in_statusicon_tooltip_checkbutton;
+			Gtk::CheckButton              enable_show_speeds_in_titlebar_checkbutton;
+			Gtk::CheckButton              enable_show_speeds_in_statusicon_tooltip_checkbutton;
 			void with_enable_apply_button_do(boost::function<void(void)> f);
 			void on_username_entry_changed();
 			void on_enable_tray_icon_checkbutton_toggled();

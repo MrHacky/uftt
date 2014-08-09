@@ -16,8 +16,26 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
   enable_download_resume_checkbutton("Resume _partial downloads", true),
   enable_global_peer_discovery_checkbutton("Announce shares over the _internet", true),
   enable_auto_clear_tasks_checkbutton(string() + "Automatically _remove completed tasks after (hh:mm:ss)", true),
-  auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.get().total_seconds()), 0.0, 24*60*60*1.0, 1.0),
-  auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0),
+  auto_clear_tasks_spinbutton_adjustment(
+  #ifdef USE_GTK24_API
+	new Gtk::Adjustment(
+  #else
+	Gtk::Adjustment::create(
+  #endif
+  	abs(settings->auto_clear_tasks_after.get().total_seconds()),
+  	0.0,
+  	24*60*60*1.0,
+  	1.0
+  )),
+  auto_clear_tasks_spinbutton(
+  #ifdef USE_GTK24_API
+  	*auto_clear_tasks_spinbutton_adjustment.operator->(),
+  #else
+  	auto_clear_tasks_spinbutton_adjustment,
+  #endif
+  	1.0,
+  	0
+  ),
   enable_notification_on_completion_checkbutton       ("Pop_up notification upon completion of a download", true),
 #ifdef USE_GTK24_API
   enable_blink_statusicon_on_completion_checkbutton   ("_Blink the tray icon upon completion of a download", true),
@@ -280,8 +298,12 @@ void UFTTPreferencesDialog::apply_settings() {
 	start_in_tray_checkbutton.set_sensitive(settings->show_task_tray_icon);
 	enable_download_resume_checkbutton.set_active(settings->experimentalresume);
 	enable_global_peer_discovery_checkbutton.set_active(settings->enablepeerfinder);
+	#ifdef USE_GTK24_API
+	auto_clear_tasks_spinbutton.set_adjustment(*auto_clear_tasks_spinbutton_adjustment.operator->());
+	#else
 	auto_clear_tasks_spinbutton.set_adjustment(auto_clear_tasks_spinbutton_adjustment);
-	auto_clear_tasks_spinbutton_adjustment.set_value(abs(settings->auto_clear_tasks_after.get().total_seconds()));
+	#endif
+	auto_clear_tasks_spinbutton_adjustment->set_value(abs(settings->auto_clear_tasks_after.get().total_seconds()));
 	auto_clear_tasks_spinbutton.set_sensitive(settings->auto_clear_tasks_after>=boost::posix_time::seconds(0));
 	enable_auto_clear_tasks_checkbutton.set_active(auto_clear_tasks_spinbutton.is_sensitive());
 	on_auto_clear_tasks_spinbutton_output(); // prevent signal_changed firing on_show()
