@@ -45,7 +45,7 @@ ShareList::ShareList(UFTTSettingsRef _settings, Gtk::Window& _parent_window, Gli
 	share_list_treeview.get_selection()->signal_changed().connect(
 		boost::bind(&ShareList::on_share_list_treeview_selection_signal_changed, this)
 	);
-	std::list<Gtk::TargetEntry> listTargets;
+	std::vector<Gtk::TargetEntry> listTargets;
 	listTargets.push_back( Gtk::TargetEntry("text/uri-list", Gtk::TARGET_OTHER_APP, 0) ); // Last parameter is 'Info', used to distinguish
 	listTargets.push_back( Gtk::TargetEntry("text/plain"   , Gtk::TARGET_OTHER_APP, 1) ); // different types of TargetEntry in the drop handler
 	listTargets.push_back( Gtk::TargetEntry("STRING"       , Gtk::TARGET_OTHER_APP, 2) );
