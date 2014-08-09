@@ -13,6 +13,7 @@
 #include <gdkmm/pixbufloader.h>
 #include <limits.h>
 #include <gtkmm/window.h>
+#include <glibmm/convert.h>
 
 
 TaskList::TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_)
