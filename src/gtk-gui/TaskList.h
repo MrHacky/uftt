@@ -10,15 +10,15 @@
 	#include <gtkmm/scrolledwindow.h>
 	#include <list>
 	#include <boost/date_time/posix_time/posix_time.hpp>
-	#include <boost/signals.hpp>
+	#include <boost/signals2.hpp>
 
 	class TaskList : public Gtk::ScrolledWindow {
 		public:
 			TaskList(UFTTSettingsRef _settings, Glib::RefPtr<Gtk::UIManager> uimanager_ref_);
 			void set_backend(UFTTCore* _core);
 			// nr downloads, downloadspeed, nr uploads, upload speed
-			boost::signal<void(uint32, uint32, uint32, uint32)> signal_status;
-			boost::signal<void(bool)> signal_task_completed;
+			boost::signals2::signal<void(uint32, uint32, uint32, uint32)> signal_status;
+			boost::signals2::signal<void(bool)> signal_task_completed;
 
 			/**
 			 * Returns the widget that should be used as the target mnemonic

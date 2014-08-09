@@ -5,7 +5,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/function.hpp>
 #include <boost/foreach.hpp>
 #include <boost/system/error_code.hpp>
@@ -139,10 +139,10 @@ class SimpleBackend: public INetModule {
 
 		void del_ip_addr(boost::asio::ip::address addr);
 
-		boost::signals::connection attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+		boost::signals2::connection attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 
-		boost::signal<void(const ShareInfo&)> sig_new_share;
-		boost::signal<void(const TaskInfo&)> sig_new_task;
+		boost::signals2::signal<void(const ShareInfo&)> sig_new_share;
+		boost::signals2::signal<void(const TaskInfo&)> sig_new_task;
 
 	public:
 

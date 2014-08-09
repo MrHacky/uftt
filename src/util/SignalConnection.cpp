@@ -5,7 +5,7 @@ SignalConnection::SignalConnection()
 {
 }
 
-SignalConnection::SignalConnection(boost::asio::io_service& service_, boost::signals::connection c)
+SignalConnection::SignalConnection(boost::asio::io_service& service_, boost::signals2::connection c)
 : service(&service_), next(NULL)
 {
 	if (c.connected())

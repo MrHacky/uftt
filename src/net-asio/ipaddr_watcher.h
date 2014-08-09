@@ -1,7 +1,7 @@
 #ifndef IPADDR_WATCHER_H
 #define IPADDR_WATCHER_H
 
-#include <boost/signals.hpp>
+#include <boost/signals2.hpp>
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/utility.hpp>
@@ -16,9 +16,9 @@ class ipv4_watcher : private boost::noncopyable {
 		ipv4_watcher(boost::asio::io_service& service);
 		~ipv4_watcher();
 
-		boost::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> add_addr;
-		boost::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> del_addr;
-		boost::signal<void(std::set<std::pair<boost::asio::ip::address,boost::asio::ip::address> >)> new_list;
+		boost::signals2::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> add_addr;
+		boost::signals2::signal<void(std::pair<boost::asio::ip::address,boost::asio::ip::address>)> del_addr;
+		boost::signals2::signal<void(std::set<std::pair<boost::asio::ip::address,boost::asio::ip::address> >)> new_list;
 
 		void async_wait();
 };
@@ -31,9 +31,9 @@ class ipv6_watcher : private boost::noncopyable {
 		ipv6_watcher(boost::asio::io_service& service);
 		~ipv6_watcher();
 
-		boost::signal<void(boost::asio::ip::address)> add_addr;
-		boost::signal<void(boost::asio::ip::address)> del_addr;
-		boost::signal<void(std::set<boost::asio::ip::address>)> new_list;
+		boost::signals2::signal<void(boost::asio::ip::address)> add_addr;
+		boost::signals2::signal<void(boost::asio::ip::address)> del_addr;
+		boost::signals2::signal<void(std::set<boost::asio::ip::address>)> new_list;
 
 		void async_wait();
 };

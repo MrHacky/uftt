@@ -1,7 +1,7 @@
 #ifndef SCOPE_EXIT_SIGNAL_H
 #define SCOPE_EXIT_SIGNAL_H
 
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/bind.hpp>
 #include <boost/utility.hpp>
 
@@ -10,7 +10,7 @@
 // added functions are called in LIFO order
 class ScopeExitSignal : boost::noncopyable {
 	private:
-		typedef boost::signal<void()> SigType;
+		typedef boost::signals2::signal<void()> SigType;
 		SigType sig;
 	public:
 		ScopeExitSignal();

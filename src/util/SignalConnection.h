@@ -3,7 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 
 #include "asio_sync_dispatcher.h"
 
@@ -27,18 +27,18 @@ struct SignalConnection {
 		}
 
 		template <typename SIG, typename SLOT>
-		static SignalConnection connect_wait(boost::asio::io_service& service, boost::signal<SIG>& signal, const SLOT& slot)
+		static SignalConnection connect_wait(boost::asio::io_service& service, boost::signals2::signal<SIG>& signal, const SLOT& slot)
 		{
-			return connect_wait(service, boost::bind(&boost::signal<SIG>::connect, &signal, slot, boost::signals::at_back));
+			return connect_wait(service, boost::bind(&boost::signals2::signal<SIG>::connect, &signal, slot, boost::signals2::at_back));
 		}
 
 	private:
 		// use connect_wait to obtain a usefull SignalConnection
-		SignalConnection(boost::asio::io_service& service_, boost::signals::connection c);
+		SignalConnection(boost::asio::io_service& service_, boost::signals2::connection c);
 		void do_disconnect();
 
 	private:
-		std::vector<boost::signals::connection> conn;
+		std::vector<boost::signals2::connection> conn;
 		boost::asio::io_service* service;
 		SignalConnection* next;
 };

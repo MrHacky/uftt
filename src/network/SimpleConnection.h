@@ -10,7 +10,7 @@
 #include <boost/version.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/numeric/conversion/cast.hpp>

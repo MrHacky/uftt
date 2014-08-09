@@ -18,7 +18,7 @@ using namespace std;
 uint64 rnum(0);
 uint64 snum(0);
 
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 
 #if 0
 class UDPHolePunchingSocket {

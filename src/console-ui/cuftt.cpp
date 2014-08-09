@@ -1,5 +1,5 @@
 #include <boost/asio.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/filesystem.hpp>
 #include <memory>
 

@@ -11,5 +11,5 @@ ScopeExitSignal::~ScopeExitSignal()
 
 void ScopeExitSignal::add(const SigType::slot_type &f)
 {
-	sig.connect(f, boost::signals::at_front);
+	sig.connect(f, boost::signals2::at_front);
 }

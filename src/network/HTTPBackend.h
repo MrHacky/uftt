@@ -5,7 +5,7 @@
 
 #include <vector>
 
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "INetModule.h"
@@ -20,8 +20,8 @@ class HTTPBackend: public INetModule {
 		uint32 mid;
 		boost::asio::io_service& service;
 
-		boost::signal<void(const ShareInfo&)> sig_new_share;
-		boost::signal<void(const TaskInfo&)> sig_new_task;
+		boost::signals2::signal<void(const ShareInfo&)> sig_new_share;
+		boost::signals2::signal<void(const TaskInfo&)> sig_new_task;
 
 		std::vector<HTTPTaskRef> tasklist;
 
@@ -36,7 +36,7 @@ class HTTPBackend: public INetModule {
 		void handle_file_open_done(const boost::system::error_code& err, HTTPTaskRef task);
 		void handle_file_write_done(const boost::system::error_code& err, HTTPTaskRef task);
 
-		boost::signals::connection do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
+		boost::signals2::connection do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb);
 	public:
 		HTTPBackend(UFTTCore* core_);
 	public:

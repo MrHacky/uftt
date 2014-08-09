@@ -20,7 +20,7 @@ class HTTPTask {
 		ext::filesystem::path path;
 		ext::asio::fstream file;
 		TaskInfo info;
-		boost::signal<void(const TaskInfo&)> sig_progress;
+		boost::signals2::signal<void(const TaskInfo&)> sig_progress;
 
 		HTTPTask(UFTTCore* core)
 		: req(core->get_io_service()), file(core->get_io_service())
@@ -232,9 +232,9 @@ void HTTPBackend::handle_file_write_done(const boost::system::error_code& err,HT
 	task->sig_progress(task->info);
 }
 
-boost::signals::connection HTTPBackend::do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+boost::signals2::connection HTTPBackend::do_connect_sig_task_status(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
-	boost::signals::connection c;
+	boost::signals2::connection c;
 	if (tid.cid < tasklist.size() && tasklist[tid.cid]) {
 		c = tasklist[tid.cid]->sig_progress.connect(cb);
 		cb(tasklist[tid.cid]->info);

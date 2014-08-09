@@ -5,7 +5,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 
 #include "../UFTTCore.h"
 
@@ -18,7 +18,7 @@ class ConnectionBase {
 		ConnectionBase(boost::asio::io_service& service_, UFTTCore* core_);
 		virtual ~ConnectionBase();
 
-		boost::signal<void(const TaskInfo&)> sig_progress;
+		boost::signals2::signal<void(const TaskInfo&)> sig_progress;
 		TaskInfo taskinfo;
 
 		virtual void handle_tcp_connect(std::string name, ext::filesystem::path dlpath, uint32 version) = 0;

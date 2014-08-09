@@ -3,7 +3,7 @@
 	#include "../UFTTCore.h"
 	#include "../UFTTSettings.h"
 	#include <boost/bind.hpp>
-	#include <boost/signal.hpp>
+	#include <boost/signals2/signal.hpp>
 	#include <gtkmm/alignment.h>
 	#include <gtkmm/box.h>
 	#include <gtkmm/button.h>
@@ -17,7 +17,7 @@
 	class UFTTPreferencesDialog : public Gtk::Dialog {
 		public:
 			UFTTPreferencesDialog(UFTTSettingsRef _settings);
-			boost::signal<void(void)> signal_settings_changed;
+			boost::signals2::signal<void(void)> signal_settings_changed;
 		protected:
 			virtual void on_show();
 			virtual bool on_delete_event(GdkEventAny* event);

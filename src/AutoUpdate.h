@@ -5,7 +5,7 @@
 #include <boost/asio.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include "net-asio/asio_file_stream.h"
 
 static const char AutoUpdaterTagData[] = "[\000uftt\000-\000update\000]";
@@ -35,7 +35,7 @@ class AutoUpdater {
 
 		const std::vector<std::string>& getAvailableBuilds() const;
 
-		boost::signal<void(std::string)> newbuild;
+		boost::signals2::signal<void(std::string)> newbuild;
 
 	private:
 		struct buildinfo {

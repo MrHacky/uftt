@@ -2,7 +2,7 @@
 #define SETTINGS_MANAGER_H
 
 #include <boost/thread.hpp>
-#include <boost/signal.hpp>
+#include <boost/signals2/signal.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
@@ -177,9 +177,9 @@ class SettingsVariable: public SettingsVariableBase
 			sigChanged(t);
 		}
 
-		boost::signal<void(const T& t)> sigChanged;
+		boost::signals2::signal<void(const T& t)> sigChanged;
 
-		void connectChanged(const typename boost::signal<void(const T& t)>::slot_function_type& f, bool callnow = false)
+		void connectChanged(const typename boost::signals2::signal<void(const T& t)>::slot_function_type& f, bool callnow = false)
 		{
 			sigChanged.connect(f);
 			if (callnow) f(get());

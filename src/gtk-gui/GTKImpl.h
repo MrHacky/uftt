@@ -8,7 +8,7 @@
 	#include "PreferencesDialog.h"
 	#include "dispatcher_marshaller.h"
 	#include <iostream>
-	#include <boost/signal.hpp>
+	#include <boost/signals2/signal.hpp>
 	#include <boost/shared_ptr.hpp>
 	#include <gtkmm/box.h>
 	#include <gtkmm/main.h>

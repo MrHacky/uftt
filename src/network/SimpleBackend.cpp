@@ -291,9 +291,9 @@ void SimpleBackend::handle_tcp_accept(boost::asio::ip::tcp::acceptor* tcplistene
 	}
 }
 
-boost::signals::connection SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
+boost::signals2::connection SimpleBackend::attach_progress_handler(const TaskID& tid, const boost::function<void(const TaskInfo&)>& cb)
 {
-	boost::signals::connection c;
+	boost::signals2::connection c;
 	int num = tid.cid;
 	c = conlist[num]->sig_progress.connect(cb);
 	cb(conlist[num]->taskinfo);

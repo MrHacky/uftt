@@ -149,7 +149,7 @@ class UFTTCore {
 
 		boost::thread servicerunner;
 
-		boost::signal<void(GuiCommand)> sigGuiCommand;
+		boost::signals2::signal<void(GuiCommand)> sigGuiCommand;
 		void servicerunfunc();
 
 		void handleArgsDone(CommandLineInfo* cmdinfo);
