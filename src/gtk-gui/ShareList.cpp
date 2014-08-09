@@ -346,17 +346,33 @@ void ShareList::on_download_destination_path_entry_signal_changed() {
 	while(dl_path.filename() == ".") dl_path = dl_path.parent_path(); // Remove trailing '/' 's
 
 	settings->dl_path = dl_path;
+	#ifdef USE_GTK24_API
+		#define override_color(color, state)            modify_text(state, color)
+		#define override_background_color(color, state) modify_base(state, color)
+		#define unset_color                             unset_text
+		#define unset_background_color                  unset_base
+		#define RGBA                                    Color
+		#define STATE_FLAG_NORMAL                       STATE_NORMAL
+	#endif
 	if(!ext::filesystem::exists(dl_path)) {
-		download_destination_path_entry.modify_text(Gtk::STATE_NORMAL, Gdk::Color("#000000"));
+		download_destination_path_entry.override_color(Gdk::RGBA("#000000"), Gtk::STATE_FLAG_NORMAL);
 		// Note: some windows app uses #ffb3b3 and black text, anjuta uses #ff6666 and white text (the average is about #ff9494)
-		download_destination_path_entry.modify_base(Gtk::STATE_NORMAL, Gdk::Color("#ffb3b3"));
+		download_destination_path_entry.override_background_color(Gdk::RGBA("#ffb3b3"), Gtk::STATE_FLAG_NORMAL);
 	}
 	else {
-		download_destination_path_entry.unset_base(Gtk::STATE_NORMAL);
-		download_destination_path_entry.unset_text(Gtk::STATE_NORMAL);
+		download_destination_path_entry.unset_color(Gtk::STATE_FLAG_NORMAL);
+		download_destination_path_entry.unset_background_color(Gtk::STATE_FLAG_NORMAL);
 		on_download_destination_path_entry_signal_changed_connection.block();
 		browse_for_download_destination_path_button.set_current_folder(dl_path.string());
 	}
+	#ifdef USE_GTK24_API
+		#undef override_color
+		#undef override_background_color
+		#undef unset_color
+		#undef unset_background_color
+		#undef RGBA
+		#undef STATE_FLAG_NORMAL
+	#endif
 }
 
 void ShareList::on_browse_for_download_destination_path_button_signal_current_folder_changed() {
