@@ -11,8 +11,10 @@ class GTKImpl {
 		GTKImpl( int& argc, char **argv, UFTTSettingsRef _settings)
 		: settings(_settings)
 		{
+			#ifdef SUPPORT_GTK24
 			if(!Glib::thread_supported())
 				Glib::thread_init();
+			#endif
 
 			// This may throw, but that is indicative of a serious bug in either
 			// guftt OR Notification (i.e. must not happen), so we shouldn't catch
