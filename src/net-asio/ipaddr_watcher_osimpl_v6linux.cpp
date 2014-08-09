@@ -46,14 +46,15 @@ boost::asio::ip::address_v6 get_ipv6_address(const nlmsghdr *in, const nlmsghdr 
 	ifinfomsg* ifi = (ifinfomsg*)NLMSG_DATA(in);
 	ifaddrmsg* ifa = (ifaddrmsg*)NLMSG_DATA(an);
 
-	int ilen = in->nlmsg_len;
-	ilen -= NLMSG_LENGTH(sizeof(*ifi));
-	if (ilen < 0)
+	__u32 ilen = in->nlmsg_len;
+	if (ilen < NLMSG_LENGTH(sizeof(*ifi)))
 		return unspec;
+	ilen -= NLMSG_LENGTH(sizeof(*ifi));
 
-	int alen = an->nlmsg_len;
-	if (alen < NLMSG_LENGTH(sizeof(ifa)))
-			return unspec;
+	__u32 alen = an->nlmsg_len;
+	if (alen < NLMSG_LENGTH(sizeof(*ifa)))
+		return unspec;
+	alen -= NLMSG_LENGTH(sizeof(*ifa));
 
 	/* NOTE: ifi_index and ifa_index should have the same type (int), but for
 	 * some reason they are not... So instead of a normal (in)equality comparison
@@ -70,10 +71,6 @@ boost::asio::ip::address_v6 get_ipv6_address(const nlmsghdr *in, const nlmsghdr 
 	parse_rtattr(tbi, IFLA_MAX, IFLA_RTA(ifi), ilen);
 
 	if (tbi[IFLA_IFNAME] == NULL)
-		return unspec;
-
-	alen -= NLMSG_LENGTH(sizeof(*ifa));
-	if (alen < 0)
 		return unspec;
 
 	rtattr* tba[IFA_MAX+1];
