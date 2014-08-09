@@ -688,7 +688,7 @@ class SimpleConnection: public ConnectionCommon {
 								boost::uniform_smallint<> distr(0, psize*3);
 								boost::variate_generator<boost::rand48&, boost::uniform_smallint<> >
 									rand(rng, distr);
-								for (int i = 0; i < pieces; ++i) {
+								for (uint64 i = 0; i < pieces; ++i) {
 									pos.push_back(start + ((range * (i+1)) / (pieces+1)) + rand());
 								}
 
