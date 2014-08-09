@@ -35,7 +35,9 @@
 			Gtk::Adjustment  auto_clear_tasks_spinbutton_adjustment; // note: used by auto_clear_tasks_spinbutton, so ensure it is constructed before auto_clear_tasks_spinbutton
 			Gtk::SpinButton  auto_clear_tasks_spinbutton;
 			Gtk::CheckButton enable_notification_on_completion_checkbutton;
+			#ifdef USE_GTK24_API
 			Gtk::CheckButton enable_blink_statusicon_on_completion_checkbutton;
+			#endif
 			Gtk::CheckButton enable_show_speeds_in_titlebar_checkbutton;
 			Gtk::CheckButton enable_show_speeds_in_statusicon_tooltip_checkbutton;
 			void with_enable_apply_button_do(boost::function<void(void)> f);
@@ -53,7 +55,9 @@
 			void on_auto_clear_tasks_spinbutton_changed();
 			void on_enable_notification_on_completion_checkbutton_toggled();
 			void on_enable_show_speeds_in_titlebar_checkbutton_toggled();
+			#ifdef USE_GTK24_API
 			void on_enable_blink_statusicon_on_completion_checkbutton_toggled();
+			#endif
 			void on_enable_show_speeds_in_statusicon_tooltip_checkbutton_toggled();
 			void apply_settings();
 	};

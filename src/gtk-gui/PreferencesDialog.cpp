@@ -19,7 +19,9 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
   auto_clear_tasks_spinbutton_adjustment(abs(settings->auto_clear_tasks_after.get().total_seconds()), 0.0, 24*60*60*1.0, 1.0),
   auto_clear_tasks_spinbutton(auto_clear_tasks_spinbutton_adjustment, 1.0, 0),
   enable_notification_on_completion_checkbutton       ("Pop_up notification upon completion of a download", true),
+#ifdef USE_GTK24_API
   enable_blink_statusicon_on_completion_checkbutton   ("_Blink the tray icon upon completion of a download", true),
+#endif
   enable_show_speeds_in_titlebar_checkbutton          ("Show cumulative transfer speeds in the tit_lebar", true),
   enable_show_speeds_in_statusicon_tooltip_checkbutton("Show cumulati_ve transfer speeds in the tooltip of the tray icon", true)
 {
@@ -93,7 +95,9 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	alignment->add(*options);
 	options->add(enable_notification_on_completion_checkbutton);
 	options->add(enable_show_speeds_in_titlebar_checkbutton);
+#ifdef USE_GTK24_API
 	options->add(enable_blink_statusicon_on_completion_checkbutton);
+#endif
 	options->add(enable_show_speeds_in_statusicon_tooltip_checkbutton);
 
 	category = Gtk::manage(new Gtk::VBox());
@@ -148,7 +152,9 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	CONNECT_SIGNAL_HANDLER(auto_clear_tasks_spinbutton, changed);
 	CONNECT_SIGNAL_HANDLER(enable_notification_on_completion_checkbutton, toggled);
 	CONNECT_SIGNAL_HANDLER(enable_show_speeds_in_titlebar_checkbutton, toggled);
+#ifdef USE_GTK24_API
 	CONNECT_SIGNAL_HANDLER(enable_blink_statusicon_on_completion_checkbutton, toggled);
+#endif
 	CONNECT_SIGNAL_HANDLER(enable_show_speeds_in_statusicon_tooltip_checkbutton, toggled);
 	#undef CONNECT_SIGNAL_HANDLER
 	// These signals have IO, so CONNECT_SIGNAL_HANDLER won't work :(
@@ -222,7 +228,9 @@ void UFTTPreferencesDialog::on_enable_tray_icon_checkbutton_toggled() {
 	settings->show_task_tray_icon = enable_tray_icon_checkbutton.get_active();
 	minimize_on_close_checkbutton.set_sensitive(settings->show_task_tray_icon);
 	start_in_tray_checkbutton.set_sensitive(settings->show_task_tray_icon);
+#ifdef USE_GTK24_API
 	enable_blink_statusicon_on_completion_checkbutton.set_sensitive(settings->show_task_tray_icon);
+#endif
 	enable_show_speeds_in_statusicon_tooltip_checkbutton.set_sensitive(settings->show_task_tray_icon);
 }
 
@@ -252,9 +260,11 @@ void UFTTPreferencesDialog::on_enable_show_speeds_in_titlebar_checkbutton_toggle
 	settings->show_speeds_in_titlebar = enable_show_speeds_in_titlebar_checkbutton.get_active();
 }
 
+#ifdef USE_GTK24_API
 void UFTTPreferencesDialog::on_enable_blink_statusicon_on_completion_checkbutton_toggled() {
 	settings->blink_statusicon_on_completion = enable_blink_statusicon_on_completion_checkbutton.get_active();
 }
+#endif
 
 void UFTTPreferencesDialog::on_enable_show_speeds_in_statusicon_tooltip_checkbutton_toggled() {
 	settings->show_speeds_in_statusicon_tooltip = enable_show_speeds_in_statusicon_tooltip_checkbutton.get_active();
@@ -277,8 +287,10 @@ void UFTTPreferencesDialog::apply_settings() {
 	on_auto_clear_tasks_spinbutton_output(); // prevent signal_changed firing on_show()
 	enable_notification_on_completion_checkbutton.set_active(settings->notification_on_completion);
 	enable_show_speeds_in_titlebar_checkbutton.set_active(settings->show_speeds_in_titlebar);
+#ifdef USE_GTK24_API
 	enable_blink_statusicon_on_completion_checkbutton.set_active(settings->blink_statusicon_on_completion);
 	enable_blink_statusicon_on_completion_checkbutton.set_sensitive(settings->show_task_tray_icon);
+#endif
 	enable_show_speeds_in_statusicon_tooltip_checkbutton.set_active(settings->show_speeds_in_statusicon_tooltip);
 	enable_show_speeds_in_statusicon_tooltip_checkbutton.set_sensitive(settings->show_task_tray_icon);
 
