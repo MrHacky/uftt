@@ -46,14 +46,19 @@ public:
 
 	virtual ~AutoScrollingWindow();
 private:
+	#ifdef USE_GTK24_API
+		typedef Gtk::Adjustment*              adjustment_ptr_type;
+	#else
+		typedef Glib::RefPtr<Gtk::Adjustment> adjustment_ptr_type;
+	#endif
 	class SavedState
 	{
 	public:
-		SavedState(Gtk::Adjustment const& adj) { *this = adj; }
+		SavedState(adjustment_ptr_type const& adj) { *this = adj; }
 
-		void operator=(Gtk::Adjustment const& adj);
+		void operator=(adjustment_ptr_type const& adj);
 
-		bool operator==(Gtk::Adjustment const& adj) const;
+		bool operator==(adjustment_ptr_type const& adj) const;
 	private:
 		double m_lower;
 		double m_upper;
@@ -64,7 +69,7 @@ private:
 
 	void onVAdjustmentValueChanged();
 
-	static bool isAtBottom(Gtk::Adjustment const& adj);
+	static bool isAtBottom(adjustment_ptr_type const& adj);
 
 	SavedState m_savedState;
 	bool m_isAtBottom;

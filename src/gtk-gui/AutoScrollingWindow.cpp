@@ -25,7 +25,7 @@ namespace Gtk
 {
 
 AutoScrollingWindow::AutoScrollingWindow()
-:	m_savedState(*get_vadjustment()),
+:	m_savedState(get_vadjustment()),
 	m_isAtBottom(true),
 	m_wasAtBottom(true)
 {
@@ -44,7 +44,7 @@ AutoScrollingWindow::~AutoScrollingWindow()
 void
 AutoScrollingWindow::onVAdjustmentValueChanged()
 {
-	Gtk::Adjustment& adj = *get_vadjustment();
+	adjustment_ptr_type adj = get_vadjustment();
 	m_wasAtBottom = m_isAtBottom;
 	m_isAtBottom = isAtBottom(adj);
 
@@ -65,7 +65,7 @@ AutoScrollingWindow::onVAdjustmentValueChanged()
 void
 AutoScrollingWindow::onVAdjustmentChanged()
 {
-	Gtk::Adjustment& adj = *get_vadjustment();
+	adjustment_ptr_type adj = get_vadjustment();
 
 	if (m_wasAtBottom && !m_isAtBottom) {
 		if (m_savedState == adj) {
@@ -75,34 +75,34 @@ AutoScrollingWindow::onVAdjustmentChanged()
 	}
 
 	if (m_isAtBottom) {
-		adj.set_value(adj.get_upper() - adj.get_page_size());
-		adj.value_changed();
+		adj->set_value(adj->get_upper() - adj->get_page_size());
+		adj->value_changed();
 	}
 }
 
 bool
-AutoScrollingWindow::isAtBottom(Gtk::Adjustment const& adj)
+AutoScrollingWindow::isAtBottom(adjustment_ptr_type const& adj)
 {
-	double const diff = adj.get_upper() - adj.get_value() - adj.get_page_size();
-	return (fabs(diff) < 1.0 || diff < adj.get_step_increment());
+	double const diff = adj->get_upper() - adj->get_value() - adj->get_page_size();
+	return (fabs(diff) < 1.0 || diff < adj->get_step_increment());
 }
 
 
 /*==================== AutoScrollingWindow::SavedState ====================*/
 
 void
-AutoScrollingWindow::SavedState::operator=(Gtk::Adjustment const& adj)
+AutoScrollingWindow::SavedState::operator=(adjustment_ptr_type const& adj)
 {
-	m_lower = adj.get_lower();
-	m_upper = adj.get_upper();
-	m_pageSize = adj.get_page_size();
+	m_lower    = adj->get_lower();
+	m_upper    = adj->get_upper();
+	m_pageSize = adj->get_page_size();
 }
 
 bool
-AutoScrollingWindow::SavedState::operator==(Gtk::Adjustment const& adj) const
+AutoScrollingWindow::SavedState::operator==(adjustment_ptr_type const& adj) const
 {
-	return (m_lower == adj.get_lower() && m_upper == adj.get_upper()
-		&& m_pageSize == adj.get_page_size());
+	return (m_lower == adj->get_lower() && m_upper == adj->get_upper()
+		&& m_pageSize == adj->get_page_size());
 }
 
 } // namespace Gtk
