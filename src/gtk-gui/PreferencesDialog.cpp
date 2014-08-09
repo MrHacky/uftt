@@ -61,6 +61,12 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	Gtk::VBox*      options;
 	Gtk::HBox*      option;
 
+	#ifndef USE_GTK24_API
+		#define ALIGN_LEFT  ALIGN_START
+		#define ALIGN_RIGHT ALIGN_END
+		#define ALIGN_TOP   ALIGN_START
+	#endif
+
 	categories = Gtk::manage(new Gtk::VBox());
 	categories->set_spacing(12);
 	category = Gtk::manage(new Gtk::VBox());
@@ -142,6 +148,11 @@ UFTTPreferencesDialog::UFTTPreferencesDialog(UFTTSettingsRef _settings)
 	alignment->add(*categories);
 	get_vbox()->pack_start(*alignment, Gtk::PACK_SHRINK);
 	get_vbox()->show_all();
+
+	#ifndef USE_GTK24_API
+		#undef ALIGN_LEFT
+		#undef ALIGN_TOP
+	#endif
 
 	Gtk::Button* button;
 	button = add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
