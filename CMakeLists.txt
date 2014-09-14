@@ -28,6 +28,9 @@ IF(MSVC)
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /WX")
 	ENDIF()
 
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /bigobj")
+
 	# Extra speed optimisation options
 	SET(MSVC_EXTRA_OPTIMIZE ON CACHE BOOL "Use extra optimization flags in release builds")
 	IF(MSVC_EXTRA_OPTIMIZE)
