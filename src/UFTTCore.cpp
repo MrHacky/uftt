@@ -226,7 +226,7 @@ struct UFTTCore::LocalConnectionHandler: public LocalConnectionBase<LocalConnect
 				}
 
 				// if execwait==true, we wait for command execution, otherwise we fork a child to do it
-				if (!execwait) CORO_FORK coro(this)();
+				if (!execwait) { CORO_FORK coro(this)(); }
 				if (execwait || coro.is_child()) {
 					CORO_YIELD (new UFTTCore::CommandExecuteHelper(core, &cmdinfo, coro(this)))->start();
 					if (!execwait) CORO_BREAK; // !execwait means we were the forked child
