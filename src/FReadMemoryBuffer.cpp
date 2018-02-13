@@ -16,9 +16,5 @@ void FReadMemoryBuffer::finish()
 
 FReadMemoryBuffer::~FReadMemoryBuffer()
 {
-	if(!finished) {
-		//FIXME: pick a better error if protocol_error (EPROTO) is not appropriate
-		assert(false);
-		throw boost::system::system_error(boost::system::error_code(boost::system::errc::protocol_error, boost::system::get_system_category()));
-	}
+	assert(finished);
 }
